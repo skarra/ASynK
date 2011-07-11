@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Mon Jul 11 12:54:57  2011
+## Last Modified : Mon Jul 11 14:43:07  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -17,7 +17,7 @@
 ##
 ## 1. The postal address information is not getting uploaded
 ##    properly. There is no problem in reading it from the Outlook
-##    addresbook. There is some problem in uploading it with the right
+##    addressbook. There is some problem in uploading it with the right
 ##    schema
 ##
 ## 2. More contact fields need to get synched, including: all the phone
@@ -28,6 +28,12 @@
 ##
 ## 4. Figure out how updates to the Google contact list can be
 ##    recognized and synched.
+##
+## 5. There could be more than one message store in the default Outlook
+##    Profile. Need to be able to look into all of them for contact
+##    items.
+##
+##
 
 import win32com.client
 import pywintypes
@@ -129,7 +135,7 @@ class Contact:
 
         self.entryid   = self._get_prop(mapitags.PR_ENTRYID)
         self.name      = self._get_prop(mapitags.PR_DISPLAY_NAME)
-        self.postal    = self._get_prop(mapitags.PR_STREET_ADDRESS)
+        self.postal    = self._get_prop(mapitags.PR_POSTAL_ADDRESS)
         self.notes     = self._get_prop(mapitags.PR_BODY)
         self.company   = self._get_prop(mapitags.PR_COMPANY_NAME)
         self.title     = self._get_prop(mapitags.PR_TITLE)

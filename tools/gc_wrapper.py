@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##  
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Mon Jul 11 09:13:51  2011
+## Last Modified : Mon Jul 11 14:42:20  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -162,12 +162,15 @@ class GC (object):
         new_contact.email.append(em)
         i += 1
 
-    # Populate the postal address
+    # Populate the postal address. We need to extract out the relevant
+    # bits and populate in a structured fashion. For now dump the entire
+    # thing into the 'street' component.
     if postal:
-      add = gdata.data.PostalAddress(text=postal,
-                                     primary='true',
-                                     rel=gdata.data.WORK_REL)
-      new_contact.postal_address.append(add)
+      strt = gdata.data.Street(text=postal)
+      add = gdata.data.StructuredPostalAddress(street=strt,
+                                               primary='true',
+                                               rel=gdata.data.WORK_REL)
+      new_contact.structured_postal_address = [add]
       
     # Populate the organizational details
     if company:
