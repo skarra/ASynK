@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Mon Jul 11 12:28:01  2011
+## Last Modified : Mon Jul 11 12:54:57  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -307,15 +307,6 @@ def get_sync_fields (fn="fields.json"):
 
     return ar
 
-def print_prop (tag, value):
-    prop_type = mapitags.PROP_TYPE(tag)
-    prop_id   = mapitags.PROP_ID(tag)
-
-    if prop_type & mapitags.MV_FLAG:
-        print "Tag: 0x%16x (Multi Value); Value: %s" % (long(tag), value)
-    else:
-        print "Tag: 0x%16x; Value: %s" % (long(tag), value)
-
 
 ## FIXEME: Need to implement more robust error checking.
 def append_email_prop_tags (fields, cf):
@@ -356,10 +347,6 @@ def append_email_prop_tags (fields, cf):
     PR_EMAIL_3 = tag
     fields.append(tag)
 
-#    logging.info('PR_EMAIL_1: 0x%16x', PR_EMAIL_1)
-#    logging.info('PR_EMAIL_2: 0x%16x', PR_EMAIL_2)
-#    logging.info('PR_EMAIL_3: 0x%16x', PR_EMAIL_3)
-
     return fields
 
 
@@ -384,15 +371,27 @@ def get_contact_details (cf, contact, fields):
     
     return ar
 
+def print_prop (tag, value):
+    prop_type = mapitags.PROP_TYPE(tag)
+    prop_id   = mapitags.PROP_ID(tag)
+
+    if prop_type & mapitags.MV_FLAG:
+        print "Tag: 0x%16x (Multi Value); Value: %s" % (long(tag), value)
+    else:
+        print "Tag: 0x%16x; Value: %s" % (long(tag), value)
+
+
 def print_all_props (contact):
     for t, v in contact:
         t = long(t % 2**64)
         print_prop(t, v)
 
+
 def print_values (values):
     for k, v in values.items():
         logging.debug("Tag: 0x%16x; Value: %s",
                       long(k), v)
+
 
 def m3 (argv = None):
     logging.getLogger().setLevel(logging.INFO)
