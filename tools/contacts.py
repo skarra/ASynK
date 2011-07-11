@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Mon Jul 11 14:43:07  2011
+## Last Modified : Mon Jul 11 16:52:19  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -52,6 +52,8 @@ gn  = 'Karra Sync'
 PR_EMAIL_1 = mapitags.PR_EMAIL_ADDRESS
 PR_EMAIL_2 = mapitags.PR_EMAIL_ADDRESS
 PR_EMAIL_3 = mapitags.PR_EMAIL_ADDRESS
+
+MOD_FLAG = mapi.MAPI_BEST_ACCESS
 
 ## The following attempt is from:
 ## http://win32com.goermezer.de/content/view/97/192/
@@ -114,7 +116,7 @@ def DumpDefaultAddressBook (handler=None):
 
 
 class Contact:
-    def __init__ (self, props, cf):
+    def __init__ (self, props, cf, msgstore):
         """Create a contact wrapper with meaningful fields from prop
         list.
 
@@ -131,7 +133,11 @@ class Contact:
         fields = get_sync_fields()
         fields = append_email_prop_tags(fields, cf)
 
+        self.item   = None
         self.values = get_contact_details(cf, props, fields)
+
+        self.cf        = cf
+        self.msgstore  = msgstore
 
         self.entryid   = self._get_prop(mapitags.PR_ENTRYID)
         self.name      = self._get_prop(mapitags.PR_DISPLAY_NAME)
@@ -162,6 +168,39 @@ class Contact:
                 self.emails.append(e)
             else:
                 self.emails = [e]        
+
+
+    def update_prop (self, prop_tag, prop_val):
+        if self.item is None:
+            print 'Opening Item for ID...', self.entryid
+            self.item = self.msgstore.OpenEntry(self.entryid, None,
+                                                MOD_FLAG)
+
+        # let's try to append some stuff to the Notes section.
+        hr, props = self.item.GetProps([prop_tag, mapitags.PR_ACCESS, mapitags.PR_ACCESS_LEVEL], mapi.MAPI_UNICODE)
+        (tag, val) = props[0]
+        (pratag, pracc) = props[1]
+        (praltag, praccl) = props[2]
+        if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
+            raise TypeError('got PT_ERROR; not PT_BINARY: %16x' % tag)
+        elif mapitags.PROP_TYPE(tag) == mapitags.PT_BINARY:
+            pass
+
+        logging.critical('PR_ACCESS       : 0x%16x', pracc)
+        logging.critical('PR_ACCESS_LEVEL : 0x%16x', praccl)
+        
+        print "Val Before: ", val
+        val = '%s\n%s' % (val, prop_val)
+        print "Val after: ", val
+
+        try:
+            hr, res = self.item.SetProps([(tag, val)])
+            self.item.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+            print 'Just updated it. Fingers crossed'
+        except Exception, e:
+            logging.critical('Could not update property (0x%16x): %s',
+                             prop_tag, e)
+            raise
 
 
     def _get_prop (self, prop_tag, array=False, values=None):
@@ -219,7 +258,7 @@ def get_default_msg_store ():
    # initialize and log on
     mapi.MAPIInitialize(None)
     session = mapi.MAPILogonEx(0, "", None,
-                               mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT)
+                               mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT | MOD_FLAG)
     messagestorestable = session.GetMsgStoresTable(0)
     messagestorestable.SetColumns((mapitags.PR_ENTRYID,
                                    mapitags.PR_DISPLAY_NAME_A,
@@ -236,7 +275,8 @@ def get_default_msg_store ():
             break
 
     (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
-    msgstore = session.OpenMsgStore(0, eid, None, mapi.MDB_NO_DIALOG)
+    msgstore = session.OpenMsgStore(0, eid, None,
+                                    mapi.MDB_NO_DIALOG | MOD_FLAG)
 
     return msgstore
 
@@ -262,7 +302,8 @@ def get_default_inbox (inbox_id=None):
         inbox_id, msgstore = get_default_inbox_id(msgstore)
 
     #    hr, cf = msgstore.OpenEntry(inbox_id, mapi.MAPI_BEST_ACCESS | mapi.MAPI_MODIFY, 0)
-    inbox = msgstore.OpenEntry(inbox_id, None, 0)
+    inbox = msgstore.OpenEntry(inbox_id, None,
+                               MOD_FLAG)
 
     return inbox, msgstore
 
@@ -280,14 +321,15 @@ def get_default_contacts_folder (inbox=None):
     
     # check for errors
     if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
-        raise TypeError('got PT_ERROR instead of PT_BINARY: %16x' % eid)
+        raise TypeError('got PT_ERROR instead of PT_BINARY: %16x' % tag)
     elif mapitags.PROP_TYPE(tag) == mapitags.PT_BINARY:
         pass
 
-    cf = msgstore.OpenEntry(cf_id, None, 0)
+    cf = msgstore.OpenEntry(cf_id, None,
+                            MOD_FLAG)
     contacts = cf.GetContentsTable(mapi.MAPI_UNICODE)
 
-    return cf, contacts
+    return msgstore, cf, contacts
 
 def get_sync_fields (fn="fields.json"):
     os.chdir(karra_cwd)
@@ -401,7 +443,7 @@ def print_values (values):
 
 def m3 (argv = None):
     logging.getLogger().setLevel(logging.INFO)
-    cf, contacts = get_default_contacts_folder()
+    msgstore, cf, contacts = get_default_contacts_folder()
 
     i = 0
     while True:
@@ -412,8 +454,12 @@ def m3 (argv = None):
         if len(rows) != 1:
             break
 
-        contact = Contact(rows[0], cf)
-        contact.push_to_google()
+        contact = Contact(rows[0], cf, msgstore)
+
+        contact.update_prop(mapitags.PR_BODY,
+                            'Testing appending to Notes')
+
+#        contact.push_to_google()
 
         if i >= 2:
             break
