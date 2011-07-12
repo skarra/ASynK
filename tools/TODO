@@ -1,0 +1,61 @@
+-*- Outline -*- 
+
+* TODO
+
+** Two Way Sync Logic
+
+*** Alogrithm to query and track updates to Google API
+
+Figure out how updates to the Google contact list can be
+recognized and synched.
+
+*** Algorithm to query and track updates to Outlook API
+
+** Support more contact fields to be uploaded
+
+More contact fields need to get synched, including: all the phone
+fields (more than 1 Home), Fax, anniversary, IM, etc.
+
+The postal address information is not getting uploaded
+properly. There is no problem in reading it from the Outlook
+addressbook. There is some problem in uploading it with the right
+schema
+
+** Refactor to make contacts.py more object oriented
+
+The code is a mess overall. Should really have MapiMsgStore, MapiFolder,
+Message etc. type wrapper objects. It is not a pretty sight at the moment
+
+** Distribution
+
+We can make this an browser based application or an Outlook app. The
+distribution might be smaller if we make it an Addin. However if we
+make it a browser based application we might be able to reuse the code
+for Karma.
+
+*** Outlook Addin
+
+**** Figure out how to add dialogs to the Outlook 
+
+*** Browser App
+
+**** Design
+
+**** How to make it non-blocking
+
+** Support more than one message store
+
+We need to iterate and grab all the message store contents
+
+There could be more than one message store in the default Outlook
+Profile. Need to be able to look into all of them for contact
+items.
+
+* Done
+
+** Track contacts that are uploaded
+
+Completed: Tue Jul 12 18:43:20  2011
+
+Store the ID of the newly created entry and store it in some user
+defined field in Outlook.
