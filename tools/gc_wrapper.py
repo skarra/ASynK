@@ -1,13 +1,13 @@
 #!/usr/bin/python
 ## 
 ## gc_wrapper.py
-##  
+##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Mon Jul 11 14:42:20  2011
+## Last Modified : Tue Jul 12 13:03:29  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
-##
+## 
 ## Licensed under the GPL v3
 ## 
 
@@ -221,6 +221,8 @@ class GC (object):
       logging.debug('ID for the new contact: %s', entry.id.text)
     else:
       logging.error('Contact creation error.')
+
+    return entry
 
 
 def main():

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Mon Jul 11 16:52:19  2011
+## Last Modified : Tue Jul 12 18:41:22  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -13,27 +13,6 @@
 ## We are able to create a Group on Google Contacts, and upload all our
 ## information to that group as new contacts.
 ##
-## TODO:
-##
-## 1. The postal address information is not getting uploaded
-##    properly. There is no problem in reading it from the Outlook
-##    addressbook. There is some problem in uploading it with the right
-##    schema
-##
-## 2. More contact fields need to get synched, including: all the phone
-##    fields (more than 1 Home), Fax, anniversary, IM, etc.
-##
-## 3. Store the ID of the newly created entry and store it in some field
-##    in Outlook.
-##
-## 4. Figure out how updates to the Google contact list can be
-##    recognized and synched.
-##
-## 5. There could be more than one message store in the default Outlook
-##    Profile. Need to be able to look into all of them for contact
-##    items.
-##
-##
 
 import win32com.client
 import pywintypes
@@ -41,6 +20,7 @@ from win32com.mapi import mapi
 from win32com.mapi import mapitags
 
 import demjson
+import gdata.client
 from gc_wrapper import GC
 
 import logging, os, os.path
@@ -54,6 +34,9 @@ PR_EMAIL_2 = mapitags.PR_EMAIL_ADDRESS
 PR_EMAIL_3 = mapitags.PR_EMAIL_ADDRESS
 
 MOD_FLAG = mapi.MAPI_BEST_ACCESS
+
+GC_GUID  = '{a1271100-ac2e-11e0-bc8b-0025644a821c}'
+GC_ID    = 0x8001
 
 ## The following attempt is from:
 ## http://win32com.goermezer.de/content/view/97/192/
@@ -123,17 +106,14 @@ class Contact:
         'props' is an array of (prop_tag, prop_value) tuples
         """
     
-        self.gcapi = None
-        try:
-            self.gcapi = GC('karra.etc', 'atlsGL21')
-        except gdata.client.BadAuthentication, e:
-            logging.critical('Invalid user credentials given: %s', e)
-            return
+        self.PROP_REPLACE = 0
+        self.PROP_APPEND  = 1
+
+        self.gcapi = GC('karra.etc', 'atlsGL21')
 
         fields = get_sync_fields()
         fields = append_email_prop_tags(fields, cf)
 
-        self.item   = None
         self.values = get_contact_details(cf, props, fields)
 
         self.cf        = cf
@@ -167,40 +147,65 @@ class Contact:
             if self.emails:
                 self.emails.append(e)
             else:
-                self.emails = [e]        
+                self.emails = [e]
+
+        self.item = self.msgstore.OpenEntry(self.entryid, None,
+                                            MOD_FLAG)
 
 
-    def update_prop (self, prop_tag, prop_val):
+    def update_prop (self, prop_tag, prop_val, action):
         if self.item is None:
-            print 'Opening Item for ID...', self.entryid
             self.item = self.msgstore.OpenEntry(self.entryid, None,
                                                 MOD_FLAG)
 
-        # let's try to append some stuff to the Notes section.
-        hr, props = self.item.GetProps([prop_tag, mapitags.PR_ACCESS, mapitags.PR_ACCESS_LEVEL], mapi.MAPI_UNICODE)
-        (tag, val) = props[0]
-        (pratag, pracc) = props[1]
-        (praltag, praccl) = props[2]
-        if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
-            raise TypeError('got PT_ERROR; not PT_BINARY: %16x' % tag)
-        elif mapitags.PROP_TYPE(tag) == mapitags.PT_BINARY:
-            pass
+        try:
+            hr, props = self.item.GetProps([prop_tag, mapitags.PR_ACCESS,
+                                            mapitags.PR_ACCESS_LEVEL],
+                                           mapi.MAPI_UNICODE)
+            (tag, val)        = props[0]
 
-        logging.critical('PR_ACCESS       : 0x%16x', pracc)
-        logging.critical('PR_ACCESS_LEVEL : 0x%16x', praccl)
-        
-        print "Val Before: ", val
-        val = '%s\n%s' % (val, prop_val)
-        print "Val after: ", val
+            if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
+                logging.info('Prop (0x%16x) not found. Tag: 0x%16x',
+                             prop_tag, tag)
+                val = ''            # This could be an int. FIXME
+            elif mapitags.PROP_TYPE(tag) == mapitags.PT_BINARY:
+                pass
+
+        except Exception, e:
+            logging.info("Could not fetch the old value... (%s).",
+                         e)
+            val = ''            # This could be an int. FIXME
+
+        if action == self.PROP_REPLACE:
+            val = prop_val
+        elif action == self.PROP_APPEND:
+            val = '%s%s' % (val, prop_val)
+
+        logging.debug('type of tag: %s', type(prop_tag))
+        logging.debug('tag: 0x%16x', (prop_tag % (2**64)))
+        logging.debug('type of val: %s', type(val))
+        logging.debug('val: %s', val)
 
         try:
-            hr, res = self.item.SetProps([(tag, val)])
+            hr, res = self.item.SetProps([(prop_tag, val)])
             self.item.SaveChanges(mapi.KEEP_OPEN_READWRITE)
-            print 'Just updated it. Fingers crossed'
         except Exception, e:
             logging.critical('Could not update property (0x%16x): %s',
                              prop_tag, e)
             raise
+
+
+    def update_prop_by_name (self, prop_name, prop_type,
+                             prop_val, action=None):
+        """prop_name should be an array of (guid, index) tuples."""
+
+        if action is None:
+            action = self.PROP_REPLACE
+
+        prop_ids = self.cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+        prop_tag = prop_type | prop_ids[0]
+
+        return self.update_prop(prop_tag, prop_val, action)
 
 
     def _get_prop (self, prop_tag, array=False, values=None):
@@ -221,33 +226,65 @@ class Contact:
         else:
             return None
 
+
     def push_to_google (self):
         MAX_RETRIES = 3
 
         logging.info('Uploading %-32s ....', self.name)
 
         i = 0
+        entry = None
         while i < MAX_RETRIES:
             try:
                 i += 1
-                self.gcapi.create_contact(entryid=self.entryid,
-                                          name=self.name,
-                                          emails=self.emails,
-                                          notes=self.notes,
-                                          postal=self.postal,
-                                          company=self.company,
-                                          title=self.title,
-                                          dept=self.dept,
-                                          ph_prim=self.ph_prim,
-                                          ph_mobile=self.ph_mobile,
-                                          ph_home=self.ph_home,
-                                          ph_work=self.ph_work
-                                          )
+                entry = self.gcapi.create_contact(entryid=self.entryid,
+                                                  name=self.name,
+                                                  emails=self.emails,
+                                                  notes=self.notes,
+                                                  postal=self.postal,
+                                                  company=self.company,
+                                                  title=self.title,
+                                                  dept=self.dept,
+                                                  ph_prim=self.ph_prim,
+                                                  ph_mobile=self.ph_mobile,
+                                                  ph_home=self.ph_home,
+                                                  ph_work=self.ph_work
+                                                  )
                 i = MAX_RETRIES
             except Exception, e:
                 ## Should make it a bit more granular
                 logging.error('Exception (%s) uploading. Will Retry (%d)',
                               e, i)
+
+        # Now store the Google Contacts ID in Outlook, so we'll be able
+        # to compare the records from the two sources at a later time.
+        self.update_prop_by_name([(GC_GUID, GC_ID)],
+                                 mapitags.PT_UNICODE,
+                                 entry.id.text)
+
+
+    def verify_google_id (self):
+        """Internal Test function to check if tag storage works.
+
+        This is intended to be used for debug to retrieve and print the
+        value of the Google Contacts Entry ID that is stored in MS
+        Outlook.
+        """
+
+        prop_name = [(GC_GUID, GC_ID)]
+        prop_type = mapitags.PT_UNICODE
+        prop_ids = self.cf.GetIDsFromNames(prop_name, 0)
+
+        print 'verify_google_id: type of prop_id: ', type(prop_ids[0])
+        prop_tag = prop_type | prop_ids[0]
+
+        hr, props = self.item.GetProps([prop_tag], mapi.MAPI_UNICODE)
+        (tag, val) = props[0]
+        if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
+            print 'Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
+                                                                (tag % (2**64)))
+        else:
+            print 'Google ID found for contact. ID: ', val
                                   
 
 ## FIXME: Error checking is virtually non-existent. Needs fixing.
@@ -454,12 +491,21 @@ def m3 (argv = None):
         if len(rows) != 1:
             break
 
-        contact = Contact(rows[0], cf, msgstore)
+        try:
+            contact = Contact(rows[0], cf, msgstore)
+        except gdata.client.BadAuthentication, e:
+            logging.critical('Invalid user credentials given: %s',
+                             str(e))
+            return
+        except Exception, e:
+            logging.critical('Exception (%s) at login time',
+                             str(e))
+            return
 
-        contact.update_prop(mapitags.PR_BODY,
-                            'Testing appending to Notes')
-
+#        contact.update_prop(mapitags.PR_BODY,
+#                            'Testing appending to Notes')
 #        contact.push_to_google()
+        contact.verify_google_id()
 
         if i >= 2:
             break
