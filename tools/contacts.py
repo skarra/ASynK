@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Jul 14 17:56:12  2011
+## Last Modified : Thu Jul 14 19:42:53  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -136,6 +136,94 @@ def DumpDefaultAddressBook (handler=None):
             handler.flush()
     o = None
     writer("</table>")
+
+
+class Outlook:
+#    def prep_outlook_contact_lists (self)
+
+    def __init__ (self):
+        # initialize and log on
+        mapi.MAPIInitialize(None)
+        flags = mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT | MOD_FLAG
+        self.session = mapi.MAPILogonEx(0, "", None, flags)
+        
+
+    # FIXME: Error checking is virtually non-existent. Needs fixing.
+    def get_default_msg_store (self):
+        """Return the MAPI object corresponding to the default Message
+           Store accessible from Extended MAPI"""
+
+        messagestorestable = self.session.GetMsgStoresTable(0)
+        messagestorestable.SetColumns((mapitags.PR_ENTRYID,
+                                       mapitags.PR_DISPLAY_NAME_A,
+                                       mapitags.PR_DEFAULT_STORE),0)
+    
+        while True:
+            rows = messagestorestable.QueryRows(1, 0)
+            # if this is the last row then stop
+            if len(rows) != 1:
+                break
+            row = rows[0]
+            # if this is the default store then stop
+            if ((mapitags.PR_DEFAULT_STORE,True) in row):
+                break
+
+        (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
+        msgstore = self.session.OpenMsgStore(0, eid, None,
+                                             mapi.MDB_NO_DIALOG | MOD_FLAG)
+        self.msgstore = msgstore
+        
+        return msgstore
+
+    # FIXME: Error checking is virtually non-existent. Needs fixing.
+    def get_default_inbox_id (self, msgstore=None):
+        """Return the EntryID for the Inbox folder from the default Message
+            Store accessible from Extended MAPI"""
+
+        if msgstore is None:
+            msgstore = self.get_default_msg_store()
+
+        inbox_id, c = msgstore.GetReceiveFolder("IPM.Note", 0)
+
+        self.inbox_id = inbox_id
+        return inbox_id, msgstore
+
+    # FIXME: Error checking is virtually non-existent. Needs fixing.
+    def get_default_inbox (self, inbox_id=None):
+        """Return the MAPI object for the Inbox folder in the default
+           Message Store accessible from Extended MAPI"""
+
+        msgstore = None
+        if inbox_id is None:
+            inbox_id, msgstore = self.get_default_inbox_id(msgstore)
+
+        self.inbox = msgstore.OpenEntry(inbox_id, None, MOD_FLAG)
+
+        return self.inbox, msgstore
+
+    # FIXME: Error checking is virtually non-existent. Needs fixing.
+    def get_default_contacts_folder (self, inbox=None):
+        """Returns a tuple (IMAPIFolder, IMAPITable) that can be used to
+           manipulate the Contacts folder and the associated meta
+           information"""
+        msgstore = None
+        if inbox is None:
+            inbox, msgstore = self.get_default_inbox()
+
+        PR_IPM_CONTACTS_ENTRYID = 0x36D10102
+        hr, props = inbox.GetProps((PR_IPM_CONTACTS_ENTRYID), 0)
+        (tag, cf_id) = props[0]
+    
+        # check for errors
+        if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
+            raise TypeError('got PT_ERROR: %16x' % tag)
+        elif mapitags.PROP_TYPE(tag) == mapitags.PT_BINARY:
+            pass
+
+        self.cf = msgstore.OpenEntry(cf_id, None, MOD_FLAG)
+        self.contacts = self.cf.GetContentsTable(mapi.MAPI_UNICODE)
+
+        return msgstore, self.cf, self.contacts
 
 
 class Contact:
@@ -329,88 +417,7 @@ class Contact:
                                                                 (tag % (2**64)))
         else:
             print 'Google ID found for contact. ID: ', val
-                                  
 
-## FIXME: Error checking is virtually non-existent. Needs fixing.
-def get_default_msg_store ():
-    """Return the MAPI object corresponding to the default Message
-    Store accessible from Extended MAPI"""
-
-   # initialize and log on
-    mapi.MAPIInitialize(None)
-    session = mapi.MAPILogonEx(0, "", None,
-                               mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT | MOD_FLAG)
-    messagestorestable = session.GetMsgStoresTable(0)
-    messagestorestable.SetColumns((mapitags.PR_ENTRYID,
-                                   mapitags.PR_DISPLAY_NAME_A,
-                                   mapitags.PR_DEFAULT_STORE),0)
-    
-    while True:
-        rows = messagestorestable.QueryRows(1, 0)
-        #if this is the last row then stop
-        if len(rows) != 1:
-            break
-        row = rows[0]
-        #if this is the default store then stop
-        if ((mapitags.PR_DEFAULT_STORE,True) in row):
-            break
-
-    (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
-    msgstore = session.OpenMsgStore(0, eid, None,
-                                    mapi.MDB_NO_DIALOG | MOD_FLAG)
-
-    return msgstore
-
-## FIXME: Error checking is virtually non-existent. Needs fixing.
-def get_default_inbox_id (msgstore=None):
-    """Return the EntryID for the Inbox folder from the default Message
-    Store accessible from Extended MAPI"""
-
-    if msgstore is None:
-        msgstore = get_default_msg_store()
-    
-    inbox_id, c = msgstore.GetReceiveFolder("IPM.Note", 0)
-
-    return inbox_id, msgstore
-
-## FIXME: Error checking is virtually non-existent. Needs fixing.
-def get_default_inbox (inbox_id=None):
-    """Return the MAPI object for the Inbox folder in the default
-    Message Store accessible from Extended MAPI"""
-
-    msgstore = None
-    if inbox_id is None:
-        inbox_id, msgstore = get_default_inbox_id(msgstore)
-
-    #    hr, cf = msgstore.OpenEntry(inbox_id, mapi.MAPI_BEST_ACCESS | mapi.MAPI_MODIFY, 0)
-    inbox = msgstore.OpenEntry(inbox_id, None,
-                               MOD_FLAG)
-
-    return inbox, msgstore
-
-## FIXME: Error checking is virtually non-existent. Needs fixing.
-def get_default_contacts_folder (inbox=None):
-    """Returns a tuple (IMAPIFolder, IMAPITable) that can be used to
-    manipulate the Contacts folder and the associated meta information"""
-    msgstore = None
-    if inbox is None:
-        inbox, msgstore = get_default_inbox()
-
-    PR_IPM_CONTACTS_ENTRYID = 0x36D10102
-    hr, props = inbox.GetProps((PR_IPM_CONTACTS_ENTRYID), 0)
-    (tag, cf_id) = props[0]
-    
-    # check for errors
-    if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
-        raise TypeError('got PT_ERROR instead of PT_BINARY: %16x' % tag)
-    elif mapitags.PROP_TYPE(tag) == mapitags.PT_BINARY:
-        pass
-
-    cf = msgstore.OpenEntry(cf_id, None,
-                            MOD_FLAG)
-    contacts = cf.GetContentsTable(mapi.MAPI_UNICODE)
-
-    return msgstore, cf, contacts
 
 def get_sync_fields (fn="fields.json"):
     os.chdir(karra_cwd)
@@ -527,8 +534,10 @@ def m3 (argv = None):
     fields = get_sync_fields()
     config = Config('app_state.json')
 
+    ol = Outlook()
+
     logging.getLogger().setLevel(logging.INFO)
-    msgstore, cf, contacts = get_default_contacts_folder()
+    msgstore, cf, contacts = ol.get_default_contacts_folder()
 
     i = 0
     while True:
