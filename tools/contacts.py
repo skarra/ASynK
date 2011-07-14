@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Tue Jul 12 18:41:22  2011
+## Last Modified : Thu Jul 14 17:56:12  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -26,8 +26,6 @@ from gc_wrapper import GC
 import logging, os, os.path
 
 DEBUG = 0
-gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/5353d42d8d17504a'
-gn  = 'Karra Sync'
 
 PR_EMAIL_1 = mapitags.PR_EMAIL_ADDRESS
 PR_EMAIL_2 = mapitags.PR_EMAIL_ADDRESS
@@ -35,8 +33,50 @@ PR_EMAIL_3 = mapitags.PR_EMAIL_ADDRESS
 
 MOD_FLAG = mapi.MAPI_BEST_ACCESS
 
-GC_GUID  = '{a1271100-ac2e-11e0-bc8b-0025644a821c}'
-GC_ID    = 0x8001
+class Config:
+
+    OUTLOOK = 1
+    GMAIL   = 2
+
+    def __init__ (self, fn):
+        fi = None
+        try:
+            fi = open(fn, "r")
+        except IOError, e:
+            logging.critical('Error! Could not Open file (%s): %s' % fn, e)
+            return
+
+        st = fi.read()
+        self.inp = demjson.decode(st)
+
+        self.state = self.inp
+        self.state['conflict_resolve'] = getattr(
+            self, self.inp['conflict_resolve'])
+
+
+    def _get_prop (self, key):
+        return self.state[key]
+
+    def get_gc_guid (self):
+        return self._get_prop('GC_GUID')
+
+    def get_gc_id (self):
+        return self._get_prop('GC_ID')
+
+    def get_gid (self):
+        return self._get_prop('gid')
+
+    def get_cr (self):
+        return self._get_prop('conflict_resolve')
+
+    def get_gn (self):
+        return self._get_prop('gn')
+
+    def get_last_sync_start (self):
+        return self._get_prop('last_sync_start')
+
+    def get_last_sync_stop (self):
+        return self._get_prop('last_sync_stop')
 
 ## The following attempt is from:
 ## http://win32com.goermezer.de/content/view/97/192/
@@ -99,22 +139,24 @@ def DumpDefaultAddressBook (handler=None):
 
 
 class Contact:
-    def __init__ (self, props, cf, msgstore):
+    def __init__ (self, fields, config, props, cf, msgstore):
         """Create a contact wrapper with meaningful fields from prop
         list.
 
         'props' is an array of (prop_tag, prop_value) tuples
         """
-    
+
+        self.config = config
+
         self.PROP_REPLACE = 0
         self.PROP_APPEND  = 1
 
         self.gcapi = GC('karra.etc', 'atlsGL21')
 
-        fields = get_sync_fields()
-        fields = append_email_prop_tags(fields, cf)
+        self.fields = fields
+        self.fields = append_email_prop_tags(self.fields, cf)
 
-        self.values = get_contact_details(cf, props, fields)
+        self.values = get_contact_details(cf, props, self.fields)
 
         self.cf        = cf
         self.msgstore  = msgstore
@@ -258,7 +300,8 @@ class Contact:
 
         # Now store the Google Contacts ID in Outlook, so we'll be able
         # to compare the records from the two sources at a later time.
-        self.update_prop_by_name([(GC_GUID, GC_ID)],
+        self.update_prop_by_name([(self.config.get_gc_guid(),
+                                   self.config.get_gc_id())],
                                  mapitags.PT_UNICODE,
                                  entry.id.text)
 
@@ -271,7 +314,8 @@ class Contact:
         Outlook.
         """
 
-        prop_name = [(GC_GUID, GC_ID)]
+        prop_name = [(self.config.get_gc_guid(),
+                      self.config.get_gc_id())]
         prop_type = mapitags.PT_UNICODE
         prop_ids = self.cf.GetIDsFromNames(prop_name, 0)
 
@@ -479,6 +523,10 @@ def print_values (values):
 
 
 def m3 (argv = None):
+
+    fields = get_sync_fields()
+    config = Config('app_state.json')
+
     logging.getLogger().setLevel(logging.INFO)
     msgstore, cf, contacts = get_default_contacts_folder()
 
@@ -492,7 +540,7 @@ def m3 (argv = None):
             break
 
         try:
-            contact = Contact(rows[0], cf, msgstore)
+            contact = Contact(fields, config, rows[0], cf, msgstore)
         except gdata.client.BadAuthentication, e:
             logging.critical('Invalid user credentials given: %s',
                              str(e))
