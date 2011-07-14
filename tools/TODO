@@ -1,7 +1,7 @@
 -*- Outline -*- 
 
 Created	    	: Tue Jul 12 18:45:48  2011
-Last Modified	: Tue Jul 12 18:45:56  2011
+Last Modified	: Thu Jul 14 21:09:21  2011
 
 * TODO
 
@@ -12,7 +12,30 @@ Last Modified	: Tue Jul 12 18:45:56  2011
 Figure out how updates to the Google contact list can be
 recognized and synched.
 
+There is an api and query for contacts after a certain time. we can
+specify the following parameters 
+
+group: to limit entries
+updated-min:timestamp
+showdeleted:true
+
 *** Algorithm to query and track updates to Outlook API
+
+ 0. Have a sync status json file with last sync start, last sync end
+    and some basic stats related to sync.
+
+ 1. make list of all contacts locally, and create following
+    overlapping lists:
+
+    a. full list of entries along with their gc_ids if they exist
+    b. entries modified after last sync: new entries: have no gc_id
+    c. entries modified after last sync: old entries: have gc_id
+
+ 2. make list of all contacts on google contacts with following
+    groups:
+	updated since last sync
+
+ 3. 
 
 ** Support more contact fields to be uploaded
 
@@ -23,11 +46,6 @@ The postal address information is not getting uploaded
 properly. There is no problem in reading it from the Outlook
 addressbook. There is some problem in uploading it with the right
 schema
-
-** Refactor to make contacts.py more object oriented
-
-The code is a mess overall. Should really have MapiMsgStore, MapiFolder,
-Message etc. type wrapper objects. It is not a pretty sight at the moment
 
 ** Distribution
 
@@ -62,3 +80,45 @@ Completed: Tue Jul 12 18:43:20  2011
 
 Store the ID of the newly created entry and store it in some user
 defined field in Outlook.
+
+** Refactor to make contacts.py more object oriented
+
+The code is a mess overall. Should really have MapiMsgStore,
+MapiFolder, Message etc. type wrapper objects. It is not a pretty
+sight at the moment
+
+* scratch
+
+  - for each contact in outlook with gc_id:
+  
+    -- present -is he on gmail?
+    -- if not present 
+
+       --- if google says fellow has been deleted:
+       	   -- delete from outlook
+       --- else:
+       	   -- should not really happen, but we could create a new
+       	   -- contact on google and reset the gc_id in outlook
+
+    -- else (contact present):
+
+       --- if neither updated since last sync: we are done w/this chap
+
+       --- if only updtate on outlook side since last sync, sync
+           across to google
+
+       --- if only update on gmail side since last sync, sync across
+           to outlook
+
+       --- if both sides have been updated since last sync:
+
+           --- resolve direction based on config parameter
+           --- sync accordingly
+
+  - for each contact in gmail created since last sync:
+    -- copy them to outlook
+
+
+  - might require some local store of all outlook coctact entryids to
+    be able to figure out deletes in outlook to be reflected properly
+    in gmail. this we will keep for later.
