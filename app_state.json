@@ -1,0 +1,16 @@
+// -*- javascript -*-
+
+{
+    'GC_GUID' : '{a1271100-ac2e-11e0-bc8b-0025644a821c}',
+    'GC_ID'   : 0x8001,
+
+    'gid'     : 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/5353d42d8d17504a',
+    'gn'      : 'Karra Sync',
+
+    'last_sync_start' : null,
+    'last_sync_stop'  : null,
+
+    'conflict_resolve' : "OUTLOOK",
+}
+
+        
