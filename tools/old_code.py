@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Tue Jun 21 10:06:04  2011
+## Last Modified : Thu Jul 14 21:11:04  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -104,6 +104,65 @@ def use_class (argv = None):
 
 ## The following attempt is from:
 ## http://win32com.goermezer.de/content/view/97/192/
+import codecs, win32com.client
+# This example dumps the items in the default address book
+# needed for converting Unicode->Ansi (in local system codepage)
+DecodeUnicodeString = lambda x: codecs.latin_1_encode(x)[0]
+def DumpDefaultAddressBook_mod (handler=None):
+    if handler is None:
+        writer = getattr(logging, "debug")
+    else:
+        writer = handler.write
+
+    # Create instance of Outlook
+    o = win32com.client.Dispatch("Outlook.Application")
+    mapi = o.GetNamespace("MAPI")
+    folder = mapi.GetDefaultFolder(win32com.client.constants.olFolderContacts)
+    print "The default address book contains",folder.Items.Count,"items"
+    # see Outlook object model for more available properties on ContactItem objects
+#    attributes = [ 'FullName', 'Email1DisplayName',
+#    'Email1AddressType']
+    attributes = ['Email1Address', 'EntryID',
+                  'Email1EntryID']
+
+    writer('<table border="1" align="left">')
+    for i in range(1,folder.Items.Count+1):
+#        writer("~~~ Entry %d ~~~" % i)
+        if i >= 10:
+            break
+
+        try:
+            item = folder.Items[i]
+            print "~~~ Entry %d (%s) ~~~" % (i, item.FullName)
+            ad = ''
+            if item.Email1AddressType == 'EX':
+                try:
+#                    ae = mapi.GetAddressEntryFromID(item.Email1EntryID)
+                    ad = item.Email1Address
+                except Exception, e:
+                    print 'Exception getting id: ', e
+            else:
+                ad = item.Email1Address
+            writer("<tr>")
+            writer("<th>")
+            writer('%s: %s' % ('Full Name', item.FullName))
+            writer("</th>")
+            writer("<th>")
+            writer('%s: %s' % ('Email', ad))
+            writer("</th>")
+
+        except AttributeError, e:
+            print 'Error! ', e
+        finally:
+            writer("</td>")
+
+        if handler:
+            handler.flush()
+    o = None
+    writer("</table>")
+
+## The following attempt is from:
+## http://win32com.goermezer.de/content/view/97/192/
 
 import codecs, win32com.client
 # This example dumps the items in the default address book
@@ -144,7 +203,7 @@ def main (argv=None):
 if __name__ == "__main__":
     main()
 
-    class MSOutlook:
+class MSOutlook:
     def __init__ (self):
         self.outlookFound = 0
         try:
