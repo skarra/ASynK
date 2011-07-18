@@ -1,29 +1,26 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Jul 14 21:10:25  2011
+## Last Modified : Mon Jul 18 23:08:45  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ## 
 
-## Status as of Mon Jul 11 12:24:38  2011
-##
-## We are able to create a Group on Google Contacts, and upload all our
-## information to that group as new contacts.
-##
-
 import win32com.client
 import pywintypes
 from win32com.mapi import mapi
 from win32com.mapi import mapitags
+from win32com.mapi import mapiutil
 
 import demjson
 import gdata.client
+import iso8601
 from gc_wrapper import GC
 
 import logging, os, os.path
+import time
 
 DEBUG = 0
 
@@ -80,23 +77,36 @@ class Config:
 
 
 class Outlook:
-#    def prep_outlook_contact_lists (self)
+    def __init__ (self, config):
+        self.config = config
 
-    def __init__ (self):
         # initialize and log on
         mapi.MAPIInitialize(None)
         flags = mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT | MOD_FLAG
         self.session = mapi.MAPILogonEx(0, "", None, flags)
 
         self.def_msgstore = self.def_inbox_id = self.def_inbox = None
-        self.def_cf       = self.contacts     = None
+        self.def_cf       = self.contacts     = self.gid_prop_tag = None
 
         self.def_msgstore = self.get_default_msgstore()
         self.def_inbox_id = self.get_default_inbox_id()
         self.def_inbox    = self.get_default_inbox()
         self.def_cf       = self.get_default_cf()
-        self.def_contacts = self.get_contacts(self.def_cf)
-        
+        self.def_ctable   = self.get_ctable(self.def_cf)
+        self.def_ctable_cols = self.def_ctable.QueryColumns(0)
+
+        self.gid_prop_tag = self.get_gid_prop_tag()    
+
+    def get_gid_prop_tag (self):
+        if self.gid_prop_tag:
+            return self.gid_prop_tag
+
+        prop_name = [(self.config.get_gc_guid(),
+                      self.config.get_gc_id())]
+        prop_type = mapitags.PT_UNICODE
+        prop_ids  = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        return (prop_type | prop_ids[0])
 
     # FIXME: Error checking is virtually non-existent. Needs fixing.
     def get_default_msgstore (self):
@@ -182,22 +192,104 @@ class Outlook:
 
         return cf
 
-    def get_contacts (self, cf=None):
+    def get_ctable (self, cf=None):
         if cf is None:
             cf = self.get_default_cf()
 
-        contacts = cf.GetContentsTable(mapi.MAPI_UNICODE)
-        return contacts
+        ctable = cf.GetContentsTable(mapi.MAPI_UNICODE)
+        return ctable
 
-    def get_default_contacts (self):
-        if self.def_contacts:
-            return self.def_contacts
+    def get_default_ctable (self):
+        if self.def_ctable:
+            return self.def_ctable
 
-        return self.get_contacts()
+        return self.get_ctable()
+
+    def print_fields_for_contacts (self, cnt, fields=None):
+        ctable = self.get_default_ctable()
+        ctable.SetColumns(self.def_ctable_cols, 0)
+
+        i = 0
+
+        while True:
+            rows = ctable.QueryRows(1, 0)
+            #if this is the last row then stop
+            if len(rows) != 1:
+                break
+
+            if fields is None:
+                print_all_props(rows[0])
+            else:
+                # Just print what is in the fields. To be impl.
+                pass
+
+            i += 1
+
+            if i >= cnt:
+                break
+
+        print 'num processed: ', i
+
+        return
+
+    def prep_ol_contact_lists (self, cnt=0):
+        """Prepare three lists of the contacts in the local OL.
+
+        1. dictionary of all Google IDs => PR_ENTRYIDs
+        2. List of Google IDs in OL
+        """
+
+        ctable = self.get_default_ctable()
+        ctable.SetColumns((self.get_gid_prop_tag(),
+                           mapitags.PR_ENTRYID,
+                           mapitags.PR_LAST_MODIFICATION_TIME),
+                          0)
+
+        i = 0
+        old = 0
+        self.con_all = {}
+        self.con_new = []
+        self.con_mod = {}
+
+        tc_iso = self.config.get_last_sync_start()
+        tc     = iso8601.parse(tc_iso)
+        print 'Last Start iso str: ', tc_iso
+        print 'Curr Time: ', iso8601.tostring(time.time())
+        
+        while True:
+            rows = ctable.QueryRows(1, 0)
+            #if this is the last row then stop
+            if len(rows) != 1:
+                break
+    
+            (gid_tag, gid), (entryid_tag, entryid), (tt, tv) = rows[0]
+            self.con_all[entryid] = gid
+
+            if mapitags.PROP_TYPE(gid_tag) == mapitags.PT_ERROR:
+                # Was not synced for whatever reason.
+                self.con_new.append(entryid)
+            else:
+                if mapitags.PROP_TYPE(tt) == mapitags.PT_ERROR:
+                    print 'Somethin wrong. no time stamp. i=', i
+                else:
+                    if int(tv) <= tc:
+                        old += 1
+                    else:
+                        self.con_mod[entryid] = gid
+
+            i += 1
+            if cnt != 0 and i >= cnt:
+                break
+
+        print 'num processed: ', i
+        print 'num total:     ', len(self.con_all.items())
+        print 'num new:       ', len(self.con_new)
+        print 'num mod:       ', len(self.con_mod)
+        print 'num old unmod: ', old
 
 
 class Contact:
-    def __init__ (self, fields, config, props, ol):
+    def __init__ (self, fields, config, props, ol, gcapi=None):
         """Create a contact wrapper with meaningful fields from prop
         list.
 
@@ -213,7 +305,7 @@ class Contact:
         self.PROP_REPLACE = 0
         self.PROP_APPEND  = 1
 
-        self.gcapi = GC('karra.etc', 'atlsGL21')
+        self.gcapi = gcapi
 
         self.fields = fields
         self.fields = append_email_prop_tags(self.fields, cf)
@@ -225,6 +317,7 @@ class Contact:
 
         self.entryid   = self._get_prop(mapitags.PR_ENTRYID)
         self.name      = self._get_prop(mapitags.PR_DISPLAY_NAME)
+        self.last_mod  = self._get_prop(mapitags.PR_LAST_MODIFICATION_TIME)
         self.postal    = self._get_prop(mapitags.PR_POSTAL_ADDRESS)
         self.notes     = self._get_prop(mapitags.PR_BODY)
         self.company   = self._get_prop(mapitags.PR_COMPANY_NAME)
@@ -256,6 +349,8 @@ class Contact:
         self.item = self.msgstore.OpenEntry(self.entryid, None,
                                             MOD_FLAG)
 
+    def set_gcapi (self, gcapi):
+        self.gcapi = gcapi
 
     def update_prop (self, prop_tag, prop_val, action):
         if self.item is None:
@@ -334,6 +429,8 @@ class Contact:
     def push_to_google (self):
         MAX_RETRIES = 3
 
+        ## FIXME need to check if self.gcapi is valid
+
         logging.info('Uploading %-32s ....', self.name)
 
         i = 0
@@ -376,13 +473,7 @@ class Contact:
         Outlook.
         """
 
-        prop_name = [(self.config.get_gc_guid(),
-                      self.config.get_gc_id())]
-        prop_type = mapitags.PT_UNICODE
-        prop_ids = self.cf.GetIDsFromNames(prop_name, 0)
-
-        print 'verify_google_id: type of prop_id: ', type(prop_ids[0])
-        prop_tag = prop_type | prop_ids[0]
+        prop_tag = self.ol.get_gid_prop_tag()
 
         hr, props = self.item.GetProps([prop_tag], mapi.MAPI_UNICODE)
         (tag, val) = props[0]
@@ -391,6 +482,20 @@ class Contact:
                                                                 (tag % (2**64)))
         else:
             print 'Google ID found for contact. ID: ', val
+
+
+def print_prop (tag, value):
+    prop_type = mapitags.PROP_TYPE(tag)
+    prop_id   = mapitags.PROP_ID(tag)
+
+    if prop_type & mapitags.MV_FLAG:
+        print "Tag: 0x%16x (Multi Value); Value: %s" % (long(tag), value)
+    else:
+        print "Tag: %s; Value: %s" % (mapiutil.GetPropTagName(tag), value)
+
+def print_all_props (contact):
+    for t, v in contact:
+        print_prop(t, v)
 
 
 def get_sync_fields (fn="fields.json"):
@@ -481,21 +586,6 @@ def get_contact_details (cf, contact, fields):
     
     return ar
 
-def print_prop (tag, value):
-    prop_type = mapitags.PROP_TYPE(tag)
-    prop_id   = mapitags.PROP_ID(tag)
-
-    if prop_type & mapitags.MV_FLAG:
-        print "Tag: 0x%16x (Multi Value); Value: %s" % (long(tag), value)
-    else:
-        print "Tag: 0x%16x; Value: %s" % (long(tag), value)
-
-
-def print_all_props (contact):
-    for t, v in contact:
-        t = long(t % 2**64)
-        print_prop(t, v)
-
 
 def print_values (values):
     for k, v in values.items():
@@ -504,43 +594,26 @@ def print_values (values):
 
 
 def m3 (argv = None):
+    logging.getLogger().setLevel(logging.DEBUG)
 
     fields = get_sync_fields()
     config = Config('app_state.json')
+    ol     = Outlook(config)
+    gc     = None
+    try:
+        gc = GC('karra.etc', 'atlsGL21')
+    except gdata.client.BadAuthentication, e:
+        logging.critical('Invalid user credentials given: %s',
+                         str(e))
+        return
+    except Exception, e:
+        logging.critical('Exception (%s) at login time',
+                         str(e))
+        return
 
-    ol = Outlook()
+    ol.prep_ol_contact_lists()
+#    ol.print_fields_for_contacts(fields, 2)
 
-    logging.getLogger().setLevel(logging.DEBUG)
-    contacts = ol.get_default_contacts()
-
-    i = 0
-    while True:
-        rows = contacts.QueryRows(1, 0)
-        i += 1
-        
-        #if this is the last row then stop
-        if len(rows) != 1:
-            break
-
-        try:
-            contact = Contact(fields, config, rows[0], ol)
-        except gdata.client.BadAuthentication, e:
-            logging.critical('Invalid user credentials given: %s',
-                             str(e))
-            return
-        except Exception, e:
-            logging.critical('Exception (%s) at login time',
-                             str(e))
-            return
-
-#        contact.update_prop(mapitags.PR_BODY,
-#                            '\nTesting appending to Notes',
-#                            contact.PROP_APPEND)
-#        contact.push_to_google()
-        contact.verify_google_id()
-
-        if i >= 2:
-            break
 
 def main (argv=None):
     m3()
