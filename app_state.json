@@ -7,8 +7,8 @@
     'gid'     : 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/5353d42d8d17504a',
     'gn'      : 'Karra Sync',
 
-    'last_sync_start' : null,
-    'last_sync_stop'  : null,
+    'last_sync_start' : "2011-07-14T15:35:55.96+05:30",
+    'last_sync_stop'  : "2011-07-18T13:23:12.96+05:30",
 
     'conflict_resolve' : "OUTLOOK",
 }
