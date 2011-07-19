@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Tue Jul 19 13:12:23  2011
+## Last Modified : Tue Jul 19 14:04:00  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -19,6 +19,7 @@ import gdata.client
 import gdata.contacts.client
 import iso8601
 from gc_wrapper import GC
+from state      import Config
 
 import logging, os, os.path
 import time
@@ -30,52 +31,6 @@ PR_EMAIL_2 = mapitags.PR_EMAIL_ADDRESS
 PR_EMAIL_3 = mapitags.PR_EMAIL_ADDRESS
 
 MOD_FLAG = mapi.MAPI_BEST_ACCESS
-
-class Config:
-
-    OUTLOOK = 1
-    GMAIL   = 2
-
-    def __init__ (self, fn):
-        fi = None
-        try:
-            fi = open(fn, "r")
-        except IOError, e:
-            logging.critical('Error! Could not Open file (%s): %s' % fn, e)
-            return
-
-        st = fi.read()
-        self.inp = demjson.decode(st)
-
-        self.state = self.inp
-        self.state['conflict_resolve'] = getattr(
-            self, self.inp['conflict_resolve'])
-
-
-    def _get_prop (self, key):
-        return self.state[key]
-
-    def get_gc_guid (self):
-        return self._get_prop('GC_GUID')
-
-    def get_gc_id (self):
-        return self._get_prop('GC_ID')
-
-    def get_gid (self):
-        return self._get_prop('gid')
-
-    def get_cr (self):
-        return self._get_prop('conflict_resolve')
-
-    def get_gn (self):
-        return self._get_prop('gn')
-
-    def get_last_sync_start (self):
-        return self._get_prop('last_sync_start')
-
-    def get_last_sync_stop (self):
-        return self._get_prop('last_sync_stop')
-
 
 class Outlook:
     def __init__ (self, config):
