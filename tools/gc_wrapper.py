@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Tue Jul 12 13:03:29  2011
+## Last Modified : Tue Jul 19 13:24:26  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -17,13 +17,10 @@ import atom
 import gdata.contacts.data
 import gdata.contacts.client
 
-gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/5353d42d8d17504a'
-gns  = ['Karra Sync']
-
 class GC (object):
   """GC object is a wrapper for a Google Contacts stream API."""
 
-  def __init__(self, email, password):
+  def __init__(self, config, email, password):
     """Constructor for the GC wrapper object.
     
     Takes an email and password corresponding to a gmail account, and
@@ -31,6 +28,7 @@ class GC (object):
     modify, etc.
     """
 
+    self.config = config
     self.gd_client = gdata.contacts.client.ContactsClient(source='Outlook-Android-Contacts-Sync')
     self.gd_client.ClientLogin(email, password, self.gd_client.source)
 
@@ -107,8 +105,8 @@ class GC (object):
       return None
 
 
-  def create_contact (self, entryid, name, emails=None, notes=None,
-                      gnames=gns, gids=None, company=None,
+  def create_contact (self, entryid, name, gnames, emails=None, 
+                      gids=None, company=None, notes=None,
                       title=None, dept=None, ph_prim=None, postal=None,
                       ph_mobile=None, ph_home=None, ph_work=None):
     """Create a contact with provided information.
@@ -224,9 +222,73 @@ class GC (object):
 
     return entry
 
+  def _get_updated_gc_feed (self, updated_min, gid):
+        query             = gdata.contacts.client.ContactsQuery()
+        query.updated_min = updated_min
+        query.showdeleted = 'true'
+        query.group       = gid
+
+        feed = self.gd_client.GetContacts(q=query)
+        return feed
+
+
+  def _get_olid (self, eps):
+        for ep in eps:
+            if ep.name == 'olid':              
+                if extended_property.value:
+                    return ep.value
+                else:
+                    value = ep.GetXmlBlob()
+                    print 'Hrrmph. Value: ', value
+
+        return None
+
+
+  def prep_gc_contact_lists (self, cnt=0):
+        updated_min = self.config.get_last_sync_start()
+        gid        = self.config.get_gid()
+        feed = self._get_updated_gc_feed(updated_min, gid)
+
+        if not feed.entry:
+            print 'No entries in feed.'
+            return
+
+        self.con_gc_del = {}
+        self.con_gc_mod = {}
+        self.con_gc_new = []
+        skip            = 0
+
+        for i, entry in enumerate(feed.entry):
+            gcid = entry.id.text
+            olid = self._get_olid(entry.extended_property)
+            epd  = entry.deleted
+
+            if epd:
+                if olid:
+                    self.con_gc_del[gcid] = olid
+                else:
+                    # Deleted before it got synched. Get on with life
+                    skip += 1
+                    continue
+            else:
+                if olid:
+                    self.con_gc_mod[gcid] = olid
+                else:
+                    self.con_gc_new.append(gcid)
+
+        print '==== GC ====='
+        print 'num processed: ', i+1
+        print 'num total:     ', len(self.con_gc_del)
+        print 'num new:       ', len(self.con_gc_new)
+        print 'num mod:       ', len(self.con_gc_mod)
+        print 'num skipped:   ', skip
+
 
 def main():
-  global gid, gn
+  from   contacts import Config
+  config = Config('app_state.json')
+  gn = config.get_gn()
+  gid = config.get_gid()
   
   # Parse command line options
   try:
@@ -265,7 +327,7 @@ def main():
   sample.create_contact('Entry Id: 2', 'Good Fellow Bolly',
                         ['bolly@goodfellow.com'],
                         'This is one fellow who is really bolly & gay',
-                         gnames=gns)
+                         gnames=[gn])
 
 
 if __name__ == '__main__':

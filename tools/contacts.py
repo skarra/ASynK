@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Mon Jul 18 23:08:45  2011
+## Last Modified : Tue Jul 19 13:12:23  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -16,6 +16,7 @@ from win32com.mapi import mapiutil
 
 import demjson
 import gdata.client
+import gdata.contacts.client
 import iso8601
 from gc_wrapper import GC
 
@@ -96,6 +97,7 @@ class Outlook:
         self.def_ctable_cols = self.def_ctable.QueryColumns(0)
 
         self.gid_prop_tag = self.get_gid_prop_tag()    
+
 
     def get_gid_prop_tag (self):
         if self.gid_prop_tag:
@@ -281,6 +283,7 @@ class Outlook:
             if cnt != 0 and i >= cnt:
                 break
 
+        print '==== OL ====='
         print 'num processed: ', i
         print 'num total:     ', len(self.con_all.items())
         print 'num new:       ', len(self.con_new)
@@ -601,7 +604,7 @@ def m3 (argv = None):
     ol     = Outlook(config)
     gc     = None
     try:
-        gc = GC('karra.etc', 'atlsGL21')
+        gc = GC(config, 'karra.etc', 'atlsGL21')
     except gdata.client.BadAuthentication, e:
         logging.critical('Invalid user credentials given: %s',
                          str(e))
@@ -611,7 +614,9 @@ def m3 (argv = None):
                          str(e))
         return
 
-    ol.prep_ol_contact_lists()
+    gc.prep_gc_contact_lists()
+
+#    ol.prep_ol_contact_lists()
 #    ol.print_fields_for_contacts(fields, 2)
 
 
