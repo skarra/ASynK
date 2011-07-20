@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Wed Jul 20 11:17:27  2011
+## Last Modified : Wed Jul 20 16:33:26  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -205,6 +205,7 @@ class Outlook:
         2. List of Google IDs in OL
         """
 
+        logging.info('Querying MAPI for status of Contact Entries')
         ctable = self.get_default_ctable()
         ctable.SetColumns((self.get_gid_prop_tag(),
                            mapitags.PR_ENTRYID,
@@ -219,7 +220,9 @@ class Outlook:
         tc     = iso8601.parse(tc_iso)
         print 'Last Start iso str: ', tc_iso
         print 'Curr Time: ', iso8601.tostring(time.time())
-        
+
+        logging.info('Data obtained from MAPI. Processing...')
+
         while True:
             rows = ctable.QueryRows(1, 0)
             #if this is the last row then stop
@@ -251,6 +254,45 @@ class Outlook:
         print 'num new:       ', len(self.con_new)
         print 'num mod:       ', len(self.con_mod)
         print 'num old unmod: ', old
+
+    def bulk_clear_olid_flag (self):
+        """Clear any olid tags that are stored in Outlook. This is
+        essentially for use while developin and debuggung.
+
+        Need to explore if there is a faster way than iterating through
+        entries like this.
+        """
+        logging.info('Querying MAPI for all data needed to clear flag')
+
+        ctable = self.get_default_ctable()
+        ctable.SetColumns((self.get_gid_prop_tag(), mapitags.PR_ENTRYID),
+                           0)
+        logging.info('Data obtained from MAPI. Clearing one at a time')
+
+        cnt = 0
+        i   = 0
+        store = self.get_default_msgstore()
+        hr = ctable.SeekRow(mapi.BOOKMARK_BEGINNING, 0)
+        logging.debug('result of seekrow = %d', hr)
+
+        while True:
+            rows = ctable.QueryRows(1, 0)
+            # if this is the last row then stop
+            if len(rows) != 1:
+                break
+    
+            (gid_tag, gid), (entryid_tag, entryid) = rows[0]
+
+            i += 1
+            if mapitags.PROP_TYPE(gid_tag) != mapitags.PT_ERROR:
+                entry = store.OpenEntry(entryid, None, MOD_FLAG)
+                hr, ps = entry.DeleteProps([gid_tag])
+                entry.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+
+                cnt += 1
+
+        logging.info('Num entries cleared: %d. i = %d', cnt, i)
+        return cnt
 
 
 class Contact:
