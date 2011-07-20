@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Wed Jul 20 16:33:26  2011
+## Last Modified : Wed Jul 20 16:39:10  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -255,12 +255,15 @@ class Outlook:
         print 'num mod:       ', len(self.con_mod)
         print 'num old unmod: ', old
 
-    def bulk_clear_olid_flag (self):
-        """Clear any olid tags that are stored in Outlook. This is
-        essentially for use while developin and debuggung.
+    def bulk_clear_gcid_flag (self):
+        """Clear any gcid tags that are stored in Outlook. This is
+        essentially for use while developin and debugging, when we want
+        to make it appear like contact entries were never synched to
+        google. This rolls back some sync related state on the outlook
+        end.
 
         Need to explore if there is a faster way than iterating through
-        entries like this.
+        entries after a table lookup.
         """
         logging.info('Querying MAPI for all data needed to clear flag')
 
