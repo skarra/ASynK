@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Tue Jul 19 14:04:00  2011
+## Last Modified : Wed Jul 20 11:17:27  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -189,6 +189,15 @@ class Outlook:
 
         return
 
+
+    def reset_sync_lists (self):
+        self.con_all = {}
+        self.con_new = []
+        self.con_mod = {}
+        
+    def get_con_new (self):
+        return self.con_new
+
     def prep_ol_contact_lists (self, cnt=0):
         """Prepare three lists of the contacts in the local OL.
 
@@ -202,11 +211,9 @@ class Outlook:
                            mapitags.PR_LAST_MODIFICATION_TIME),
                           0)
 
-        i = 0
+        i   = 0
         old = 0
-        self.con_all = {}
-        self.con_new = []
-        self.con_mod = {}
+        self.reset_sync_lists()
 
         tc_iso = self.config.get_last_sync_start()
         tc     = iso8601.parse(tc_iso)
@@ -247,11 +254,15 @@ class Outlook:
 
 
 class Contact:
-    def __init__ (self, fields, config, props, ol, gcapi=None):
+    def __init__ (self, fields, config, props, ol, gcapi=None,
+                  entryid=None):
         """Create a contact wrapper with meaningful fields from prop
         list.
 
-        'props' is an array of (prop_tag, prop_value) tuples
+        'props' is an array of (prop_tag, prop_value) tuples. If Props
+        is None, entryid can be specified as the PR_ENTRYID of a contact.
+        One of these has to be non-None. If both are not-None, props is
+        ignored.
         """
 
         self.config = config
@@ -265,14 +276,22 @@ class Contact:
 
         self.gcapi = gcapi
 
+        self.entry  = self.item = None
         self.fields = fields
-        self.fields = append_email_prop_tags(self.fields, cf)
+        self.fields = self.append_email_prop_tags(self.fields, cf)
+        self.msgstore  = msgstore
+
+        if entryid:
+            self.entryid = entryid
+            self.item = self.get_ol_item()
+            hr, props = self.item.GetProps(self.ol.def_ctable_cols, 0)
+            # FIXME: error checking needed
+
+        ## fixme: catch error when both are None
 
         self.values = get_contact_details(cf, props, self.fields)
 
         self.cf        = cf
-        self.msgstore  = msgstore
-
         self.entryid   = self._get_prop(mapitags.PR_ENTRYID)
         self.name      = self._get_prop(mapitags.PR_DISPLAY_NAME)
         self.last_mod  = self._get_prop(mapitags.PR_LAST_MODIFICATION_TIME)
@@ -304,16 +323,21 @@ class Contact:
             else:
                 self.emails = [e]
 
-        self.item = self.msgstore.OpenEntry(self.entryid, None,
-                                            MOD_FLAG)
+
+    def get_ol_item (self):
+        if self.item is None:
+            self.item = self.msgstore.OpenEntry(self.entryid, None,
+                                                MOD_FLAG)
+
+        return self.item
+
 
     def set_gcapi (self, gcapi):
         self.gcapi = gcapi
 
+
     def update_prop (self, prop_tag, prop_val, action):
-        if self.item is None:
-            self.item = self.msgstore.OpenEntry(self.entryid, None,
-                                                MOD_FLAG)
+        self.item = self.get_ol_item()
 
         try:
             hr, props = self.item.GetProps([prop_tag, mapitags.PR_ACCESS,
@@ -384,6 +408,21 @@ class Contact:
             return None
 
 
+    def get_gc_entry (self):
+        if self.entry:
+            return self.entry
+
+        gids = [self.config.get_gid()]
+        self.entry = self.gcapi.create_contact_entry(
+            entryid=self.entryid, name=self.name,     emails=self.emails,
+            notes=self.notes,     postal=self.postal, company=self.company,
+            title=self.title,     dept=self.dept,     ph_prim=self.ph_prim,
+            ph_mobile=self.ph_mobile, ph_home=self.ph_home,
+            ph_work=self.ph_work, gids=gids, gnames=None)
+
+        return self.entry
+
+
     def push_to_google (self):
         MAX_RETRIES = 3
 
@@ -441,6 +480,47 @@ class Contact:
         else:
             print 'Google ID found for contact. ID: ', val
 
+    ## FIXEME: Need to implement more robust error checking.
+    def append_email_prop_tags (self, fields, cf):
+        """MAPI is crappy.
+    
+        Email addresses of the EX type do not conatain an SMTP address
+        value for their PR_EMAIL_ADDRESS property tag. While the desired
+        smtp address is present in the system the property tag that will
+        help us fetch it is not a constant and will differ from system
+        to system, and from PST file to PST file. The tag has to be
+        dynamically generated.
+    
+        The routine jumps through the requisite hoops and appends those
+        property tags to the supplied fields array. The augmented fields
+        array is then returned.
+        """
+    
+        PSETID_Address_GUID = '{00062004-0000-0000-C000-000000000046}'
+        tag = cf.GetIDsFromNames([(PSETID_Address_GUID, 0x8084)])[0]
+        tag = (long(tag) % (2**64)) | mapitags.PT_UNICODE
+    
+        global PR_EMAIL_1, PR_EMAIL_2, PR_EMAIL_3
+        PR_EMAIL_1 = tag
+    
+        ## Now 'tag' contains the property tag that will give us the first
+        ## email address.
+        fields.append(tag)
+    
+        ## Now generate the property tags for the Email Address 2
+        prop_id = ((tag & 0xffff0000) >> 16)
+        tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
+        PR_EMAIL_2 = tag
+        fields.append(tag)
+    
+        ## Do the same for Email Address 3
+        prop_id = ((tag & 0xffff0000) >> 16)
+        tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
+        PR_EMAIL_3 = tag
+        fields.append(tag)
+    
+        return fields
+    
 
 def print_prop (tag, value):
     prop_type = mapitags.PROP_TYPE(tag)
@@ -454,73 +534,6 @@ def print_prop (tag, value):
 def print_all_props (contact):
     for t, v in contact:
         print_prop(t, v)
-
-
-def get_sync_fields (fn="fields.json"):
-    os.chdir(karra_cwd)
-    
-    fi = None
-    try:
-        fi = open(fn, "r")
-    except IOError, e:
-        logging.critical('Error! Could not Open file (%s): %s' % fn, e)
-        return
-
-    st = fi.read()
-    o = demjson.decode(st)
-
-    ar = []
-    for field in o["sync_fields"]:
-        try:
-            v = getattr(mapitags, field)
-            ar.append(v)
-        except AttributeError, e:
-            logging.error('Field %s not found', field)
-
-
-    return ar
-
-
-## FIXEME: Need to implement more robust error checking.
-def append_email_prop_tags (fields, cf):
-    """MAPI is crappy.
-
-    Email addresses of the EX type do not conatain an SMTP address value
-    for their PR_EMAIL_ADDRESS property tag. While the desired smtp
-    address is present in the system the property tag that will help us
-    fetch it is not a constant and will differ from system to system,
-    and from PST file to PST file. The tag has to be dynamically
-    generated.
-
-    The routine jumps through the requisite hoops and appends those
-    property tags to the supplied fields array. The augmented fields
-    array is then returned.
-    """
-
-    PSETID_Address_GUID = '{00062004-0000-0000-C000-000000000046}'
-    tag = cf.GetIDsFromNames([(PSETID_Address_GUID, 0x8084)])[0]
-    tag = (long(tag) % (2**64)) | mapitags.PT_UNICODE
-
-    global PR_EMAIL_1, PR_EMAIL_2, PR_EMAIL_3
-    PR_EMAIL_1 = tag
-
-    ## Now 'tag' contains the property tag that will give us the first
-    ## email address.
-    fields.append(tag)
-
-    ## Now generate the property tags for the Email Address 2
-    prop_id = ((tag & 0xffff0000) >> 16)
-    tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
-    PR_EMAIL_2 = tag
-    fields.append(tag)
-
-    ## Do the same for Email Address 3
-    prop_id = ((tag & 0xffff0000) >> 16)
-    tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
-    PR_EMAIL_3 = tag
-    fields.append(tag)
-
-    return fields
 
 
 ## FIXEME: Need to implement more robust error checking.
@@ -551,32 +564,8 @@ def print_values (values):
                       long(k), v)
 
 
-def m3 (argv = None):
-    logging.getLogger().setLevel(logging.DEBUG)
-
-    fields = get_sync_fields()
-    config = Config('app_state.json')
-    ol     = Outlook(config)
-    gc     = None
-    try:
-        gc = GC(config, 'karra.etc', 'atlsGL21')
-    except gdata.client.BadAuthentication, e:
-        logging.critical('Invalid user credentials given: %s',
-                         str(e))
-        return
-    except Exception, e:
-        logging.critical('Exception (%s) at login time',
-                         str(e))
-        return
-
-    gc.prep_gc_contact_lists()
-
-#    ol.prep_ol_contact_lists()
-#    ol.print_fields_for_contacts(fields, 2)
-
-
 def main (argv=None):
-    m3()
+    print 'Hello World'
 
 if __name__ == "__main__":
     main()

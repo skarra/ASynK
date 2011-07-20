@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Tue Jul 19 14:00:27  2011
+## Last Modified : Wed Jul 20 12:49:57  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -16,6 +16,7 @@ import getpass
 import atom
 import gdata.contacts.data
 import gdata.contacts.client
+import base64
 
 from state import Config
 
@@ -106,23 +107,11 @@ class GC (object):
             return None
 
 
-    def create_contact (self, entryid, name, gnames, emails=None, 
-                        gids=None, company=None, notes=None,
-                        title=None, dept=None, ph_prim=None, postal=None,
-                        ph_mobile=None, ph_home=None, ph_work=None):
-        """Create a contact with provided information.
-    
-        If gids - an array of Group IDs - is specified, then the created
-        contact is attached to each group in that array. If gids is
-        None, but a corresponding array of group names is provided, then
-        the contact is added to those groups. If any group in the
-        provided group name array is not found, it is created first.
-    
-        'emails' is an array of addresses. If there is more than one
-        element in this array, the first element is marked as the
-        primary email address.
-        """
-    
+    def create_contact_entry (self, entryid, name, gnames, emails=None, 
+                              gids=None, company=None, notes=None,
+                              title=None, dept=None, ph_prim=None,
+                              postal=None, ph_mobile=None, ph_home=None,
+                              ph_work=None):
         if not gids:
             gids = []
             for gname in gnames:
@@ -147,6 +136,14 @@ class GC (object):
             gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
             new_contact.group_membership_info.append(gidm)
     
+        # Store the entryid as a User defined property. Note that the
+        # MAPI EntryID is a binary value; so we base64 encode it first
+        entryid_b64 = base64.b64encode(entryid)
+        ud       = gdata.contacts.data.UserDefinedField()
+        ud.key   = 'olid'
+        ud.value = entryid_b64
+        new_contact.user_defined_field.append(ud)
+
         # Populate the email addresses
         if emails:
           # Create a work email address for the contact and use as
@@ -211,9 +208,11 @@ class GC (object):
                                           primary=prim,
                                           rel=gdata.data.WORK_REL)
             new_contact.phone_number.append(work)
-          
-    
-        # Finally, make a request to the server to create the contact
+
+        return new_contact
+
+
+    def create_contact_on_server (self, new_contact):
         entry = self.gd_client.CreateContact(new_contact)
     
         if entry:
@@ -221,9 +220,42 @@ class GC (object):
             logging.debug('ID for the new contact: %s', entry.id.text)
         else:
             logging.error('Contact creation error.')
+
+        return entry
+
+
+    def create_contact (self, entryid, name, gnames, emails=None, 
+                        gids=None, company=None, notes=None,
+                        title=None, dept=None, ph_prim=None, postal=None,
+                        ph_mobile=None, ph_home=None, ph_work=None):
+        """Create a contact with provided information.
+    
+        If gids - an array of Group IDs - is specified, then the created
+        contact is attached to each group in that array. If gids is
+        None, but a corresponding array of group names is provided, then
+        the contact is added to those groups. If any group in the
+        provided group name array is not found, it is created first.
+    
+        'emails' is an array of addresses. If there is more than one
+        element in this array, the first element is marked as the
+        primary email address.
+        """
+    
+        new_con = self.create_contact_entry(entryid, name, gnames,
+                                            emails, gids, company,
+                                            notes, title, dept, ph_prim,
+                                            postal, ph_mobile, ph_home,
+                                            ph_work)
+  
+        entry = self.create_contact_on_server(new_con)
     
         return entry
-        
+
+
+    def new_feed (self):
+        return gdata.contacts.data.ContactsFeed()
+
+
     def _get_updated_gc_feed (self, updated_min, gid):
         query             = gdata.contacts.client.ContactsQuery()
         query.updated_min = updated_min
@@ -234,14 +266,14 @@ class GC (object):
         return feed
 
 
-    def _get_olid (self, eps):
-        for ep in eps:
-            if ep.name == 'olid':              
-                if extended_property.value:
+    def _get_olid (self, udps):
+        for ep in udps:
+            if ep.key == 'olid':    
+                if ep.value:
                     return ep.value
                 else:
-                    value = ep.GetXmlBlob()
-                    print 'Hrrmph. Value: ', value
+                    value = 'Hrrmph. '
+                    print 'Value: ', value
 
         return None
 
@@ -262,7 +294,7 @@ class GC (object):
 
         for i, entry in enumerate(feed.entry):
             gcid = entry.id.text
-            olid = self._get_olid(entry.extended_property)
+            olid = self._get_olid(entry.user_defined_field)
             epd  = entry.deleted
 
             if epd:
@@ -284,6 +316,10 @@ class GC (object):
         print 'num new:       ', len(self.con_gc_new)
         print 'num mod:       ', len(self.con_gc_mod)
         print 'num skipped:   ', skip
+
+    def exec_batch (self, batch_feed):
+        self.gd_client.ExecuteBatch(
+            batch_feed, gdata.contacts.client.DEFAULT_BATCH_URL)
 
 
 def main():

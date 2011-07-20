@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Last Modified : Fri Jul 08 17:11:25  2011
+# Last Modified : Tue Jul 19 15:08:58  2011
 #
 # Adapted from dev_appserver.py distributed with the Google App Engine
 # SDK by Google Inc. Modifications are Copyright (C) 2011 Sriram
@@ -85,7 +85,7 @@ def main (argv=None):
       print "for help use --help"
       sys.exit(2)
 
-  SCRIPT_NAME = "contacts.py"
+  SCRIPT_NAME = "sync.py"
   logging.debug("Testing just the contacts stuff.")
   
   print 'os.getcwd(): ', os.getcwd()
