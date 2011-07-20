@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Wed Jul 20 12:49:57  2011
+## Last Modified : Wed Jul 20 16:43:53  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -258,6 +258,7 @@ class GC (object):
 
     def _get_updated_gc_feed (self, updated_min, gid):
         query             = gdata.contacts.client.ContactsQuery()
+        query.max_results = 100000
         query.updated_min = updated_min
         query.showdeleted = 'true'
         query.group       = gid
@@ -279,9 +280,13 @@ class GC (object):
 
 
     def prep_gc_contact_lists (self, cnt=0):
+        logging.info('Querying Google for status of Contact Entries')
+
         updated_min = self.config.get_last_sync_start()
-        gid        = self.config.get_gid()
+        gid         = self.config.get_gid()
         feed = self._get_updated_gc_feed(updated_min, gid)
+
+        logging.info('Response recieved from Google. Processing...')
 
         if not feed.entry:
             print 'No entries in feed.'
