@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Wed Jul 20 16:39:10  2011
+## Last Modified : Thu Jul 21 06:30:25  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -394,9 +394,6 @@ class Contact:
                 logging.info('Prop (0x%16x) not found. Tag: 0x%16x',
                              prop_tag, tag)
                 val = ''            # This could be an int. FIXME
-            elif mapitags.PROP_TYPE(tag) == mapitags.PT_BINARY:
-                pass
-
         except Exception, e:
             logging.info("Could not fetch the old value... (%s).",
                          e)
