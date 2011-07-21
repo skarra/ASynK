@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Wed Jul 20 16:43:53  2011
+## Last Modified : Wed Jul 20 21:54:29  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -323,7 +323,7 @@ class GC (object):
         print 'num skipped:   ', skip
 
     def exec_batch (self, batch_feed):
-        self.gd_client.ExecuteBatch(
+        return self.gd_client.ExecuteBatch(
             batch_feed, gdata.contacts.client.DEFAULT_BATCH_URL)
 
 

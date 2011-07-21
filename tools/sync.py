@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Wed Jul 20 12:49:14  2011
+## Last Modified : Thu Jul 21 06:40:15  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -15,6 +15,24 @@ from   win32com.mapi import mapitags
 
 import demjson
 import logging
+import base64
+import xml.dom.minidom
+
+def status_str (const):
+    for name, val in globals().iteritems():
+        if name[:5] == 'SYNC_' and val == const:
+            return name
+
+    return None
+
+SYNC_OK                    = 200
+SYNC_CREATED               = 201
+SYNC_NOT_MODIFIED          = 304
+SYNC_BAD_REQUEST           = 400
+SYNC_UNAUTHORIZED          = 401
+SYNC_FORBIDDEN             = 403
+SYNC_CONFLICT              = 409
+SYNC_INTERNAL_SERVER_ERROR = 500
 
 class Sync:
     def __init__ (self, config, fields, ol, gc):
@@ -30,36 +48,107 @@ class Sync:
 
 
     def _prep_lists (self):
-        self.gc.prep_gc_contact_lists()
+#        self.gc.prep_gc_contact_lists()
         self.ol.prep_ol_contact_lists()
 
+    class BatchState:
+        def __init__ (self, num, f):
+            self.size = 0
+            self.cnt  = 0
+            self.num  = num
+            self.f    = f
+            self.cons = {}
+
+        def get_size (self):
+            """Return size of feed in kilobytess."""
+            self.size = len(str(self.f))/1024.0
+            return self.size
+
+        def incr_cnt (self):
+            self.cnt += 1
+            return self.cnt
+
+        def get_cnt (self):
+            return self.cnt
+
+        def get_bnum (self):
+            return self.num
+
+        def add_con (self, olid_b64, con):
+            self.cons[olid_b64] = con
+
+        def get_con (self, olid_b64):
+            return self.cons[olid_b64]
+
+    def process_batch_response (self, resp, bstate):
+        """resp is the response feed obtained from a batch operation to
+        google.
+
+        bstate contains the stats and other state for all the Contact
+        objects involved in the batch operation.
+
+        This routine will walk through the batch response entries, and
+        make note in the outlook database for succesful sync, or handle
+        errors appropriately."""
+
+        for entry in resp.entry:
+            olid_b64 = entry.batch_id.text
+            code     = int(entry.batch_status.code)
+            reason   = entry.batch_status.reason
+
+            if code != SYNC_OK and code != SYNC_CREATED:
+                # FIXME this code path needs to be tested properly
+                err = sync_str(code)
+                err_str = '' if err is None else ('Code: %s' % err)
+                err_str = 'Reason: %s. %s' % (reason, err_str)
+
+                logging.error('Sync failed for olid_b64 %s: %s',
+                              olid_b64, err_str)
+            else:
+                con = bstate.get_con(olid_b64)
+                con.update_prop_by_name([(self.config.get_gc_guid(),
+                                          self.config.get_gc_id())],
+                                        mapitags.PT_UNICODE,
+                                        entry.id.text)
+                
 
     def _send_new_ol_to_gc (self):
         f = self.gc.new_feed()
-        batch_size = 0
-        batch_num  = 1
-        batch_id   = 'Sync-New-OL-to-GC-%02d' % batch_num
+        stats = Sync.BatchState(1, f)
 
         for olid in self.ol.get_con_new():
             c  = Contact(fields=self.fields, config=self.config,
                          ol=self.ol, entryid=olid, props=None,
                          gcapi=self.gc)
             ce = c.get_gc_entry()
-#            print 'ce: ', ce
+            bid = base64.b64encode(c.entryid)
+            stats.add_con(bid, c)
 
-            f.add_insert(entry=ce, batch_id_string=batch_id)
-            batch_size += 1
+            f.add_insert(entry=ce, batch_id_string=bid)
+            stats.incr_cnt()
 
-            if batch_size % 200 == 0:
+            if stats.get_cnt() % 5 == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more
-                print 'Batch %02d of New. Feed size: %5.2fK' % (batch_num,
-                                                            len(str(f))/1024.0)
+                logging.info('New Batch # %02d. Count: %3d. Size: %6.2fK',
+                             stats.get_bnum(), stats.get_cnt(),
+                             stats.get_size())
                 rf = self.gc.exec_batch(f)
-                # Check for errors. and status. FIXME
+                self.process_batch_response(rf, stats)
+
                 f = self.gc.new_feed()
-                batch_num += 1
-                batch_id   = 'Sync-New-OL-to-GC-%02d' % batch_num
+                s = Sync.BatchState(stats.get_bnum()+1, f)
+                stats = s
+
+                break
+
+        # Upload any leftovers
+        if stats.get_cnt() > 0:
+            logging.info('New Batch # %02d. Count: %3d. Size: %5.2fK',
+                         stats.get_bnum(), stats.get_cnt(),
+                         stats.get_size())
+            rf = self.gc.exec_batch(f)
+            self.process_batch_response(rf, stats)
 
     def _get_new_gc_to_ol (self):
         pass
@@ -75,8 +164,9 @@ class Sync:
 
     def run (self):
         self._prep_lists()
-
 #        self._send_new_ol_to_gc()
+
+#        self.ol.bulk_clear_gcid_flag()
 #        self._get_new_gc_to_ol()
 #        self._del_gc()
 #        self._del_ol()
