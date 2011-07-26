@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Wed Jul 20 21:54:29  2011
+## Last Modified : Tue Jul 26 11:02:14  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -17,7 +17,9 @@ import atom
 import gdata.contacts.data
 import gdata.contacts.client
 import base64
+import xml.dom.minidom
 
+import utils
 from state import Config
 
 class GC (object):
@@ -35,6 +37,43 @@ class GC (object):
         self.gd_client = gdata.contacts.client.ContactsClient(source='Outlook-Android-Contacts-Sync')
         self.gd_client.ClientLogin(email, password, self.gd_client.source)
 
+    def query_contact (self, gcid):
+        print '===== Querying ======'
+        query = gdata.contacts.client.ContactsQuery({'entryID':gcid,
+                                                     'entryid':gcid,
+                                                     'entry_id':gcid})
+        query.entryid = query.entry_id = gcid
+        query.entryID = query.entryId  = gcid
+#        cexml=xml.dom.minidom.parseString('%s'%query)
+#        print cexml.toprettyxml()
+
+        print'\n===\n'
+        feed = self.gd_client.GetContacts(q = query)
+        return feed
+
+    def clear_group (self, gentry):
+        """Delete all contacts in specified group"""
+
+        feed = self._get_group_feed(gentry.id.text)
+
+        # A batch operation would be much faster... should implement
+        # someday
+        for con in feed.entry:
+            logging.info('Deleting ID: %s; Name: %s...', con.id.text,
+                         con.name.full_name.text if con.name else '')
+            self.gd_client.Delete(con)
+
+  
+    def clear_sync_state (self):
+        """Clear up all prior sync related artifacts"""
+        gentry = self.find_group(self.config.get_gn(), 'entry')
+        if gentry:
+            self.clear_group(gentry)
+            logging.info('Deleting Group: %s...', gentry.id.text)
+            self.gd_client.delete_group(gentry)
+        else:
+            logging.info('Group \'%s\' not found', self.config.get_gn())
+
     def get_groups (self):
         feed = self.gd_client.GetGroups()
         return feed
@@ -44,7 +83,6 @@ class GC (object):
   
         if not feed.entry:
             print 'No groups for user'
-            return 0
         for i, entry in enumerate(feed.entry):
             print '\n%s %s' % (i+1, entry.title.text)
             if entry.content:
@@ -60,14 +98,8 @@ class GC (object):
                     value = ep.GetXmlBlob()
                     print '  EP %s: %s' % (ep.name, value)
 
-        return len(feed.entry)
 
-    def clear_group (self, gid):
-        """Delete all contacts in specified group
-        """
-        pass
-  
-    def find_group (self, title):
+    def find_group (self, title, ret_type='id'):
         """Find the group with the given name.
   
         Takes a group title, and returns the Group ID if found. Returns
@@ -77,17 +109,16 @@ class GC (object):
         feed = self.gd_client.GetGroups()
     
         if not feed.entry:
-            logging.debug('\nGroup (%s) not found: there are no groups!',
+            logging.info('\nGroup (%s) not found: there are no groups!',
                           title)
             return None
     
         for i, entry in enumerate(feed.entry):
             if entry.title.text == title:
-                logging.debug('Group (%s) found. ID: %s',
-                              title, entry.id.text)
-                return entry.id.text
-    
-        logging.debug('\nGroup (%s) not found in group list.!', title)
+                if ret_type == 'entry':
+                    return entry
+                else:
+                    return entry.id.text
 
         return None
 
@@ -111,7 +142,7 @@ class GC (object):
                               gids=None, company=None, notes=None,
                               title=None, dept=None, ph_prim=None,
                               postal=None, ph_mobile=None, ph_home=None,
-                              ph_work=None):
+                              ph_work=None, gcid=None):
         if not gids:
             gids = []
             for gname in gnames:
@@ -121,7 +152,7 @@ class GC (object):
                     gid = self.create_group(gname)
       
                 gids.append(gid)
-    
+            
         fn = gdata.data.FullName(text=name)
         n  = gdata.data.Name(full_name=fn)
     
@@ -131,6 +162,10 @@ class GC (object):
         new_contact = gdata.contacts.data.ContactEntry(name=n)
         new_contact.content = atom.data.Content(text=notes)
     
+        if gcid:
+            id_entry = atom.data.Id(text=gcid)
+            new_contact.id = id_entry
+
         # Set up the group memberships
         for gid in gids:
             gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
@@ -227,7 +262,8 @@ class GC (object):
     def create_contact (self, entryid, name, gnames, emails=None, 
                         gids=None, company=None, notes=None,
                         title=None, dept=None, ph_prim=None, postal=None,
-                        ph_mobile=None, ph_home=None, ph_work=None):
+                        ph_mobile=None, ph_home=None, ph_work=None,
+                        gcid=None):
         """Create a contact with provided information.
     
         If gids - an array of Group IDs - is specified, then the created
@@ -245,7 +281,7 @@ class GC (object):
                                             emails, gids, company,
                                             notes, title, dept, ph_prim,
                                             postal, ph_mobile, ph_home,
-                                            ph_work)
+                                            ph_work, gcid)
   
         entry = self.create_contact_on_server(new_con)
     
@@ -255,6 +291,15 @@ class GC (object):
     def new_feed (self):
         return gdata.contacts.data.ContactsFeed()
 
+
+    def _get_group_feed (self, gid):
+        query             = gdata.contacts.client.ContactsQuery()
+        query.max_results = 100000
+        query.showdeleted = 'false'
+        query.group       = gid
+        
+        feed = self.gd_client.GetContacts(q=query)
+        return feed
 
     def _get_updated_gc_feed (self, updated_min, gid):
         query             = gdata.contacts.client.ContactsQuery()
@@ -279,6 +324,29 @@ class GC (object):
         return None
 
 
+    def del_dict_items (self, d, l, keys=True):
+        """Delete all the elements in d that match the elements in list
+        l. If 'keys' is True the match is done on the keys of d, else
+        match is done on the values of d"""
+        
+        # Don't you love python - all the compactness of Perl less all
+        # the chaos
+
+        if keys:
+            d = dict([(x,y) for x,y in d.iteritems() if not x in l])
+        else:
+            d = dict([(x,y) for x,y in d.iteritems() if not y in l])
+
+        return d
+
+    def del_con_mod_by_values (self, ary):
+        """Remove all entries in thr con_mod dictionary whose values
+        appear in the 'ary' list."""
+
+        self.con_gc_mod = self.del_dict_items(self.con_gc_mod,
+                                              ary, False)
+
+
     def prep_gc_contact_lists (self, cnt=0):
         logging.info('Querying Google for status of Contact Entries')
 
@@ -288,17 +356,22 @@ class GC (object):
 
         logging.info('Response recieved from Google. Processing...')
 
+        self.con_gc_del = {}
+        self.con_gc_mod = {}
+        self.con_gc_new = []
+
         if not feed.entry:
             print 'No entries in feed.'
             return
 
-        self.con_gc_del = {}
-        self.con_gc_mod = {}
-        self.con_gc_new = []
-        skip            = 0
+        skip = 0
 
         for i, entry in enumerate(feed.entry):
-            gcid = entry.id.text
+#            if i ==0:
+#                cexml = xml.dom.minidom.parseString('%s'%entry)
+#                print cexml.toprettyxml()
+
+            gcid = utils.get_link_rel(entry.link, 'edit')
             olid = self._get_olid(entry.user_defined_field)
             epd  = entry.deleted
 
