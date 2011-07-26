@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Tue Jul 26 11:02:14  2011
+## Last Modified : Tue Jul 26 11:15:55  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -51,10 +51,15 @@ class GC (object):
         feed = self.gd_client.GetContacts(q = query)
         return feed
 
-    def clear_group (self, gentry):
-        """Delete all contacts in specified group"""
+    def clear_group (self, gentry, gid=None):
+        """Delete all contacts in specified group. """
 
-        feed = self._get_group_feed(gentry.id.text)
+        if not gid:
+            if not gentry:
+                return
+            gid = gentry.id.text
+
+        feed = self._get_group_feed(gid)
 
         # A batch operation would be much faster... should implement
         # someday
@@ -130,11 +135,11 @@ class GC (object):
         entry = self.gd_client.create_group(new_group)
     
         if entry:
-            logging.debug('Successfully created group!')
-            logging.debug('ID for the new group: %s', entry.id.text)
+            logging.info('Successfully created group. ID: %s',
+                         entry.id.text)
             return entry.id.text
         else:
-            logging.error('Group creation error.')
+            logging.error('Could not create Group \'%s\'', gn)
             return None
 
 
