@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Jul 28 22:12:22  2011
+## Last Modified : Fri Jul 29 00:12:01  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -414,8 +414,10 @@ class Contact:
         self.ph_prim   = self._get_prop(mapitags.PR_PRIMARY_TELEPHONE_NUMBER)
         self.ph_mobile = self._get_prop(mapitags.PR_MOBILE_TELEPHONE_NUMBER)
         self.ph_home   = self._get_prop(mapitags.PR_HOME_TELEPHONE_NUMBER)
+        self.ph_home2  = self._get_prop(mapitags.PR_HOME2_TELEPHONE_NUMBER)
         self.ph_work   = self._get_prop(mapitags.PR_BUSINESS_TELEPHONE_NUMBER)
-
+        self.ph_work2  = self._get_prop(mapitags.PR_BUSINESS2_TELEPHONE_NUMBER)
+        self.ph_other  = self._get_prop(mapitags.PR_OTHER_TELEPHONE_NUMBER)
         ## Build an aray out of the three email addresses as applicable
         e = self._get_prop(PR_EMAIL_1)
         self.emails = [e] if e else None
@@ -526,7 +528,9 @@ class Contact:
             notes=self.notes,     postal=self.postal, company=self.company,
             title=self.title,     dept=self.dept,     ph_prim=self.ph_prim,
             ph_mobile=self.ph_mobile, ph_home=self.ph_home,
-            ph_work=self.ph_work, gids=gids, gnames=None, gcid=self.gcid)
+            ph_home2=self.ph_home2, ph_other=self.ph_other,
+            ph_work=self.ph_work, ph_work2=self.ph_work2,
+            gids=gids, gnames=None, gcid=self.gcid)
 
         return self.gc_entry
 
@@ -554,7 +558,10 @@ class Contact:
                                                   ph_prim=self.ph_prim,
                                                   ph_mobile=self.ph_mobile,
                                                   ph_home=self.ph_home,
-                                                  ph_work=self.ph_work
+                                                  ph_home2=self.ph_home2,
+                                                  ph_other=self.ph_other,
+                                                  ph_work=self.ph_work,
+                                                  ph_work2=self.ph_work2,
                                                   )
                 i = MAX_RETRIES
             except Exception, e:

@@ -1,15 +1,11 @@
 -*- Outline -*- 
 
 Created	    	: Tue Jul 12 18:45:48  2011
-Last Modified	: Thu Jul 28 16:20:35  2011
+Last Modified	: Fri Jul 29 00:13:18  2011
 
 * TODO
 
 ** Bugs
-
-*** Sync "Other" phone details
-
-number marked as Other is not getting synched to google.
 
 *** ol.prep_contact_lists() only works on startup
 
@@ -112,6 +108,10 @@ UTC, but without a timezone notifier. We need to get the time zones
 normalized before comparison.
 
 Fixed in ol_wrapper.py:prep_lists
+
+** Sync "Other" phone details
+
+number marked as Other is not getting synched to google.
 
 * scratch
 

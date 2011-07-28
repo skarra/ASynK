@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Thu Jul 28 20:12:51  2011
+## Last Modified : Fri Jul 29 00:11:07  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -159,7 +159,9 @@ class GC (object):
                               gids=None, company=None, notes=None,
                               title=None, dept=None, ph_prim=None,
                               postal=None, ph_mobile=None, ph_home=None,
-                              ph_work=None, gcid=None):
+                              ph_work=None, ph_home2=None,
+                              ph_work2=None, ph_other=None,
+                              gcid=None):
         if not gids:
             gids = []
             for gname in gnames:
@@ -248,18 +250,39 @@ class GC (object):
             new_contact.phone_number.append(mobile)
     
         if ph_home:
-            prim = 'trie' if ph_prim == ph_home else 'false'
+            prim = 'true' if ph_prim == ph_home else 'false'
             home = gdata.data.PhoneNumber(text=ph_home,
                                           primary=prim,
                                           rel=gdata.data.HOME_REL)
             new_contact.phone_number.append(home)
     
+        if ph_home2:
+            prim = 'true' if ph_prim == ph_home2 else 'false'
+            home = gdata.data.PhoneNumber(text=ph_home2,
+                                          primary=prim,
+                                          rel=gdata.data.HOME_REL)
+            new_contact.phone_number.append(home)
+
         if ph_work:
             prim = 'true' if ph_prim == ph_work else 'false'
             work = gdata.data.PhoneNumber(text=ph_work,
                                           primary=prim,
                                           rel=gdata.data.WORK_REL)
             new_contact.phone_number.append(work)
+
+        if ph_work2:
+            prim = 'true' if ph_prim == ph_work2 else 'false'
+            work = gdata.data.PhoneNumber(text=ph_work2,
+                                          primary=prim,
+                                          rel=gdata.data.WORK_REL)
+            new_contact.phone_number.append(work)
+
+        if ph_other:
+            prim  = 'true' if ph_prim == ph_other else 'false'
+            other = gdata.data.PhoneNumber(text=ph_other,
+                                           primary=prim,
+                                           rel=gdata.data.OTHER_REL)
+            new_contact.phone_number.append(other)
 
         return new_contact
 
@@ -280,6 +303,7 @@ class GC (object):
                         gids=None, company=None, notes=None,
                         title=None, dept=None, ph_prim=None, postal=None,
                         ph_mobile=None, ph_home=None, ph_work=None,
+                        ph_home2=None, ph_work2=None, ph_other=None,
                         gcid=None):
         """Create a contact with provided information.
     
@@ -298,7 +322,8 @@ class GC (object):
                                             emails, gids, company,
                                             notes, title, dept, ph_prim,
                                             postal, ph_mobile, ph_home,
-                                            ph_work, gcid)
+                                            ph_work, ph_work2, ph_home2,
+                                            ph_other, gcid)
   
         entry = self.create_contact_on_server(new_con)
     
@@ -372,10 +397,6 @@ class GC (object):
         skip = 0
 
         for i, entry in enumerate(feed.entry):
-#            if i ==0:
-#                cexml = xml.dom.minidom.parseString('%s'%entry)
-#                print cexml.toprettyxml()
-
             gcid = utils.get_link_rel(entry.link, 'edit')
             olid = get_udp_by_key(entry.user_defined_field, 'olid')
             epd  = entry.deleted
