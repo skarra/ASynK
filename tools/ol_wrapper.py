@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Jul 21 06:30:25  2011
+## Last Modified : Thu Jul 28 22:12:22  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -10,19 +10,23 @@
 
 import win32com.client
 import pywintypes
-from win32com.mapi import mapi
-from win32com.mapi import mapitags
-from win32com.mapi import mapiutil
+from   win32com.mapi import mapi
+from   win32com.mapi import mapitags
+from   win32com.mapi import mapiutil
+import winerror
 
 import demjson
 import gdata.client
 import gdata.contacts.client
 import iso8601
-from gc_wrapper import GC
-from state      import Config
+import base64
+
+from   gc_wrapper import get_udp_by_key
+import utils
 
 import logging, os, os.path
 import time
+from   datetime import datetime
 
 DEBUG = 0
 
@@ -49,9 +53,9 @@ class Outlook:
         self.def_inbox    = self.get_default_inbox()
         self.def_cf       = self.get_default_cf()
         self.def_ctable   = self.get_ctable(self.def_cf)
-        self.def_ctable_cols = self.def_ctable.QueryColumns(0)
 
-        self.gid_prop_tag = self.get_gid_prop_tag()    
+        self.gid_prop_tag = self.get_gid_prop_tag()
+        self.def_ctable_cols = self.def_ctable.QueryColumns(0) + (self.gid_prop_tag,)
 
 
     def get_gid_prop_tag (self):
@@ -198,11 +202,35 @@ class Outlook:
     def get_con_new (self):
         return self.con_new
 
+    def get_con_mod (self):
+        return self.con_mod
+
+    def del_dict_items (self, d, l, keys=True):
+        """Delete all the elements in d that match the elements in list
+        l. If 'keys' is True the match is done on the keys of d, else
+        match is done on the values of d"""
+        
+        # Don't you love python - all the compactness of Perl less all
+        # the chaos
+        if keys:
+            d = dict([(x,y) for x,y in d.iteritems() if not x in l])
+        else:
+            d = dict([(x,y) for x,y in d.iteritems() if not y in l])
+
+        return d
+
+    def del_con_mod_by_keys (self, ary):
+        """Remove all entries in thr con_mod dictionary whose keys
+        appear in the 'ary' list."""
+
+        self.con_mod = self.del_dict_items(self.con_mod, ary)
+
     def prep_ol_contact_lists (self, cnt=0):
         """Prepare three lists of the contacts in the local OL.
 
         1. dictionary of all Google IDs => PR_ENTRYIDs
-        2. List of Google IDs in OL
+        2. List of entries created after the last sync
+        3. List of entries modified after the last sync
         """
 
         logging.info('Querying MAPI for status of Contact Entries')
@@ -216,9 +244,9 @@ class Outlook:
         old = 0
         self.reset_sync_lists()
 
-        tc_iso = self.config.get_last_sync_start()
-        tc     = iso8601.parse(tc_iso)
-        print 'Last Start iso str: ', tc_iso
+        synct_str = self.config.get_last_sync_start()
+        synct     = iso8601.parse(synct_str)
+        print 'Last Start iso str: ', synct_str
         print 'Curr Time: ', iso8601.tostring(time.time())
 
         logging.info('Data obtained from MAPI. Processing...')
@@ -229,7 +257,7 @@ class Outlook:
             if len(rows) != 1:
                 break
     
-            (gid_tag, gid), (entryid_tag, entryid), (tt, tv) = rows[0]
+            (gid_tag, gid), (entryid_tag, entryid), (tt, modt) = rows[0]
             self.con_all[entryid] = gid
 
             if mapitags.PROP_TYPE(gid_tag) == mapitags.PT_ERROR:
@@ -238,8 +266,8 @@ class Outlook:
             else:
                 if mapitags.PROP_TYPE(tt) == mapitags.PT_ERROR:
                     print 'Somethin wrong. no time stamp. i=', i
-                else:
-                    if int(tv) <= tc:
+                else: 
+                    if utils.utc_time_to_local_ts(modt) <= synct:
                         old += 1
                     else:
                         self.con_mod[entryid] = gid
@@ -300,43 +328,81 @@ class Outlook:
 
 class Contact:
     def __init__ (self, fields, config, props, ol, gcapi=None,
-                  entryid=None):
+                  entryid=None, gcentry=None, data_from_ol=True):
         """Create a contact wrapper with meaningful fields from prop
         list.
 
-        'props' is an array of (prop_tag, prop_value) tuples. If Props
-        is None, entryid can be specified as the PR_ENTRYID of a contact.
-        One of these has to be non-None. If both are not-None, props is
-        ignored.
+        If gcentry is not None, then it has to be of type ContactEntry,
+        typically obtained from a query to Google. If it is not None,
+        values of props and entryid are ignored. Value of 'data_from_ol'
+        is relevant in this case: If True, it is expected that a outlook
+        entry is available, and data from outlook is used to override
+        fie;ds from gcentry. If False, gcentry data items overwrite
+        outlook.
+
+        If gcentry is None, and props is None, entryid can be specified
+        as the PR_ENTRYID of a contact. Alternately 'props' can be an
+        array of (prop_tag, prop_value) tuples.
+
+        One of these three has to be non-None.
+
+        FIXME:
+        The current constructor is a mess. This was envisoned as a
+        generic wrapper to both a Outlook and Google contact entry. It
+        is quite ugly; the design of the wrappers can and needs to be
+        cleaned up.
         """
 
         self.config = config
         self.ol     = ol
+        self.gcapi  = gcapi
 
-        cf       = ol.get_default_cf()
-        msgstore = ol.get_default_msgstore()
+        self.cf       = ol.get_default_cf()
+        self.msgstore = ol.get_default_msgstore()
 
         self.PROP_REPLACE = 0
         self.PROP_APPEND  = 1
 
-        self.gcapi = gcapi
-
-        self.entry  = self.item = None
+        self.gc_entry  = self.ol_item = None
         self.fields = fields
-        self.fields = self.append_email_prop_tags(self.fields, cf)
-        self.msgstore  = msgstore
+        self.fields = self.append_email_prop_tags(self.fields, self.cf)
+        self.fields.append(self.ol.get_gid_prop_tag())
+
+        if gcentry:
+            # We are building a contact entry from a ContactEntry,
+            # possibly retrieved from a query to google.
+            self.data_from_ol = data_from_ol
+
+            etag = None
+            if data_from_ol:
+                # Clear the gc_entry of everything except the wrapper ID
+                # tags...
+                etag = gcentry.etag
+                olid_b64 = get_udp_by_key(gcentry.user_defined_field,
+                                          'olid')
+                entryid = base64.b64decode(olid_b64)
+            else:
+                # This is the Google to Outlook case. Yet to be
+                # implemented
+                pass
 
         if entryid:
             self.entryid = entryid
-            self.item = self.get_ol_item()
-            hr, props = self.item.GetProps(self.ol.def_ctable_cols, 0)
+            self.ol_item = self.get_ol_item()
+            hr, props = self.ol_item.GetProps(self.ol.def_ctable_cols, 0)
             # FIXME: error checking needed
 
         ## fixme: catch error when both are None
 
-        self.values = get_contact_details(cf, props, self.fields)
+        self.props = get_contact_details(self.cf, props, self.fields)
+        self.populate_fields_from_props()
 
-        self.cf        = cf
+        self.gc_entry = self.get_gc_entry()
+        if etag:
+            self.gc_entry.etag = etag
+
+
+    def populate_fields_from_props (self):
         self.entryid   = self._get_prop(mapitags.PR_ENTRYID)
         self.name      = self._get_prop(mapitags.PR_DISPLAY_NAME)
         self.last_mod  = self._get_prop(mapitags.PR_LAST_MODIFICATION_TIME)
@@ -368,13 +434,15 @@ class Contact:
             else:
                 self.emails = [e]
 
+        self.gcid = self._get_prop(self.ol.get_gid_prop_tag())
+
 
     def get_ol_item (self):
-        if self.item is None:
-            self.item = self.msgstore.OpenEntry(self.entryid, None,
+        if self.ol_item is None:
+            self.ol_item = self.msgstore.OpenEntry(self.entryid, None,
                                                 MOD_FLAG)
 
-        return self.item
+        return self.ol_item
 
 
     def set_gcapi (self, gcapi):
@@ -382,17 +450,17 @@ class Contact:
 
 
     def update_prop (self, prop_tag, prop_val, action):
-        self.item = self.get_ol_item()
+        self.ol_item = self.get_ol_item()
 
         try:
-            hr, props = self.item.GetProps([prop_tag, mapitags.PR_ACCESS,
+            hr, props = self.ol_item.GetProps([prop_tag, mapitags.PR_ACCESS,
                                             mapitags.PR_ACCESS_LEVEL],
                                            mapi.MAPI_UNICODE)
             (tag, val)        = props[0]
 
             if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
-                logging.info('Prop (0x%16x) not found. Tag: 0x%16x',
-                             prop_tag, tag)
+                logging.debug('Prop (0x%16x) not found. Tag: 0x%16x',
+                              prop_tag, tag)
                 val = ''            # This could be an int. FIXME
         except Exception, e:
             logging.info("Could not fetch the old value... (%s).",
@@ -404,14 +472,9 @@ class Contact:
         elif action == self.PROP_APPEND:
             val = '%s%s' % (val, prop_val)
 
-        logging.debug('type of tag: %s', type(prop_tag))
-        logging.debug('tag: 0x%16x', (prop_tag % (2**64)))
-        logging.debug('type of val: %s', type(val))
-        logging.debug('val: %s', val)
-
         try:
-            hr, res = self.item.SetProps([(prop_tag, val)])
-            self.item.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+            hr, res = self.ol_item.SetProps([(prop_tag, val)])
+            self.ol_item.SaveChanges(mapi.KEEP_OPEN_READWRITE)
         except Exception, e:
             logging.critical('Could not update property (0x%16x): %s',
                              prop_tag, e)
@@ -431,19 +494,19 @@ class Contact:
         return self.update_prop(prop_tag, prop_val, action)
 
 
-    def _get_prop (self, prop_tag, array=False, values=None):
-        if not values:
-            values = self.values
+    def _get_prop (self, prop_tag, array=False, props=None):
+        if not props:
+            props = self.props
 
-        if not (prop_tag in values.keys()):
+        if not (prop_tag in props.keys()):
             return None
 
-        if values[prop_tag]:
+        if props[prop_tag]:
             if array:
-                return values[prop_tag]
+                return props[prop_tag]
 
-            if len(values[prop_tag]) > 0:
-                return values[prop_tag][0]
+            if len(props[prop_tag]) > 0:
+                return props[prop_tag][0]
             else:
                 return None
         else:
@@ -451,18 +514,21 @@ class Contact:
 
 
     def get_gc_entry (self):
-        if self.entry:
-            return self.entry
+        """Create and return a gdata.contacts.data.ContactEntry
+        object from the underlying contact properties"""
+
+        if self.gc_entry:
+            return self.gc_entry
 
         gids = [self.config.get_gid()]
-        self.entry = self.gcapi.create_contact_entry(
+        self.gc_entry = self.gcapi.create_contact_entry(
             entryid=self.entryid, name=self.name,     emails=self.emails,
             notes=self.notes,     postal=self.postal, company=self.company,
             title=self.title,     dept=self.dept,     ph_prim=self.ph_prim,
             ph_mobile=self.ph_mobile, ph_home=self.ph_home,
-            ph_work=self.ph_work, gids=gids, gnames=None)
+            ph_work=self.ph_work, gids=gids, gnames=None, gcid=self.gcid)
 
-        return self.entry
+        return self.gc_entry
 
 
     def push_to_google (self):
@@ -514,7 +580,7 @@ class Contact:
 
         prop_tag = self.ol.get_gid_prop_tag()
 
-        hr, props = self.item.GetProps([prop_tag], mapi.MAPI_UNICODE)
+        hr, props = self.ol_item.GetProps([prop_tag], mapi.MAPI_UNICODE)
         (tag, val) = props[0]
         if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
             print 'Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
@@ -591,9 +657,8 @@ def get_contact_details (cf, contact, fields):
     for field in fields:
         ar[field] = []
 
-    ## For starters, let's just look for one of them.    
     for t, v in contact:
-        t = long(t % 2**64)
+#        t = long(t % 2**64)
         if t in fields:
             ar[t].append(v)
     
