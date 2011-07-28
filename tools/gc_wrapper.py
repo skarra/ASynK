@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Tue Jul 26 11:15:55  2011
+## Last Modified : Thu Jul 28 20:12:51  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -21,6 +21,18 @@ import xml.dom.minidom
 
 import utils
 from state import Config
+
+def get_udp_by_key (udps, key):
+    
+    for ep in udps:
+        if ep.key == key:   
+            if ep.value:
+                return ep.value
+            else:
+                value = 'Hrrmph. '
+                print 'Value: ', value
+
+    return None
 
 class GC (object):
     """GC object is a wrapper for a Google Contacts stream API."""
@@ -317,18 +329,6 @@ class GC (object):
         return feed
 
 
-    def _get_olid (self, udps):
-        for ep in udps:
-            if ep.key == 'olid':    
-                if ep.value:
-                    return ep.value
-                else:
-                    value = 'Hrrmph. '
-                    print 'Value: ', value
-
-        return None
-
-
     def del_dict_items (self, d, l, keys=True):
         """Delete all the elements in d that match the elements in list
         l. If 'keys' is True the match is done on the keys of d, else
@@ -377,7 +377,7 @@ class GC (object):
 #                print cexml.toprettyxml()
 
             gcid = utils.get_link_rel(entry.link, 'edit')
-            olid = self._get_olid(entry.user_defined_field)
+            olid = get_udp_by_key(entry.user_defined_field, 'olid')
             epd  = entry.deleted
 
             if epd:
