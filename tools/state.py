@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 13:54:53  2011
-## Last Modified : Tue Jul 19 13:57:35  2011
+## Last Modified : Thu Jul 21 18:58:47  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -14,7 +14,7 @@ import logging
 class Config:
 
     OUTLOOK = 1
-    GMAIL   = 2
+    GOOGLE  = 2
 
     def __init__ (self, fn):
         fi = None
@@ -55,3 +55,6 @@ class Config:
 
     def get_last_sync_stop (self):
         return self._get_prop('last_sync_stop')
+
+    def get_resolve (self):
+        return self._get_prop('conflict_resolve')
