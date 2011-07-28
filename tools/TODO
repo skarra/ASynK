@@ -1,9 +1,27 @@
 -*- Outline -*- 
 
 Created	    	: Tue Jul 12 18:45:48  2011
-Last Modified	: Thu Jul 14 21:09:21  2011
+Last Modified	: Thu Jul 28 16:20:35  2011
 
 * TODO
+
+** Bugs
+
+*** Sync "Other" phone details
+
+number marked as Other is not getting synched to google.
+
+*** ol.prep_contact_lists() only works on startup
+
+If we invoke this routine once, do some operation and then invoke it
+again, we only get zero stats. This potentially exists for the gc
+version as well.
+
+*** need to store both the self link and edit link
+
+Both of these are needed for different activities. This needs to be
+done once we are pretty sure about the changes and we can take a
+branch out to experiment this.
 
 ** Two Way Sync Logic
 
@@ -86,6 +104,14 @@ defined field in Outlook.
 The code is a mess overall. Should really have MapiMsgStore,
 MapiFolder, Message etc. type wrapper objects. It is not a pretty
 sight at the moment
+
+** The outlook time stamp is in UTC
+
+When comparind timestamps, the outlook last modified time we get is in
+UTC, but without a timezone notifier. We need to get the time zones
+normalized before comparison.
+
+Fixed in ol_wrapper.py:prep_lists
 
 * scratch
 
