@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Fri Jul 29 00:11:07  2011
+## Last Modified : Fri Jul 29 01:10:50  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -153,7 +153,6 @@ class GC (object):
         else:
             logging.error('Could not create Group \'%s\'', gn)
             return None
-
 
     def create_contact_entry (self, entryid, name, gnames, emails=None, 
                               gids=None, company=None, notes=None,
@@ -376,6 +375,16 @@ class GC (object):
         self.con_gc_mod = self.del_dict_items(self.con_gc_mod,
                                               ary, False)
 
+    def reset_sync_lists (self):
+        self.con_gc_del = {}
+        self.con_gc_mod = {}
+        self.con_gc_new = []
+
+    def get_con_new (self):
+        return self.con_gc_new
+
+    def get_con_mod (self):
+        return self.con_gc_mod
 
     def prep_gc_contact_lists (self, cnt=0):
         logging.info('Querying Google for status of Contact Entries')
@@ -386,9 +395,7 @@ class GC (object):
 
         logging.info('Response recieved from Google. Processing...')
 
-        self.con_gc_del = {}
-        self.con_gc_mod = {}
-        self.con_gc_new = []
+        self.reset_sync_lists()
 
         if not feed.entry:
             print 'No entries in feed.'
