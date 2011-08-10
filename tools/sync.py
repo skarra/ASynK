@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Fri Jul 29 01:37:18  2011
+## Last Modified : Wed Aug 10 21:10:00 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -378,7 +378,7 @@ def main (argv = None):
     ol     = Outlook(config)
     gc     = None
     try:
-        gc = GC(config, 'karra.etc', 'atlsGL21')
+        gc = GC(config, 'karra.etc', '')
     except gdata.client.BadAuthentication, e:
         logging.critical('Invalid user credentials given: %s',
                          str(e))
