@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Fri Jul 29 00:12:01  2011
+## Last Modified : Fri Jul 29 01:25:54  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -384,7 +384,10 @@ class Contact:
             else:
                 # This is the Google to Outlook case. Yet to be
                 # implemented
-                pass
+                self.gc_entry = gcentry
+                props   = self.create_props_list(gcentry)
+                print props
+                entryid = None
 
         if entryid:
             self.entryid = entryid
@@ -438,6 +441,82 @@ class Contact:
 
         self.gcid = self._get_prop(self.ol.get_gid_prop_tag())
 
+
+    def create_props_list (self, ce, gcid_tag=None):
+        """ce has to be an object of type ContactEntry. This routine
+        forms and returns an array of tuples that can be passed to
+        SetProps() of MAPI
+
+        gcid_tag is the named property tag used to store the gcid.
+        """
+
+        props = []
+        if gcid_tag is None:
+            gcid_tag = self.ol.get_gid_prop_tag()
+
+        if ce.name:
+            props.append((mapitags.PR_DISPLAY_NAME, ce.name.text))
+
+        if ce.content:
+            props.append((mapitags.PR_BODY, ce.content.text))
+
+        if ce.link:
+            gcid = utils.get_link_rel(ce.link, 'edit')
+            props.append((gcid_tag, gcid))
+
+        # Email addresses. Need to figure out how primary email
+        # addresses are tracked in MAPI
+        if ce.email:
+            if len(ce.email) > 0:
+                props.append((PR_EMAIL_1, ce.email[0].address))
+            if len(ce.email) > 1:
+                props.append((PR_EMAIL_2, ce.email[1].address))
+            if len(ce.email) > 2:
+                props.append((PR_EMAIL_3, ce.email[2].address))
+
+        if ce.organization:
+            if ce.organization.name:
+                value = ce.organization.name.text
+                props.append((mapitags.PR_COMPANY, value))
+            if ce.organization.title:
+                value = ce.organization.title.text
+                props.append((mapitags.PR_TITLE, value))
+            if ce.organization.department:
+                value = ce.organization.department.text
+                props.append((mapitags.PR_DEPARTMENT_NAME, value))
+
+        # Phone numbers. Need to figure out how primary phone numbers
+        # are tracked in MAPI
+        if ce.phone_number:
+            hcnt = bcnt = 0
+            har = [mapitags.PR_HOME_TELEPHONE_NUMBER,
+                   mapitags.PR_HOME2_TELEPHONE_NUMBER]
+            bar = [mapitags.PR_BUSINESS_TELEPHONE_NUMBER,
+                   mapitags.PR_BUSINESS2_TELEPHONE_NUMBER]
+
+            for ph in ce.phone_number:
+                # There is only space for 2 work and 2 home numbers in
+                # Outlook ... We will just keep overwriting the second
+                # number. FIXME: could potentially do something smarter
+                # here
+                if ph.rel == gdata.data.HOME_REL:
+                    props.append((har[hcnt], ph.text))
+                    hcnt += (1 if hcnt < 1 else 0)
+                elif ph.rel == gdata.data.WORK_REL:
+                    props.append((bar[bcnt], ph.text))
+                    bcnt += (1 if bcnt < 1 else 0)
+                elif ph.rel == gdata.data.OTHER_REL:
+                    props.append((mapitags.PR_OTHER_TELEPHONE_NUMBER,
+                                  ph.text))
+                elif ph.rel == gdata.data.MOBILE_REL:
+                    props.append((mapitags.PR_MOBILE_TELEPHONE_NUMBER,
+                                  ph.text))
+
+                if ph.primary == 'true':
+                    props.append((mapitags.PR_PRIMARY_TELEPHONE_NUMBER,
+                                  ph.text))
+
+        return props
 
     def get_ol_item (self):
         if self.ol_item is None:

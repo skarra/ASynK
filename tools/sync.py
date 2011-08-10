@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Thu Jul 28 22:14:41  2011
+## Last Modified : Fri Jul 29 01:37:18  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -312,15 +312,24 @@ class Sync:
 
 
     def _get_new_gc_to_ol (self):
-        pass
+        ces = self._fetch_gc_entries(self.gc.get_con_new())
+
+        for ce in ces:
+            cexml=xml.dom.minidom.parseString('%s'%ce)
+            print cexml.toprettyxml()
+
+            c  = Contact(fields=self.fields, config=self.config,
+                         ol=self.ol, entryid=None, props=None,
+                         gcapi=self.gc, gcentry=ce, data_from_ol=False)
+
+            # SaveChnages in Outlook
+            # Write back the olid to the Google Entry
+
 
     def _del_ol (self):
         pass
 
     def _del_gc (self):
-        pass
-
-    def _sync_mods(self):
         pass
 
     def run (self):
@@ -329,12 +338,11 @@ class Sync:
 #        self.gc.clear_group(gid=self.config.get_gid(), gentry=None)
         self._prep_lists()
 #        self._send_new_ol_to_gc()
-        self._send_mod_ol_to_gc()
+#        self._send_mod_ol_to_gc()
 #        self.ol.bulk_clear_gcid_flag()
-#        self._get_new_gc_to_ol()
+        self._get_new_gc_to_ol()
 #        self._del_gc()
 #        self._del_ol()
-#        self._sync_mods()
         
 
 def get_sync_fields (fn="fields.json"):
