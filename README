@@ -1,0 +1,74 @@
+-*- Outline -*-
+
+Created       : Wed Aug 24 22:41:42  2011
+Last Modified : Wed Aug 24 23:39:23  2011
+
+* Introduction
+
+  Android sucks.
+
+  Now that we have gotten that out of the system, let's get down to
+  business. In general terms, there is a general shortage of good
+  applications that allow two way synching of Outlook
+  contacts/tasks/calendar to an android device. Google has strategic
+  reasons, surely, for not making these tools available out of the
+  box. But that doesn't make it any more palatable for us.
+
+  This is an attempt to build some basic open source tools to plug
+  this gap. The bsic approach is to sync your contacts and tasks with
+  gmail, from which android can sync quite well.
+
+* FAQ
+
+** Why something new, why not try X?
+
+   - There is no two way sync software available from Google for
+     retail users. If you are lucky to have Google Apps for
+     Enterprise, I believe there is a tool that might be
+     adequate. It totally sucks that they don't just make it available
+     to everyone. I paid $500 for my Nexus phone, damn it!
+
+   - EX email addresses: If your outlook contacts database has email
+     addresses in EX format, then most solutions out there will fail
+     to do it for you. This includes even one time migration solutions
+     such as exporting to CSV and importing into gmail, using Google's
+     Migration tool for Google Apps, and 2 way sync solutions that
+     otherwise have been reported to work well - like TouchDown for
+     Outlook PST
+
+   - Google's one way sync itself has major limitations such as
+     terribly slow, lack of flexibility to upload to a specified
+     Contacts Group, broken EX email type, etc. This makes it
+     impossible to even keep Outlook as master and copy to Gmail
+     once in a while
+
+   I mean, the situation is hopeless.
+
+   There is a GPLed program written in C# called GoContactSync
+   (http://sourceforge.net/projects/gocontactsync) that claims to do
+   two way sync. But I have not given it a try as I do not know C# and
+   had no interest in learning it now.
+
+* Project Status
+
+  The project is under active development and is to be treated as
+  pre-alpha. It is only recommended for developers who don't mind
+  pulling from github and running a few python scripts by hand on
+  Windows.
+
+  When it is 'ready to ship' it will be bundled into a neat self
+  installing exe file, but that will come only when the basic
+  functionality reaches beta quality.
+
+* Installation Notes:
+
+** Dependencies
+
+   - Python 2.7
+   - Pywin32 for Python 2.7
+   - wxPython for Python 2.7
+
+** How to run
+
+   - The main file is Gout/start.py -- load it up in IDLE
+   - You will have to edit the gmail credentials
