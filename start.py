@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Last Modified : Tue Jul 19 15:08:58  2011
+# Last Modified : Wed Aug 24 23:09:38  2011
 #
 # Adapted from dev_appserver.py distributed with the Google App Engine
 # SDK by Google Inc. Modifications are Copyright (C) 2011 Sriram
@@ -47,8 +47,6 @@ CONFIG_DIR = os.path.join(DIR_PATH, 'config')
 EXTRA_PATHS = [
   DIR_PATH,
   os.path.join(DIR_PATH, 'lib'),
-  os.path.join(DIR_PATH, 'lib', 'win32'),
-  os.path.join(DIR_PATH, 'lib', 'pywin32_system32'),
   os.path.join(DIR_PATH, 'tools'),
 ]
 
