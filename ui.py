@@ -199,10 +199,13 @@ class Sync(wx.Frame):
 # end of class Sync
 
 
-if __name__ == "__main__":
+def main ():
     app = wx.PySimpleApp(0)
     wx.InitAllImageHandlers()
     fraSync = Sync(None, -1, "")
     app.SetTopWindow(fraSync)
     fraSync.Show()
     app.MainLoop()
+
+if __name__ == "__main__":
+    main()
