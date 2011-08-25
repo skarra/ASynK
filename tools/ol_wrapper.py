@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Fri Jul 29 01:25:54  2011
+## Last Modified : Thu Aug 25 15:49:45  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -368,12 +368,12 @@ class Contact:
         self.fields = self.append_email_prop_tags(self.fields, self.cf)
         self.fields.append(self.ol.get_gid_prop_tag())
 
+        etag = None
         if gcentry:
             # We are building a contact entry from a ContactEntry,
             # possibly retrieved from a query to google.
             self.data_from_ol = data_from_ol
 
-            etag = None
             if data_from_ol:
                 # Clear the gc_entry of everything except the wrapper ID
                 # tags...
