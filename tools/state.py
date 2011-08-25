@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 13:54:53  2011
-## Last Modified : Thu Jul 21 18:58:47  2011
+## Last Modified : Thu Aug 25 13:21:51  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -16,8 +16,12 @@ class Config:
     OUTLOOK = 1
     GOOGLE  = 2
 
+    # There has to be a better way than this...
+    sync_strs = [None, 'OUTLOOK', 'GOOGLE']
+
     def __init__ (self, fn):
         fi = None
+        self.fn = fn
         try:
             fi = open(fn, "r")
         except IOError, e:
@@ -34,6 +38,9 @@ class Config:
 
     def _get_prop (self, key):
         return self.state[key]
+
+    def _set_prop (self, key, val):
+        self.state[key] = val
 
     def get_gc_guid (self):
         return self._get_prop('GC_GUID')
@@ -58,3 +65,27 @@ class Config:
 
     def get_resolve (self):
         return self._get_prop('conflict_resolve')
+
+    def set_resolve (self, val):
+        return self._set_prop('conflict_resolve', val)
+
+    def save (self, fn):
+        if not fn:
+            fn = self.fn
+
+        try:
+            fi = open(fn, "w")
+        except IOError, e:
+            logging.critical('Error! Could not Open file (%s): %s', fn, e)
+            return
+
+        save = self.get_resolve()
+        if save:
+            self.set_resolve(self.sync_strs[save])
+
+        fi.write(demjson.encode(self.state))
+
+        if save:
+            self.set_resolve(save)
+
+        fi.close()
