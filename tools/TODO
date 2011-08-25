@@ -1,11 +1,29 @@
 -*- Outline -*- 
 
 Created	    	: Tue Jul 12 18:45:48  2011
-Last Modified	: Fri Jul 29 00:13:18  2011
+Last Modified	: Thu Aug 25 18:37:58  2011
 
 * TODO
 
 ** Bugs
+
+*** Many key changes related to Gmail -> OL are missing
+
+    Thu Aug 25 18:04:31  2011
+
+    All the confusion related to the return of the TechM laptop has
+    appeared to have resulted in some 'bit rot' after all.
+
+    I just noticed today that the version on github is missing 2 key
+    pieces of the sync puzzle -> sync new gmail contacts to Outlook
+    and also sync modified gmail contacts to Outlook. These changes
+    are nowhere to be found - definitely not on the Transend. It was a
+    lot of code changeand as I remember it, was even working quite
+    well... It's a severe setback.
+
+    Approach now is to continue making the fixes to other parts of the
+    code base, and hope either the MacBook or the Scorpio will have
+    it, and in good shape. That is the hope.
 
 *** ol.prep_contact_lists() only works on startup
 
@@ -49,12 +67,16 @@ showdeleted:true
     groups:
 	updated since last sync
 
- 3. 
-
 ** Support more contact fields to be uploaded
 
-More contact fields need to get synched, including: all the phone
-fields (more than 1 Home), Fax, anniversary, IM, etc.
+   More contact fields need to get synched, including: 
+
+   - All phon fields: Done
+   - Fax
+   - Anniversary
+   - DOB
+   - IM
+   - URL
 
 The postal address information is not getting uploaded
 properly. There is no problem in reading it from the Outlook

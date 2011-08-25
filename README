@@ -1,7 +1,7 @@
 -*- Outline -*-
 
 Created       : Wed Aug 24 22:41:42  2011
-Last Modified : Wed Aug 24 23:39:23  2011
+Last Modified : Thu Aug 25 18:32:53  2011
 
 * Introduction
 
@@ -38,9 +38,9 @@ Last Modified : Wed Aug 24 23:39:23  2011
 
    - Google's one way sync itself has major limitations such as
      terribly slow, lack of flexibility to upload to a specified
-     Contacts Group, broken EX email type, etc. This makes it
-     impossible to even keep Outlook as master and copy to Gmail
-     once in a while
+     Contacts Group, and till recently: broken EX email type. This
+     makes it very difficult to even keep Outlook as master and copy
+     to Gmail once in a while
 
    I mean, the situation is hopeless.
 
