@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 13:54:53  2011
-## Last Modified : Thu Aug 25 13:41:15  2011
+## Last Modified : Thu Aug 25 15:41:18  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -9,7 +9,7 @@
 ## 
 
 import demjson
-import logging
+import logging, os
 
 class Config:
 
@@ -22,10 +22,10 @@ class Config:
     def __init__ (self, fn, sync_through=True):
         """If sync_through is True, any change to the configuration is
         immediately written back to the original disk file, otherwise
-        the user has to explicitly save to disk"""
+        the user has to explicitly save to disk."""
 
         fi = None
-        self.fn = fn
+        self.fn = os.path.abspath(fn)
         self.sync_through = False
 
         try:
@@ -36,6 +36,7 @@ class Config:
 
         st = fi.read()
         self.inp = demjson.decode(st)
+        fi.close()
 
         self.state = self.inp
         self.state['conflict_resolve'] = getattr(
@@ -47,9 +48,9 @@ class Config:
     def _get_prop (self, key):
         return self.state[key]
 
-    def _set_prop (self, key, val):
+    def _set_prop (self, key, val, sync=True):
         self.state[key] = val
-        if self.sync_through:
+        if self.sync_through and sync:
             self.save()
 
     def get_gc_guid (self):
@@ -64,8 +65,8 @@ class Config:
     def get_cr (self):
         return self._get_prop('conflict_resolve')
 
-    def set_gid (self, val):
-        return self._set_prop('gid', val)
+    def set_gid (self, val, sync=True):
+        return self._set_prop('gid', val, sync)
 
     def get_gn (self):
         return self._get_prop('gn')
@@ -79,10 +80,13 @@ class Config:
     def get_resolve (self):
         return self._get_prop('conflict_resolve')
 
-    def set_resolve (self, val):
-        return self._set_prop('conflict_resolve', val)
+    def set_resolve (self, val, sync=True):
+        return self._set_prop('conflict_resolve', val, sync)
 
     def save (self, fn=None):
+        """fn should be the full absolute path. There is no guarantee
+        where it might ge created if you are not careful."""
+
         if not fn:
             fn = self.fn
 
@@ -94,11 +98,11 @@ class Config:
 
         save = self.get_resolve()
         if save:
-            self.set_resolve(self.sync_strs[save])
+            self.set_resolve(self.sync_strs[save], False)
 
         fi.write(demjson.encode(self.state))
 
         if save:
-            self.set_resolve(save)
+            self.set_resolve(save, False)
 
         fi.close()
