@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Aug 25 15:49:45  2011
+## Last Modified : Thu Aug 25 20:41:20  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -404,6 +404,30 @@ class Contact:
         if etag:
             self.gc_entry.etag = etag
 
+#        self.check_fields_in_props()
+
+
+    def check_fields_in_props (self):
+        """Check if the the properties returned by a default search
+        include all the fields that the user has requested for through
+        the fields.json file. This is intended to be used for
+        development and debugging purposes."""
+
+        props = {}
+        logging.debug('Type of self.props: %s', type(self.props))
+        logging.debug('Num props in self.props   : %d', len(self.props))
+        logging.debug('Num fields in fields.json : %d', len(self.fields))
+
+        for tag in self.props:
+            props[tag]= True
+
+        for field in self.fields:
+            if not field in props.keys():
+                logging.debug('Property 0x%x not in Props.',
+                              field)
+
+            if field == mapitas.PR_HOME_FAX_NUMBER:
+                print "Hell"
 
     def populate_fields_from_props (self):
         self.entryid   = self._get_prop(mapitags.PR_ENTRYID)
@@ -421,6 +445,14 @@ class Contact:
         self.ph_work   = self._get_prop(mapitags.PR_BUSINESS_TELEPHONE_NUMBER)
         self.ph_work2  = self._get_prop(mapitags.PR_BUSINESS2_TELEPHONE_NUMBER)
         self.ph_other  = self._get_prop(mapitags.PR_OTHER_TELEPHONE_NUMBER)
+        self.fax_prim  = self._get_prop(mapitags.PR_PRIMARY_FAX_NUMBER)
+        self.fax_work  = self._get_prop(mapitags.PR_BUSINESS_FAX_NUMBER)
+        self.fax_home  = self._get_prop(mapitags.PR_HOME_FAX_NUMBER)
+
+        if self.name == 'Abhilash Nair':
+            print self.fax_work
+            print self.fax_home
+
         ## Build an aray out of the three email addresses as applicable
         e = self._get_prop(PR_EMAIL_1)
         self.emails = [e] if e else None
@@ -609,6 +641,8 @@ class Contact:
             ph_mobile=self.ph_mobile, ph_home=self.ph_home,
             ph_home2=self.ph_home2, ph_other=self.ph_other,
             ph_work=self.ph_work, ph_work2=self.ph_work2,
+            fax_home=self.fax_home, fax_work=self.fax_work,
+            fax_prim=self.fax_prim,
             gids=gids, gnames=None, gcid=self.gcid)
 
         return self.gc_entry
@@ -641,7 +675,11 @@ class Contact:
                                                   ph_other=self.ph_other,
                                                   ph_work=self.ph_work,
                                                   ph_work2=self.ph_work2,
+                                                  fax_home=self.fax_home,
+                                                  fax_work=self.fax_work,
+                                                  fax_prim=self.fax_prim,
                                                   )
+
                 i = MAX_RETRIES
             except Exception, e:
                 ## Should make it a bit more granular
