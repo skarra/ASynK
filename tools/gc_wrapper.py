@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Thu Aug 25 17:42:06  2011
+## Last Modified : Thu Aug 25 20:41:58  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -172,6 +172,8 @@ class GC (object):
                               postal=None, ph_mobile=None, ph_home=None,
                               ph_work=None, ph_home2=None,
                               ph_work2=None, ph_other=None,
+                              fax_home=None, fax_work=None,
+                              fax_prim=None,
                               gcid=None):
         if not gids:
             gids = []
@@ -295,6 +297,20 @@ class GC (object):
                                            rel=gdata.data.OTHER_REL)
             new_contact.phone_number.append(other)
 
+        if fax_home:
+            prim = 'true' if fax_prim == fax_home else 'false'
+            home = gdata.data.PhoneNumber(text=fax_home,
+                                          primary=prim,
+                                          rel=gdata.data.HOME_FAX_REL)
+            new_contact.phone_number.append(home)
+
+        if fax_work:
+            prim = 'true' if fax_prim == fax_work else 'false'
+            work = gdata.data.PhoneNumber(text=fax_work,
+                                          primary=prim,
+                                          rel=gdata.data.WORK_FAX_REL)
+            new_contact.phone_number.append(work)
+
         return new_contact
 
 
@@ -315,6 +331,7 @@ class GC (object):
                         title=None, dept=None, ph_prim=None, postal=None,
                         ph_mobile=None, ph_home=None, ph_work=None,
                         ph_home2=None, ph_work2=None, ph_other=None,
+                        fax_home=None, fax_work=None,
                         gcid=None):
         """Create a contact with provided information.
     
@@ -334,6 +351,7 @@ class GC (object):
                                             notes, title, dept, ph_prim,
                                             postal, ph_mobile, ph_home,
                                             ph_work, ph_work2, ph_home2,
+                                            fax_home, fax_work, fax_prim,
                                             ph_other, gcid)
   
         entry = self.create_contact_on_server(new_con)
