@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Wed Aug 10 21:10:00 IST 2011
+## Last Modified : Thu Aug 25 16:53:55  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -332,15 +332,24 @@ class Sync:
     def _del_gc (self):
         pass
 
+    def _reset_sync (self):
+        """Delete all sync related information on Gmail and in Outlook,
+        delete the old group and all its contacts, and create a fresh
+        group with a new group ID - in sum, make a fresh beginning."""
+
+        self.gc.clear_sync_state()
+        self.ol.bulk_clear_gcid_flag()
+        self.gc.clear_group(gid=self.config.get_gid(), gentry=None)
+
+        gc_gid = self.gc.create_group(self.config.get_gn())
+        self.config.set_gid(gc_gid)
+
     def run (self):
-#        self.gc.clear_sync_state()
-#        print self.gc.create_group(self.config.get_gn())
-#        self.gc.clear_group(gid=self.config.get_gid(), gentry=None)
+#        self._reset_sync()
         self._prep_lists()
 #        self._send_new_ol_to_gc()
 #        self._send_mod_ol_to_gc()
-#        self.ol.bulk_clear_gcid_flag()
-        self._get_new_gc_to_ol()
+#        self._get_new_gc_to_ol()
 #        self._del_gc()
 #        self._del_ol()
         
