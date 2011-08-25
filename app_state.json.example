@@ -19,8 +19,8 @@
     'GC_GUID' : '{a1271100-ac2e-11e0-bc8b-0025644a821c}',
     'GC_ID'   : 0x8001,
 
-    'gid'     : 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/71814bca0c9c2468',
-    'gn'      : 'Karra Sync',
+    'gid'     : null,
+    'gn'      : 'Gout',
 
     'last_sync_start' : "1980-07-28T16:10:58.96+05:30",
     'last_sync_stop'  : "1980-07-18T13:23:12.96+05:30",

@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Fri Jul 29 01:10:50  2011
+## Last Modified : Thu Aug 25 17:42:06  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -48,6 +48,18 @@ class GC (object):
         self.config = config
         self.gd_client = gdata.contacts.client.ContactsClient(source='Outlook-Android-Contacts-Sync')
         self.gd_client.ClientLogin(email, password, self.gd_client.source)
+
+        if not self.config.get_gid():
+            logging.info('First use of application. Creating group...')
+            gn = self.config.get_gn()
+            if not gn:
+                gn = 'Gout'
+                self.config.set_gn(gn, False)
+                logging.info('Using default Gmail Contacts Group: Gout')
+
+            gc_gid = self.create_group(gn)
+            self.config.set_gid(gc_gid)
+
 
     def query_contact (self, gcid):
         print '===== Querying ======'
