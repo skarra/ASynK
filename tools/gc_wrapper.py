@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Thu Aug 25 20:41:58  2011
+## Last Modified : Sat Aug 27 01:07:42  2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -19,7 +19,8 @@ import gdata.contacts.client
 import base64
 import xml.dom.minidom
 
-import utils
+import utils, time, datetime
+
 from state import Config
 
 def get_udp_by_key (udps, key):
@@ -173,7 +174,9 @@ class GC (object):
                               ph_work=None, ph_home2=None,
                               ph_work2=None, ph_other=None,
                               fax_home=None, fax_work=None,
-                              fax_prim=None,
+                              fax_prim=None, birthday=None, anniv=None,
+                              nickname=None, gender=None,
+                              web_home=None, web_work=None,
                               gcid=None):
         if not gids:
             gids = []
@@ -311,6 +314,45 @@ class GC (object):
                                           rel=gdata.data.WORK_FAX_REL)
             new_contact.phone_number.append(work)
 
+        if nickname:
+            nickname = gdata.data.Nickname(text=nickname)
+            new_contact.nickname = nickname
+            
+
+        if gender:
+            gender = gdata.data.Gender(value=gender)
+            new_contact.gender = gender
+
+        if birthday:
+            d = datetime.datetime.fromtimestamp(int(birthday))
+            d = d.strftime("%Y-%m-%d")
+            bday = gdata.contacts.data.Birthday(when=d)
+            new_contact.birthday = bday
+
+        if anniv:
+            d = datetime.datetime.fromtimestamp(int(anniv))
+            date = gdata.data.When(start=d.strftime('%Y-%m-%d'))
+            ann  = gdata.contacts.data.Event(when=date, rel='anniversary')
+            new_contact.event.append(ann)
+
+        # Outlook has no concept of a primary website address: there ae
+        # only two addresses. We will assume that if a personal website
+        # is available it is primary, even if a work website is
+        # available
+        if web_home:
+            prim = 'true'
+            home = gdata.contacts.data.Website(href=web_home,
+                                               primary=prim,
+                                               rel='home-page')
+            new_contact.website.append(home)
+
+        if web_work:
+            prim = 'true' if not web_home else 'false'
+            w    = gdata.contacts.data.Website(href=web_work,
+                                               primary=prim,
+                                               rel='work')
+            new_contact.website.append(w)
+
         return new_contact
 
 
@@ -332,6 +374,9 @@ class GC (object):
                         ph_mobile=None, ph_home=None, ph_work=None,
                         ph_home2=None, ph_work2=None, ph_other=None,
                         fax_home=None, fax_work=None,
+                        birthday=None,    anniv=None,
+                        nickname=None, gender=None,
+                        web_home=None, web_work=None,
                         gcid=None):
         """Create a contact with provided information.
     
@@ -352,6 +397,8 @@ class GC (object):
                                             postal, ph_mobile, ph_home,
                                             ph_work, ph_work2, ph_home2,
                                             fax_home, fax_work, fax_prim,
+                                            birthday, anniv, nickname,
+                                            gender, web_home, web_work,
                                             ph_other, gcid)
   
         entry = self.create_contact_on_server(new_con)
