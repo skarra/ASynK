@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Fri Aug 26 20:22:54  2011
+## Last Modified : Sat Aug 27 01:16:42  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -134,7 +134,7 @@ class Sync:
         cons = []
 
         for entry in resp.entry:
-            bid    = entry.batch_id.text
+            bid    = entry.batch_id.text if entry.batch_id else None
             code   = int(entry.batch_status.code)
             reason = entry.batch_status.reason
 
@@ -292,8 +292,6 @@ class Sync:
                 logging.info('Mod Batch # %02d. Count: %3d. Size: %6.2fK',
                              stats.get_bnum(), stats.get_cnt(),
                              stats.get_size())
-                cexml = xml.dom.minidom.parseString('%s'%f)
- #               print cexml.toprettyxml()
  
                 rf = self.gc.exec_batch(f)
                 self.process_batch_response(rf, stats)
@@ -308,7 +306,7 @@ class Sync:
                          stats.get_bnum(), stats.get_cnt(),
                          stats.get_size())
             rf = self.gc.exec_batch(f)
-            self.process_batch_response(rf, stats)           
+            self.process_batch_response(rf, stats)
 
 
     def _get_new_gc_to_ol (self):

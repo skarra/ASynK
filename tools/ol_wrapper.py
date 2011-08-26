@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Fri Aug 26 20:22:15  2011
+## Last Modified : Fri Aug 26 22:37:27  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -485,6 +485,12 @@ class Contact:
         self.fax_prim  = self._get_prop(mapitags.PR_PRIMARY_FAX_NUMBER)
         self.fax_work  = self._get_prop(mapitags.PR_BUSINESS_FAX_NUMBER)
         self.fax_home  = self._get_prop(mapitags.PR_HOME_FAX_NUMBER)
+        self.gender    = self._get_prop(mapitags.PR_GENDER)
+        self.nickname  = self._get_prop(mapitags.PR_NICKNAME)
+        self.birthday  = self._get_prop(mapitags.PR_BIRTHDAY)
+        self.anniv     = self._get_prop(mapitags.PR_WEDDING_ANNIVERSARY)
+        self.web_home  = self._get_prop(mapitags.PR_PERSONAL_HOME_PAGE)
+        self.web_work  = self._get_prop(mapitags.PR_BUSINESS_HOME_PAGE)
 
         ## Build an aray out of the three email addresses as applicable
         e = self._get_prop(PR_EMAIL_1)
@@ -676,6 +682,9 @@ class Contact:
             ph_work=self.ph_work, ph_work2=self.ph_work2,
             fax_home=self.fax_home, fax_work=self.fax_work,
             fax_prim=self.fax_prim,
+            birthday=self.birthday, anniv=self.anniv,
+            nickname=self.nickname, gender=self.gender,
+            web_home=self.web_home, web_work=self.web_work,
             gids=gids, gnames=None, gcid=self.gcid)
 
         return self.gc_entry
@@ -711,6 +720,12 @@ class Contact:
                                                   fax_home=self.fax_home,
                                                   fax_work=self.fax_work,
                                                   fax_prim=self.fax_prim,
+                                                  birthday=self.birthday,
+                                                  anniv=self.anniv,
+                                                  nickname=self.nickname,
+                                                  gender=self.gender,
+                                                  web_home=self.web_home,
+                                                  web_work=self.web_work,
                                                   )
 
                 i = MAX_RETRIES
