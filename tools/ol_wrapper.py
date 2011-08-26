@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Aug 25 20:48:42  2011
+## Last Modified : Fri Aug 26 20:22:15  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -326,6 +326,48 @@ class Outlook:
         return cnt
 
 
+    ## FIXEME: Need to implement more robust error checking.
+    def append_email_prop_tags (self, fields, cf):
+        """MAPI is crappy.
+
+        Email addresses of the EX type do not conatain an SMTP address
+        value for their PR_EMAIL_ADDRESS property tag. While the desired
+        smtp address is present in the system the property tag that will
+        help us fetch it is not a constant and will differ from system
+        to system, and from PST file to PST file. The tag has to be
+        dynamically generated.
+
+        The routine jumps through the requisite hoops and appends those
+        property tags to the supplied fields array. The augmented fields
+        array is then returned.
+        """
+
+        PSETID_Address_GUID = '{00062004-0000-0000-C000-000000000046}'
+        tag = cf.GetIDsFromNames([(PSETID_Address_GUID, 0x8084)])[0]
+        tag = (long(tag) % (2**64)) | mapitags.PT_UNICODE
+
+        global PR_EMAIL_1, PR_EMAIL_2, PR_EMAIL_3
+        PR_EMAIL_1 = tag
+
+        ## Now 'tag' contains the property tag that will give us the first
+        ## email address.
+        fields.append(tag)
+
+        ## Now generate the property tags for the Email Address 2
+        prop_id = ((tag & 0xffff0000) >> 16)
+        tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
+        PR_EMAIL_2 = tag
+        fields.append(tag)
+
+        ## Do the same for Email Address 3
+        prop_id = ((tag & 0xffff0000) >> 16)
+        tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
+        PR_EMAIL_3 = tag
+        fields.append(tag)
+
+        return fields
+
+
 class Contact:
     def __init__ (self, fields, config, props, ol, gcapi=None,
                   entryid=None, gcentry=None, data_from_ol=True):
@@ -365,8 +407,6 @@ class Contact:
 
         self.gc_entry  = self.ol_item = None
         self.fields = fields
-        self.fields = self.append_email_prop_tags(self.fields, self.cf)
-        self.fields.append(self.ol.get_gid_prop_tag())
 
         etag = None
         if gcentry:
@@ -705,47 +745,6 @@ class Contact:
         else:
             print 'Google ID found for contact. ID: ', val
 
-    ## FIXEME: Need to implement more robust error checking.
-    def append_email_prop_tags (self, fields, cf):
-        """MAPI is crappy.
-    
-        Email addresses of the EX type do not conatain an SMTP address
-        value for their PR_EMAIL_ADDRESS property tag. While the desired
-        smtp address is present in the system the property tag that will
-        help us fetch it is not a constant and will differ from system
-        to system, and from PST file to PST file. The tag has to be
-        dynamically generated.
-    
-        The routine jumps through the requisite hoops and appends those
-        property tags to the supplied fields array. The augmented fields
-        array is then returned.
-        """
-    
-        PSETID_Address_GUID = '{00062004-0000-0000-C000-000000000046}'
-        tag = cf.GetIDsFromNames([(PSETID_Address_GUID, 0x8084)])[0]
-        tag = (long(tag) % (2**64)) | mapitags.PT_UNICODE
-    
-        global PR_EMAIL_1, PR_EMAIL_2, PR_EMAIL_3
-        PR_EMAIL_1 = tag
-    
-        ## Now 'tag' contains the property tag that will give us the first
-        ## email address.
-        fields.append(tag)
-    
-        ## Now generate the property tags for the Email Address 2
-        prop_id = ((tag & 0xffff0000) >> 16)
-        tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
-        PR_EMAIL_2 = tag
-        fields.append(tag)
-    
-        ## Do the same for Email Address 3
-        prop_id = ((tag & 0xffff0000) >> 16)
-        tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
-        PR_EMAIL_3 = tag
-        fields.append(tag)
-    
-        return fields
-    
 
 def print_prop (tag, value):
     prop_type = mapitags.PROP_TYPE(tag)
