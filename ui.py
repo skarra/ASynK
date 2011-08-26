@@ -4,9 +4,78 @@
 
 import wx
 import sys
+from threading import Thread
+import logging
 # begin wxGlade: extracode
 # end wxGlade
 
+class SyncPanel(wx.Panel):
+    def __init__(self, *args, **kwds):
+        # begin wxGlade: SyncPanel.__init__
+        kwds["style"] = wx.TAB_TRAVERSAL
+        wx.Panel.__init__(self, *args, **kwds)
+        self.lblUsername = wx.StaticText(self, -1, "Username")
+        self.txtUsername = wx.TextCtrl(self, -1, "")
+        self.lblPass = wx.StaticText(self, -1, "Password")
+        self.txtPass = wx.TextCtrl(self, -1, "", style=wx.TE_PASSWORD)
+        self.lblGmGrp = wx.StaticText(self, -1, "Gmail Group")
+        self.txtGmGrp = wx.TextCtrl(self, -1, "")
+        self.chkContacts = wx.CheckBox(self, -1, "Contacts")
+        self.chkCal = wx.CheckBox(self, -1, "Calendar")
+        self.chkTasks = wx.CheckBox(self, -1, "Tasks")
+        self.rdoSyncdir = wx.RadioBox(self, -1, "Sync Direction", choices=["Two Way", "One Way - Google to Outlook", "One Way - Outlook to Google"], majorDimension=0, style=wx.RA_SPECIFY_ROWS)
+        self.btnAdv = wx.Button(self, -1, "Advanced")
+        self.btnSync = wx.Button(self, -1, "Sync")
+
+        self.__set_properties()
+        self.__do_layout()
+
+        self.Bind(wx.EVT_BUTTON, self.Adv, self.btnAdv)
+        self.Bind(wx.EVT_BUTTON, self.Sync, self.btnSync)
+        # end wxGlade
+        self.SetSize((425,225))
+
+    def __set_properties(self):
+        # begin wxGlade: SyncPanel.__set_properties
+        self.rdoSyncdir.SetSelection(0)
+        # end wxGlade
+
+    def __do_layout(self):
+        # begin wxGlade: SyncPanel.__do_layout
+        sizer_1 = wx.BoxSizer(wx.VERTICAL)
+        sizer_4 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_2 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_3 = wx.BoxSizer(wx.VERTICAL)
+        grid_sizer_1 = wx.GridSizer(3, 2, 5, 5)
+        grid_sizer_1.Add(self.lblUsername, 0, 0, 0)
+        grid_sizer_1.Add(self.txtUsername, 1, wx.EXPAND, 0)
+        grid_sizer_1.Add(self.lblPass, 0, 0, 0)
+        grid_sizer_1.Add(self.txtPass, 1, wx.EXPAND, 0)
+        grid_sizer_1.Add(self.lblGmGrp, 0, 0, 0)
+        grid_sizer_1.Add(self.txtGmGrp, 0, wx.EXPAND, 0)
+        sizer_1.Add(grid_sizer_1, 0, wx.ALL|wx.EXPAND, 5)
+        sizer_3.Add(self.chkContacts, 0, wx.ALL, 3)
+        sizer_3.Add(self.chkCal, 0, wx.ALL, 3)
+        sizer_3.Add(self.chkTasks, 0, wx.ALL, 3)
+        sizer_2.Add(sizer_3, 1, wx.ALL|wx.EXPAND, 5)
+        sizer_2.Add(self.rdoSyncdir, 1, wx.ALL, 5)
+        sizer_1.Add(sizer_2, 1, wx.EXPAND, 0)
+        sizer_4.Add(self.btnAdv, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
+        sizer_4.Add(self.btnSync, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
+        sizer_1.Add(sizer_4, 1, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 5)
+        self.SetSizer(sizer_1)
+        sizer_1.Fit(self)
+        # end wxGlade
+
+    def Adv(self, event): # wxGlade: SyncPanel.<event_handler>
+        self.Hide()
+        self.Parent.advpanel.Show()
+
+    def Sync(self, event): # wxGlade: SyncPanel.<event_handler>
+        self.Hide()
+        self.Parent.prgpanel.Show()
+
+# end of class SyncPanel
 
 
 class ProgressPanel(wx.Panel):
@@ -22,11 +91,11 @@ class ProgressPanel(wx.Panel):
 
         self.Bind(wx.EVT_BUTTON, self.PrgOK, self.btnOK)
         # end wxGlade
-        self.SetSize(self.Parent.Size)
+        self.SetSize((425,225))
 
     def __set_properties(self):
         # begin wxGlade: ProgressPanel.__set_properties
-        pass
+        self.Hide()
         # end wxGlade
 
     def __do_layout(self):
@@ -39,7 +108,9 @@ class ProgressPanel(wx.Panel):
         # end wxGlade
 
     def PrgOK(self, event): # wxGlade: ProgressPanel.<event_handler>
+        self.txtProgress.Value = ""
         self.Hide()
+        self.Parent.syncpanel.Show()
 
 # end of class ProgressPanel
 
@@ -65,16 +136,17 @@ class AdvPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.SelFolder, self.btnSelFolder)
         self.Bind(wx.EVT_BUTTON, self.AdvOk, self.btnAdvOk)
         # end wxGlade
-        self.SetSize(self.Parent.Size)
-        self.cboProfile.SetStringSelection(self.Parent.Profile)
-        self.cboStore.SetStringSelection(self.Parent.Store)
-        self.txtLogLoc.Value = self.Parent.LogLoc
+        self.SetSize((425,225))
         
     def __set_properties(self):
         # begin wxGlade: AdvPanel.__set_properties
         self.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DFACE))
+        self.Hide()
+        self.cboProfile.SetMinSize((175, 21))
         self.cboProfile.SetSelection(-1)
-        self.btnSelFolder.SetMinSize((25, 27))
+        self.cboStore.SetMinSize((175, 21))
+        self.txtLogLoc.SetMinSize((150, 25))
+        self.btnSelFolder.SetMinSize((25, 25))
         # end wxGlade
         
         
@@ -98,10 +170,8 @@ class AdvPanel(wx.Panel):
         # end wxGlade
 
     def AdvOk(self, event): # wxGlade: AdvPanel.<event_handler>
-        self.Parent.Profile = self.cboProfile.GetStringSelection()
-        self.Parent.Store = self.cboStore.GetStringSelection()
-        self.Parent.LogLoc = self.txtLogLoc.Value
         self.Hide()
+        self.Parent.syncpanel.Show()
 
     def SelFolder(self, event): # wxGlade: AdvPanel.<event_handler>
         logloc = wx.DirDialog(None)
@@ -115,97 +185,37 @@ class AdvPanel(wx.Panel):
 class Sync(wx.Frame):
     def __init__(self, *args, **kwds):
         # begin wxGlade: Sync.__init__
-        kwds["style"] = wx.CLOSE_BOX|wx.MINIMIZE_BOX
+        kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
-        self.lblUsername = wx.StaticText(self, -1, "Username")
-        self.txtUsername = wx.TextCtrl(self, -1, "")
-        self.lblPass = wx.StaticText(self, -1, "Password")
-        self.txtPass = wx.TextCtrl(self, -1, "", style=wx.TE_PASSWORD)
-        self.lblGmGrp = wx.StaticText(self, -1, "Gmail Group")
-        self.txtGmGrp = wx.TextCtrl(self, -1, "")
-        self.chkContacts = wx.CheckBox(self, -1, "Contacts")
-        self.chkCal = wx.CheckBox(self, -1, "Calendar")
-        self.chkTasks = wx.CheckBox(self, -1, "Tasks")
-        self.rdoSyncdir = wx.RadioBox(self, -1, "Sync Direction", choices=["Two Way", "One Way - Google to Outlook", "One Way - Outlook to Google"], majorDimension=0, style=wx.RA_SPECIFY_ROWS)
-        self.btnAdv = wx.Button(self, -1, "Advanced")
-        self.btnSync = wx.Button(self, -1, "Sync")
 
         self.__set_properties()
         self.__do_layout()
-
-        self.Bind(wx.EVT_BUTTON, self.Adv, self.btnAdv)
-        self.Bind(wx.EVT_BUTTON, self.Sync, self.btnSync)
         # end wxGlade
-        self.Profile = ""
-        self.Store = ""
-        self.LogLoc = ""
+                
+        self.syncpanel = SyncPanel(self)
+        self.advpanel = AdvPanel(self)
+        self.prgpanel = ProgressPanel(self)
 
     def __set_properties(self):
         # begin wxGlade: Sync.__set_properties
         self.SetTitle("Google Sync")
-        _icon = wx.EmptyIcon()
-        _icon.CopyFromBitmap(wx.Bitmap("sync.png", wx.BITMAP_TYPE_ANY))
-        self.SetIcon(_icon)
         self.SetSize((450, 260))
         self.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DFACE))
-        self.rdoSyncdir.SetSelection(0)
         # end wxGlade
 
     def __do_layout(self):
         
         # begin wxGlade: Sync.__do_layout
-        sizer_1 = wx.BoxSizer(wx.VERTICAL)
-        sizer_4 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_2 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_3 = wx.BoxSizer(wx.VERTICAL)
-        grid_sizer_1 = wx.GridSizer(3, 2, 5, 5)
-        grid_sizer_1.Add(self.lblUsername, 0, 0, 0)
-        grid_sizer_1.Add(self.txtUsername, 1, wx.EXPAND, 0)
-        grid_sizer_1.Add(self.lblPass, 0, 0, 0)
-        grid_sizer_1.Add(self.txtPass, 1, wx.EXPAND, 0)
-        grid_sizer_1.Add(self.lblGmGrp, 0, 0, 0)
-        grid_sizer_1.Add(self.txtGmGrp, 0, wx.EXPAND, 0)
-        sizer_1.Add(grid_sizer_1, 0, wx.ALL|wx.EXPAND, 5)
-        sizer_3.Add(self.chkContacts, 0, wx.ALL, 3)
-        sizer_3.Add(self.chkCal, 0, wx.ALL, 3)
-        sizer_3.Add(self.chkTasks, 0, wx.ALL, 3)
-        sizer_2.Add(sizer_3, 1, wx.ALL|wx.EXPAND, 5)
-        sizer_2.Add(self.rdoSyncdir, 1, wx.ALL, 5)
-        sizer_1.Add(sizer_2, 1, wx.EXPAND, 0)
-        sizer_4.Add(self.btnAdv, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
-        sizer_4.Add(self.btnSync, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
-        sizer_1.Add(sizer_4, 1, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 5)
-        self.SetSizer(sizer_1)
         self.Layout()
         # end wxGlade
-
-    def Sync(self, event): # wxGlade: Sync.<event_handler>
-        # redirect print output to progress panel
-        prgpanel = ProgressPanel(self)
-        old_stdout = sys.stdout
-        sys.stdout = prgpanel.txtProgress
-        prgpanel.Show()
         
-        # execute sync code
-        print "syncing . . ."
-        
-        # restore std output
-        sys.stdout = old_stdout 
-
-    def Adv(self, event): # wxGlade: Sync.<event_handler>
-        advpanel = AdvPanel(self)
-        advpanel.Show()
-
 # end of class Sync
 
 
-def main ():
+if __name__ == "__main__":
     app = wx.PySimpleApp(0)
     wx.InitAllImageHandlers()
     fraSync = Sync(None, -1, "")
     app.SetTopWindow(fraSync)
     fraSync.Show()
     app.MainLoop()
-
-if __name__ == "__main__":
-    main()
