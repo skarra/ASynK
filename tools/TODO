@@ -1,11 +1,16 @@
 -*- Outline -*- 
 
 Created	    	: Tue Jul 12 18:45:48  2011
-Last Modified	: Thu Aug 25 18:37:58  2011
+Last Modified	: Thu Aug 25 20:24:18  2011
 
 * TODO
 
 ** Bugs
+
+*** Contact.fields keeps growing in size
+
+    With every Contact object the number of fields in the array
+    appears to keep growing by 4.
 
 *** Many key changes related to Gmail -> OL are missing
 
