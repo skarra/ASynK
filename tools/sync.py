@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Thu Aug 25 17:48:57  2011
+## Last Modified : Fri Aug 26 14:55:44  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -11,7 +11,7 @@
 from   state         import Config
 from   ol_wrapper    import Outlook, Contact
 from   gc_wrapper    import GC
-from   win32com.mapi import mapitags
+from   win32com.mapi import mapitags, mapiutil
 
 import utils
 import gdata.contacts.client
@@ -293,7 +293,7 @@ class Sync:
                              stats.get_bnum(), stats.get_cnt(),
                              stats.get_size())
                 cexml = xml.dom.minidom.parseString('%s'%f)
-                print cexml.toprettyxml()
+ #               print cexml.toprettyxml()
  
                 rf = self.gc.exec_batch(f)
                 self.process_batch_response(rf, stats)
@@ -346,9 +346,10 @@ class Sync:
 
     def run (self):
 #        self._reset_sync()
+#        self.ol.bulk_clear_gcid_flag()
         self._prep_lists()
 #        self._send_new_ol_to_gc()
-#        self._send_mod_ol_to_gc()
+        self._send_mod_ol_to_gc()
 #        self._get_new_gc_to_ol()
 #        self._del_gc()
 #        self._del_ol()
@@ -376,6 +377,13 @@ def get_sync_fields (fn="fields.json"):
             logging.error('Field %s not found', field)
 
 
+    i = 0
+    for a in ar:
+        logging.debug('Property Tag #%2d: %s', i,
+                      mapiutil.GetPropTagName(a))
+        i += 1
+
+    fi.close()
     return ar
 
 

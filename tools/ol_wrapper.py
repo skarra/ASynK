@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Aug 25 20:41:20  2011
+## Last Modified : Thu Aug 25 20:48:42  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -426,9 +426,6 @@ class Contact:
                 logging.debug('Property 0x%x not in Props.',
                               field)
 
-            if field == mapitas.PR_HOME_FAX_NUMBER:
-                print "Hell"
-
     def populate_fields_from_props (self):
         self.entryid   = self._get_prop(mapitags.PR_ENTRYID)
         self.name      = self._get_prop(mapitags.PR_DISPLAY_NAME)
@@ -448,10 +445,6 @@ class Contact:
         self.fax_prim  = self._get_prop(mapitags.PR_PRIMARY_FAX_NUMBER)
         self.fax_work  = self._get_prop(mapitags.PR_BUSINESS_FAX_NUMBER)
         self.fax_home  = self._get_prop(mapitags.PR_HOME_FAX_NUMBER)
-
-        if self.name == 'Abhilash Nair':
-            print self.fax_work
-            print self.fax_home
 
         ## Build an aray out of the three email addresses as applicable
         e = self._get_prop(PR_EMAIL_1)
