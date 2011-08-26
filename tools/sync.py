@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Fri Aug 26 14:55:44  2011
+## Last Modified : Fri Aug 26 20:22:54  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -240,7 +240,7 @@ class Sync:
 
         # Process any leftovers
         if stats.get_cnt() > 0:
-            logging.info('New Batch # %02d. Count: %3d. Size: %5.2fK',
+            logging.info('Qry Batch # %02d. Count: %3d. Size: %5.2fK',
                          stats.get_bnum(), stats.get_cnt(),
                          stats.get_size())
             
@@ -390,9 +390,9 @@ def get_sync_fields (fn="fields.json"):
 def main (argv = None):
     logging.getLogger().setLevel(logging.DEBUG)
 
-    fields = get_sync_fields()
     config = Config('app_state.json')
     ol     = Outlook(config)
+
     gc     = None
     try:
         gc = GC(config, 'karra.etc', '')
@@ -404,6 +404,10 @@ def main (argv = None):
         logging.critical('Exception (%s) at login time',
                          str(e))
         return
+
+    fields = get_sync_fields()
+    fields = ol.append_email_prop_tags(fields, ol.get_default_cf())
+    fields.append(ol.get_gid_prop_tag())
 
     sync = Sync(config, fields, ol, gc)
     sync.run()
