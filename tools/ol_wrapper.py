@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Fri Aug 26 22:37:27  2011
+## Last Modified : Fri Sep 16 18:11:44  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -47,6 +47,9 @@ class Outlook:
 
         self.def_msgstore = self.def_inbox_id = self.def_inbox = None
         self.def_cf       = self.contacts     = self.gid_prop_tag = None
+        self.msgstores    = None
+
+        self.msgstores    = self.get_msgstores()
 
         self.def_msgstore = self.get_default_msgstore()
         self.def_inbox_id = self.get_default_inbox_id()
@@ -68,6 +71,36 @@ class Outlook:
         prop_ids  = self.def_cf.GetIDsFromNames(prop_name, 0)
 
         return (prop_type | prop_ids[0])
+
+    def get_msgstores (self):
+        """Return a list of (entry_id, storename) pairs of all the
+        messages stores in the system."""
+
+        if self.msgstores:
+            return self.msgstores
+
+        messagestorestable = self.session.GetMsgStoresTable(0)
+        messagestorestable.SetColumns((mapitags.PR_ENTRYID,
+                                       mapitags.PR_DISPLAY_NAME_A,
+                                       mapitags.PR_DEFAULT_STORE),0)
+
+        i = 1
+        msgstores = []
+        while True:
+            rows = messagestorestable.QueryRows(1, 0)
+            # if this is the last row then stop
+            if len(rows) != 1:
+                break
+            row = rows[0]
+
+            (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
+            msgstores.append((eid, name))
+            logging.debug('Msgstore #%2d: %s', i, name)
+            i += 1
+
+        self.msgstores = msgstores
+        return msgstores
+
 
     # FIXME: Error checking is virtually non-existent. Needs fixing.
     def get_default_msgstore (self):
