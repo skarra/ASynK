@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 13:54:53  2011
-## Last Modified : Thu Aug 25 17:33:20  2011
+## Last Modified : Fri Sep 30 17:38:24  2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ## 
 
+import iso8601
 import demjson
-import logging, os
+import logging, os, time
 
 class Config:
 
@@ -74,11 +75,21 @@ class Config:
     def get_last_sync_start (self):
         return self._get_prop('last_sync_start')
 
+    def set_last_sync_start (self, val=None, sync=True):
+        if not val:
+            val = iso8601.tostring(time.time())
+        return self._set_prop('last_sync_start', val, sync)
+
     def set_gn (self, val, sync=True):
         return self._set_prop('gn', val, sync)
 
     def get_last_sync_stop (self):
         return self._get_prop('last_sync_stop')
+
+    def set_last_sync_stop (self, val=None, sync=True):
+        if not val:
+            val = iso8601.tostring(time.time())
+        return self._set_prop('last_sync_stop', val, sync)
 
     def get_resolve (self):
         return self._get_prop('conflict_resolve')
