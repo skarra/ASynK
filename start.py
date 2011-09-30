@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Last Modified : Wed Aug 24 23:09:38  2011
+# Last Modified : Wed Sep 28 06:14:28  2011
 #
 # Adapted from dev_appserver.py distributed with the Google App Engine
 # SDK by Google Inc. Modifications are Copyright (C) 2011 Sriram
@@ -41,7 +41,7 @@ if version_tuple == (2, 4):
                    'Please use version 2.5 or greater.\n')
 
 DIR_PATH = os.path.abspath(os.path.dirname(os.path.realpath('outlook_sync')))
-SCRIPT_DIR = os.path.join(DIR_PATH, 'tools')
+SCRIPT_DIR = os.path.join(DIR_PATH, '.')
 CONFIG_DIR = os.path.join(DIR_PATH, 'config')
 
 EXTRA_PATHS = [
@@ -50,7 +50,7 @@ EXTRA_PATHS = [
   os.path.join(DIR_PATH, 'tools'),
 ]
 
-SCRIPT_NAME = "start_main.py"
+SCRIPT_NAME = "ui.py"
 print 'DIR_PATH = ', DIR_PATH
 print 'SCRIPT_DIR = ', SCRIPT_DIR
 print 'EXTRA_PATHS = ', EXTRA_PATHS
@@ -72,8 +72,6 @@ def run_file(globals_, script_dir=SCRIPT_DIR):
 
 
 def main (argv=None):
-  global SCRIPT_NAME
-  
   if (argv is None):
     argv = sys.argv
     try:
@@ -83,9 +81,6 @@ def main (argv=None):
       print "for help use --help"
       sys.exit(2)
 
-  SCRIPT_NAME = "sync.py"
-  logging.debug("Testing just the contacts stuff.")
-  
   print 'os.getcwd(): ', os.getcwd()
   run_file(globals())
 
