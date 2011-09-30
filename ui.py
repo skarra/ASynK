@@ -10,7 +10,7 @@ from   win32com.mapi import mapitags, mapiutil
 
 import wx, sys
 import demjson
-import logging
+import logging, traceback
 
 from   threading     import Thread
 
@@ -95,16 +95,36 @@ class SyncPanel(wx.Panel):
     def Clear (self, event): # wxGlade: SyncPanel.<event_handler>
         self.Hide()
         global sync
-        sync._reset_sync()
-        self.Parent.prgpanel.Show()
+        try:
+            sync = get_sync_obj(self.txtUsername.GetValue(),
+                                self.txtPass.GetValue())
+            sync._reset_sync()
+        except gdata.client.BadAuthentication, e:
+            logging.critical('Invalid user credentials given: %s',
+                             str(e))
+        except Exception, e:
+            logging.critical('Exception (%s).', str(e))
+            logging.critical(traceback.format_exc())
 
-    def do_sync(self, event): # wxGlade: SyncPanel.<event_handler>
+#        self.Parent.prgpanel.Show()
+        self.Parent.syncpanel.Show()
+
+    def do_sync (self, event): # wxGlade: SyncPanel.<event_handler>
         self.Hide()
-        global sync
-        print 'User name: ', self.txtUsername.GetValue()
-        print 'password : ', self.txtPass.GetValue()
-        print 'Group    : ', self.txtGmGrp.GetValue()
-        sync.run()
+
+        # Should ideally have a message box pop up to give details of
+        # the error
+
+        try:
+            sync = get_sync_obj(self.txtUsername.GetValue(),
+                                self.txtPass.GetValue())
+            sync.run()
+        except gdata.client.BadAuthentication, e:
+            logging.critical('Invalid user credentials given: %s',
+                             str(e))
+        except Exception, e:
+            logging.critical('Exception (%s).', str(e))
+
 #        self.Parent.prgpanel.Show()
         self.Parent.syncpanel.Show()
 
@@ -281,23 +301,12 @@ def get_sync_fields (fn="fields.json"):
     return ar
 
 
-def main (argv = None):
-    logging.getLogger().setLevel(logging.DEBUG)
-
+def get_sync_obj (user, pwd):
     config = Config('app_state.json')
     ol     = Outlook(config)
 
-    gc     = None
-    try:
-        gc = GC(config, 'karra.etc', 'JanaIvetc')
-    except gdata.client.BadAuthentication, e:
-        logging.critical('Invalid user credentials given: %s',
-                         str(e))
-        return
-    except Exception, e:
-        logging.critical('Exception (%s) at login time',
-                         str(e))
-        return
+    gc = None
+    gc = GC(config, user, pwd)
 
     fields = get_sync_fields()
     fields = ol.append_email_prop_tags(fields, ol.get_default_cf())
@@ -305,6 +314,12 @@ def main (argv = None):
 
     global sync
     sync = Sync(config, fields, ol, gc)
+
+    return sync
+
+
+def main (argv = None):
+    logging.getLogger().setLevel(logging.DEBUG)
 
     ## Kick off the UI now.
 
