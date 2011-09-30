@@ -20,18 +20,20 @@ class SyncPanel(wx.Panel):
         self.txtPass = wx.TextCtrl(self, -1, "", style=wx.TE_PASSWORD)
         self.lblGmGrp = wx.StaticText(self, -1, "Gmail Group")
         self.txtGmGrp = wx.TextCtrl(self, -1, "")
-        self.chkContacts = wx.CheckBox(self, -1, "Contacts")
-        self.chkCal = wx.CheckBox(self, -1, "Calendar")
-        self.chkTasks = wx.CheckBox(self, -1, "Tasks")
+#        self.chkContacts = wx.CheckBox(self, -1, "Contacts")
+#        self.chkCal = wx.CheckBox(self, -1, "Calendar")
+#        self.chkTasks = wx.CheckBox(self, -1, "Tasks")
         self.rdoSyncdir = wx.RadioBox(self, -1, "Sync Direction", choices=["Two Way", "One Way - Google to Outlook", "One Way - Outlook to Google"], majorDimension=0, style=wx.RA_SPECIFY_ROWS)
-        self.btnAdv = wx.Button(self, -1, "Advanced")
+#        self.btnAdv = wx.Button(self, -1, "Advanced")
+        self.btnClear = wx.Button(self, -1, "Clear Sync State")
         self.btnSync = wx.Button(self, -1, "Sync")
 
         self.__set_properties()
         self.__do_layout()
 
-        self.Bind(wx.EVT_BUTTON, self.Adv, self.btnAdv)
-        self.Bind(wx.EVT_BUTTON, self.Sync, self.btnSync)
+#        self.Bind(wx.EVT_BUTTON, self.Adv, self.btnAdv)
+        self.Bind(wx.EVT_BUTTON, self.Clear, self.btnClear)
+        self.Bind(wx.EVT_BUTTON, self.do_sync, self.btnSync)
         # end wxGlade
         self.SetSize((425,225))
 
@@ -45,7 +47,7 @@ class SyncPanel(wx.Panel):
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
         sizer_4 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_2 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_3 = wx.BoxSizer(wx.VERTICAL)
+#        sizer_3 = wx.BoxSizer(wx.VERTICAL)
         grid_sizer_1 = wx.GridSizer(3, 2, 5, 5)
         grid_sizer_1.Add(self.lblUsername, 0, 0, 0)
         grid_sizer_1.Add(self.txtUsername, 1, wx.EXPAND, 0)
@@ -54,22 +56,28 @@ class SyncPanel(wx.Panel):
         grid_sizer_1.Add(self.lblGmGrp, 0, 0, 0)
         grid_sizer_1.Add(self.txtGmGrp, 0, wx.EXPAND, 0)
         sizer_1.Add(grid_sizer_1, 0, wx.ALL|wx.EXPAND, 5)
-        sizer_3.Add(self.chkContacts, 0, wx.ALL, 3)
-        sizer_3.Add(self.chkCal, 0, wx.ALL, 3)
-        sizer_3.Add(self.chkTasks, 0, wx.ALL, 3)
-        sizer_2.Add(sizer_3, 1, wx.ALL|wx.EXPAND, 5)
+
+        # For now we only support synching of Contacts. We will
+        # eventually allow support for tasks as well.
+
+#        sizer_3.Add(self.chkContacts, 0, wx.ALL, 3)
+#        sizer_3.Add(self.chkCal, 0, wx.ALL, 3)
+#        sizer_3.Add(self.chkTasks, 0, wx.ALL, 3)
+#        sizer_2.Add(sizer_3, 1, wx.ALL|wx.EXPAND, 5)
+
         sizer_2.Add(self.rdoSyncdir, 1, wx.ALL, 5)
         sizer_1.Add(sizer_2, 1, wx.EXPAND, 0)
-        sizer_4.Add(self.btnAdv, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
+#        sizer_4.Add(self.btnAdv, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
+        sizer_4.Add(self.btnClear, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
         sizer_4.Add(self.btnSync, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
         sizer_1.Add(sizer_4, 1, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 5)
         self.SetSizer(sizer_1)
         sizer_1.Fit(self)
         # end wxGlade
 
-    def Adv(self, event): # wxGlade: SyncPanel.<event_handler>
-        self.Hide()
-        self.Parent.advpanel.Show()
+#    def Adv(self, event): # wxGlade: SyncPanel.<event_handler>
+#        self.Hide()
+#        self.Parent.advpanel.Show()
 
     def Sync(self, event): # wxGlade: SyncPanel.<event_handler>
         self.Hide()
@@ -114,75 +122,80 @@ class ProgressPanel(wx.Panel):
 
 # end of class ProgressPanel
 
+## The Advanced panel might allow more advanced options such as choosing
+## an Outlook profile other than the default profile, selecting one or
+## more non-default message stores in the selected profile, etc. Such
+## features are not currently supported. If and when they are, we can
+## use the advanced panel customize such features.
 
-class AdvPanel(wx.Panel):
-    def __init__(self, *args, **kwds):
-        # begin wxGlade: AdvPanel.__init__
-        kwds["style"] = wx.TAB_TRAVERSAL
-        wx.Panel.__init__(self, *args, **kwds)
-        self.lblProfile_copy = wx.StaticText(self, -1, "Outlook Profile")
-        self.cboProfile = wx.ComboBox(self, -1, choices=["Outlook Profile"], style=wx.CB_DROPDOWN)
-        self.lblStore = wx.StaticText(self, -1, "Store")
-        self.cboStore = wx.ComboBox(self, -1, choices=[], style=wx.CB_DROPDOWN)
-        self.lblLogLoc = wx.StaticText(self, -1, "Log File Location")
-        self.txtLogLoc = wx.TextCtrl(self, -1, "", style=wx.TE_READONLY)
-        self.btnSelFolder = wx.Button(self, -1, "...")
-        self.lblNone = wx.StaticText(self, -1, "")
-        self.btnAdvOk = wx.Button(self, -1, "OK")
-
-        self.__set_properties()
-        self.__do_layout()
-
-        self.Bind(wx.EVT_BUTTON, self.SelFolder, self.btnSelFolder)
-        self.Bind(wx.EVT_BUTTON, self.AdvOk, self.btnAdvOk)
-        # end wxGlade
-        self.SetSize((425,225))
-        
-    def __set_properties(self):
-        # begin wxGlade: AdvPanel.__set_properties
-        self.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DFACE))
-        self.Hide()
-        self.cboProfile.SetMinSize((175, 21))
-        self.cboProfile.SetSelection(-1)
-        self.cboStore.SetMinSize((175, 21))
-        self.txtLogLoc.SetMinSize((150, 25))
-        self.btnSelFolder.SetMinSize((25, 25))
-        # end wxGlade
-        
-        
-    def __do_layout(self):
-        
-        # begin wxGlade: AdvPanel.__do_layout
-        grid_sizer_2 = wx.GridSizer(4, 2, 10, 10)
-        sizer_5 = wx.BoxSizer(wx.HORIZONTAL)
-        grid_sizer_2.Add(self.lblProfile_copy, 0, wx.ALL, 10)
-        grid_sizer_2.Add(self.cboProfile, 0, wx.ALL, 10)
-        grid_sizer_2.Add(self.lblStore, 0, wx.ALL, 10)
-        grid_sizer_2.Add(self.cboStore, 0, wx.LEFT|wx.RIGHT, 10)
-        grid_sizer_2.Add(self.lblLogLoc, 0, wx.ALL, 10)
-        sizer_5.Add(self.txtLogLoc, 1, wx.LEFT, 10)
-        sizer_5.Add(self.btnSelFolder, 0, wx.RIGHT, 10)
-        grid_sizer_2.Add(sizer_5, 1, wx.EXPAND, 0)
-        grid_sizer_2.Add(self.lblNone, 0, 0, 0)
-        grid_sizer_2.Add(self.btnAdvOk, 0, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 10)
-        self.SetSizer(grid_sizer_2)
-        grid_sizer_2.Fit(self)
-        # end wxGlade
-
-    def AdvOk(self, event): # wxGlade: AdvPanel.<event_handler>
-        self.Hide()
-        self.Parent.syncpanel.Show()
-
-    def SelFolder(self, event): # wxGlade: AdvPanel.<event_handler>
-        logloc = wx.DirDialog(None)
-        if logloc.ShowModal()==wx.ID_OK:
-            self.txtLogLoc.Value = logloc.GetPath()
-        logloc.Destroy()
+#lass AdvPanel(wx.Panel):
+#   def __init__(self, *args, **kwds):
+#       # begin wxGlade: AdvPanel.__init__
+#       kwds["style"] = wx.TAB_TRAVERSAL
+#       wx.Panel.__init__(self, *args, **kwds)
+#       self.lblProfile_copy = wx.StaticText(self, -1, "Outlook Profile")
+#       self.cboProfile = wx.ComboBox(self, -1, choices=["Outlook Profile"], style=wx.CB_DROPDOWN)
+#       self.lblStore = wx.StaticText(self, -1, "Store")
+#       self.cboStore = wx.ComboBox(self, -1, choices=[], style=wx.CB_DROPDOWN)
+#       self.lblLogLoc = wx.StaticText(self, -1, "Log File Location")
+#       self.txtLogLoc = wx.TextCtrl(self, -1, "", style=wx.TE_READONLY)
+#       self.btnSelFolder = wx.Button(self, -1, "...")
+#       self.lblNone = wx.StaticText(self, -1, "")
+#       self.btnAdvOk = wx.Button(self, -1, "OK")
+#
+#       self.__set_properties()
+#       self.__do_layout()
+#
+#       self.Bind(wx.EVT_BUTTON, self.SelFolder, self.btnSelFolder)
+#       self.Bind(wx.EVT_BUTTON, self.AdvOk, self.btnAdvOk)
+#       # end wxGlade
+#       self.SetSize((425,225))
+#       
+#   def __set_properties(self):
+#       # begin wxGlade: AdvPanel.__set_properties
+#       self.SetBackgroundColour(wx.SystemSettings_GetColour(wx.SYS_COLOUR_3DFACE))
+#       self.Hide()
+#       self.cboProfile.SetMinSize((175, 21))
+#       self.cboProfile.SetSelection(-1)
+#       self.cboStore.SetMinSize((175, 21))
+#       self.txtLogLoc.SetMinSize((150, 25))
+#       self.btnSelFolder.SetMinSize((25, 25))
+#       # end wxGlade
+#       
+#       
+#   def __do_layout(self):
+#       
+#       # begin wxGlade: AdvPanel.__do_layout
+#       grid_sizer_2 = wx.GridSizer(4, 2, 10, 10)
+#       sizer_5 = wx.BoxSizer(wx.HORIZONTAL)
+#       grid_sizer_2.Add(self.lblProfile_copy, 0, wx.ALL, 10)
+#       grid_sizer_2.Add(self.cboProfile, 0, wx.ALL, 10)
+#       grid_sizer_2.Add(self.lblStore, 0, wx.ALL, 10)
+#       grid_sizer_2.Add(self.cboStore, 0, wx.LEFT|wx.RIGHT, 10)
+#       grid_sizer_2.Add(self.lblLogLoc, 0, wx.ALL, 10)
+#       sizer_5.Add(self.txtLogLoc, 1, wx.LEFT, 10)
+#       sizer_5.Add(self.btnSelFolder, 0, wx.RIGHT, 10)
+#       grid_sizer_2.Add(sizer_5, 1, wx.EXPAND, 0)
+#       grid_sizer_2.Add(self.lblNone, 0, 0, 0)
+#       grid_sizer_2.Add(self.btnAdvOk, 0, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 10)
+#       self.SetSizer(grid_sizer_2)
+#       grid_sizer_2.Fit(self)
+#       # end wxGlade
+#
+#   def AdvOk(self, event): # wxGlade: AdvPanel.<event_handler>
+#       self.Hide()
+#       self.Parent.syncpanel.Show()
+#
+#   def SelFolder(self, event): # wxGlade: AdvPanel.<event_handler>
+#       logloc = wx.DirDialog(None)
+#       if logloc.ShowModal()==wx.ID_OK:
+#           self.txtLogLoc.Value = logloc.GetPath()
+#       logloc.Destroy()
 
 # end of class AdvPanel
 
 
-class Sync(wx.Frame):
+class SyncUI(wx.Frame):
     def __init__(self, *args, **kwds):
         # begin wxGlade: Sync.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
@@ -193,7 +206,7 @@ class Sync(wx.Frame):
         # end wxGlade
                 
         self.syncpanel = SyncPanel(self)
-        self.advpanel = AdvPanel(self)
+#        self.advpanel = AdvPanel(self)
         self.prgpanel = ProgressPanel(self)
 
     def __set_properties(self):
