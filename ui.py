@@ -21,6 +21,7 @@ import gdata.contacts.client
 # end wxGlade
 
 sync = None
+start_of_time="1971-01-01T12:00:00.00+05:30"
 
 class SyncPanel(wx.Panel):
     def __init__(self, *args, **kwds):
@@ -115,11 +116,20 @@ class SyncPanel(wx.Panel):
         # Should ideally have a message box pop up to give details of
         # the error
 
+        tstr = None
         try:
             sync = get_sync_obj(self.txtUsername.GetValue(),
                                 self.txtPass.GetValue())
+            tstr = sync.config.get_last_sync_start()
+            sync.config.set_last_sync_start()
             sync.run()
+            sync.config.set_last_sync_stop()
         except gdata.client.BadAuthentication, e:
+            # Reset the start time so we retry any failed sync
+            # attempts. It is theoritically possible to be more granular
+            # than this... but this should do for now.
+            if tstr:
+                sync.config.set_last_sync_start(tstr)
             logging.critical('Invalid user credentials given: %s',
                              str(e))
         except Exception, e:
