@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Fri Sep 16 18:11:44  2011
+## Last Modified : Thu Oct 13 13:49:45 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -47,7 +47,7 @@ class Outlook:
 
         self.def_msgstore = self.def_inbox_id = self.def_inbox = None
         self.def_cf       = self.contacts     = self.gid_prop_tag = None
-        self.msgstores    = None
+        self.msgstores    = self.fileas_prop_tag = self.email1_prop_tag = None
 
         self.msgstores    = self.get_msgstores()
 
@@ -59,6 +59,8 @@ class Outlook:
 
         self.gid_prop_tag = self.get_gid_prop_tag()
         self.def_ctable_cols = self.def_ctable.QueryColumns(0) + (self.gid_prop_tag,)
+        
+        self.PSETID_Address_GUID = '{00062004-0000-0000-C000-000000000046}'
 
 
     def get_gid_prop_tag (self):
@@ -70,7 +72,29 @@ class Outlook:
         prop_type = mapitags.PT_UNICODE
         prop_ids  = self.def_cf.GetIDsFromNames(prop_name, 0)
 
+        self.gid_prop_tag = (prop_type | prop_ids[0])
         return (prop_type | prop_ids[0])
+
+    def get_email1_prop_tag (self):
+        if self.email1_prop_tag:
+            return self.email1_prop_tag
+        prop_name = [(self.PSETID_Address_GUID, 0x8084)]
+        prop_type = mapitags.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        self.email1_prop_tag = (prop_type | prop_ids[0])
+        return self.email1_prop_tag
+
+    def get_fileas_prop_tag (self):
+        if self.fileas_prop_tag:
+            return self.fileas_prop_tag
+
+        prop_name = [(self.PSETID_Address_GUID, 0x8005)]
+        prop_type = mapitags.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        self.fileas_prop_tag = (prop_type | prop_ids[0])
+        return self.fileas_prop_tag
 
     def get_msgstores (self):
         """Return a list of (entry_id, storename) pairs of all the
@@ -375,8 +399,7 @@ class Outlook:
         array is then returned.
         """
 
-        PSETID_Address_GUID = '{00062004-0000-0000-C000-000000000046}'
-        tag = cf.GetIDsFromNames([(PSETID_Address_GUID, 0x8084)])[0]
+        tag = cf.GetIDsFromNames([(self.PSETID_Address_GUID, 0x8084)])[0]
         tag = (long(tag) % (2**64)) | mapitags.PT_UNICODE
 
         global PR_EMAIL_1, PR_EMAIL_2, PR_EMAIL_3
@@ -459,7 +482,6 @@ class Contact:
                 # implemented
                 self.gc_entry = gcentry
                 props   = self.create_props_list(gcentry)
-                print props
                 entryid = None
 
         if entryid:
