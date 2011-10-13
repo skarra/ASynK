@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Thu Oct 13 14:08:03 IST 2011
+## Last Modified : Thu Oct 13 19:24:07 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -351,39 +351,6 @@ class Sync:
 #        self._get_new_gc_to_ol()
 #        self._del_gc()
 #        self._del_ol()
-        
-
-def get_sync_fields (fn="fields.json"):
-    os.chdir(karra_cwd)
-    
-    fi = None
-    try:
-        fi = open(fn, "r")
-    except IOError, e:
-        logging.critical('Error! Could not Open file (%s): %s' % fn, e)
-        return
-
-    st = fi.read()
-    o = demjson.decode(st)
-
-    ar = []
-    for field in o["sync_fields"]:
-        try:
-            v = getattr(mapitags, field)
-            ar.append(v)
-        except AttributeError, e:
-            logging.error('Field %s not found', field)
-
-
-    i = 0
-    for a in ar:
-        logging.debug('Property Tag #%2d: %s', i,
-                      mapiutil.GetPropTagName(a))
-        i += 1
-
-    fi.close()
-    return ar
-
 
 def main (argv = None):
     print 'Hello World'
