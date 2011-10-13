@@ -492,6 +492,7 @@ class Contact:
 
         ## fixme: catch error when both are None
 
+        self.props_list = props
         self.props = get_contact_details(self.cf, props, self.fields)
         self.populate_fields_from_props()
 
@@ -574,18 +575,56 @@ class Contact:
         SetProps() of MAPI
 
         gcid_tag is the named property tag used to store the gcid.
+
+        FIXME: This routine needs to be more data driven so that adding
+        additional fields becomes a breeze, and editing one place will impact
+        both the outlook side as well as the google side. Currently this
+        routine is, in some sense, an inverse of
+        gc_wrapper.py:create_contact_entry() routine...
         """
 
-        props = []
+        # There are a few message properties that are sort of 'expected' to be
+        # set. Most are set automatically by the store provider or the
+        # transport provider. However some have to be set by the client; so,
+        # let's do the honors. More on this here:
+        # http://msdn.microsoft.com/en-us/library/cc839866(v=office.12).aspx
+        # http://msdn.microsoft.com/en-us/library/cc839595(v=office.12).aspx
+
+        props = [(mapitags.PR_MESSAGE_CLASS, "IPM.Contact")]
+
         if gcid_tag is None:
             gcid_tag = self.ol.get_gid_prop_tag()
 
         if ce.name:
-            props.append((mapitags.PR_DISPLAY_NAME, ce.name.text))
+            if ce.name.full_name:
+                props.append((mapitags.PR_DISPLAY_NAME,
+                               ce.name.full_name.text))
+                # We need to work harder to set the File As member, without
+                # which... the shiny new entry will look a bit odd.
+                fileas_prop_tag = self.ol.get_fileas_prop_tag()
+                props.append((fileas_prop_tag, ce.name.full_name.text))
 
+            if ce.name.family_name:
+                props.append((mapitags.PR_SURNAME,
+                               ce.name.family_name.text))
+            if ce.name.given_name:
+                props.append((mapitags.PR_GIVEN_NAME,
+                               ce.name.given_name.text))
+            if ce.name.name_prefix:
+                props.append((mapitags.PR_DISPLAY_NAME_PREFIX,
+                               ce.name.name_prefix.text))
+            if ce.name.name_suffix:
+                # It is not clear where to map this. So let's leave this for
+                # now
+                pass
+
+        # Notes field
         if ce.content:
             props.append((mapitags.PR_BODY, ce.content.text))
 
+        # A reference to the contact entry's ID in Google's database. Recall
+        # that this ID is not constant. Everytime it is edited it changes -
+        # this is Google's way of ensuring there is no crossfire across apps
         if ce.link:
             gcid = utils.get_link_rel(ce.link, 'edit')
             props.append((gcid_tag, gcid))
@@ -594,7 +633,7 @@ class Contact:
         # addresses are tracked in MAPI
         if ce.email:
             if len(ce.email) > 0:
-                props.append((PR_EMAIL_1, ce.email[0].address))
+                props.append((self.ol.get_email1_prop_tag(), ce.email[0].address))
             if len(ce.email) > 1:
                 props.append((PR_EMAIL_2, ce.email[1].address))
             if len(ce.email) > 2:
@@ -603,7 +642,7 @@ class Contact:
         if ce.organization:
             if ce.organization.name:
                 value = ce.organization.name.text
-                props.append((mapitags.PR_COMPANY, value))
+                props.append((mapitags.PR_COMPANY_NAME, value))
             if ce.organization.title:
                 value = ce.organization.title.text
                 props.append((mapitags.PR_TITLE, value))
@@ -745,12 +784,25 @@ class Contact:
         return self.gc_entry
 
 
+    def make_props_array (self, propsd):
+        """makes a """
+
+    def push_to_outlook (self):
+        logging.info('Saving to Outlook: %-32s ....', self.name)
+        msg = self.cf.CreateMessage(None, 0)
+
+        print self.props_list
+        hr = msg.SetProps(self.props_list)
+        hr = msg.SaveChanges(0)
+
+    # This routine is not used anywhere these days as making batch pushes is
+    # much more efficient. This is here only for illustrative purposes now.
     def push_to_google (self):
         MAX_RETRIES = 3
 
         ## FIXME need to check if self.gcapi is valid
 
-        logging.info('Uploading %-32s ....', self.name)
+        logging.info('Uploading to Google: %-32s ....', self.name)
 
         i = 0
         entry = None

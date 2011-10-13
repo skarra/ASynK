@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Sat Aug 27 01:16:42  2011
+## Last Modified : Thu Oct 13 14:08:03 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -314,15 +314,15 @@ class Sync:
 
         for ce in ces:
             cexml=xml.dom.minidom.parseString('%s'%ce)
-            print cexml.toprettyxml()
 
             c  = Contact(fields=self.fields, config=self.config,
                          ol=self.ol, entryid=None, props=None,
                          gcapi=self.gc, gcentry=ce, data_from_ol=False)
 
-            # SaveChnages in Outlook
-            # Write back the olid to the Google Entry
+            # Save changes in Outlook and write back the olid to the Google
+            # Entry
 
+            c.push_to_outlook()
 
     def _del_ol (self):
         pass
