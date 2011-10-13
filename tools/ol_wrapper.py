@@ -148,8 +148,7 @@ class Outlook:
         self.session = mapi.MAPILogonEx(0, "", None, flags)
 
         self.def_msgstore = self.def_inbox_id = self.def_inbox = None
-        self.def_cf       = self.contacts     = self.gid_prop_tag = None
-        self.msgstores    = self.fileas_prop_tag = self.email1_prop_tag = None
+        self.def_cf       = self.contacts     = self.msgstores    = None
 
         self.msgstores    = self.get_msgstores()
 
@@ -159,44 +158,10 @@ class Outlook:
         self.def_cf       = self.get_default_cf()
         self.def_ctable   = self.get_ctable(self.def_cf)
 
-        self.gid_prop_tag = self.get_gid_prop_tag()
-        self.def_ctable_cols = self.def_ctable.QueryColumns(0) + (self.gid_prop_tag,)
-        
-        self.PSETID_Address_GUID = '{00062004-0000-0000-C000-000000000046}'
+        self.prop_tags = PropTags(self.def_cf, self.config)
 
-
-    def get_gid_prop_tag (self):
-        if self.gid_prop_tag:
-            return self.gid_prop_tag
-
-        prop_name = [(self.config.get_gc_guid(),
-                      self.config.get_gc_id())]
-        prop_type = mapitags.PT_UNICODE
-        prop_ids  = self.def_cf.GetIDsFromNames(prop_name, 0)
-
-        self.gid_prop_tag = (prop_type | prop_ids[0])
-        return (prop_type | prop_ids[0])
-
-    def get_email1_prop_tag (self):
-        if self.email1_prop_tag:
-            return self.email1_prop_tag
-        prop_name = [(self.PSETID_Address_GUID, 0x8084)]
-        prop_type = mapitags.PT_UNICODE
-        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
-
-        self.email1_prop_tag = (prop_type | prop_ids[0])
-        return self.email1_prop_tag
-
-    def get_fileas_prop_tag (self):
-        if self.fileas_prop_tag:
-            return self.fileas_prop_tag
-
-        prop_name = [(self.PSETID_Address_GUID, 0x8005)]
-        prop_type = mapitags.PT_UNICODE
-        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
-
-        self.fileas_prop_tag = (prop_type | prop_ids[0])
-        return self.fileas_prop_tag
+        self.def_ctable_cols = (self.def_ctable.QueryColumns(0) +
+                                (self.prop_tags.valu('GOUT_PR_GCID'),))
 
     def get_msgstores (self):
         """Return a list of (entry_id, storename) pairs of all the
@@ -394,7 +359,7 @@ class Outlook:
 
         logging.info('Querying MAPI for status of Contact Entries')
         ctable = self.get_default_ctable()
-        ctable.SetColumns((self.get_gid_prop_tag(),
+        ctable.SetColumns((self.prop_tags.valu('GOUT_PR_GCID'),
                            mapitags.PR_ENTRYID,
                            mapitags.PR_LAST_MODIFICATION_TIME),
                           0)
@@ -455,8 +420,9 @@ class Outlook:
         logging.info('Querying MAPI for all data needed to clear flag')
 
         ctable = self.get_default_ctable()
-        ctable.SetColumns((self.get_gid_prop_tag(), mapitags.PR_ENTRYID),
-                           0)
+        ctable.SetColumns((self.prop_tags.valu('GOUT_PR_GCID'),
+                             mapitags.PR_ENTRYID),
+                             0)
         logging.info('Data obtained from MAPI. Clearing one at a time')
 
         cnt = 0
@@ -483,47 +449,6 @@ class Outlook:
 
         logging.info('Num entries cleared: %d. i = %d', cnt, i)
         return cnt
-
-
-    ## FIXEME: Need to implement more robust error checking.
-    def append_email_prop_tags (self, fields, cf):
-        """MAPI is crappy.
-
-        Email addresses of the EX type do not conatain an SMTP address
-        value for their PR_EMAIL_ADDRESS property tag. While the desired
-        smtp address is present in the system the property tag that will
-        help us fetch it is not a constant and will differ from system
-        to system, and from PST file to PST file. The tag has to be
-        dynamically generated.
-
-        The routine jumps through the requisite hoops and appends those
-        property tags to the supplied fields array. The augmented fields
-        array is then returned.
-        """
-
-        tag = cf.GetIDsFromNames([(self.PSETID_Address_GUID, 0x8084)])[0]
-        tag = (long(tag) % (2**64)) | mapitags.PT_UNICODE
-
-        global PR_EMAIL_1, PR_EMAIL_2, PR_EMAIL_3
-        PR_EMAIL_1 = tag
-
-        ## Now 'tag' contains the property tag that will give us the first
-        ## email address.
-        fields.append(tag)
-
-        ## Now generate the property tags for the Email Address 2
-        prop_id = ((tag & 0xffff0000) >> 16)
-        tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
-        PR_EMAIL_2 = tag
-        fields.append(tag)
-
-        ## Do the same for Email Address 3
-        prop_id = ((tag & 0xffff0000) >> 16)
-        tag = ((tag & 0xffffffff0000ffff) | ((prop_id+1) << 16))
-        PR_EMAIL_3 = tag
-        fields.append(tag)
-
-        return fields
 
 
 class Contact:
@@ -651,24 +576,24 @@ class Contact:
         self.web_work  = self._get_prop(mapitags.PR_BUSINESS_HOME_PAGE)
 
         ## Build an aray out of the three email addresses as applicable
-        e = self._get_prop(PR_EMAIL_1)
+        e = self._get_prop(self.ol.prop_tags.valu('GOUT_PR_EMAIL_1'))
         self.emails = [e] if e else None
 
-        e = self._get_prop(PR_EMAIL_2)
+        e = self._get_prop(self.ol.prop_tags.valu('GOUT_PR_EMAIL_2'))
         if e:
             if self.emails:
                 self.emails.append(e)
             else:
                 self.emails = [e]
 
-        e = self._get_prop(PR_EMAIL_3)
+        e = self._get_prop(self.ol.prop_tags.valu('GOUT_PR_EMAIL_3'))
         if e:
             if self.emails:
                 self.emails.append(e)
             else:
                 self.emails = [e]
 
-        self.gcid = self._get_prop(self.ol.get_gid_prop_tag())
+        self.gcid = self._get_prop(self.ol.prop_tags.valu('GOUT_PR_GCID'))
 
 
     def create_props_list (self, ce, gcid_tag=None):
@@ -695,7 +620,7 @@ class Contact:
         props = [(mapitags.PR_MESSAGE_CLASS, "IPM.Contact")]
 
         if gcid_tag is None:
-            gcid_tag = self.ol.get_gid_prop_tag()
+            gcid_tag = self.ol.prop_tags.valu('GOUT_PR_GCID')
 
         if ce.name:
             if ce.name.full_name:
@@ -735,11 +660,14 @@ class Contact:
         # addresses are tracked in MAPI
         if ce.email:
             if len(ce.email) > 0:
-                props.append((self.ol.get_email1_prop_tag(), ce.email[0].address))
+                props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_1'),
+                               ce.email[0].address))
             if len(ce.email) > 1:
-                props.append((PR_EMAIL_2, ce.email[1].address))
+                props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_2'),
+                               ce.email[1].address))
             if len(ce.email) > 2:
-                props.append((PR_EMAIL_3, ce.email[2].address))
+                props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_3'),
+                               ce.email[2].address))
 
         if ce.organization:
             if ce.organization.name:
@@ -959,7 +887,7 @@ class Contact:
         Outlook.
         """
 
-        prop_tag = self.ol.get_gid_prop_tag()
+        prop_tag = self.ol.prop_tags.valu('GOUT_PR_GCID')
 
         hr, props = self.ol_item.GetProps([prop_tag], mapi.MAPI_UNICODE)
         (tag, val) = props[0]
