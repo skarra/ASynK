@@ -36,6 +36,88 @@ PR_EMAIL_3 = mapitags.PR_EMAIL_ADDRESS
 
 MOD_FLAG = mapi.MAPI_BEST_ACCESS
 
+class PropTags:
+    """This Singleton class represents a set of all the possible mapi property
+    tags. In general the mapitags module has pretty usable constants
+    defined. However MAPI compllicates things with 'Named Properties' - which
+    are not static, but have to be generated at runtime (not sure what all
+    parameters change it...). This class includes all the mapitags properties
+    as well as a set of hand selected named properties that are relevant for
+    us here."""
+
+    PSETID_Address_GUID = '{00062004-0000-0000-C000-000000000046}'
+
+    def __init__ (self, def_cf, config):
+        self.name_hash = {}
+        self.valu_hash = {}
+
+        # We use the def_cf to lookup named properties. I suspect this will
+        # have to be changed when we start supporting multiple profiles and
+        # folders...
+        self.def_cf = def_cf
+        self.config = config
+
+        # Load up all available properties from mapitags module
+
+        for name, value in mapitags.__dict__.iteritems():
+            if name[:3] == 'PR_':
+                # Store both the full ID (including type) and just the ID.
+                # This is so PR_FOO_A and PR_FOO_W are still
+                # differentiated. Note that in the following call, the value
+                # hash will only contain the full ID.
+                self.put(name=name, value=mapitags.PROP_ID(value))
+                self.put(name=name, value=value)
+
+        # Now Add a bunch of named properties that we are specifically
+        # interested in.
+
+        self.put(name='GOUT_PR_FILE_AS', value=self.get_file_as_prop_tag())
+        self.put(name='GOUT_PR_EMAIL_1', value=self.get_email_prop_tag(1))
+        self.put(name='GOUT_PR_EMAIL_2', value=self.get_email_prop_tag(2))
+        self.put(name='GOUT_PR_EMAIL_3', value=self.get_email_prop_tag(3))
+
+    def put (self, name, value):
+        self.name_hash[name]  = value
+        self.valu_hash[value] = name
+
+    def valu (self, name):
+        return self.name_hash[name]
+
+    def name (self, valu):
+        return self.valu_hash[valu]
+
+    def get_email_prop_tag (self, n):
+        if n <= 1:
+            try:
+                return self.valu('GOUT_PR_EMAIL_1')
+            except KeyError, e:
+                prop_name = [(self.PSETID_Address_GUID, 0x8084)]
+                prop_type = mapitags.PT_UNICODE
+                prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+                return (prop_type | prop_ids[0])
+
+        prev_tag      = self.get_email_prop_tag(n-1)
+        prev_tag_id   = mapitags.PROP_ID(prev_tag)
+        prev_tag_type = mapitags.PROP_TYPE(prev_tag)
+
+        return mapitags.PROP_TAG(prev_tag_type, prev_tag_id+1)        
+
+    def get_gid_prop_tag (self):
+        prop_name = [(self.config.get_gc_guid(),
+                      self.config.get_gc_id())]
+        prop_type = mapitags.PT_UNICODE
+        prop_ids  = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        self.gid_prop_tag = (prop_type | prop_ids[0])
+        return (prop_type | prop_ids[0])
+
+    def get_file_as_prop_tag (self):
+        prop_name = [(self.PSETID_Address_GUID, 0x8005)]
+        prop_type = mapitags.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        return (prop_type | prop_ids[0])        
+
 class Outlook:
     def __init__ (self, config):
         self.config = config
