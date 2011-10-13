@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 13:54:53  2011
-## Last Modified : Fri Sep 30 17:38:24  2011
+## Last Modified : Wed Oct 12 20:26:05 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -74,6 +74,9 @@ class Config:
 
     def get_last_sync_start (self):
         return self._get_prop('last_sync_start')
+
+    def get_curr_time (self):
+        return iso8601.tostring(time.time())
 
     def set_last_sync_start (self, val=None, sync=True):
         if not val:
