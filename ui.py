@@ -120,10 +120,13 @@ class SyncPanel(wx.Panel):
         try:
             sync = get_sync_obj(self.txtUsername.GetValue(),
                                 self.txtPass.GetValue())
-            tstr = sync.config.get_last_sync_start()
-            sync.config.set_last_sync_start()
+            old_sync_start = sync.config.get_last_sync_start()
+            new_sync_start = sync.config.get_curr_time()
+
             sync.run()
-            sync.config.set_last_sync_stop()
+
+#            sync.config.set_last_sync_start(val=new_sync_start)
+#            sync.config.set_last_sync_stop()
         except gdata.client.BadAuthentication, e:
             # Reset the start time so we retry any failed sync
             # attempts. It is theoritically possible to be more granular
@@ -134,6 +137,7 @@ class SyncPanel(wx.Panel):
                              str(e))
         except Exception, e:
             logging.critical('Exception (%s).', str(e))
+            logging.critical(traceback.format_exc())
 
 #        self.Parent.prgpanel.Show()
         self.Parent.syncpanel.Show()
@@ -299,13 +303,6 @@ def get_sync_fields (fn="fields.json"):
             ar.append(v)
         except AttributeError, e:
             logging.error('Field %s not found', field)
-
-
-    i = 0
-    for a in ar:
-        logging.debug('Property Tag #%2d: %s', i,
-                      mapiutil.GetPropTagName(a))
-        i += 1
 
     fi.close()
     return ar
