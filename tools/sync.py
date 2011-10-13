@@ -386,29 +386,7 @@ def get_sync_fields (fn="fields.json"):
 
 
 def main (argv = None):
-    logging.getLogger().setLevel(logging.DEBUG)
-
-    config = Config('app_state.json')
-    ol     = Outlook(config)
-
-    gc     = None
-    try:
-        gc = GC(config, 'karra.etc', '')
-    except gdata.client.BadAuthentication, e:
-        logging.critical('Invalid user credentials given: %s',
-                         str(e))
-        return
-    except Exception, e:
-        logging.critical('Exception (%s) at login time',
-                         str(e))
-        return
-
-    fields = get_sync_fields()
-    fields = ol.append_email_prop_tags(fields, ol.get_default_cf())
-    fields.append(ol.get_gid_prop_tag())
-
-    sync = Sync(config, fields, ol, gc)
-    sync.run()
+    print 'Hello World'
 
 if __name__ == "__main__":
     main()
