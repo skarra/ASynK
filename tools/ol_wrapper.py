@@ -95,6 +95,19 @@ class PropTags:
     # be used only once in the constructor
 
     def get_email_prop_tag (self, n):
+        """MAPI is crappy.
+
+        Email addresses of the EX type do not conatain an SMTP address
+        value for their PR_EMAIL_ADDRESS property tag. While the desired
+        smtp address is present in the system the property tag that will
+        help us fetch it is not a constant and will differ from system
+        to system, and from PST file to PST file. The tag has to be
+        dynamically generated.
+
+        The routine jumps through the requisite hoops and appends those
+        property tags to the supplied fields array. The augmented fields
+        array is then returned.
+        """
         if n <= 1:
             try:
                 return self.valu('GOUT_PR_EMAIL_1')
@@ -116,7 +129,6 @@ class PropTags:
         prop_type = mapitags.PT_UNICODE
         prop_ids  = self.def_cf.GetIDsFromNames(prop_name, 0)
 
-        self.gid_prop_tag = (prop_type | prop_ids[0])
         return (prop_type | prop_ids[0])
 
     def get_file_as_prop_tag (self):
