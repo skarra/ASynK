@@ -72,19 +72,27 @@ class PropTags:
         # interested in.
 
         self.put(name='GOUT_PR_FILE_AS', value=self.get_file_as_prop_tag())
+
         self.put(name='GOUT_PR_EMAIL_1', value=self.get_email_prop_tag(1))
         self.put(name='GOUT_PR_EMAIL_2', value=self.get_email_prop_tag(2))
         self.put(name='GOUT_PR_EMAIL_3', value=self.get_email_prop_tag(3))
 
-    def put (self, name, value):
-        self.name_hash[name]  = value
-        self.valu_hash[value] = name
+        self.put(name='GOUT_PR_GCID', value=self.get_gid_prop_tag())
 
     def valu (self, name):
         return self.name_hash[name]
 
     def name (self, valu):
         return self.valu_hash[valu]
+
+    ## The rest of the methods below are internal to the class.
+
+    def put (self, name, value):
+        self.name_hash[name]  = value
+        self.valu_hash[value] = name
+
+    # Routines to construct the property tags for named property. Intended to
+    # be used only once in the constructor
 
     def get_email_prop_tag (self, n):
         if n <= 1:
