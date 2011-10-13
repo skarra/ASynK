@@ -316,8 +316,10 @@ def get_sync_obj (user, pwd):
     gc = GC(config, user, pwd)
 
     fields = get_sync_fields()
-    fields = ol.append_email_prop_tags(fields, ol.get_default_cf())
-    fields.append(ol.get_gid_prop_tag())
+    fields.append(ol.prop_tags.valu('GOUT_PR_EMAIL_1'))
+    fields.append(ol.prop_tags.valu('GOUT_PR_EMAIL_2'))
+    fields.append(ol.prop_tags.valu('GOUT_PR_EMAIL_3'))
+    fields.append(ol.prop_tags.valu('GOUT_PR_GCID'))
 
     global sync
     sync = Sync(config, fields, ol, gc)
