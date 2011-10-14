@@ -464,6 +464,7 @@ class GC (object):
                                               ary, False)
 
     def reset_sync_lists (self):
+        self.con_all    = {}
         self.con_gc_del = {}
         self.con_gc_mod = {}
         self.con_gc_new = []
@@ -475,7 +476,7 @@ class GC (object):
         return self.con_gc_mod
 
     def prep_gc_contact_lists (self, cnt=0):
-        logging.info('Querying Google for status of Contact Entries')
+        logging.info('Querying Google for status of Contact Entries...')
 
         updated_min = self.config.get_last_sync_start()
         gid         = self.config.get_gid()
@@ -486,7 +487,7 @@ class GC (object):
         self.reset_sync_lists()
 
         if not feed.entry:
-            print 'No entries in feed.'
+            logging.info('No entries in feed.')
             return
 
         skip = 0
@@ -510,11 +511,12 @@ class GC (object):
                     self.con_gc_new.append(gcid)
 
         print '==== GC ====='
-        print 'num processed: ', i+1
-        print 'num total:     ', len(self.con_gc_del)
-        print 'num new:       ', len(self.con_gc_new)
-        print 'num mod:       ', len(self.con_gc_mod)
-        print 'num skipped:   ', skip
+        print 'num processed:    ', i+1
+        print 'num total:        ', len(self.con_all.items())
+        print 'num new:          ', len(self.con_gc_new)
+        print 'num mod:          ', len(self.con_gc_mod)
+        print 'num del:          ', len(self.con_gc_del)
+        print 'num del bef sync: ', skip
 
     def exec_batch (self, batch_feed):
         return self.gd_client.ExecuteBatch(
