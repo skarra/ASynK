@@ -628,7 +628,7 @@ class Contact:
                                ce.name.full_name.text))
                 # We need to work harder to set the File As member, without
                 # which... the shiny new entry will look a bit odd.
-                fileas_prop_tag = self.ol.get_fileas_prop_tag()
+                fileas_prop_tag = self.ol.prop_tags.valu('GOUT_PR_FILE_AS')
                 props.append((fileas_prop_tag, ce.name.full_name.text))
 
             if ce.name.family_name:
@@ -735,11 +735,11 @@ class Contact:
             (tag, val)        = props[0]
 
             if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
-                logging.debug('Prop (0x%16x) not found. Tag: 0x%16x',
-                              prop_tag, tag)
+                logging.debug('update_prop(): Prop %s (0x%16x) not found',
+                              self.prop_tags.name(tag), prop_tag)
                 val = ''            # This could be an int. FIXME
         except Exception, e:
-            logging.info("Could not fetch the old value... (%s).",
+            logging.info("update_prop(): could not fetch old value... (%s).",
                          e)
             val = ''            # This could be an int. FIXME
 
