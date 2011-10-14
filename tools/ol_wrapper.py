@@ -818,12 +818,32 @@ class Contact:
         """makes a """
 
     def push_to_outlook (self):
+        """Save the current contact to Outlook, and returns the entryid of the
+        entry."""
+
         logging.info('Saving to Outlook: %-32s ....', self.name)
         msg = self.cf.CreateMessage(None, 0)
 
-        print self.props_list
-        hr = msg.SetProps(self.props_list)
-        hr = msg.SaveChanges(0)
+        if not msg:
+            return None
+
+        hr, res = msg.SetProps(self.props_list)
+        if (winerror.FAILED(hr)):
+            logging.critical('push_to_outlook(): unable to SetProps (code: %x)',
+                             winerror.HRESULT_CODE(hr))
+            return None
+
+        msg.SaveChanges(0)
+
+        # Now that we have successfully saved the record, let's fetch the
+        # entryid and return it to the caller.
+        hr, props = msg.GetProps([mapitags.PR_ENTRYID], mapi.MAPI_UNICODE)
+        (tag, val) = props[0]
+        if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
+            logging.error('push_to_outlook(): EntryID could not be found. Weird')
+            return None
+        else:
+            return val
 
     # This routine is not used anywhere these days as making batch pushes is
     # much more efficient. This is here only for illustrative purposes now.
