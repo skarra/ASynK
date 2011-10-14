@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Sat Aug 27 01:07:42  2011
+## Last Modified : Fri Oct 14 19:52:41 IST 2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -208,11 +208,7 @@ class GC (object):
     
         # Store the entryid as a User defined property. Note that the
         # MAPI EntryID is a binary value; so we base64 encode it first
-        entryid_b64 = base64.b64encode(entryid)
-        ud       = gdata.contacts.data.UserDefinedField()
-        ud.key   = 'olid'
-        ud.value = entryid_b64
-        new_contact.user_defined_field.append(ud)
+        new_contact = self.add_olid_to_ce(new_contact, entryid)
 
         # Populate the email addresses
         if emails:
@@ -405,6 +401,21 @@ class GC (object):
     
         return entry
 
+
+    def add_olid_to_ce (self, ce, olid):
+        """Insert the Outlook EntryID for a contact as a  userdefined property
+        in the Google ContactEntry and returned the modified ContactEntry.
+        
+        olid is the values as returned by GetProps - and, as a result a binary
+        value. We base64 encode it before inserting into ContactEntry."""
+
+        entryid_b64 = base64.b64encode(olid)
+        ud       = gdata.contacts.data.UserDefinedField()
+        ud.key   = 'olid'
+        ud.value = entryid_b64
+        ce.user_defined_field.append(ud)
+
+        return ce
 
     def new_feed (self):
         return gdata.contacts.data.ContactsFeed()
