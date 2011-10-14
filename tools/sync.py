@@ -180,7 +180,7 @@ class Sync:
             if stats.get_cnt() % 10 == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more. FIXME. Atleast 200
-                logging.info('New Batch # %02d. Count: %3d. Size: %6.2fK',
+                logging.info('Uploading new batch # %02d to Google. Count: %3d. Size: %6.2fK',
                              stats.get_bnum(), stats.get_cnt(),
                              stats.get_size())
                 rf = self.gc.exec_batch(f)
@@ -312,9 +312,10 @@ class Sync:
     def _get_new_gc_to_ol (self):
         ces = self._fetch_gc_entries(self.gc.get_con_new())
 
-        for ce in ces:
-            cexml=xml.dom.minidom.parseString('%s'%ce)
+        f = self.gc.new_feed()
+        stats = Sync.BatchState(1, f, 'Writeback olid')
 
+        for ce in ces:
             c  = Contact(fields=self.fields, config=self.config,
                          ol=self.ol, entryid=None, props=None,
                          gcapi=self.gc, gcentry=ce, data_from_ol=False)
@@ -322,7 +323,64 @@ class Sync:
             # Save changes in Outlook and write back the olid to the Google
             # Entry
 
-            c.push_to_outlook()
+            eid = c.push_to_outlook()
+            bid = base64.b64encode(eid)
+            stats.add_con(bid, c)
+
+            ce = self.gc.add_olid_to_ce(ce, eid)
+            cexml=xml.dom.minidom.parseString('%s'%ce)
+            print cexml
+
+            f.add_update(entry=ce, batch_id_string=bid)
+            stats.incr_cnt()
+
+            if stats.get_cnt() % 10 == 0:
+                logging.info('Uploading state info to Google. ')
+                logging.info('Batch #%02d. Count: %3d. Size: %6.2fK',
+                             stats.get_bnum(), stats.get_cnt(),
+                             stats.get_size())
+
+                rf = self.gc.exec_batch(f)
+                self.process_batch_response(rf, stats)
+ 
+                f = self.gc.new_feed()
+                s = Sync.BatchState(stats.get_bnum()+1, f, 'Writeback olid')
+                stats = s
+
+        # Upload any leftovers
+        if stats.get_cnt() > 0:
+            logging.info('Uploading state info to Google. ')
+            logging.info('Batch # %02d. Count: %3d. Size: %5.2fK',
+                         stats.get_bnum(), stats.get_cnt(),
+                         stats.get_size())
+            rf = self.gc.exec_batch(f)
+            self.process_batch_response(rf, stats)
+
+
+    def _get_mod_gc_to_ol (self):
+        """Fetch the entries that we know have been modified on Google side
+        and that we want to store in Outlook."""
+
+        f = self.gc.new_feed()
+        stats = Sync.BatchState(1, f, 'update')
+
+        logging.info('=====================================================')
+        logging.info('   Fetching modified entries from Google Contacts')
+        logging.info('=====================================================')
+        logging.info('Querying Google for content of modified entries. ')
+        logging.info('Expecting to see %d entries...',
+                     len(self.gc.get_con_mod().values()))
+
+        ces = self._fetch_gc_entries(self.gc.get_con_mod().values())
+
+        resp = 'Received response from Google. '
+
+        if ces and len(ces)>0:
+            resp += '%d entries obtained.' % len(ces)
+        else:
+            resp += 'No entries found in response.'
+
+        logging.info(resp)
 
     def _del_ol (self):
         pass
