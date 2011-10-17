@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Thu Oct 13 19:24:07 IST 2011
+## Last Modified : Mon Oct 17 12:41:25 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -207,8 +207,6 @@ class Sync:
 
         Returns a list of ContactEntries"""
 
-        logging.info('Querying Google for status of Contact Entries')
-
         gid    = self.config.get_gid()
         f      = self.gc.new_feed()
         stats = Sync.BatchState(1, f, 'query')
@@ -369,9 +367,9 @@ class Sync:
         logging.info('=====================================================')
         logging.info('Querying Google for content of modified entries. ')
         logging.info('Expecting to see %d entries...',
-                     len(self.gc.get_con_mod().values()))
+                     len(self.gc.get_con_mod().keys()))
 
-        ces = self._fetch_gc_entries(self.gc.get_con_mod().values())
+        ces = self._fetch_gc_entries(self.gc.get_con_mod().keys())
 
         resp = 'Received response from Google. '
 
