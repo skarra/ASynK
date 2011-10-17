@@ -1,66 +1,63 @@
 -*- Outline -*-
 
 Created       : Wed Aug 24 22:41:42  2011
-Last Modified : Thu Aug 25 18:32:53  2011
+Last Modified : Mon Oct 17 19:09:39 IST 2011
 
 * Introduction
 
-  Android sucks.
+  There are not many open source tools available to sync Google Contacts and
+  Tasks to Outlook. PIM features and good integration with Outlook have been
+  working out of the box for years with Nokia feature phones and
+  Blackberries. However pure Android does not have any decent solutions for
+  this problem.
 
-  Now that we have gotten that out of the system, let's get down to
-  business. In general terms, there is a general shortage of good
-  applications that allow two way synching of Outlook
-  contacts/tasks/calendar to an android device. Google has strategic
-  reasons, surely, for not making these tools available out of the
-  box. But that doesn't make it any more palatable for us.
+  Gout is a google - outlook two way sync solution. For now we have support
+  for Contacts sync. We will eventually support Tasks as well. The basic idea
+  is to enable flexible two way sync from Outlook to Gmail, and let Google do
+  the remainder of the job of synching to your Android phone.
 
-  This is an attempt to build some basic open source tools to plug
-  this gap. The bsic approach is to sync your contacts and tasks with
-  gmail, from which android can sync quite well.
+* Why something new, why not try X?
 
-* FAQ
+  Google has two tools for outlook "integration" - (a) a one way migration
+  tool, and a (b) two way sync solution for Google Apps for Enterprise
+  users. The second option does not work for me. The first option has severe
+  limitations:
 
-** Why something new, why not try X?
+     - For starters, it is a one way migration tool, and does not work for
+       someone who wants to maintain her Outlook contacts database as the
+       primary store. 
 
-   - There is no two way sync software available from Google for
-     retail users. If you are lucky to have Google Apps for
-     Enterprise, I believe there is a tool that might be
-     adequate. It totally sucks that they don't just make it available
-     to everyone. I paid $500 for my Nexus phone, damn it!
+     - The migration tool is unbearably slow and is impossible to use on large
+       contact lists on a regular basis.
 
-   - EX email addresses: If your outlook contacts database has email
-     addresses in EX format, then most solutions out there will fail
-     to do it for you. This includes even one time migration solutions
-     such as exporting to CSV and importing into gmail, using Google's
-     Migration tool for Google Apps, and 2 way sync solutions that
-     otherwise have been reported to work well - like TouchDown for
-     Outlook PST
+     - The tool will load all the contacts into your 'My Contacts' Group. If
+       your Gmail contact list is polluted with a number of email-only
+       contacts, this will not be a very pleasant experience.
 
-   - Google's one way sync itself has major limitations such as
-     terribly slow, lack of flexibility to upload to a specified
-     Contacts Group, and till recently: broken EX email type. This
-     makes it very difficult to even keep Outlook as master and copy
-     to Gmail once in a while
 
-   I mean, the situation is hopeless.
+  EX email addresses: If your outlook contacts database has email addresses in
+  EX format, then most solutions out there will fail to do it for you. This
+  includes even one time migration solutions such as exporting to CSV and
+  importing into gmail and 2 way sync solutions that otherwise have been
+  reported to work well - like TouchDown for Outlook PST
 
-   There is a GPLed program written in C# called GoContactSync
-   (http://sourceforge.net/projects/gocontactsync) that claims to do
-   two way sync. But I have not given it a try as I do not know C# and
-   had no interest in learning it now.
+ There is a GPLed program written in C# called GoContactSync
+ (http://sourceforge.net/projects/gocontactsync) that claims to do two way
+ sync. But I have not given it a try as I do not know C# and had no interest
+ in learning it now.
 
 * Project Status
 
   The project is under active development and is to be treated as
-  pre-alpha. It is only recommended for developers who don't mind
-  pulling from github and running a few python scripts by hand on
-  Windows.
-
-  When it is 'ready to ship' it will be bundled into a neat self
-  installing exe file, but that will come only when the basic
-  functionality reaches beta quality.
+  pre-alpha. It is only recommended for developers who don't mind pulling from
+  github and running a few python scripts by hand on Windows.
 
 * Installation Notes:
+
+  When it is 'ready to ship' it will be bundled into a neat self installing
+  exe file, but that will come only when the basic functionality reaches beta
+  quality. For now the only way to run it is to install all the dependency
+  python packages and load up the start.py script in IDLE or fire it otherwise.
 
 ** Dependencies
 
