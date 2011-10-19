@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Oct 13 13:49:45 IST 2011
+## Last Modified : Wed Oct 19 16:39:27 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -289,6 +289,19 @@ class Outlook:
             return self.def_ctable
 
         return self.get_ctable()
+
+    def del_entries (self, eids):
+        """eids should be a list of EntryIDs - in binary format, as used by
+        the MAPI routines."""
+
+        num = len(eids)
+        cf  = self.get_default_cf()
+        if num:
+            logging.debug('Deleting %d entries (after replacement) in Outlook: ',
+                          num)
+            hr = cf.DeleteMessages(eids, 0, None, 0)
+            print 'hr = ', hr
+            cf.SaveChanges(mapi.KEEP_OPEN_READWRITE)
 
     def print_fields_for_contacts (self, cnt, fields=None):
         ctable = self.get_default_ctable()
