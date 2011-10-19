@@ -41,6 +41,7 @@ class SyncPanel(wx.Panel):
 #        self.btnAdv = wx.Button(self, -1, "Advanced")
         self.btnClear = wx.Button(self, -1, "Clear Sync State")
         self.btnSync = wx.Button(self, -1, "Sync")
+        self.btnDryRun = wx.Button(self, -1, "Dry Run")
 
         self.__set_properties()
         self.__do_layout()
@@ -48,6 +49,7 @@ class SyncPanel(wx.Panel):
 #        self.Bind(wx.EVT_BUTTON, self.Adv, self.btnAdv)
         self.Bind(wx.EVT_BUTTON, self.Clear, self.btnClear)
         self.Bind(wx.EVT_BUTTON, self.do_sync, self.btnSync)
+        self.Bind(wx.EVT_BUTTON, self.dry_run, self.btnDryRun)
         # end wxGlade
         self.SetSize((425,225))
 
@@ -84,6 +86,7 @@ class SyncPanel(wx.Panel):
 #        sizer_4.Add(self.btnAdv, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
         sizer_4.Add(self.btnClear, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
         sizer_4.Add(self.btnSync, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
+        sizer_4.Add(self.btnDryRun, 0, wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 0)
         sizer_1.Add(sizer_4, 1, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_BOTTOM, 5)
         self.SetSizer(sizer_1)
         sizer_1.Fit(self)
@@ -108,6 +111,26 @@ class SyncPanel(wx.Panel):
             logging.critical(traceback.format_exc())
 
 #        self.Parent.prgpanel.Show()
+        self.Parent.syncpanel.Show()
+
+    def dry_run (self, event):
+        self.Hide()
+
+        # Should ideally have a message box pop up to give details of
+        # the error
+
+        tstr = None
+        try:
+            sync = get_sync_obj(self.txtUsername.GetValue(),
+                                self.txtPass.GetValue())
+            sync.dry_run()
+        except gdata.client.BadAuthentication, e:
+            logging.critical('Invalid user credentials given: %s',
+                             str(e))
+        except Exception, e:
+            logging.critical('Exception (%s).', str(e))
+            logging.critical(traceback.format_exc())
+
         self.Parent.syncpanel.Show()
 
     def do_sync (self, event): # wxGlade: SyncPanel.<event_handler>
