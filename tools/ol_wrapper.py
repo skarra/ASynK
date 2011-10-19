@@ -159,6 +159,10 @@ class Outlook:
         self.def_ctable_cols = (self.def_ctable.QueryColumns(0) +
                                 (self.prop_tags.valu('GOUT_PR_GCID'),))
 
+    def __del__ (self):
+        logging.debug('Destroying mapi session...')
+        self.session.Logoff(0, 0, 0)
+
     def get_msgstores (self):
         """Return a list of (entry_id, storename) pairs of all the
         messages stores in the system."""
