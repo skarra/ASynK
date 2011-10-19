@@ -1,16 +1,11 @@
 -*- Outline -*- 
 
 Created	    	: Tue Jul 12 18:45:48  2011
-Last Modified	: Thu Aug 25 20:24:18  2011
+Last Modified	: Mon Oct 17 12:20:42 IST 2011
 
 * TODO
 
 ** Bugs
-
-*** Contact.fields keeps growing in size
-
-    With every Contact object the number of fields in the array
-    appears to keep growing by 4.
 
 *** Many key changes related to Gmail -> OL are missing
 
@@ -29,6 +24,11 @@ Last Modified	: Thu Aug 25 20:24:18  2011
     Approach now is to continue making the fixes to other parts of the
     code base, and hope either the MacBook or the Scorpio will have
     it, and in good shape. That is the hope.
+
+    Updated: Mon Oct 17 12:16:45 IST 2011
+
+    after searching far and wide I have given up on this thing, and have
+    implemented most of the stuff again. Life has to move on.
 
 *** ol.prep_contact_lists() only works on startup
 
@@ -77,16 +77,11 @@ showdeleted:true
    More contact fields need to get synched, including: 
 
    - All phon fields: Done
-   - Fax
-   - Anniversary
-   - DOB
+   - Fax: Done
+   - Anniversary: Done
+   - DOB: Done
    - IM
-   - URL
-
-The postal address information is not getting uploaded
-properly. There is no problem in reading it from the Outlook
-addressbook. There is some problem in uploading it with the right
-schema
+   - URL: Done
 
 ** Distribution
 
@@ -115,6 +110,13 @@ items.
 
 * Done
 
+** Contact.fields keeps growing in size
+
+    With every Contact object the number of fields in the array
+    appears to keep growing by 4. 
+
+    Fixed: Commit c52fd0475b6
+
 ** Track contacts that are uploaded
 
 Completed: Tue Jul 12 18:43:20  2011
@@ -127,6 +129,16 @@ defined field in Outlook.
 The code is a mess overall. Should really have MapiMsgStore,
 MapiFolder, Message etc. type wrapper objects. It is not a pretty
 sight at the moment
+
+** Upate fields
+
+*** Address Upload
+
+   The postal address information is not getting uploaded properly. There is
+   no problem in reading it from the Outlook addressbook. There is some
+   problem in uploading it with the right schema
+
+   Fixed: 2ecb408dcd
 
 ** The outlook time stamp is in UTC
 
