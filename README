@@ -1,7 +1,7 @@
 -*- Outline -*-
 
 Created       : Wed Aug 24 22:41:42  2011
-Last Modified : Mon Oct 17 19:09:39 IST 2011
+Last Modified : Wed Oct 19 17:08:16 IST 2011
 
 * Introduction
 
@@ -61,9 +61,9 @@ Last Modified : Mon Oct 17 19:09:39 IST 2011
 
 ** Dependencies
 
-   - Python 2.7
-   - Pywin32 for Python 2.7
-   - wxPython for Python 2.7
+   - Python 2.7 http://www.python.org/download/releases/
+   - Pywin32 for Python 2.7 (http://sourceforge.net/projects/pywin32/files/pywin32)
+   - wxPython for Python 2.7 (http://www.wxpython.org/download.php)
 
 ** How to run
 
