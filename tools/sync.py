@@ -398,6 +398,9 @@ class Sync:
         gc_gid = self.gc.create_group(self.config.get_gn())
         self.config.set_gid(gc_gid)
 
+    def dry_run (self):
+        self._prep_lists()
+
     def run (self):
 #        self._reset_sync()
 #        self.ol.bulk_clear_gcid_flag()
