@@ -30,10 +30,6 @@ from   datetime import datetime
 
 DEBUG = 0
 
-PR_EMAIL_1 = mapitags.PR_EMAIL_ADDRESS
-PR_EMAIL_2 = mapitags.PR_EMAIL_ADDRESS
-PR_EMAIL_3 = mapitags.PR_EMAIL_ADDRESS
-
 MOD_FLAG = mapi.MAPI_BEST_ACCESS
 
 class PropTags:
