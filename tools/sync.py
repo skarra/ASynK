@@ -299,9 +299,9 @@ class Sync:
  
         # Upload any leftovers
         if stats.get_cnt() > 0:
-            logging.info('Mod Batch # %02d. Count: %3d. Size: %5.2fK',
-                         stats.get_bnum(), stats.get_cnt(),
-                         stats.get_size())
+            logging.debug('Mod Batch # %02d. Count: %3d. Size: %5.2fK',
+                          stats.get_bnum(), stats.get_cnt(),
+                          stats.get_size())
             rf = self.gc.exec_batch(f)
             self.process_batch_response(rf, stats)
 
