@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Mon Oct 17 12:41:25 IST 2011
+## Last Modified : Wed Oct 19 17:21:45 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -180,9 +180,9 @@ class Sync:
             if stats.get_cnt() % 10 == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more. FIXME. Atleast 200
-                logging.info('Uploading new batch # %02d to Google. Count: %3d. Size: %6.2fK',
-                             stats.get_bnum(), stats.get_cnt(),
-                             stats.get_size())
+                logging.debug('Uploading new batch # %02d to Google. Count: %3d. Size: %6.2fK',
+                              stats.get_bnum(), stats.get_cnt(),
+                              stats.get_size())
                 rf = self.gc.exec_batch(f)
                 self.process_batch_response(rf, stats)
 
@@ -194,9 +194,9 @@ class Sync:
 
         # Upload any leftovers
         if stats.get_cnt() > 0:
-            logging.info('New Batch # %02d. Count: %3d. Size: %5.2fK',
-                         stats.get_bnum(), stats.get_cnt(),
-                         stats.get_size())
+            logging.debug('New Batch # %02d. Count: %3d. Size: %5.2fK',
+                          stats.get_bnum(), stats.get_cnt(),
+                          stats.get_size())
             rf = self.gc.exec_batch(f)
             self.process_batch_response(rf, stats)
 
@@ -224,9 +224,9 @@ class Sync:
             if stats.get_cnt() % 200 == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more
-                logging.info('Qry Batch # %02d. Count: %3d. Size: %6.2fK',
-                             stats.get_bnum(), stats.get_cnt(),
-                             stats.get_size())
+                logging.debug('Qry Batch # %02d. Count: %3d. Size: %6.2fK',
+                              stats.get_bnum(), stats.get_cnt(),
+                              stats.get_size())
 
                 rf  = self.gc.exec_batch(f)
                 ces = self.process_batch_response(rf, stats)
@@ -238,15 +238,14 @@ class Sync:
 
         # Process any leftovers
         if stats.get_cnt() > 0:
-            logging.info('Qry Batch # %02d. Count: %3d. Size: %5.2fK',
-                         stats.get_bnum(), stats.get_cnt(),
-                         stats.get_size())
+            logging.debug('Qry Batch # %02d. Count: %3d. Size: %5.2fK',
+                          stats.get_bnum(), stats.get_cnt(),
+                          stats.get_size())
             
             rf  = self.gc.exec_batch(f)
             ces = self.process_batch_response(rf, stats)
             [ret.append(x) for x in ces]
 
-        logging.info('Response recieved from Google. Processing...')
         return ret
 
     def _send_mod_ol_to_gc (self):
@@ -287,9 +286,9 @@ class Sync:
             if stats.get_cnt() % 10 == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more
-                logging.info('Mod Batch # %02d. Count: %3d. Size: %6.2fK',
-                             stats.get_bnum(), stats.get_cnt(),
-                             stats.get_size())
+                logging.debug('Mod Batch # %02d. Count: %3d. Size: %6.2fK',
+                              stats.get_bnum(), stats.get_cnt(),
+                              stats.get_size())
  
                 rf = self.gc.exec_batch(f)
                 self.process_batch_response(rf, stats)
