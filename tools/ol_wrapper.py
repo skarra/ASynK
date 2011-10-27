@@ -848,7 +848,7 @@ class Contact:
                              winerror.HRESULT_CODE(hr))
             return None
 
-        msg.SaveChanges(0)
+        msg.SaveChanges(mapi.KEEP_OPEN_READWRITE)
 
         # Now that we have successfully saved the record, let's fetch the
         # entryid and return it to the caller.
@@ -975,7 +975,8 @@ def print_values (values):
 
 
 def main (argv=None):
-    print 'Hello World'
+    config = Config('app_state.json')
+    ol     = Outlook(config)
 
 if __name__ == "__main__":
     main()
