@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Tue Oct 18 16:29:54 IST 2011
+## Last Modified : Thu Oct 27 20:46:54 IST 2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -487,7 +487,7 @@ class GC (object):
     def prep_gc_contact_lists (self, cnt=0):
         logging.info('Querying Google for status of Contact Entries...')
 
-        updated_min = self.config.get_last_sync_start()
+        updated_min = self.config.get_last_sync_stop()
         gid         = self.config.get_gid()
         feed = self._get_updated_gc_feed(updated_min, gid)
 

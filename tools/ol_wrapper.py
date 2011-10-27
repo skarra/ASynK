@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Wed Oct 19 16:39:27 IST 2011
+## Last Modified : Thu Oct 27 20:41:56 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -382,9 +382,11 @@ class Outlook:
         self.reset_sync_lists()
 
         synct_str = self.config.get_last_sync_start()
-        synct     = iso8601.parse(synct_str)
-        print 'Last Start iso str: ', synct_str
-        print 'Curr Time: ', iso8601.tostring(time.time())
+        synct_sto = self.config.get_last_sync_stop()
+        synct     = iso8601.parse(synct_sto)
+        print 'Last Start iso str : ', synct_str
+        print 'Last Stop  iso str : ', synct_sto
+        print 'Curr Time          : ', iso8601.tostring(time.time())
 
         logging.info('Data obtained from MAPI. Processing...')
 
