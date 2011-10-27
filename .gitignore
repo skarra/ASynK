@@ -12,3 +12,5 @@
 *.pyo
 *.pst
 *.PST
+.DS_Store
+Thumbs.db
