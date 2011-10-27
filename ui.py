@@ -148,8 +148,8 @@ class SyncPanel(wx.Panel):
 
             sync.run()
 
-#            sync.config.set_last_sync_start(val=new_sync_start)
-#            sync.config.set_last_sync_stop()
+            sync.config.set_last_sync_start(val=new_sync_start)
+            sync.config.set_last_sync_stop()
         except gdata.client.BadAuthentication, e:
             # Reset the start time so we retry any failed sync
             # attempts. It is theoritically possible to be more granular
