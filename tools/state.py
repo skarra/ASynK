@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 13:54:53  2011
-## Last Modified : Wed Oct 12 20:26:05 IST 2011
+## Last Modified : Mon Nov 07 16:53:51 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -18,7 +18,7 @@ class Config:
     GOOGLE  = 2
 
     # There has to be a better way than this...
-    sync_strs = [None, 'OUTLOOK', 'GOOGLE']
+    sync_strs = [None, 'OUTLOOK', 'GOOGLE', 'TWOWAY']
 
     def __init__ (self, fn, sync_through=True):
         """If sync_through is True, any change to the configuration is
@@ -40,8 +40,12 @@ class Config:
         fi.close()
 
         self.state = self.inp
+
         self.state['conflict_resolve'] = getattr(
             self, self.inp['conflict_resolve'])
+
+        self.state['sync_dir'] = getattr(
+            self, self.inp['sync_dir'])
 
         self.sync_through = sync_through
 
@@ -100,6 +104,12 @@ class Config:
     def set_resolve (self, val, sync=True):
         return self._set_prop('conflict_resolve', val, sync)
 
+    def get_sync_dir (self):
+        return self._get_prop('sync_dir')
+
+    def set_sync_dir (self, val, sync=True):
+        return self._set_prop('sync_dir', val, sync)
+
     def save (self, fn=None):
         """fn should be the full absolute path. There is no guarantee
         where it might ge created if you are not careful."""
@@ -116,6 +126,10 @@ class Config:
         save = self.get_resolve()
         if save:
             self.set_resolve(self.sync_strs[save], False)
+
+        save = self.get_sync_dir()
+        if save:
+            self.set_sync_dir(self.sync_strs[save], False)
 
         fi.write(demjson.encode(self.state))
 
