@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 13:54:53  2011
-## Last Modified : Mon Nov 07 16:53:51 IST 2011
+## Last Modified : Mon Nov 07 17:57:07 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -11,6 +11,10 @@
 import iso8601
 import demjson
 import logging, os, time
+
+SYNC_2_WAY     = 'Two Way Merge'
+SYNC_1_WAY_O2G = "One Way Sync - Outlook to Google"
+SYNC_1_WAY_G2O = "One Way Sync - Google  to Outlook"
 
 class Config:
 
@@ -43,9 +47,6 @@ class Config:
 
         self.state['conflict_resolve'] = getattr(
             self, self.inp['conflict_resolve'])
-
-        self.state['sync_dir'] = getattr(
-            self, self.inp['sync_dir'])
 
         self.sync_through = sync_through
 
@@ -126,10 +127,6 @@ class Config:
         save = self.get_resolve()
         if save:
             self.set_resolve(self.sync_strs[save], False)
-
-        save = self.get_sync_dir()
-        if save:
-            self.set_sync_dir(self.sync_strs[save], False)
 
         fi.write(demjson.encode(self.state))
 
