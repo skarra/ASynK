@@ -8,6 +8,7 @@ from   gc_wrapper    import GC
 from   sync          import Sync
 from   win32com.mapi import mapitags, mapiutil
 
+import tools.state
 import wx, sys
 import demjson
 import logging, traceback
@@ -24,6 +25,11 @@ sync = None
 start_of_time="1971-01-01T12:00:00.00+05:30"
 
 class SyncPanel(wx.Panel):
+
+    sync_dirs = [tools.state.SYNC_2_WAY,
+                 tools.state.SYNC_1_WAY_O2G,
+                 tools.state.SYNC_1_WAY_G2O]
+    
     def __init__(self, *args, **kwds):
         # begin wxGlade: SyncPanel.__init__
         kwds["style"] = wx.TAB_TRAVERSAL
@@ -37,7 +43,9 @@ class SyncPanel(wx.Panel):
 #        self.chkContacts = wx.CheckBox(self, -1, "Contacts")
 #        self.chkCal = wx.CheckBox(self, -1, "Calendar")
 #        self.chkTasks = wx.CheckBox(self, -1, "Tasks")
-        self.rdoSyncdir = wx.RadioBox(self, -1, "Sync Direction", choices=["Two Way", "One Way - Google to Outlook", "One Way - Outlook to Google"], majorDimension=0, style=wx.RA_SPECIFY_ROWS)
+        self.rdoSyncdir = wx.RadioBox(self, -1, "Sync Direction",
+                                      choices=self.sync_dirs,
+                                      majorDimension=0, style=wx.RA_SPECIFY_ROWS)
 #        self.btnAdv = wx.Button(self, -1, "Advanced")
         self.btnClear = wx.Button(self, -1, "Clear Sync State")
         self.btnSync = wx.Button(self, -1, "Sync")
@@ -101,7 +109,8 @@ class SyncPanel(wx.Panel):
         global sync
         try:
             sync = get_sync_obj(self.txtUsername.GetValue(),
-                                self.txtPass.GetValue())
+                                self.txtPass.GetValue(),
+                                self.sync_dirs[self.rdoSyncdir.GetSelection()])
             sync._reset_sync()
         except gdata.client.BadAuthentication, e:
             logging.critical('Invalid user credentials given: %s',
@@ -122,7 +131,8 @@ class SyncPanel(wx.Panel):
         tstr = None
         try:
             sync = get_sync_obj(self.txtUsername.GetValue(),
-                                self.txtPass.GetValue())
+                                self.txtPass.GetValue(),
+                                self.sync_dirs[self.rdoSyncdir.GetSelection()])
             sync.dry_run()
         except gdata.client.BadAuthentication, e:
             logging.critical('Invalid user credentials given: %s',
@@ -142,7 +152,8 @@ class SyncPanel(wx.Panel):
         tstr = None
         try:
             sync = get_sync_obj(self.txtUsername.GetValue(),
-                                self.txtPass.GetValue())
+                                self.txtPass.GetValue(),
+                                self.sync_dirs[self.rdoSyncdir.GetSelection()])
             old_sync_start = sync.config.get_last_sync_start()
             new_sync_start = sync.config.get_curr_time()
 
@@ -331,7 +342,7 @@ def get_sync_fields (fn="fields.json"):
     return ar
 
 
-def get_sync_obj (user, pwd):
+def get_sync_obj (user, pwd, dirn):
     config = Config('app_state.json')
     ol     = Outlook(config)
 
@@ -345,7 +356,7 @@ def get_sync_obj (user, pwd):
     fields.append(ol.prop_tags.valu('GOUT_PR_GCID'))
 
     global sync
-    sync = Sync(config, fields, ol, gc)
+    sync = Sync(config, fields, ol, gc, dirn=dirn)
 
     return sync
 

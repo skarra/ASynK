@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Wed Oct 19 17:21:45 IST 2011
+## Last Modified : Mon Nov 07 17:50:53 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -13,6 +13,7 @@ from   ol_wrapper    import Outlook, Contact
 from   gc_wrapper    import GC
 from   win32com.mapi import mapitags, mapiutil
 
+import state
 import utils
 import gdata.contacts.client
 import atom
@@ -39,19 +40,19 @@ SYNC_CONFLICT              = 409
 SYNC_INTERNAL_SERVER_ERROR = 500
 
 class Sync:
-    def __init__ (self, config, fields, ol, gc):
+    def __init__ (self, config, fields, ol, gc, dirn=state.SYNC_2_WAY):
         self.config = config
         self.fields = fields
         self.ol     = ol
         self.gc     = gc
-
+        self.dir    = dirn
 
     def reset_state (self):
         """Reset counters and other state information before starting."""
         pass
 
 
-    def _prep_lists (self):
+    def _prep_lists_2_way (self):
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
@@ -82,6 +83,27 @@ class Sync:
         print 'cr : ', cr
         print 'size of gc mod: ', len(self.gc.con_gc_mod)
         print 'size of ol mod: ', len(self.ol.con_mod)
+
+    def _prep_lists_1_way_o2g (self):
+        self.ol.prep_ol_contact_lists()
+        print 'size of ol mod: ', len(self.ol.con_mod)
+
+    def _prep_lists_1_way_g2o (self):
+        self.gc.prep_gc_contact_lists()
+        print 'size of gc mod: ', len(self.gc.con_gc_mod)
+
+    def _prep_lists (self):
+        """Identify the list of contacts that need to be copied from one
+        place to the other and set the stage for the actual sync"""
+
+        print 'self.dir is ', self.dir
+
+        if (self.dir == state.SYNC_2_WAY):
+            self._prep_lists_2_way()
+        elif (self.dir == state.SYNC_1_WAY_O2G):
+            self._prep_lists_1_way_o2g()
+        elif (self.dir == state.SYNC_1_WAY_G2O):
+            self._prep_lists_1_way_g2o()
 
     class BatchState:
         def __init__ (self, num, f, op=None):
@@ -411,14 +433,19 @@ class Sync:
         self._prep_lists()
 
     def run (self):
-#        self._reset_sync()
-#        self.ol.bulk_clear_gcid_flag()
         self._prep_lists()
-#        self._send_new_ol_to_gc()
-        self._send_mod_ol_to_gc()
-#        self._get_new_gc_to_ol()
-#        self._del_gc()
-#        self._del_ol()
+
+        if (self.dir == state.SYNC_2_WAY or
+            self.dir == state.SYNC_1_WAY_O2G):
+            self._send_new_ol_to_gc()
+            self._send_mod_ol_to_gc()
+#            self._del_gc()
+
+        if (self.dir == state.SYNC_2_WAY or
+            self.dir == state.SYNC_1_WAY_G2O):
+            self._get_new_gc_to_ol()
+            self._get_mod_gc_to_ol()
+#            self._del_ol()
 
 def main (argv = None):
     print 'Hello World'
