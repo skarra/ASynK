@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Oct 27 20:41:56 IST 2011
+## Last Modified : Thu Nov 17 18:55:37 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -465,6 +465,15 @@ class Outlook:
         logging.info('Num entries cleared: %d. i = %d', cnt, i)
         return cnt
 
+    def get_ol_item (self, entryid):
+        return self.def_msgstore.OpenEntry(entryid, None, MOD_FLAG)
+
+    def get_entry_name (self, entryid):
+        item      = self.get_ol_item(entryid)
+        hr, props = item.GetProps([mapitags.PR_DISPLAY_NAME], mapi.MAPI_UNICODE)
+        tag, name = props[0] if props else (None, '')
+
+        return name
 
 class Contact:
     def __init__ (self, fields, config, props, ol, gcapi=None,

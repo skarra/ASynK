@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Mon Nov 07 17:50:53 IST 2011
+## Last Modified : Thu Nov 17 18:49:37 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -168,8 +168,17 @@ class Sync:
                 err_str = '' if err is None else ('Code: %s' % err)
                 err_str = 'Reason: %s. %s' % (reason, err_str)
 
-                logging.error('Sync failed for bid %s: %s',
-                              bid, err_str)
+                if op == 'insert' or op == 'update':
+                    logging.error('Upload to Google failed for: %s: %s',
+                                  bstate.get_con(bid).name, err_str)
+                elif op == 'Writeback olid':
+                    logging.error('Could not complete sync for: %s: %s',
+                                  bstate.get_con(bid).name, err_str)
+                else:
+                    ## We could just print a more detailed error for all
+                    ## cases. Should do some time FIXME.
+                    logging.error('Sync failed for bid %s: %s',
+                                   bid, err_str)
             else:
                 if op == 'query':
                     con = entry
@@ -191,9 +200,16 @@ class Sync:
         stats = Sync.BatchState(1, f, 'insert')
 
         for olid in self.ol.get_con_new():
-            c  = Contact(fields=self.fields, config=self.config,
-                         ol=self.ol, entryid=olid, props=None,
-                         gcapi=self.gc)
+            try:
+                c  = Contact(fields=self.fields, config=self.config,
+                             ol=self.ol, entryid=olid, props=None,
+                             gcapi=self.gc)
+            except Exception, e:
+                name = self.ol.get_entry_name(olid)
+                logging.error('Could not upload to Google: %s: Reason: %s',
+                              name, str(e))
+                continue
+                              
             ce = c.get_gc_entry()
             bid = base64.b64encode(c.entryid)
             stats.add_con(bid, c)
