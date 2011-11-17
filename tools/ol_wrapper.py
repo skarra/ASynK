@@ -754,8 +754,6 @@ class Contact:
                               self.prop_tags.name(tag), prop_tag)
                 val = ''            # This could be an int. FIXME
         except Exception, e:
-            logging.info("update_prop(): could not fetch old value... (%s).",
-                         e)
             val = ''            # This could be an int. FIXME
 
         if action == self.PROP_REPLACE:
