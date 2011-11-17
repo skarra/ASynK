@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Thu Oct 27 20:46:54 IST 2011
+## Last Modified : Thu Nov 17 19:37:32 IST 2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -167,6 +167,18 @@ class GC (object):
             logging.error('Could not create Group \'%s\'', gn)
             return None
 
+    def is_valid_phone_number (self, phone, type, name):
+        phone = phone.strip()
+        valid = True
+        if (phone == '' or phone == '-' or phone == '_'):
+            valid = False
+   
+        if not valid:
+            logging.info('Invalid %12s number for contact %s. Skipping field',
+                         type, name)
+
+        return valid
+
     def create_contact_entry (self, entryid, name, gnames, emails=None, 
                               gids=None, company=None, notes=None,
                               title=None, dept=None, ph_prim=None,
@@ -254,56 +266,56 @@ class GC (object):
             new_contact.organization = org
     
         # Populate the phone numbers
-        if ph_mobile:
+        if ph_mobile and self.is_valid_phone_number(ph_mobile, 'Mobile', name):
             prim = 'true' if ph_prim == ph_mobile else 'false'
             mobile = gdata.data.PhoneNumber(text=ph_mobile,
                                             primary=prim,
                                             rel=gdata.data.MOBILE_REL)
             new_contact.phone_number.append(mobile)
     
-        if ph_home:
+        if ph_home and self.is_valid_phone_number(ph_home, 'Home', name):
             prim = 'true' if ph_prim == ph_home else 'false'
             home = gdata.data.PhoneNumber(text=ph_home,
                                           primary=prim,
                                           rel=gdata.data.HOME_REL)
             new_contact.phone_number.append(home)
     
-        if ph_home2:
+        if ph_home2 and self.is_valid_phone_number(ph_home2, 'Home 2', name):
             prim = 'true' if ph_prim == ph_home2 else 'false'
             home = gdata.data.PhoneNumber(text=ph_home2,
                                           primary=prim,
                                           rel=gdata.data.HOME_REL)
             new_contact.phone_number.append(home)
 
-        if ph_work:
+        if ph_work and self.is_valid_phone_number(ph_work, 'Business', name):
             prim = 'true' if ph_prim == ph_work else 'false'
             work = gdata.data.PhoneNumber(text=ph_work,
                                           primary=prim,
                                           rel=gdata.data.WORK_REL)
             new_contact.phone_number.append(work)
 
-        if ph_work2:
+        if ph_work2 and self.is_valid_phone_number(ph_work2, 'Business 2', name):
             prim = 'true' if ph_prim == ph_work2 else 'false'
             work = gdata.data.PhoneNumber(text=ph_work2,
                                           primary=prim,
                                           rel=gdata.data.WORK_REL)
             new_contact.phone_number.append(work)
 
-        if ph_other:
+        if ph_other and self.is_valid_phone_number(ph_other, 'Other', name):
             prim  = 'true' if ph_prim == ph_other else 'false'
             other = gdata.data.PhoneNumber(text=ph_other,
                                            primary=prim,
                                            rel=gdata.data.OTHER_REL)
             new_contact.phone_number.append(other)
 
-        if fax_home:
+        if fax_home and self.is_valid_phone_number(ph_fax, 'Fax Home', name):
             prim = 'true' if fax_prim == fax_home else 'false'
             home = gdata.data.PhoneNumber(text=fax_home,
                                           primary=prim,
                                           rel=gdata.data.HOME_FAX_REL)
             new_contact.phone_number.append(home)
 
-        if fax_work:
+        if fax_work and self.is_valid_phone_number(fax_work, 'Fax Work', name):
             prim = 'true' if fax_prim == fax_work else 'false'
             work = gdata.data.PhoneNumber(text=fax_work,
                                           primary=prim,
