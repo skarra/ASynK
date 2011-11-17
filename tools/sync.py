@@ -40,6 +40,8 @@ SYNC_CONFLICT              = 409
 SYNC_INTERNAL_SERVER_ERROR = 500
 
 class Sync:
+    BATCH_SIZE = 100
+
     def __init__ (self, config, fields, ol, gc, dirn=state.SYNC_2_WAY):
         self.config = config
         self.fields = fields
@@ -199,9 +201,9 @@ class Sync:
             f.add_insert(entry=ce, batch_id_string=bid)
             stats.incr_cnt()
 
-            if stats.get_cnt() % 10 == 0:
+            if stats.get_cnt() % self.BATCH_SIZE == 0:
                 # Feeds have to be less than 1MB. We can push this some
-                # more. FIXME. Atleast 200
+                # more. FIXME. Atleast self.BATCH_SIZE
                 logging.debug('Uploading new batch # %02d to Google. Count: %3d. Size: %6.2fK',
                               stats.get_bnum(), stats.get_cnt(),
                               stats.get_size())
@@ -212,7 +214,7 @@ class Sync:
                 s = Sync.BatchState(stats.get_bnum()+1, f, 'insert')
                 stats = s
 
-                break           # debug
+#                break           # debug
 
         # Upload any leftovers
         if stats.get_cnt() > 0:
@@ -243,7 +245,7 @@ class Sync:
             f.add_query(entry=ce, batch_id_string=gcid)
             stats.incr_cnt()
 
-            if stats.get_cnt() % 200 == 0:
+            if stats.get_cnt() % self.BATCH_SIZE == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more
                 logging.debug('Qry Batch # %02d. Count: %3d. Size: %6.2fK',
@@ -305,7 +307,7 @@ class Sync:
             f.add_update(entry=c.get_gc_entry(), batch_id_string=bid)
             stats.incr_cnt()
  
-            if stats.get_cnt() % 10 == 0:
+            if stats.get_cnt() % self.BATCH_SIZE == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more
                 logging.debug('Mod Batch # %02d. Count: %3d. Size: %6.2fK',
@@ -389,7 +391,7 @@ class Sync:
                 f.add_update(entry=ce, batch_id_string=bid)
                 stats.incr_cnt()
 
-                if stats.get_cnt() % 10 == 0:
+                if stats.get_cnt() % self.BATCH_SIZE == 0:
                     logging.info('Uploading Oulook EntryIDs to Google...')
                     logging.debug('Batch #%02d. Count: %3d. Size: %6.2fK',
                                   stats.get_bnum(), stats.get_cnt(),
