@@ -343,9 +343,13 @@ def get_sync_fields (fn="fields.json"):
 
 
 def get_sync_obj (user, pwd, dirn):
+    logging.info('Refreshing app configuration...')
     config = Config('app_state.json')
+
+    logging.info('Opening Outlook message store...')
     ol     = Outlook(config)
 
+    logging.info('Logging into Gmail to set up connection...')
     gc = None
     gc = GC(config, user, pwd)
 
