@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Thu Nov 17 18:55:37 IST 2011
+## Last Modified : Tue Nov 29 17:34:00 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -20,12 +20,12 @@ import gdata.client
 import gdata.contacts.client
 import iso8601
 import base64
+import filetimes
 
 from   gc_wrapper import get_udp_by_key
 import utils
 
-import logging, os, os.path
-import time
+import sys, logging, os, os.path, time
 from   datetime import datetime
 
 DEBUG = 0
@@ -670,39 +670,45 @@ class Contact:
                 pass
 
         # Notes field
-        if ce.content:
+        if ce.content and ce.content.text:
             props.append((mapitags.PR_BODY, ce.content.text))
 
         # A reference to the contact entry's ID in Google's database. Recall
         # that this ID is not constant. Everytime it is edited it changes -
         # this is Google's way of ensuring there is no crossfire across apps
-        if ce.link:
+        if ce.link and gcid_tag:
             gcid = utils.get_link_rel(ce.link, 'edit')
             props.append((gcid_tag, gcid))
 
         # Email addresses. Need to figure out how primary email
         # addresses are tracked in MAPI
         if ce.email:
-            if len(ce.email) > 0:
+            if len(ce.email) > 0 and ce.email[0].address:
                 props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_1'),
                                ce.email[0].address))
-            if len(ce.email) > 1:
+            if len(ce.email) > 1 and ce.email[1].address:
                 props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_2'),
                                ce.email[1].address))
-            if len(ce.email) > 2:
+            if len(ce.email) > 2 and ce.email[2].address:
                 props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_3'),
                                ce.email[2].address))
 
+        # Postal address
+        if ce.structured_postal_address:
+            # FIXME: Need to implement this
+            pass
+
         if ce.organization:
-            if ce.organization.name:
+            if ce.organization.name and ce.organization.name.text:
                 value = ce.organization.name.text
                 props.append((mapitags.PR_COMPANY_NAME, value))
-            if ce.organization.title:
+            if ce.organization.title and ce.organization.title.text:
                 value = ce.organization.title.text
                 props.append((mapitags.PR_TITLE, value))
             if ce.organization.department:
                 value = ce.organization.department.text
-                props.append((mapitags.PR_DEPARTMENT_NAME, value))
+                if value:
+                    props.append((mapitags.PR_DEPARTMENT_NAME, value))
 
         # Phone numbers. Need to figure out how primary phone numbers
         # are tracked in MAPI
@@ -718,29 +724,53 @@ class Contact:
                 # Outlook ... We will just keep overwriting the second
                 # number. FIXME: could potentially do something smarter
                 # here
-                if ph.rel == gdata.data.HOME_REL:
+                if ph.rel == gdata.data.HOME_REL and ph.text:
                     props.append((har[hcnt], ph.text))
                     hcnt += (1 if hcnt < 1 else 0)
-                elif ph.rel == gdata.data.WORK_REL:
+                elif ph.rel == gdata.data.WORK_REL and ph.text:
                     props.append((bar[bcnt], ph.text))
                     bcnt += (1 if bcnt < 1 else 0)
-                elif ph.rel == gdata.data.OTHER_REL:
+                elif ph.rel == gdata.data.OTHER_REL and ph.text:
                     props.append((mapitags.PR_OTHER_TELEPHONE_NUMBER,
                                   ph.text))
-                elif ph.rel == gdata.data.MOBILE_REL:
+                elif ph.rel == gdata.data.MOBILE_REL and ph.text:
                     props.append((mapitags.PR_MOBILE_TELEPHONE_NUMBER,
                                   ph.text))
 
-                if ph.primary == 'true':
+                if ph.primary == 'true' and ph.text:
                     props.append((mapitags.PR_PRIMARY_TELEPHONE_NUMBER,
                                   ph.text))
+
+        if ce.nickname and ce.nickname.text:
+            props.append((mapitags.NICKNAME, ce.nickname.text))
+
+        if ce.gender and ce.gender.value:
+            props.append((mapitags.PR_GENDER, ce.gender.value))
+
+        if ce.birthday and ce.birthday.when:
+            d = utils.yyyy_mm_dd_to_pytime(ce.birthday.when)
+            props.append((mapitags.PR_BIRTHDAY, d))
+
+        if ce.event and len(ce.event) > 0:
+            ann = utils.get_event_rel(ce.event, 'anniversary')
+            if ann:
+                print "when: ",  ann.start
+                dt = utils.yyyy_mm_dd_to_pytime(ann.start)
+                props.append((mapitags.PR_WEDDING_ANNIVERSARY, dt))
+
+        if ce.website:
+            for site in ce.website:
+                if site.rel == 'home-page':
+                    props.append((maptags.PR_PERSONAL_HOME_PAGE, site.href))
+                elif site.rel == 'work':
+                    props.append((mapitags.PR_BUSINESS_HOME_PAGE, site.href))
 
         return props
 
     def get_ol_item (self):
         if self.ol_item is None:
             self.ol_item = self.msgstore.OpenEntry(self.entryid, None,
-                                                MOD_FLAG)
+                                                   MOD_FLAG)
 
         return self.ol_item
 
@@ -849,6 +879,7 @@ class Contact:
         if not msg:
             return None
 
+        print 'props_list: ', self.props_list
         hr, res = msg.SetProps(self.props_list)
         if (winerror.FAILED(hr)):
             logging.critical('push_to_outlook(): unable to SetProps (code: %x)',
