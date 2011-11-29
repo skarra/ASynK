@@ -11,6 +11,15 @@
 ## Licensed under the GPL v3
 ## 
 
+import pywintypes
+
+def yyyy_mm_dd_to_pytime (date_str):
+    dt = datetime.strptime(date_str, '%Y-%m-%d')
+    return pywintypes.Time(dt.timetuple())
+
+def pytime_to_datetime (pyt):
+    return None
+
 def get_link_rel (links, rel):
     """From a Google data entry links array, fetch the link with the
     specifirf 'rel' attribute. examples of values for 'rel' could be:
