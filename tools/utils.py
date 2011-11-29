@@ -3,7 +3,7 @@
 ## utils.py
 ##
 ## Created       : Tue Jul 26 06:54:41  2011
-## Last Modified : Thu Jul 28 16:11:27  2011
+## Last Modified : Tue Nov 29 17:23:12 IST 2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -28,6 +28,17 @@ def get_link_rel (links, rel):
     for link in links:
         if link.rel == rel:
             return link.href
+
+    return None
+
+def get_event_rel (events, rel):
+    """From a Google data entry events array, fetch and return the first event
+    with the specified 'rel' attribute. examples of values for 'rel' could be:
+    anniversary, etc."""
+
+    for event in events:
+        if event.rel == rel:
+            return event.when
 
     return None
 
