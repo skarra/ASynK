@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Tue Nov 29 17:34:00 IST 2011
+## Last Modified : Tue Nov 29 18:34:52 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -300,7 +300,6 @@ class Outlook:
             logging.debug('Deleting %d entries (after replacement) in Outlook: ',
                           num)
             hr = cf.DeleteMessages(eids, 0, None, 0)
-            print 'hr = ', hr
             cf.SaveChanges(mapi.KEEP_OPEN_READWRITE)
 
     def print_fields_for_contacts (self, cnt, fields=None):
@@ -754,7 +753,6 @@ class Contact:
         if ce.event and len(ce.event) > 0:
             ann = utils.get_event_rel(ce.event, 'anniversary')
             if ann:
-                print "when: ",  ann.start
                 dt = utils.yyyy_mm_dd_to_pytime(ann.start)
                 props.append((mapitags.PR_WEDDING_ANNIVERSARY, dt))
 
@@ -879,7 +877,6 @@ class Contact:
         if not msg:
             return None
 
-        print 'props_list: ', self.props_list
         hr, res = msg.SetProps(self.props_list)
         if (winerror.FAILED(hr)):
             logging.critical('push_to_outlook(): unable to SetProps (code: %x)',
