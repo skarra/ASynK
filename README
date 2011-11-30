@@ -1,7 +1,7 @@
 -*- Outline -*-
 
-Created       : Wed Aug 24 22:41:42  2011
-Last Modified : Wed Oct 19 17:08:16 IST 2011
+Created       : Wed Aug 24 22:41:42 IST 2011
+Last Modified : Wed Nov 30 18:00:57 IST 2011
 
 * Introduction
 
@@ -54,18 +54,39 @@ Last Modified : Wed Oct 19 17:08:16 IST 2011
 
 * Installation Notes:
 
-  When it is 'ready to ship' it will be bundled into a neat self installing
-  exe file, but that will come only when the basic functionality reaches beta
-  quality. For now the only way to run it is to install all the dependency
-  python packages and load up the start.py script in IDLE or fire it otherwise.
+** From Source
 
-** Dependencies
+   - Get the source using Git from github:
 
-   - Python 2.7 http://www.python.org/download/releases/
-   - Pywin32 for Python 2.7 (http://sourceforge.net/projects/pywin32/files/pywin32)
-   - wxPython for Python 2.7 (http://www.wxpython.org/download.php)
+     git clone git://github.com/skarra/Gout.git
+ 
+   - Install the dependencies
 
-** How to run
+     - Python 2.7 http://www.python.org/download/releases/
+     - Pywin32 for Python 2.7 (http://sourceforge.net/projects/pywin32/files/pywin32)
+     - wxPython for Python 2.7 (http://www.wxpython.org/download.php)
 
-   - The main file is Gout/start.py -- load it up in IDLE
-   - You will have to edit the gmail credentials
+   Once all the packages are installed you can execute the main.py script
+   without any arguments to start the application.
+
+** From one of the packaged bundles
+
+   - Get a pre-packaged stable version from
+     https://github.com/skarra/Gout/downloads
+
+
+   - Unzip and execute the main.exe file in the unzipped directory
+
+* Dependencies
+  
+  The package downloads are intended to be self contained windows
+  executables. You should not need to download anything else, including
+  Python.
+
+  If you are started from the sources, you should have the dependencies listed
+  in the Installation Notes above.
+
+  In addition, if you are interested in building a windows executable bundle
+  then you will need:
+   
+   - pyinstaller 1.5.1 (http://files.zibricky.org/pyinst/pyinstaller-1.5.1.zip)
