@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Tue Nov 29 18:34:52 IST 2011
+## Last Modified : Wed Nov 30 18:03:59 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -20,7 +20,6 @@ import gdata.client
 import gdata.contacts.client
 import iso8601
 import base64
-import filetimes
 
 from   gc_wrapper import get_udp_by_key
 import utils
