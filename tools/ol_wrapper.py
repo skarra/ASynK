@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Wed May 18 13:16:17  2011
-## Last Modified : Wed Nov 30 18:03:59 IST 2011
+## Last Modified : Wed Nov 30 18:30:30 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -382,9 +382,9 @@ class Outlook:
         synct_str = self.config.get_last_sync_start()
         synct_sto = self.config.get_last_sync_stop()
         synct     = iso8601.parse(synct_sto)
-        print 'Last Start iso str : ', synct_str
-        print 'Last Stop  iso str : ', synct_sto
-        print 'Curr Time          : ', iso8601.tostring(time.time())
+        logging.debug('Last Start iso str : %s', synct_str)
+        logging.debug('Last Stop  iso str : %s', synct_sto)
+        logging.debug('Current Time       : %s', iso8601.tostring(time.time()))
 
         logging.info('Data obtained from MAPI. Processing...')
 
@@ -413,12 +413,12 @@ class Outlook:
             if cnt != 0 and i >= cnt:
                 break
 
-        print '==== OL ====='
-        print 'num processed: ', i
-        print 'num total:     ', len(self.con_all.items())
-        print 'num new:       ', len(self.con_new)
-        print 'num mod:       ', len(self.con_mod)
-        print 'num old unmod: ', old
+        logging.debug('==== OL =====')
+        logging.debug('num processed : %5d', i)
+        logging.debug('num total     : %5d', len(self.con_all.items()))
+        logging.debug('num new       : %5d', len(self.con_new))
+        logging.debug('num mod       : %5d', len(self.con_mod))
+        logging.debug('num old unmod : %5d', old)
 
     def bulk_clear_gcid_flag (self):
         """Clear any gcid tags that are stored in Outlook. This is

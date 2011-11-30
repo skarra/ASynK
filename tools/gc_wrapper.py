@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Tue Nov 29 18:08:48 IST 2011
+## Last Modified : Wed Nov 30 18:30:20 IST 2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -529,13 +529,13 @@ class GC (object):
                 else:
                     self.con_gc_new.append(gcid)
 
-        print '==== GC ====='
-        print 'num processed:    ', i+1
-        print 'num total:        ', len(self.con_all.items())
-        print 'num new:          ', len(self.con_gc_new)
-        print 'num mod:          ', len(self.con_gc_mod)
-        print 'num del:          ', len(self.con_gc_del)
-        print 'num del bef sync: ', skip
+        logging.debug('==== GC =====')
+        logging.debug('num processed    : %5d', i+1)
+        logging.debug('num total        : %5d', len(self.con_all.items()))
+        logging.debug('num new          : %5d', len(self.con_gc_new))
+        logging.debug('num mod          : %5d', len(self.con_gc_mod))
+        logging.debug('num del          : %5d', len(self.con_gc_del))
+        logging.debug('num del bef sync : %5d', skip)
 
     def exec_batch (self, batch_feed):
         return self.gd_client.ExecuteBatch(

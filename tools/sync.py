@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Tue Nov 29 18:31:22 IST 2011
+## Last Modified : Wed Nov 30 18:31:42 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -70,7 +70,7 @@ class Sync:
 
         coma = [ol for ol,gc in old.iteritems() if gc in gcd.keys()]
 
-        logging.info('# Conflicts found (modified both places): %d',
+        logging.info('Number of entries modified both places (conflicts): %d',
                      len(coma) if coma else 0)
 
         cr = self.config.get_resolve()
@@ -82,9 +82,11 @@ class Sync:
         elif cr == self.config.GOOGLE:
             self.ol.del_con_mod_by_keys(coma)
 
-        print 'cr : ', cr
-        print 'size of gc mod: ', len(self.gc.con_gc_mod)
-        print 'size of ol mod: ', len(self.ol.con_mod)
+        logging.debug('conflict resolve direction : %d', cr)
+        logging.debug('After conflict resolution, size of gc mods : %5d',
+                      len(self.gc.con_gc_mod))
+        logging.debug('After conflict resolution, size of ol mods : %5d',
+                      len(self.ol.con_mod))
 
     def _prep_lists_1_way_o2g (self):
         self.ol.prep_ol_contact_lists()
@@ -196,6 +198,16 @@ class Sync:
                                               self.config.get_gc_id())],
                                             mapitags.PT_UNICODE,
                                             gcid)
+                    t = None
+                    if op == 'insert':
+                        t = 'created'
+                    elif op == 'update':
+                        t = 'updated'
+
+                    if t:
+                        name = con.name
+                        logging.info('Successfully %s gmail entry for %s',
+                                     t, name)
 
         return cons
 
