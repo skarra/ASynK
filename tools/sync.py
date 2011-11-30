@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Thu Nov 17 18:49:37 IST 2011
+## Last Modified : Tue Nov 29 18:31:22 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -98,8 +98,6 @@ class Sync:
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
-        print 'self.dir is ', self.dir
-
         if (self.dir == state.SYNC_2_WAY):
             self._prep_lists_2_way()
         elif (self.dir == state.SYNC_1_WAY_O2G):
@@ -159,6 +157,12 @@ class Sync:
 
         for entry in resp.entry:
             bid    = entry.batch_id.text if entry.batch_id else None
+            if not entry.batch_status:
+                # There is something seriously wrong with this request.
+                logging.error('Unknown fatal error in response. Full resp: %s',
+                              entry)
+                continue
+
             code   = int(entry.batch_status.code)
             reason = entry.batch_status.reason
 
@@ -196,10 +200,22 @@ class Sync:
         return cons
 
     def _send_new_ol_to_gc (self):
+        logging.info('=====================================================')
+        logging.info('   Sending New Outlook entries to Google')
+        logging.info('=====================================================')
+
+        ol_new = self.ol.get_con_new()
+        if (ol_new and len(ol_new) > 0):
+            logging.info('%d new Outlook contacts to be synced to Google',
+                         len(ol_new))
+        else:
+            logging.info('No new entries in Outlook that need to be synched')
+            return
+
         f = self.gc.new_feed()
         stats = Sync.BatchState(1, f, 'insert')
 
-        for olid in self.ol.get_con_new():
+        for olid in ol_new:
             try:
                 c  = Contact(fields=self.fields, config=self.config,
                              ol=self.ol, entryid=olid, props=None,
@@ -289,6 +305,18 @@ class Sync:
         return ret
 
     def _send_mod_ol_to_gc (self):
+        logging.info('=====================================================')
+        logging.info('   Sending local Outlook modifications to Google')
+        logging.info('=====================================================')
+
+        ol_mods = self.ol.get_con_mod().values()
+        if (ol_mods and len(ol_mods) > 0):
+            logging.info('%d locally modified contacts to be synced to Google',
+                         len(ol_mods))
+        else:
+            logging.info('No local modifications; nothing needs to be synced.')
+            return
+
         f = self.gc.new_feed()
         stats = Sync.BatchState(1, f, 'update')
 
@@ -307,11 +335,7 @@ class Sync:
         # potential for bandwidth optimisation here, however it would
         # be very premature to d o that at this time.
 
-        ces = self._fetch_gc_entries(self.ol.get_con_mod().values())
-        if ces and len(ces)>0:
-            print 'Num entries obtained: ', len(ces)
-        else:
-            print 'Got nothing of value'
+        ces = self._fetch_gc_entries(ol_mods)
 
         for ce in ces:
             c  = Contact(fields=self.fields, config=self.config,
@@ -347,7 +371,19 @@ class Sync:
 
 
     def _get_new_gc_to_ol (self):
+        logging.info('=====================================================')
+        logging.info('   Fetching new entries from Google Contacts')
+        logging.info('=====================================================')
+        logging.info('Querying status from Google...')
+
         ces = self._fetch_gc_entries(self.gc.get_con_new())
+        if ces and len(ces)>0:
+            resp = '%d new entries created on Google will be copied.' % len(ces)
+        else:
+            resp = 'No new contacts found in Google Contacts. Nothing to copy.'
+
+        logging.info(resp)
+
         self._write_ces_to_ol(ces)
 
     def _get_mod_gc_to_ol (self):
@@ -357,16 +393,14 @@ class Sync:
         logging.info('=====================================================')
         logging.info('   Fetching modified entries from Google Contacts')
         logging.info('=====================================================')
-        logging.info('Querying Google for content of modified entries. ')
-        logging.info('Expecting to see %d entries...',
-                     len(self.gc.get_con_mod().keys()))
+        logging.info('Querying status from Google...')
 
         ces = self._fetch_gc_entries(self.gc.get_con_mod().keys())
 
         if ces and len(ces)>0:
-            resp = '%d entries returned by Google.' % len(ces)
+            resp = '%d modified contacts from Google will be copied.' % len(ces)
         else:
-            resp = 'No entries found in response from Google.'
+            resp = 'No contacts modified in Google Contacts. Nothing to copy.'
 
         logging.info(resp)
 
