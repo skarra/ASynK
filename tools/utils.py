@@ -3,7 +3,7 @@
 ## utils.py
 ##
 ## Created       : Tue Jul 26 06:54:41  2011
-## Last Modified : Tue Nov 29 17:23:12 IST 2011
+## Last Modified : Tue Nov 29 18:05:38 IST 2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -17,8 +17,8 @@ def yyyy_mm_dd_to_pytime (date_str):
     dt = datetime.strptime(date_str, '%Y-%m-%d')
     return pywintypes.Time(dt.timetuple())
 
-def pytime_to_datetime (pyt):
-    return None
+def pytime_to_yyyy_mm_dd (pyt):
+    return ('%04d-%02d-%02d' % (pyt.year, pyt.month, pyt.day))
 
 def get_link_rel (links, rel):
     """From a Google data entry links array, fetch the link with the
