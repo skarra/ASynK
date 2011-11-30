@@ -3,7 +3,7 @@
 ## gc_wrapper.py
 ##
 ## Created       : Thu Jul 07 14:47:54  2011
-## Last Modified : Thu Nov 17 19:37:32 IST 2011
+## Last Modified : Tue Nov 29 18:08:48 IST 2011
 ## 
 ## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
 ## All rights reserved.
@@ -323,23 +323,21 @@ class GC (object):
             new_contact.phone_number.append(work)
 
         if nickname:
-            nickname = gdata.data.Nickname(text=nickname)
+            nickname = gdata.contacts.data.NickName(text=nickname)
             new_contact.nickname = nickname
-            
 
         if gender:
             gender = gdata.data.Gender(value=gender)
             new_contact.gender = gender
 
         if birthday:
-            d = datetime.datetime.fromtimestamp(int(birthday))
-            d = d.strftime("%Y-%m-%d")
-            bday = gdata.contacts.data.Birthday(when=d)
+            dt = utils.pytime_to_yyyy_mm_dd(birthday)
+            bday = gdata.contacts.data.Birthday(when=dt)
             new_contact.birthday = bday
 
         if anniv:
-            d = datetime.datetime.fromtimestamp(int(anniv))
-            date = gdata.data.When(start=d.strftime('%Y-%m-%d'))
+            dt = utils.pytime_to_yyyy_mm_dd(anniv)
+            date = gdata.data.When(start=dt)
             ann  = gdata.contacts.data.Event(when=date, rel='anniversary')
             new_contact.event.append(ann)
 
