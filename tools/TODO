@@ -1,13 +1,42 @@
 -*- Outline -*- 
 
-Created	    	: Tue Jul 12 18:45:48  2011
-Last Modified	: Mon Oct 17 12:20:42 IST 2011
+Created	    	: Tue Jul 12 18:45:48 IST 2011
+Last Modified	: Thu Dec 01 16:54:04 IST 2011
 
 * TODO
 
 ** Bugs
 
-*** Many key changes related to Gmail -> OL are missing
+*** ol.prep_contact_lists() only works on startup
+
+If we invoke this routine once, do some operation and then invoke it
+again, we only get zero stats. This potentially exists for the gc
+version as well.
+
+*** need to store both the self link and edit link
+
+Both of these are needed for different activities. This needs to be
+done once we are pretty sure about the changes and we can take a
+branch out to experiment this.
+
+** Features
+
+*** Support more contact fields to be uploaded
+
+    More contact fields need to get synched, including: 
+
+    - IM
+
+*** Support more than one message store
+
+    We need to iterate and grab all the message store contents
+    
+    There could be more than one message store in the default Outlook
+    Profile. Need to be able to look into all of them for contact items.
+
+* Done
+
+** Many key changes related to Gmail -> OL are missing
 
     Thu Aug 25 18:04:31  2011
 
@@ -29,86 +58,6 @@ Last Modified	: Mon Oct 17 12:20:42 IST 2011
 
     after searching far and wide I have given up on this thing, and have
     implemented most of the stuff again. Life has to move on.
-
-*** ol.prep_contact_lists() only works on startup
-
-If we invoke this routine once, do some operation and then invoke it
-again, we only get zero stats. This potentially exists for the gc
-version as well.
-
-*** need to store both the self link and edit link
-
-Both of these are needed for different activities. This needs to be
-done once we are pretty sure about the changes and we can take a
-branch out to experiment this.
-
-** Two Way Sync Logic
-
-*** Alogrithm to query and track updates to Google API
-
-Figure out how updates to the Google contact list can be
-recognized and synched.
-
-There is an api and query for contacts after a certain time. we can
-specify the following parameters 
-
-group: to limit entries
-updated-min:timestamp
-showdeleted:true
-
-*** Algorithm to query and track updates to Outlook API
-
- 0. Have a sync status json file with last sync start, last sync end
-    and some basic stats related to sync.
-
- 1. make list of all contacts locally, and create following
-    overlapping lists:
-
-    a. full list of entries along with their gc_ids if they exist
-    b. entries modified after last sync: new entries: have no gc_id
-    c. entries modified after last sync: old entries: have gc_id
-
- 2. make list of all contacts on google contacts with following
-    groups:
-	updated since last sync
-
-** Support more contact fields to be uploaded
-
-   More contact fields need to get synched, including: 
-
-   - All phon fields: Done
-   - Fax: Done
-   - Anniversary: Done
-   - DOB: Done
-   - IM
-   - URL: Done
-
-** Distribution
-
-We can make this an browser based application or an Outlook app. The
-distribution might be smaller if we make it an Addin. However if we
-make it a browser based application we might be able to reuse the code
-for Karma.
-
-*** Outlook Addin
-
-**** Figure out how to add dialogs to the Outlook 
-
-*** Browser App
-
-**** Design
-
-**** How to make it non-blocking
-
-** Support more than one message store
-
-We need to iterate and grab all the message store contents
-
-There could be more than one message store in the default Outlook
-Profile. Need to be able to look into all of them for contact
-items.
-
-* Done
 
 ** Contact.fields keeps growing in size
 
@@ -152,7 +101,7 @@ Fixed in ol_wrapper.py:prep_lists
 
 number marked as Other is not getting synched to google.
 
-* scratch
+** Sync Logic outline
 
   - for each contact in outlook with gc_id:
   
