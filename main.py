@@ -40,11 +40,17 @@ import gdata.contacts.client
 sync = None
 start_of_time="1971-01-01T12:00:00.00+05:30"
 
+## Oh, this is horrible. Shouldn't need so many globals going around. This
+## is a mess... FIXME
+logging.info('Reading app configuration and state...')
+config = Config('app_state.json')
+
 class SyncPanel(wx.Panel):
 
     sync_dirs = [tools.state.SYNC_2_WAY,
                  tools.state.SYNC_1_WAY_O2G,
                  tools.state.SYNC_1_WAY_G2O]
+    gmgrp = config.get_gn()
     
     def __init__(self, *args, **kwds):
         # begin wxGlade: SyncPanel.__init__
@@ -55,7 +61,7 @@ class SyncPanel(wx.Panel):
         self.lblPass = wx.StaticText(self, -1, "Password")
         self.txtPass = wx.TextCtrl(self, -1, "", style=wx.TE_PASSWORD)
         self.lblGmGrp = wx.StaticText(self, -1, "Gmail Group")
-        self.txtGmGrp = wx.TextCtrl(self, -1, "")
+        self.txtGmGrp = wx.TextCtrl(self, -1, "", style = wx.TE_READONLY)
 #        self.chkContacts = wx.CheckBox(self, -1, "Contacts")
 #        self.chkCal = wx.CheckBox(self, -1, "Calendar")
 #        self.chkTasks = wx.CheckBox(self, -1, "Tasks")
@@ -81,6 +87,7 @@ class SyncPanel(wx.Panel):
         # begin wxGlade: SyncPanel.__set_properties
         self.rdoSyncdir.SetSelection(0)
         # end wxGlade
+        self.txtGmGrp.SetValue(self.gmgrp)
 
     def __do_layout(self):
         # begin wxGlade: SyncPanel.__do_layout
@@ -359,14 +366,10 @@ def get_sync_fields (fn="fields.json"):
 
 
 def get_sync_obj (user, pwd, dirn):
-    logging.info('Refreshing app configuration...')
-    config = Config('app_state.json')
-
     logging.info('Opening Outlook message store...')
     ol     = Outlook(config)
 
     logging.info('Logging into Gmail to set up connection...')
-    gc = None
     gc = GC(config, user, pwd)
 
     fields = get_sync_fields()
@@ -375,6 +378,7 @@ def get_sync_obj (user, pwd, dirn):
     fields.append(ol.prop_tags.valu('GOUT_PR_EMAIL_3'))
     fields.append(ol.prop_tags.valu('GOUT_PR_GCID'))
 
+    ## Hm, this is not pretty, huh? Gotta fix it. FIXME
     global sync
     sync = Sync(config, fields, ol, gc, dirn=dirn)
 
