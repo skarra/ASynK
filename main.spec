@@ -1,7 +1,7 @@
 ## -*- mode: python -*-
 ##
 ## Created       : Wed Nov 30 17:41:51 IST 2011
-## Last Modified : Wed Nov 30 17:45:22 IST 2011
+## Last Modified : Thu Dec 01 06:45:16 IST 2011
 ##
 ## This is the main build specification file used by pyinstaller to convert
 ## the Gout python files and packages into a single directory self contained
@@ -19,10 +19,11 @@ a = Analysis([os.path.join(HOMEPATH,'support\\_mountzlib.py'),
                pathex=['Z:\\sriramkarra On My Mac\\stuff\\code\\python\\pyinstaller-1.5.1',
                       '..\\Gout\\lib', '..\\Gout\\tools'])
 
-a.datas += [('app_state.json', '..\\Gout\\app_state.json', 'DATA'),
-            ('fields.json',    '..\\Gout\\fields.json',    'DATA'),
-            ('README',         '..\\Gout\\README',         'DATA'),
-            ('sync.png',       '..\\Gout\\sync.png',       'DATA')]
+a.datas += [('app_state.json',    '..\\Gout\\app_state.json.example', 'DATA'),
+            ('app_state.ex.json', '..\\Gout\\app_state.json.example', 'DATA'),
+            ('fields.json',       '..\\Gout\\fields.json',            'DATA'),
+            ('README',            '..\\Gout\\README',                 'DATA'),
+            ('sync.png',          '..\\Gout\\sync.png',               'DATA')]
 
 ## What is below is unchanged from what is output by a 'python Configure.py' output
 
