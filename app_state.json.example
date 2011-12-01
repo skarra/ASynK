@@ -1,32 +1,58 @@
 // -*- javascript -*-
 
-// This file is for illustrative purposes only. Edits to this file
-// have no bearing on the application configuration.
+// Last Modified : Thu Dec 01 06:42:46 IST 2011
+//
+// (C) 2011 Sriram Karra <karra.etc@gmail.com>
+// All Rights Reserved
+// 
+// Licenced under GPLv3
 
 // The application uses a configuration file called app_state.json to
 // keep a track of sync state and other configuration values. In the
 // distribution app_state.json will have the same contents as this
-// file. However it is updated by the first run and replaced with a
-// hard-to-read plain and simple json without these comments and
-// updated to reflect any settings you might have chosen during your
-// run. 
+// file. However it is updated during every run of the
+// application to store the state of your sync.
 
 // While modifying the app_state.json is allowed,ensure the
 // application is not running at the time. But remember that the user
 // should not *have* to edit the app_state.json file directly.
 
 {
-    'GC_GUID' : '{a1271100-ac2e-11e0-bc8b-0025644a821c}',
-    'GC_ID'   : 0x8001,
-
-    'gid'     : null,
+    // The name of the Google Group that we should use to sync the
+    // contacts to. Please note that changing this value after the
+    // first sync is completed, or while the program is running will
+    // result in 
     'gn'      : 'Gout',
+    'gid'     : null,
 
+    // These values can be changed 
     'last_sync_start' : "1980-07-28T16:10:58.96+05:30",
     'last_sync_stop'  : "1980-07-18T13:23:12.96+05:30",
+
+    // Default direction in which to perform Sync. Values can be one
+    // of 'Two Way Merge', 'One Way Sync - Outlook to Google', OR 
+    // 'One Way Sync - Google to Outlook'. You may have noticed that
+    // these are the exact strings you see in the dialog box used to
+    // select this value interactively.
+    'sync_dir'         : "Two Way Merge",
 
     // Direction in which to resolve conflicts if the same entry is
     // modified both locally and in the google cloud. Values can be
     // either GOOGLE or OUTLOOK - in full and case sensitive
     'conflict_resolve' : "OUTLOOK",
+
+    // We map and track an outlook entry to Google contact is by
+    // storing the gmail entry's ID in Outlook and a b64 encoded
+    // version of hte outlook entry's EntryID in Google as special
+    // attributes. On the Outlook side, the GC_GUID AND GC_ID
+    // combination is used to as the key to retrieve and write to this
+    // special attribute.
+    //
+    // On the Google side, the attribute is simple called 'olid' and
+    // is a categorized as a 'user defined field' in the schema
+    // 
+    //         ===  These two fields are not to be modified ===
+    //
+    'GC_GUID' : '{a1271100-ac2e-11e0-bc8b-0025644a821c}',
+    'GC_ID'   : 0x8001,
 }
