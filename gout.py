@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Dec 02 13:46:17 IST 2011
-## Last Modified : Fri Dec 02 16:34:21 IST 2011
+## Last Modified : Fri Dec 02 16:40:22 IST 2011
 ##
 ## Copyright (c) 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -8,7 +8,7 @@
 ## Licensed under GPLv3
 ## 
 
-import wx, sys, os, logging, traceback
+import sys, os, logging, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -33,7 +33,7 @@ import demjson
 import gdata.contacts.data
 import gdata.contacts.client
 
-class GoutUI:
+class Gout:
     def __init__ (self):
         self.sync   = None
 
@@ -134,8 +134,7 @@ class GoutUI:
 def main (argv = None):
     logging.getLogger().setLevel(logging.DEBUG)
 
-    gui = GoutUI()
-    gui.run()
+    Gout().run()
 
 
 if __name__ == "__main__":
