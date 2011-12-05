@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Wed Nov 30 18:31:42 IST 2011
+## Last Modified : Sun Dec 04 22:25:10 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -9,7 +9,8 @@
 ## 
 
 from   state         import Config
-from   ol_wrapper    import Outlook, Contact
+from   ol_wrapper    import Outlook
+from   ol_contact    import Contact
 from   gc_wrapper    import GC
 from   win32com.mapi import mapitags, mapiutil
 
