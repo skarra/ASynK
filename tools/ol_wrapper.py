@@ -3,7 +3,7 @@
 ## ol_wrapper.py
 ##
 ## Created	 : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Dec 05 18:20:43 IST 2011
+## Last Modified : Mon Dec 05 18:36:00 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -329,40 +329,6 @@ class MessageStore:
             logging.debug('Actual exception: %s', e)
             logging.info('No Tasks Folder for message store: %s',
                          self.name)
-
-class Outlook:
-    def __init__ (self, config):
-        self.config = config
-
-        logging.debug('Initalizing MAPI...')
-        # initialize and log on
-        mapi.MAPIInitialize(None)
-        flags = (mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT |
-                 mapi.MAPI_TIMEOUT_SHORT | MOD_FLAG)
-
-        logging.debug('Opening default profile in MAPI...')
-        self.session = mapi.MAPILogonEx(0, "", None, flags)
-
-#        logging.debug('About to create MessageStores()...')
-        msgstores = MessageStores(self)
-
-    def __del__ (self):
-        logging.debug('Destroying mapi session...')
-        self.session.Logoff(0, 0, 0)
-
-    def get_ctable (self, cf=None):
-        if cf is None:
-            cf = self.get_default_cf()
-
-        ctable = cf.GetContentsTable(mapi.MAPI_UNICODE)
-        return ctable
-
-    def get_default_ctable (self):
-        if self.def_ctable:
-            return self.def_ctable
-
-        return self.get_ctable()
-
     def bulk_clear_gcid_flag (self):
         """Clear any gcid tags that are stored in Outlook. This is
         essentially for use while developin and debugging, when we want
@@ -406,6 +372,26 @@ class Outlook:
         logging.info('Num entries cleared: %d. i = %d', cnt, i)
         return cnt
 
+class Outlook:
+    def __init__ (self, config):
+        self.config = config
+
+        logging.debug('Initalizing MAPI...')
+        # initialize and log on
+        mapi.MAPIInitialize(None)
+        flags = (mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT |
+                 mapi.MAPI_TIMEOUT_SHORT | MOD_FLAG)
+
+        logging.debug('Opening default profile in MAPI...')
+        self.session = mapi.MAPILogonEx(0, "", None, flags)
+
+#        logging.debug('About to create MessageStores()...')
+        msgstores = MessageStores(self)
+
+    def __del__ (self):
+        logging.debug('Destroying mapi session...')
+        self.session.Logoff(0, 0, 0)
+
     def get_ol_item (self, entryid):
         return self.def_msgstore.OpenEntry(entryid, None, MOD_FLAG)
 
@@ -440,7 +426,7 @@ class Folder:
         the MAPI routines."""
 
         num = len(eids)
-        cf  = self.get_default_cf()
+        cf  = self.folder_obj
         if num:
             logging.debug('Deleting %d entries (after replacement) in Outlook: ',
                           num)
@@ -487,7 +473,7 @@ class Folder:
         """
 
         logging.info('Querying MAPI for status of Contact Entries')
-        ctable = self.get_default_ctable()
+        ctable = self.get_contents()
         ctable.SetColumns((self.prop_tags.valu('GOUT_PR_GCID'),
                            mapitags.PR_ENTRYID,
                            mapitags.PR_LAST_MODIFICATION_TIME),
