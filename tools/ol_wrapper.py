@@ -25,7 +25,7 @@ from   win32com.mapi import mapitags
 from   win32com.mapi import mapiutil
 import winerror
 
-import iso8601
+import iso8601, base64
 
 from   gc_wrapper import get_udp_by_key
 from   ol_contact import Contact
@@ -212,6 +212,12 @@ class MessageStores:
                               i, name)
             i += 1
 
+    def __str__ (self):
+        for name, store in self._store_by_name().itermsitems():
+            ret += str(store) + '\n'
+
+        return ret
+
 class MessageStore:
     """A wrapper around an Outlook message store. This is not meant to be an
     comprehensive wrapper around all the MAPI routines and variables. This is
@@ -226,14 +232,16 @@ class MessageStore:
         self.eid     = eid
         self.name    = name
         self.default = default
-
         self.obj     = None
+
         self.folders       = self.contacts_folders = None
         self.notes_folders = self.tasks_folders    = None
 
         # This should really be done 'lazily' but let's go with the flow for
         # now... FIXME
         self._populate_folders()
+
+        print str(self)
 
     def get_obj (self):
         if self.obj:
@@ -261,15 +269,14 @@ class MessageStore:
     def get_folder_obj (self, tag, inbox):
         """Return a tuple (entry_id, display_name, folder_obj) corresponding
         to specific tag."""
-        hr, props = inbox.GetProps((tag, mapitags.PR_DISPLAY_NAME_A), 0)
+        hr, props = inbox.GetProps((tag), 0)
         (tag0, eid)  = props[0]
-        (tag1, name) = props[1]
-    
+
         # check for errors
         self.check_tag_error(tag0)
-        self.check_tag_error(tag1)
 
-        f = self.get_obj().OpenEntry(eid, None, MOD_FLAG)
+        name = self.get_entry_name(eid)
+        f    = self.get_obj().OpenEntry(eid, None, MOD_FLAG)
 
         return (eid, name, f)
 
@@ -291,7 +298,7 @@ class MessageStore:
         try:
             (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_CONTACT_ENTRYID,
                                                  inbox)
-            cf = ContactsFolder(eid, name, f, self.ol.config)
+            cf = ContactsFolder(eid, name, f, self.ol.config, self)
             self.folders.append(cf)
             self.contacts_folders.append(cf)
         except TypeError, e:
@@ -302,7 +309,7 @@ class MessageStore:
         try:
             (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_NOTE_ENTRYID,
                                                  inbox)
-            nf = NotesFolder(eid, name, f, self.ol.config)
+            nf = NotesFolder(eid, name, f, self.ol.config, self)
             self.folders.append(nf)
             self.notes_folders.append(nf)
         except TypeError, e:
@@ -313,13 +320,14 @@ class MessageStore:
         try:
             (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_TASK_ENTRYID,
                                                  inbox)
-            tf = TasksFolder(eid, name, f, self.ol.config)
+            tf = TasksFolder(eid, name, f, self.ol.config, self)
             self.folders.append(tf)
             self.tasks_folders.append(tf)
         except TypeError, e:
             logging.debug('Actual exception: %s', e)
             logging.info('No Tasks Folder for message store: %s',
                          self.name)
+
     def bulk_clear_gcid_flag (self):
         """Clear any gcid tags that are stored in Outlook. This is
         essentially for use while developin and debugging, when we want
@@ -362,6 +370,24 @@ class MessageStore:
         logging.info('Num entries cleared: %d. i = %d', cnt, i)
         return cnt
 
+    def get_ol_item (self, entryid):
+        return self.get_obj().OpenEntry(entryid, None, MOD_FLAG)
+
+    def get_entry_name (self, entryid):
+        item      = self.get_ol_item(entryid)
+        hr, props = item.GetProps([mapitags.PR_DISPLAY_NAME], mapi.MAPI_UNICODE)
+        tag, name = props[0] if props else (None, '')
+
+        return name
+
+    def __str__ (self):
+        ret = 'Message Store: %s. Total Folders: %d\n' % (self.name,
+                                                          len(self.folders))
+        for folder in self.folders:
+            ret += '\t' + str(folder) + '\n'
+
+        return ret
+
 class Outlook:
     def __init__ (self, config):
         self.config = config
@@ -381,27 +407,18 @@ class Outlook:
         logging.debug('Destroying mapi session...')
         self.session.Logoff(0, 0, 0)
 
-    def get_ol_item (self, entryid):
-        return self.def_msgstore.OpenEntry(entryid, None, MOD_FLAG)
-
-    def get_entry_name (self, entryid):
-        item      = self.get_ol_item(entryid)
-        hr, props = item.GetProps([mapitags.PR_DISPLAY_NAME], mapi.MAPI_UNICODE)
-        tag, name = props[0] if props else (None, '')
-
-        return name
-
 class Folder:
     PR_IPM_CONTACT_ENTRYID = 0x36D10102
     PR_IPM_NOTE_ENTRYID    = 0x36D30102
     PR_IPM_TASK_ENTRYID    = 0x36D40102
 
-    def __init__ (self, entryid, name, folder_obj, folder_type, config):
+    def __init__ (self, entryid, name, folder_obj, folder_type, config, store):
         self.entryid     = entryid
         self.name        = name
         self.folder_obj  = folder_obj
         self.type        = folder_type
         self.config      = config
+        self.store       = store
 
         self.prop_tags = PropTags(self.folder_obj, self.config)
         self.def_cols  = (self.get_contents().QueryColumns(0) +
@@ -553,20 +570,35 @@ class Folder:
 
         return
 
+    def __str__ (self):
+        if self.type == Folder.PR_IPM_CONTACT_ENTRYID:
+            ret = 'Contacts'
+        elif self.type == Folder.PR_IPM_NOTE_ENTRYID:
+            ret = 'Notes'
+        elif self.type == Folder.PR_IPM_TASK_ENTRYID:
+            ret = 'Tasks'
+
+        return ('%s.\tName: %s;\tEID: %s;\tStore: %s' % (
+            ret, self.name, base64.b64encode(self.entryid),
+            self.store.name))
+
 class ContactsFolder(Folder):
-    def __init__ (self, entryid, name, obj, config):
+    def __init__ (self, entryid, name, obj, config, store):
         Folder.__init__(self, entryid, name, obj,
-                        Folder.PR_IPM_CONTACT_ENTRYID, config)
+                        Folder.PR_IPM_CONTACT_ENTRYID, config,
+                        store)
 
 class NotesFolder(Folder):
-    def __init__ (self, entryid, name, obj, config):
+    def __init__ (self, entryid, name, obj, config, store):
         Folder.__init__(self, entryid, name, obj,
-                        Folder.PR_IPM_NOTE_ENTRYID, config)
+                        Folder.PR_IPM_NOTE_ENTRYID, config,
+                        store)
 
 class TasksFolder(Folder):
-    def __init__ (self, entryid, name, obj, config):
+    def __init__ (self, entryid, name, obj, config, store):
         Folder.__init__(self, entryid, name, obj,
-                        Folder.PR_IPM_TASK_ENTRYID, config)
+                        Folder.PR_IPM_TASK_ENTRYID, config,
+                        store)
 
 def main (argv=None):
     from state import Config
