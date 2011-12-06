@@ -3,7 +3,7 @@
 ## ol_wrapper.py
 ##
 ## Created	 : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Dec 06 08:38:26 IST 2011
+## Last Modified : Tue Dec 06 14:55:01 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -277,8 +277,10 @@ class MessageStore:
         if self.folders:
             return self.folders
 
-        self.folders       = self.contacts_folders = []
-        self.notes_folders = self.tasks_folders    = []
+        self.folders          = []
+        self.contacts_folders = []
+        self.notes_folders    = []
+        self.tasks_folders    = []
 
         msgstore = self.get_obj()
         inbox    = self.get_inbox(msgstore)
