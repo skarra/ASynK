@@ -3,7 +3,7 @@
 ## ol_wrapper.py
 ##
 ## Created	 : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Dec 06 14:55:01 IST 2011
+## Last Modified : Tue Dec 06 17:33:46 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -11,7 +11,7 @@
 ## Licensed under the GPL v3
 ## 
 
-import os, os.path, sys
+import os, os.path, sys, traceback
 
 DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib')]
@@ -241,7 +241,7 @@ class MessageStores:
             row = rows[0]
 
             (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
-            if True:
+            if def_store:
                 # There is a real problem with OpenMsgStore() on non-default
                 # message stores. We do not know how to process these
                 # suckers - it just hangs. So for now, we just get ignore
@@ -283,7 +283,7 @@ class MessageStore:
         # now... FIXME
         self._populate_folders()
 
-        print str(self)
+        self.tasks_folders[0].print_key_stats()
 
     def get_obj (self):
         if self.obj:
@@ -588,9 +588,14 @@ class Folder:
         for t, v in contact:
             print_prop(t, v)
 
-    def print_fields_for_folder (self, folder, cnt=-1, fields=None):
+    def print_entries (self, folder, cnt=-1, fields=None):
+        """Print property tag and value for each entry in the contents table
+        of the curren folder. The logical name for the property will be
+        printed if it can be converted into a string using the mapiutil
+        routine. Otherwise a hex representation is printed"""
+
         ctable = folder.GetContentsTable(mapi.MAPI_UNICODE)
-        ctable.SetColumns(self.def_ctable_cols, 0)
+        ctable.SetColumns(self.def_cols, 0)
 
         i = 0
 
@@ -654,6 +659,80 @@ class TasksFolder(Folder):
                         Folder.PR_IPM_TASK_ENTRYID, config,
                         store)
 
+    def print_key_stats (self):
+        total       = 0
+        recurring   = 0
+        expired     = 0
+        completed   = 0
+
+        ctable = self.get_obj().GetContentsTable(mapi.MAPI_UNICODE)
+        ctable.SetColumns(self.def_cols, 0)
+
+        while True:
+            rows = ctable.QueryRows(1, 0)
+            #if this is the last row then stop
+            if len(rows) != 1:
+                break
+
+            total += 1
+
+            props = dict(rows[0])
+
+            try:
+                entryid = props[mapitags.PR_ENTRYID]
+            except AttributeError, e:
+                entryid = 'Not Available'
+
+            try:
+                subject = props[mapitags.PR_SUBJECT_W]
+            except AttributeError, e:
+                subject = 'Not Available'
+
+            try:
+                complete = props[self.prop_tags.valu('GOUT_PR_TASK_COMPLETE')]
+                if complete:
+                    completed += 1
+            except KeyError, e:
+                complete = 'Not Available'
+
+            try:
+                tag = self.prop_tags.valu('GOUT_PR_TASK_RECUR')
+                recurr_status = props[tag]
+                if recurr_status:
+                    recurring += 1
+            except KeyError, e:
+                recurr_status = 'Not Available'
+
+            try:
+                tag = self.prop_tags.valu('GOUT_PR_TASK_STATE')
+                state = props[tag]
+            except KeyError, e:
+                state = 'Not Available'
+
+            try:
+                tag = self.prop_tags.valu('GOUT_PR_TASK_DUE_DATE')
+                duedate = utils.pytime_to_yyyy_mm_dd(props[tag])
+            except KeyError, e:
+                duedate = 'Not Available'
+
+
+            if complete:
+                continue
+
+            print 'Task #%3d: Heading: %s' % (total, subject)
+            print '\tEntryID   : ', base64.b64encode(entryid)
+            print '\tCompleted : ', complete
+            print '\tRecurring : ', recurr_status
+            print '\tState     : ', state
+            print '\tDue Date  : ', duedate
+            print '\n'
+
+        print '===== Summary Status for Task Folder: %s ======' % self.name
+        print '\tTotal Tasks count : %4d' % total
+        print '\tRecurring count   : %4d' % recurring
+        print '\tExpired count     : %4d' % expired
+        print '\tCompleted count   : %4d' % completed
+
 def main (argv=None):
     from state import Config
     logging.debug('Getting started... Reading Config File...')
@@ -663,4 +742,8 @@ def main (argv=None):
 
 if __name__ == "__main__":    
     logging.getLogger().setLevel(logging.DEBUG)
-    main()
+    try:
+        main()
+    except Exception, e:
+        print 'Caught Exception... Hm. Need to cleanup.'
+        print 'Full Exception as here:', traceback.format_exc()
