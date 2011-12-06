@@ -3,7 +3,7 @@
 ## ol_wrapper.py
 ##
 ## Created	 : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Dec 05 18:36:00 IST 2011
+## Last Modified : Tue Dec 06 08:38:26 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -181,10 +181,8 @@ class MessageStores:
         """Walk through the message store table in Outlook, extract some key
         properties of each store and keep track of them for later use."""
 
-#        logging.debug('_populate_stores():...')
         messagestorestable = self.ol.session.GetMsgStoresTable(0)
 
-#        logging.debug('About to call SetColumns...')
         # This is where we need to add columns if we want to extract and store
         # more information per Store
         messagestorestable.SetColumns((mapitags.PR_ENTRYID,
@@ -193,7 +191,6 @@ class MessageStores:
 
         i = 1
         msgstores = []
- #       logging.debug('About to enter While loop...')
         while True:
             rows = messagestorestable.QueryRows(1, 0)
             # if this is the last row then stop
@@ -242,14 +239,11 @@ class MessageStore:
         if self.obj:
             return self.obj
 
-#        logging.debug('About to OpenMsgStore...')
-
         # Open it.
         self.obj = self.ol.session.OpenMsgStore(0, self.eid, None,
                                                 (mapi.MDB_NO_DIALOG |
                                                   MOD_FLAG))
 
-#        logging.debug('Done... returning...')
         return self.obj
 
     def get_inbox (self, msgstore):
@@ -283,15 +277,10 @@ class MessageStore:
         if self.folders:
             return self.folders
 
-#        logging.debug('_populate_folders() for Message store: %s...',
-#                      self.name)
-
         self.folders       = self.contacts_folders = []
         self.notes_folders = self.tasks_folders    = []
 
-#        logging.debug('Getting obj...')
         msgstore = self.get_obj()
-#        logging.debug('Getting inbox...')
         inbox    = self.get_inbox(msgstore)
 
         logging.debug('Building Folder list for Message Store: %s...',
@@ -351,7 +340,6 @@ class MessageStore:
         i   = 0
         store = self.get_default_msgstore()
         hr = ctable.SeekRow(mapi.BOOKMARK_BEGINNING, 0)
-#        logging.debug('result of seekrow = %d', hr)
 
         while True:
             rows = ctable.QueryRows(1, 0)
@@ -385,7 +373,6 @@ class Outlook:
         logging.debug('Opening default profile in MAPI...')
         self.session = mapi.MAPILogonEx(0, "", None, flags)
 
-#        logging.debug('About to create MessageStores()...')
         msgstores = MessageStores(self)
 
     def __del__ (self):
@@ -584,7 +571,6 @@ def main (argv=None):
     logging.debug('Getting started... Reading Config File...')
     config = Config('../app_state.json')
     
-    logging.debug('Instantiating an outlook session...')
     ol     = Outlook(config)
 
 if __name__ == "__main__":    
