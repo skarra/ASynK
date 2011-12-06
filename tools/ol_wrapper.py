@@ -466,6 +466,9 @@ class Folder:
         self.def_cols  = (self.get_contents().QueryColumns(0) +
                           (self.prop_tags.valu('GOUT_PR_GCID'),))
 
+    def get_obj (self):
+        return self.folder_obj
+
     def get_contents (self):
         return self.folder_obj.GetContentsTable(mapi.MAPI_UNICODE)
 
@@ -611,6 +614,15 @@ class Folder:
         print 'num processed: ', i
 
         return
+
+    def is_contacts_folder (self):
+        return True if self.type == Folder.PR_IPM_CONTACT_ENTRYID else False
+
+    def is_notes_folder (self):
+        return True if self.type == Folder.PR_IPM_NOTE_ENTRYID else False
+
+    def is_tasks_folder (self):
+        return True if self.type == Folder.PR_IPM_TASK_ENTRYID else False
 
     def __str__ (self):
         if self.type == Folder.PR_IPM_CONTACT_ENTRYID:
