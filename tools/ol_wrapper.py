@@ -82,6 +82,13 @@ class PropTags:
 
         self.put(name='GOUT_PR_GCID', value=self.get_gid_prop_tag())
 
+        self.put('GOUT_PR_TASK_DUE_DATE', self.get_task_due_date_tag())
+        self.put('GOUT_PR_TASK_STATE',    self.get_task_state_tag())
+        self.put('GOUT_PR_TASK_RECUR',    self.get_task_recur_tag())
+        self.put('GOUT_PR_TASK_COMPLETE', self.get_task_complete_tag())
+        self.put('GOUT_PR_TASK_DATE_COMPLETED',
+                 self.get_task_date_completed_tag())
+
     def valu (self, name):
         return self.name_hash[name]
 
@@ -137,6 +144,41 @@ class PropTags:
     def get_file_as_prop_tag (self):
         prop_name = [(self.PSETID_Address_GUID, 0x8005)]
         prop_type = mapitags.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        return (prop_type | prop_ids[0])        
+
+    def get_task_due_date_tag (self):
+        prop_name = [(self.PSETID_Task_GUID, 0x8105)]
+        prop_type = mapitags.PT_SYSTIME
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        return (prop_type | prop_ids[0])        
+
+    def get_task_date_completed_tag (self):
+        prop_name = [(self.PSETID_Task_GUID, 0x810f)]
+        prop_type = mapitags.PT_SYSTIME
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        return (prop_type | prop_ids[0])        
+
+    def get_task_state_tag (self):
+        prop_name = [(self.PSETID_Task_GUID, 0x8113)]
+        prop_type = mapitags.PT_LONG
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        return (prop_type | prop_ids[0])        
+
+    def get_task_complete_tag (self):
+        prop_name = [(self.PSETID_Task_GUID, 0x811c)]
+        prop_type = mapitags.PT_BOOLEAN
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+
+        return (prop_type | prop_ids[0])        
+
+    def get_task_recur_tag (self):
+        prop_name = [(self.PSETID_Task_GUID, 0x8126)]
+        prop_type = mapitags.PT_BOOLEAN
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
 
         return (prop_type | prop_ids[0])        
