@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Dec 02 13:46:17 IST 2011
-## Last Modified : Fri Dec 02 16:40:22 IST 2011
+## Last Modified : Fri Dec 09 17:46:44 IST 2011
 ##
 ## Copyright (c) 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -68,13 +68,14 @@ class Gout:
 
     def get_sync_obj (self, user, pwd, dirn):
         logging.info('Opening Outlook message store...')
-        ol = Outlook(self.config)
+        ol   = Outlook(self.config)
+        olcf = ol.get_default_contacts_folder()
     
         self.fields = self.get_sync_fields()
-        self.fields.append(ol.prop_tags.valu('GOUT_PR_EMAIL_1'))
-        self.fields.append(ol.prop_tags.valu('GOUT_PR_EMAIL_2'))
-        self.fields.append(ol.prop_tags.valu('GOUT_PR_EMAIL_3'))
-        self.fields.append(ol.prop_tags.valu('GOUT_PR_GCID'))
+        self.fields.append(olcf.prop_tags.valu('GOUT_PR_EMAIL_1'))
+        self.fields.append(olcf.prop_tags.valu('GOUT_PR_EMAIL_2'))
+        self.fields.append(olcf.prop_tags.valu('GOUT_PR_EMAIL_3'))
+        self.fields.append(olcf.prop_tags.valu('GOUT_PR_GCID'))
 
         logging.info('Logging into Gmail to set up connection...')
         gc = GC(self.config, user, pwd)

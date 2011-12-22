@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Sun Dec 04 22:25:10 IST 2011
+## Last Modified : Fri Dec 09 18:03:00 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -20,9 +20,9 @@ import gdata.contacts.client
 import atom
 
 import demjson
-import logging
 import base64
-import xml.dom.minidom
+
+import logging, traceback
 
 def sync_status_str (const):
     for name, val in globals().iteritems():
@@ -50,6 +50,8 @@ class Sync:
         self.gc     = gc
         self.dir    = dirn
 
+        self.olcf   = self.ol.get_default_contacts_folder()
+
     def reset_state (self):
         """Reset counters and other state information before starting."""
         pass
@@ -60,13 +62,13 @@ class Sync:
         place to the other and set the stage for the actual sync"""
 
         self.gc.prep_gc_contact_lists()
-        self.ol.prep_ol_contact_lists()
+        self.olcf.prep_ol_contact_lists()
 
         # Identify potential conflicts in the modified lists and resolve
         # them by deleting the conflict entries from one of the two
         # lists
 
-        old = self.ol.con_mod
+        old = self.olcf.con_mod
         gcd = self.gc.con_gc_mod
 
         coma = [ol for ol,gc in old.iteritems() if gc in gcd.keys()]
@@ -81,17 +83,17 @@ class Sync:
             coma = [base64.b64encode(x) for x in coma]
             self.gc.del_con_mod_by_values(coma)
         elif cr == self.config.GOOGLE:
-            self.ol.del_con_mod_by_keys(coma)
+            self.olcf.del_con_mod_by_keys(coma)
 
         logging.debug('conflict resolve direction : %d', cr)
         logging.debug('After conflict resolution, size of gc mods : %5d',
                       len(self.gc.con_gc_mod))
         logging.debug('After conflict resolution, size of ol mods : %5d',
-                      len(self.ol.con_mod))
+                      len(self.olcf.con_mod))
 
     def _prep_lists_1_way_o2g (self):
-        self.ol.prep_ol_contact_lists()
-        print 'size of ol mod: ', len(self.ol.con_mod)
+        self.olcf.prep_ol_contact_lists()
+        print 'size of ol mod: ', len(self.olcf.con_mod)
 
     def _prep_lists_1_way_g2o (self):
         self.gc.prep_gc_contact_lists()
@@ -217,7 +219,7 @@ class Sync:
         logging.info('   Sending New Outlook entries to Google')
         logging.info('=====================================================')
 
-        ol_new = self.ol.get_con_new()
+        ol_new = self.olcf.get_con_new()
         if (ol_new and len(ol_new) > 0):
             logging.info('%d new Outlook contacts to be synced to Google',
                          len(ol_new))
@@ -234,7 +236,7 @@ class Sync:
                              ol=self.ol, entryid=olid, props=None,
                              gcapi=self.gc)
             except Exception, e:
-                name = self.ol.get_entry_name(olid)
+                name = self.olcf.get_entry_name(olid)
                 logging.error('Could not upload to Google: %s: Reason: %s',
                               name, str(e))
                 continue
@@ -322,7 +324,7 @@ class Sync:
         logging.info('   Sending local Outlook modifications to Google')
         logging.info('=====================================================')
 
-        ol_mods = self.ol.get_con_mod().values()
+        ol_mods = self.olcf.get_con_mod().values()
         if (ol_mods and len(ol_mods) > 0):
             logging.info('%d locally modified contacts to be synced to Google',
                          len(ol_mods))
@@ -423,7 +425,7 @@ class Sync:
         self._write_ces_to_ol(ces)
 
         eids = [base64.b64decode(x) for x in self.gc.get_con_mod().values()]
-        self.ol.del_entries(eids)
+        self.olcf.del_entries(eids)
 
     def _write_ces_to_ol (self, ces, writeback_olid=True):
         """ces is a list of ContactEntry objects which need to be saved to
@@ -488,14 +490,19 @@ class Sync:
         group with a new group ID - in sum, make a fresh beginning."""
 
         self.gc.clear_sync_state()
-        self.ol.bulk_clear_gcid_flag()
+        self.olcf.bulk_clear_gcid_flag()
         self.gc.clear_group(gid=self.config.get_gid(), gentry=None)
 
         gc_gid = self.gc.create_group(self.config.get_gn())
         self.config.set_gid(gc_gid)
 
     def dry_run (self):
-        self._prep_lists()
+        try:
+            self._prep_lists()
+        except Exception, e:
+            logging.critical('Internal Error: %s', str(e))
+            logging.critical('Full Traceback follows.\n%s',
+                          traceback.format_exc())
 
     def run (self):
         self._prep_lists()

@@ -3,7 +3,7 @@
 ## ol_wrapper.py
 ##
 ## Created	 : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Dec 06 17:33:46 IST 2011
+## Last Modified : Fri Dec 09 17:44:12 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -198,6 +198,9 @@ class MessageStores:
 
         self._populate_stores()
 
+    def get_default_store (self):
+        return self._default_store
+
     def get (self, name=None, eid=None):
         """Fetch the MessageStore object for the specified entry id or the
         name. The behaviour is undefined if both eid and name are specified in
@@ -211,7 +214,7 @@ class MessageStores:
         if name:
             return self._store_by_name[name]
 
-        return self._default_store
+        return self.get_default_store()
 
     def put (self, eid, name, default, store):
         self._store_by_eid[eid]   = store
@@ -276,14 +279,13 @@ class MessageStore:
         self.default = default
         self.obj     = None
 
-        self.folders       = self.contacts_folders = None
-        self.notes_folders = self.tasks_folders    = None
+        self.folders       = None
 
         # This should really be done 'lazily' but let's go with the flow for
         # now... FIXME
         self._populate_folders()
 
-        self.tasks_folders[0].print_key_stats()
+#        self.tasks_folders[0].print_key_stats()
 
     def get_obj (self):
         if self.obj:
@@ -295,6 +297,14 @@ class MessageStore:
                                                   MOD_FLAG))
 
         return self.obj
+
+    def get_default_contacts_folder (self):
+        # Somewhat of a hack. There might be more than one contacts folder
+        # inside the store... FIXME
+        if self.contacts_folders and len(self.contacts_folders) > 0:
+            return self.contacts_folders[0]
+
+        return None
 
     def get_inbox (self, msgstore):
         inbox_id, c = msgstore.GetReceiveFolder("IPM.Note", 0)
@@ -438,16 +448,23 @@ class Outlook:
         # initialize and log on
         mapi.MAPIInitialize(None)
         flags = (mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT |
-                 mapi.MAPI_TIMEOUT_SHORT | MOD_FLAG)
+                 MOD_FLAG)
 
         logging.debug('Opening default profile in MAPI...')
         self.session = mapi.MAPILogonEx(0, "", None, flags)
 
-        msgstores = MessageStores(self)
+        self.msgstores = MessageStores(self)
 
     def __del__ (self):
         logging.debug('Destroying mapi session...')
         self.session.Logoff(0, 0, 0)
+
+    def get_default_msgstore (self):
+        return self.msgstores.get_default_store()
+
+    def get_default_contacts_folder (self):
+        defstore = self.get_default_msgstore()
+        return defstore.get_default_contacts_folder()
 
 class Folder:
     PR_IPM_CONTACT_ENTRYID = 0x36D10102
