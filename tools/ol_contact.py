@@ -3,13 +3,23 @@
 ## ol_contact.py
 ## 
 ## Created	 : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Mon Dec 05 14:35:58 IST 2011
+## Last Modified : Fri Dec 09 18:15:01 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
 ##
 ## Licensed under the GPL v3
 ## 
+
+import logging
+
+from   gc_wrapper    import get_udp_by_key
+from   win32com.mapi import mapi
+from   win32com.mapi import mapitags
+import gdata.data
+import base64
+
+import utils
 
 class Contact:
     def __init__ (self, fields, config, props, ol, gcapi=None,
@@ -42,7 +52,7 @@ class Contact:
         self.ol     = ol
         self.gcapi  = gcapi
 
-        self.cf       = ol.get_default_cf()
+        self.cf       = ol.get_default_contacts_folder()
         self.msgstore = ol.get_default_msgstore()
 
         self.PROP_REPLACE = 0
@@ -74,7 +84,7 @@ class Contact:
         if entryid:
             self.entryid = entryid
             self.ol_item = self.get_ol_item()
-            hr, props = self.ol_item.GetProps(self.ol.def_ctable_cols, 0)
+            hr, props = self.ol_item.GetProps(self.cf.def_ctable_cols, 0)
             # FIXME: error checking needed
 
         ## fixme: catch error when both are None
@@ -136,24 +146,24 @@ class Contact:
         self.web_work  = self._get_prop(mapitags.PR_BUSINESS_HOME_PAGE)
 
         ## Build an aray out of the three email addresses as applicable
-        e = self._get_prop(self.ol.prop_tags.valu('GOUT_PR_EMAIL_1'))
+        e = self._get_prop(self.cf.prop_tags.valu('GOUT_PR_EMAIL_1'))
         self.emails = [e] if e else None
 
-        e = self._get_prop(self.ol.prop_tags.valu('GOUT_PR_EMAIL_2'))
+        e = self._get_prop(self.cf.prop_tags.valu('GOUT_PR_EMAIL_2'))
         if e:
             if self.emails:
                 self.emails.append(e)
             else:
                 self.emails = [e]
 
-        e = self._get_prop(self.ol.prop_tags.valu('GOUT_PR_EMAIL_3'))
+        e = self._get_prop(self.cf.prop_tags.valu('GOUT_PR_EMAIL_3'))
         if e:
             if self.emails:
                 self.emails.append(e)
             else:
                 self.emails = [e]
 
-        self.gcid = self._get_prop(self.ol.prop_tags.valu('GOUT_PR_GCID'))
+        self.gcid = self._get_prop(self.cf.prop_tags.valu('GOUT_PR_GCID'))
 
 
     def create_props_list (self, ce, gcid_tag=None):
@@ -180,7 +190,7 @@ class Contact:
         props = [(mapitags.PR_MESSAGE_CLASS, "IPM.Contact")]
 
         if gcid_tag is None:
-            gcid_tag = self.ol.prop_tags.valu('GOUT_PR_GCID')
+            gcid_tag = self.cf.prop_tags.valu('GOUT_PR_GCID')
 
         if ce.name:
             if ce.name.full_name:
@@ -188,7 +198,7 @@ class Contact:
                                ce.name.full_name.text))
                 # We need to work harder to set the File As member, without
                 # which... the shiny new entry will look a bit odd.
-                fileas_prop_tag = self.ol.prop_tags.valu('GOUT_PR_FILE_AS')
+                fileas_prop_tag = self.cf.prop_tags.valu('GOUT_PR_FILE_AS')
                 props.append((fileas_prop_tag, ce.name.full_name.text))
 
             if ce.name.family_name:
@@ -220,13 +230,13 @@ class Contact:
         # addresses are tracked in MAPI
         if ce.email:
             if len(ce.email) > 0 and ce.email[0].address:
-                props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_1'),
+                props.append((self.cf.prop_tags.valu('GOUT_PR_EMAIL_1'),
                                ce.email[0].address))
             if len(ce.email) > 1 and ce.email[1].address:
-                props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_2'),
+                props.append((self.cf.prop_tags.valu('GOUT_PR_EMAIL_2'),
                                ce.email[1].address))
             if len(ce.email) > 2 and ce.email[2].address:
-                props.append((self.ol.prop_tags.valu('GOUT_PR_EMAIL_3'),
+                props.append((self.cf.prop_tags.valu('GOUT_PR_EMAIL_3'),
                                ce.email[2].address))
 
         # Postal address
@@ -409,7 +419,7 @@ class Contact:
         entry."""
 
         logging.info('Saving to Outlook: %-32s ....', self.name)
-        msg = self.cf.CreateMessage(None, 0)
+        msg = self.ol.CreateMessage(None, 0)
 
         if not msg:
             return None
@@ -469,7 +479,7 @@ class Contact:
         Outlook.
         """
 
-        prop_tag = self.ol.prop_tags.valu('GOUT_PR_GCID')
+        prop_tag = self.cf.prop_tags.valu('GOUT_PR_GCID')
 
         hr, props = self.ol_item.GetProps([prop_tag], mapi.MAPI_UNICODE)
         (tag, val) = props[0]
