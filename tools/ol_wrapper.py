@@ -3,7 +3,7 @@
 ## ol_wrapper.py
 ##
 ## Created	 : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Dec 09 17:44:12 IST 2011
+## Last Modified : Mon Mar 12 17:45:20 IST 2012
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -636,6 +636,47 @@ class Folder:
         print 'num processed: ', i
 
         return
+
+    def all_entries (self):
+        """Return an array of entries in the current folder along with the
+        corresponding google IDs in a format that can be directly written to
+        the app_state.json file. The value from this for all folders will be
+        written to the file as an array field."""
+
+        ret = {'folder' : self.name,
+               'store'  : self.store.name}
+        entries = []
+
+        ctable = self.get_contents()
+        ctable.SetColumns((self.prop_tags.valu('GOUT_PR_GCID'),
+                           mapitags.PR_ENTRYID), 0)
+
+        while True:
+            rows = ctable.QueryRows(1, 0)
+            #if this is the last row then stop
+            if len(rows) != 1:
+                break
+    
+            (gid_tag, gid), (entryid_tag, entryid) = rows[0]
+
+            if mapitags.PROP_TYPE(entryid_tag) == mapitags.PT_ERROR:
+                logging.error('all_entries(): Error returned while iterating')
+                gid = entryid = None
+            else:
+                entryid = base64.b64encode(entryid)
+                if mapitags.PROP_TYPE(gid_tag) == mapitags.PT_ERROR:
+                    # Was not synced for whatever reason.
+                    logging.debug(('Folder:all_contents(): Prepped unsynched ' +
+                                    'items for b64encoded entryid: %s'),
+                                    entryid)
+                    gid = None
+
+            entries.append({'eid' : entryid,
+                             'gcid' : gid})
+
+        ret.update({'entries' : entries,
+                     'entrycnt' : len(entries)})
+        return ret
 
     def is_contacts_folder (self):
         return True if self.type == Folder.PR_IPM_CONTACT_ENTRYID else False
