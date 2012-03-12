@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Fri Dec 09 18:03:00 IST 2011
+## Last Modified : Thu Dec 22 17:34:05 IST 2011
 ##
 ## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -499,6 +499,10 @@ class Sync:
     def dry_run (self):
         try:
             self._prep_lists()
+            ret = self.olcf.all_entries()
+            print 'Folder Name: ', ret['folder']
+            print 'Store  Name: ', ret['store']
+            print 'Entry Count: ', ret['entrycnt']
         except Exception, e:
             logging.critical('Internal Error: %s', str(e))
             logging.critical('Full Traceback follows.\n%s',
