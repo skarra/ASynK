@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Fri Mar 16 12:13:36 IST 2012
+## Last Modified : Fri Mar 16 12:25:43 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -38,9 +38,6 @@ class Config:
         fi.close()
 
         self.state = self.inp
-
-        # self.state['conflict_resolve'] = getattr(
-        #     self, self.inp['conflict_resolve'])
 
         self.sync_through = sync_through
 
