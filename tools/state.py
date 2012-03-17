@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Fri Mar 16 12:25:43 IST 2012
+## Last Modified : Sat Mar 17 22:17:22 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -55,9 +55,36 @@ class Config:
         if self.sync_through and sync:
             self.save()
 
+    def _append_to_prop (self, key, val, sync=True):
+        """In the particular property value is an array, we would like to
+        append individual elements to the property value. this method does
+        exactly that."""
+
+        if not self.state[key]:
+            self.state[key] = [val]
+        else:
+            self.state[key].append(val)
+
+        if self.sync_through and sync:
+            self.save()
+
+    def _update_prop (self, prop, which, val, sync=True):
+        """If a particular property value is a dictionary, we would like to
+        update the dictinary with a new mapping or alter an existing
+        mapping. This method does exactly that."""
+
+        if not self.state[prop]:
+            self.state[prop] = {which : val}
+        else:
+            self.state[prop].update({which : val})
+
+        if self.sync_through and sync:
+            self.save()
+
     ## Dependent on sync state between a pair of PIMDs. Each call has to
     ## include two letter dbids. Invalid field access will throw a
-    ## GoutConfigError exeption
+    ## GoutConfigError exeption. ss in the method names stands for
+    ## 'sync_state'
 
     def _get_prop_ss (self, db1id, db2id, key):
         dbs = ('%s%s%s' % (db1id, self.get_label_separator(), db2id))
@@ -167,6 +194,22 @@ class Config:
                  (db1id, self.get_label_separator(), db2id, val)))
 
         return self._set_prop_ss(db1id, db2id, 'conflict_resolve', val, sync)
+
+
+    def get_db_config (self, dbid):
+        return self._get_prop('db_config')[dbid]
+
+    def set_db_config (self, dbid, val, sync=True):
+        """dbid should be a two letter dbid specifier. val should be any db
+        specific config, typically a dictionary itself. Take a look at
+        app_state.json.example for the sort of stuff that can be set here.
+
+        This routine can be called to update an existing db specific config -
+        in which case the entire value will be overwritten, or it can be
+        invoked to set something for a new db specifier.
+        """
+
+        self._update_prop('db_config', {dbid, val}, sync)
 
     def get_group_ids (self, db1id, db2id, db, fname):
         """Return the full map of Labels to Label/Group IDs for the requested
