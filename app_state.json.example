@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Fri Mar 16 11:53:34 IST 2012
+// Last Modified : Sat Mar 17 22:08:34 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 // 
@@ -105,4 +105,63 @@
 	    },
 	},
     },
+
+    // There could be some db specific configurations that we would
+    // like to track. For e.g. for Google Contacts we could cache the
+    // default username so it does not have to be specified every
+    // time.
+
+    'db_config' : {
+	'ol' : {
+	    // MS Outlook contact entries contain a lot of crap. The
+	    // same information appears multiple times against
+	    // different property tags. It is hard to understand which
+	    // ones are really needed to keep Outlook working, and
+	    // which are dispensible. We could create a copy of every
+	    // property but it would bloat up your google contacts of
+	    // your BBDB to ridiculous sizes. The following array
+	    // lists out the Property Tags that we are really
+	    // interested in. Everything else is ignored. If you want to 
+	    "sync_fields" : [
+    		'PR_ENTRYID',                'PR_DEPARTMENT_NAME',		
+		'PR_DISPLAY_NAME', 	     'PR_PRIMARY_TELEPHONE_NUMBER',	
+		'PR_BODY',		     'PR_MOBILE_TELEPHONE_NUMBER',	
+		'PR_POSTAL_ADDRESS',	     'PR_HOME_TELEPHONE_NUMBER',	
+		'PR_COMPANY_NAME',	     'PR_HOME2_TELEPHONE_NUMBER',	
+		'PR_TITLE',		     'PR_BUSINESS_TELEPHONE_NUMBER',	
+		'PR_BIRTHDAY',		     'PR_BUSINESS2_TELEPHONE_NUMBER',
+		'PR_NICKNAME',               'PR_HOME_FAX_NUMBER',	 
+		'PR_GENDER',		     'PR_BUSINESS_FAX_NUMBER',
+		'PR_PERSONAL_HOME_PAGE',     'PR_PRIMARY_FAX_NUMBER', 
+		'PR_BUSINESS_HOME_PAGE',     'PR_WEDDING_ANNIVERSARY',
+		'PR_LAST_MODIFICATION_TIME', 'PR_OTHER_TELEPHONE_NUMBER',
+		//	'PR_COUNTRY',
+		//	'PR_OFFICE_LOCATION',
+		//	'PR_STREET_ADDRESS',
+		//	'PR_EMAIL_ADDRESS',
+		//	'PR_EMAIL_ADDRESS_A',
+	    ],
+	},
+    },
 }
+
+// Some debug output I gathered to print out the numeric value
+// corresponding to the tag name. Recall that MAPI uses numeric
+// property tags in the data store
+
+// DEBUG:root:PR_DISPLAY_NAME                  : 0x3001001f
+// DEBUG:root:PR_ENTRYID                       : 0x fff0102
+// DEBUG:root:PR_COMMENT                       : 0x3004001f
+// DEBUG:root:PR_POSTAL_ADDRESS                : 0x3a15001f
+// DEBUG:root:PR_STREET_ADDRESS                : 0x3a29001f
+// DEBUG:root:PR_COMPANY_NAME                  : 0x3a16001f
+// DEBUG:root:PR_TITLE                         : 0x3a17001f
+// DEBUG:root:PR_DEPARTMENT_NAME               : 0x3a18001f
+// DEBUG:root:PR_OFFICE_LOCATION               : 0x3a19001f
+// DEBUG:root:PR_PRIMARY_TELEPHONE_NUMBER      : 0x3a1a001f
+// DEBUG:root:PR_MOBILE_TELEPHONE_NUMBER       : 0x3a1c001f
+// DEBUG:root:PR_HOME_TELEPHONE_NUMBER         : 0x3a09001f
+// DEBUG:root:PR_BUSINESS_TELEPHONE_NUMBER     : 0x3a08001f
+// DEBUG:root:PR_COUNTRY                       : 0x3a26001f
+// DEBUG:root:PR_EMAIL_ADDRESS                 : 0x3003001f
+// DEBUG:root:PR_EMAIL_ADDRESS_A               : 0x3003001e
