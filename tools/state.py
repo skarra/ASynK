@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Sat Mar 17 22:17:22 IST 2012
+## Last Modified : Sun Mar 18 11:29:14 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -209,7 +209,7 @@ class Config:
         invoked to set something for a new db specifier.
         """
 
-        self._update_prop('db_config', {dbid, val}, sync)
+        self._update_prop('db_config', dbid, val, sync)
 
     def get_group_ids (self, db1id, db2id, db, fname):
         """Return the full map of Labels to Label/Group IDs for the requested
@@ -350,6 +350,13 @@ def main (argv=None):
     except GoutConfigError, e:
         print 'Hurrah. ', traceback.format_exc()
         
+    tcnt += 1
+    print '\n### Test No. %2d ###\n' % tcnt
+    print 'ol db_config: ', config.get_db_config('ol')
+    print 'ol setting ol["sync_fields"] db_config to []'
+    config.set_db_config('ol', {'sync_fields' : []})
+    print 'ol db_config: ', config.get_db_config('ol')
+
 
 if __name__ == '__main__':
     main()  
