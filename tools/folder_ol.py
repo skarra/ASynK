@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Mar 20 13:08:44 IST 2012
+## Last Modified : Tue Mar 20 16:12:44 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -69,36 +69,17 @@ class OLFolder(Folder):
                 tag = 'GOUT_PR_BBID'
         self._clear_tag(tag)
 
-    def _clear_tag (self, tag):
-        logging.info('Querying MAPI for all data needed to clear flag')
-        ctable = self.get_contents()
-        ctable.SetColumns((self.prop_tags.valu(tag), mapitags.PR_ENTRYID), 0)
-        logging.info('Data obtained from MAPI. Clearing one at a time')
+    def __str__ (self):
+        if self.type == Folder.PR_IPM_CONTACT_ENTRYID:
+            ret = 'Contacts'
+        elif self.type == Folder.PR_IPM_NOTE_ENTRYID:
+            ret = 'Notes'
+        elif self.type == Folder.PR_IPM_TASK_ENTRYID:
+            ret = 'Tasks'
 
-        cnt = 0
-        i   = 0
-        store = self.get_msgstore()
-        hr = ctable.SeekRow(mapi.BOOKMARK_BEGINNING, 0)
-
-        while True:
-            rows = ctable.QueryRows(1, 0)
-            # if this is the last row then stop
-            if len(rows) != 1:
-                break
-    
-            (gid_tag, gid), (entryid_tag, entryid) = rows[0]
-
-            i += 1
-            if mapitags.PROP_TYPE(gid_tag) != mapitags.PT_ERROR:
-                entry = store.OpenEntry(entryid, None, MOD_FLAG)
-                hr, ps = entry.DeleteProps([gid_tag])
-                entry.SaveChanges(mapi.KEEP_OPEN_READWRITE)
-
-                cnt += 1
-
-        logging.info('Num entries cleared: %d. i = %d', cnt, i)
-        return cnt
-        
+        return ('%s.\tName: %s;\tEID: %s;\tStore: %s' % (
+            ret, self.name, base64.b64encode(self.entryid),
+            self.store.name))        
 
     ##
     ## First some get_ and set_ routines
@@ -157,17 +138,35 @@ class OLFolder(Folder):
             hr = cf.DeleteMessages(eids, 0, None, 0)
             cf.SaveChanges(mapi.KEEP_OPEN_READWRITE)
 
-    def __str__ (self):
-        if self.type == Folder.PR_IPM_CONTACT_ENTRYID:
-            ret = 'Contacts'
-        elif self.type == Folder.PR_IPM_NOTE_ENTRYID:
-            ret = 'Notes'
-        elif self.type == Folder.PR_IPM_TASK_ENTRYID:
-            ret = 'Tasks'
+    def _clear_tag (self, tag):
+        logging.info('Querying MAPI for all data needed to clear flag')
+        ctable = self.get_contents()
+        ctable.SetColumns((self.prop_tags.valu(tag), mapitags.PR_ENTRYID), 0)
+        logging.info('Data obtained from MAPI. Clearing one at a time')
 
-        return ('%s.\tName: %s;\tEID: %s;\tStore: %s' % (
-            ret, self.name, base64.b64encode(self.entryid),
-            self.store.name))
+        cnt = 0
+        i   = 0
+        store = self.get_msgstore()
+        hr = ctable.SeekRow(mapi.BOOKMARK_BEGINNING, 0)
+
+        while True:
+            rows = ctable.QueryRows(1, 0)
+            # if this is the last row then stop
+            if len(rows) != 1:
+                break
+    
+            (gid_tag, gid), (entryid_tag, entryid) = rows[0]
+
+            i += 1
+            if mapitags.PROP_TYPE(gid_tag) != mapitags.PT_ERROR:
+                entry = store.OpenEntry(entryid, None, MOD_FLAG)
+                hr, ps = entry.DeleteProps([gid_tag])
+                entry.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+
+                cnt += 1
+
+        logging.info('Num entries cleared: %d. i = %d', cnt, i)
+        return cnt
 
 class OLContactsFolder(OLFolder):
     def __init__ (self, db, entryid, name, fobj, msgstore):

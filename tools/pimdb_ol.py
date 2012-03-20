@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Mar 20 07:06:44 IST 2012
+## Last Modified : Tue Mar 20 14:46:54 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -9,10 +9,6 @@
 
 ## This is an implementation of the Outlook PIMDB by extending the PIMDB
 ## abstract base class
-
-## This file itself comes with some extensive unit tests. If you want to run
-## it from the command line, the usage is (from the current directory)
-## PYTHONPATH=../lib/:. python pimdb_ol.py
 
 import os, os.path, sys, logging, time, traceback
 from   datetime      import datetime
@@ -275,6 +271,19 @@ class OLPIMDB(PIMDB):
 
         return 'ol'
 
+    @abstractmethod
+    def new_folder (self, fname, type):
+        """Create a new folder of specified type and return an id. The folder
+        will not contain any items"""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def del_folder (self, itemid):
+        """Get rid of the specified folder."""
+
+        raise NotImplementedError
+
     def set_folders (self):
         """See the documentation in class PIMDB"""
 
@@ -295,6 +304,7 @@ class OLPIMDB(PIMDB):
 
     ##
     ## Now the non-abstract methods and internal methods
+    ##
 
     def mapi_initialize (self):
         logging.debug('Initalizing MAPI...')
