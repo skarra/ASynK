@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Mar 19 20:56:04 IST 2012
+## Last Modified : Tue Mar 20 13:08:44 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -32,12 +32,6 @@ class OLFolder(Folder):
     __metaclass__ = ABCMeta
 
     def __init__ (self, db, entryid, name, fobj, msgstore):
-
-        ## FIXME: following needs to be implemented in the derived folder
-        ## classes.
-
-        # self.type = folder_type
-
         Folder.__init__(self, db)
 
         self.set_entryid(entryid)
@@ -132,12 +126,6 @@ class OLFolder(Folder):
 
     def get_def_cols (self):
         return self.def_cols
-
-    def get_name (self):
-        return self._get_prop('name')
-
-    def set_name (self, name):
-        self._set_prop('name', name)
 
     def get_fobj (self):
         return self._get_prop('fobj')

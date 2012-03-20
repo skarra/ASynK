@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Mar 19 13:41:14 IST 2012
+## Last Modified : Tue Mar 20 14:34:44 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -14,7 +14,9 @@
 ##
 
 from abc     import ABCMeta, abstractmethod
-from pimdb   import PIMDB, GoutInvalidPropValueError
+
+class GoutInvalidPropValueError(Exception):
+    pass
 
 class Folder:
     __metaclass__ = ABCMeta
@@ -27,6 +29,11 @@ class Folder:
     APPT_t      = PR_IPM_APPOINTMENT_ENTRYID = 0x36D00102
 
     valid_types = [CONTACT_t, NOTE_t, TASK_t, APPT_t]
+    type_names  = { CONTACT_t : 'contacts',
+                    NOTE_t    : 'notes',
+                    TASKS_t   : 'tasks',
+                    APPT_t    : 'appts',
+                    }
 
     def __init__ (self, db):
         # Folders have properties that need to persist in the underlying
@@ -139,6 +146,12 @@ class Folder:
     def set_itemid (self, val):
         self._set_prop('itemid', val)
 
+    def get_name (self):
+        return self._get_prop('name')
+
+    def set_name (self, name):
+        self._set_prop('name', name)
+
     def get_config (self):
         return self.config
 
@@ -156,7 +169,7 @@ class Folder:
 
     def set_type (self, t):
         if not t in self.valid_types:
-            raise GoutInvalidPropValueError(
+            raise GoutFolderInvalidPropValueError(
                 'Invalid type in Folder:set_type : %s' % t)
 
         self._set_prop('type', type)
