@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Mar 19 13:38:36 IST 2012
+## Last Modified : Tue Mar 20 16:27:45 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -28,7 +28,9 @@
 ## there is a DB that eventually contain folders of one of four types. The End.
 ##
 
-from abc import ABCMeta, abstractmethod
+import logging
+from   abc      import ABCMeta, abstractmethod
+from   folder   import Folder
 
 class GoutInvalidPropValueError(Exception):
     pass
@@ -58,6 +60,19 @@ class PIMDB:
         Outlook, and 'bb' for Emacs BBDB. This id is used, among other things,
         to store the source identification in the remote database, track sync
         status between different databases in the application status, etc."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def new_folder (self, fname, type):
+        """Create a new folder of specified type and return an id. The folder
+        will not contain any items"""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def del_folder (self, itemid):
+        """Get rid of the specified folder."""
 
         raise NotImplementedError
 
@@ -93,14 +108,59 @@ class PIMDB:
     def get_config (self):
         return self.config
 
+    def get_folders (self, ftype=None):
+        """Return all the folders of specified type. ftype should be one of
+        the valid folder types. If none is specifiedfor ftype, then the entire
+        dictionary is returned as is. If ftype is an invalid type, then this
+        routine returns None"""
+        
+        if ftype and not (ftype in Folder.valid_types):
+            return None
+
+        ftypename = Folder.type_names[ftype]
+        return self.folders[ftypename] if ftype else self.folders
+
+    def remove_folder_from_lists (self, f, ft):
+        if not ft in Folder.valid_types:
+            return None
+
+        ftkey = Folder.type_names[ft]
+        try:
+            self.folders[ftkey].remove(f)
+        except ValueError, e:
+            logging.debug('Attemped to remove unlisted folder %s of type %s',
+                          f.get_name(), f.get_type())
+
+    def add_contacts_folder (self, f):
+        """Append specified folder f to the list of Contacts folder in the
+        PIMDB."""
+
+        self.folders['contacts'].append(f)
+
     def get_contacts_folders (self):
+        """Returns an array of all the Contacts folders in the current PIMDB"""
+
         return self.folders['contacts']
 
+    def add_tasks_folder (self, f):
+        """Append specified folder f to the list of Tasks folders in the
+        PIMDB."""
+
+        self.folders['tasks'].append(f)
+
     def get_tasks_folders (self):
+        """Return the list of Tasks folders available in the current PIMDB."""
+
         return self.folders['tasks']
+
+    def add_notes_folder (self, f):
+        self.folders['notes'].append(f)
 
     def get_notes_folders (self):
         return self.folders['notes']
+
+    def add_appts_folder (self, f):
+        self.folders['appts'].append(f)
 
     def get_appts_folders (self):
         return self.folders['appts']
@@ -176,6 +236,19 @@ class PIMDB:
 
     def set_def_folder (self, key, value):
         self.def_folder[key] = value
+
+    def find_folder (self, itemid):
+        """Locate the folder from the folder list. Returns a tuple of (Folder
+        object, Folder_type) if folder if found. Folder_type is one of the
+        values from Folder.valid_types Returns (None, None) if there
+        is no match found."""
+
+        for ftype in Folder.valid_types:
+            for f in self.get_folders(ftype):
+                if f.get_itemid() == itemid:
+                    return (f, ftype)
+
+        return (None, None)
 
 ## Fri Mar 16 18:05:33 IST 2012
 

@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Mar 20 14:34:44 IST 2012
+## Last Modified : Tue Mar 20 14:45:36 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -31,7 +31,7 @@ class Folder:
     valid_types = [CONTACT_t, NOTE_t, TASK_t, APPT_t]
     type_names  = { CONTACT_t : 'contacts',
                     NOTE_t    : 'notes',
-                    TASKS_t   : 'tasks',
+                    TASK_t   : 'tasks',
                     APPT_t    : 'appts',
                     }
 
