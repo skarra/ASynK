@@ -1,13 +1,11 @@
-## 
+##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Mar 20 14:45:36 IST 2012
+## Last Modified : Wed Mar 21 17:13:46 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
-## 
-
-## 
+##
 ## This file defines an abstract base Contact class essentially as a way of
 ## documenting what this application considers as a normalized contact
 ## container.
@@ -46,7 +44,7 @@ class Folder:
                       'name'        : None,
                       'sync_tags'   : {},
                       }
-        
+
         # Then there are many class attributes that are needed to work with
         # the programatically in the application, like pointers to the parent
         # Folder and DB object, etc. Such attributes are tracked separately
@@ -108,7 +106,7 @@ class Folder:
     ##
     ## Now the internal helper methods that will be used in the internal
     ## implementetion of the class methods.
-    ## 
+    ##
 
     def _get_prop (self, key):
         return self.props[key]
@@ -124,7 +122,7 @@ class Folder:
         if not self.props[key]:
             self.props[key] = [val]
         else:
-            self.props[key].append(val)    
+            self.props[key].append(val)
 
     def _update_prop (self, prop, which, val):
         """If a particular property value is a dictionary, we would like to
@@ -134,7 +132,7 @@ class Folder:
         if not self.props[prop]:
             self.props[prop] = {which : val}
         else:
-            self.props[prop].update({which : val})   
+            self.props[prop].update({which : val})
 
     ##
     ## Now on to the non-abstract methods

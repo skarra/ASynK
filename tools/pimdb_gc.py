@@ -1,36 +1,21 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Tue Mar 20 16:39:36 IST 2012
-## 
+## Last Modified : Wed Mar 21 17:31:53 IST 2012
+##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
-## 
+##
 ## Licensed under the GPL v3
-## 
+##
+## If you want to run the unit tests in this file from the command line, the
+## usage is (from the cwd PYTHONPATH=../lib/:. python pimdb_gc.py
 
-## This file itself comes with some extensive unit tests. If you want to run
-## it from the command line, the usage is (from the current directory)
-## PYTHONPATH=../lib/:. python pimdb_gc.py
-
-import sys, getopt, logging, xml.dom.minidom
-import utils, time, datetime
+import datetime, getopt, logging, sys, time, utils
 import atom, gdata.contacts.data, gdata.contacts.client, base64
 
 from   state        import Config
 from   pimdb        import PIMDB, GoutInvalidPropValueError
 from   folder       import Folder
 from   folder_gc    import GCContactsFolder
-
-def get_udp_by_key (udps, key):
-    
-    for ep in udps:
-        if ep.key == key:   
-            if ep.value:
-                return ep.value
-            else:
-                value = 'Hrrmph. '
-                print 'Value: ', value
-
-    return None
 
 class GCPIMDB (PIMDB):
     """GC object is a wrapper for a Google Contacts stream API."""
@@ -60,9 +45,9 @@ class GCPIMDB (PIMDB):
         gn              = gdata.data.Name(name=fname)
         new_group       = gdata.contacts.data.GroupEntry(name=gn)
         new_group.title = atom.data.Title(text=fname)
-    
+
         entry = self.get_gdc().create_group(new_group)
-    
+
         if entry:
             logging.info('Successfully created group. ID: %s',
                          entry.id.text)
@@ -74,6 +59,10 @@ class GCPIMDB (PIMDB):
             return None
 
     def del_folder (self, gid):
+        """Delete the specified folder on the Google server. This will first
+        delete all the contained contact entires, and then delete the group
+        itself, so no trace remains."""
+
         f, ftype = self.find_folder(gid)
 
         if not f:
@@ -103,7 +92,7 @@ class GCPIMDB (PIMDB):
         """See the documentation in class PIMDB"""
 
         raise NotImplementedError
-   
+
     def set_sync_folders (self):
         """See the documentation in class PIMDB"""
 
@@ -111,7 +100,7 @@ class GCPIMDB (PIMDB):
 
     ##
     ## Now the non-abstract methods and internal methods
-    ## 
+    ##
 
     def get_user (self):
         return self.user
@@ -157,7 +146,7 @@ class GCPIMDB (PIMDB):
     def list_groups (self):
         ret = []
         feed = self.get_groups_feed()
-  
+
         if not feed.entry:
             return ret
 
@@ -169,7 +158,7 @@ class GCPIMDB (PIMDB):
 
     def print_groups (self):
         feed = self.get_groups_feed()
-  
+
         if not feed.entry:
             print 'No groups for user'
         for i, entry in enumerate(feed.entry):
@@ -177,23 +166,23 @@ class GCPIMDB (PIMDB):
             if entry.content:
                 print '  Content: %s' % (entry.content.text)
 
-            print '  Group ID: %s' % entry.id.text  
+            print '  Group ID: %s' % entry.id.text
 
     def find_group (self, title, ret_type='id'):
         """This routine will directly look up the server using the API and try
         to find the specified group by name.
-  
+
         Takes a group title, and returns the Group ID if found. Returns
         None if the group cannot be found.
         """
-  
+
         feed = self.get_gdc().GetGroups()
-    
+
         if not feed.entry:
             logging.info('\nGroup (%s) not found: there are no groups!',
                           title)
             return None
-    
+
         for i, entry in enumerate(feed.entry):
             if entry.title.text == title:
                 if ret_type == 'entry':
@@ -213,14 +202,14 @@ class GCPIMDB (PIMDB):
 
 def main():
     config = Config('../app_state.json')
-    
+
     # Parse command line options
     try:
         opts, args = getopt.getopt(sys.argv[1:], '', ['user=', 'pw='])
     except getopt.error, msg:
         print 'python gc_wrapper.py --user [username] --pw [password]'
         sys.exit(2)
-  
+
     user = ''
     pw = ''
     # Process options
@@ -229,13 +218,21 @@ def main():
             user = arg
         elif option == '--pw':
             pw = arg
-  
+
+    while not user:
+        user = raw_input('Please enter your username: ')
+
+    while not pw:
+        pw = raw_input('Password: ')
+        if not pw:
+            print 'Password cannot be blank'
+
     try:
         sample = GCPIMDB(config, user, pw)
     except gdata.client.BadAuthentication:
         print 'Invalid credentials. WTF.'
         return
-  
+
     sample.print_groups()
     gid = sample.new_folder('Hurrah Testing', Folder.CONTACT_t)
     #gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/50fccc2a8e0100eb'

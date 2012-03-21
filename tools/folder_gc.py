@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Mar 20 16:26:20 IST 2012
+## Last Modified : Wed Mar 21 17:19:00 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -10,7 +10,20 @@
 import sys, os, logging, traceback
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
+import utils
 import gdata.contacts.client
+
+def get_udp_by_key (udps, key):
+
+    for ep in udps:
+        if ep.key == key:
+            if ep.value:
+                return ep.value
+            else:
+                value = 'Hrrmph. '
+                print 'Value: ', value
+
+    return None
 
 ## Unlike the Outlook case, we will avoid doing another level of abstract
 ## class. When we get to implementing the tasks stuff we can evolve the class
@@ -80,11 +93,14 @@ class GCContactsFolder(Folder):
     def set_gcentry (self, gcentry):
         self._set_prop('gcentry', gcentry)
 
-    def _get_group_feed (self):
+    def _get_group_feed (self, showdeleted='false', updated_min=None):
         query             = gdata.contacts.client.ContactsQuery()
         query.max_results = 100000
-        query.showdeleted = 'false'
+        query.showdeleted = showdeleted
         query.group       = self.get_itemid()
+
+        if updated_min:
+            query.updated_min = updated_min
         
         feed = self.get_gdc().GetContacts(q=query)
         return feed
@@ -103,17 +119,6 @@ class GCContactsFolder(Folder):
   
     ## Temporarily placing keeping this stuff here while we start by cleaning
     ## up pimdb_gc.py
-
-    def _get_updated_gc_feed (self, updated_min, gid):
-        query             = gdata.contacts.client.ContactsQuery()
-        query.max_results = 100000
-        query.updated_min = updated_min
-        query.showdeleted = 'true'
-        query.group       = gid
-
-        feed = self.gd_client.GetContacts(q=query)
-        return feed
-
 
     def del_dict_items (self, d, l, keys=True):
         """Delete all the elements in d that match the elements in list
@@ -153,9 +158,8 @@ class GCContactsFolder(Folder):
     def prep_gc_contact_lists (self, cnt=0):
         logging.info('Querying Google for status of Contact Entries...')
 
-        updated_min = self.config.get_last_sync_stop()
-        gid         = self.config.get_gid()
-        feed = self._get_updated_gc_feed(updated_min, gid)
+        updated_min = self.get_config().get_last_sync_stop('gc', 'ol')
+        feed = self._get_group_feed(updated_min=updated_min, showdeleted='false')
 
         logging.info('Response recieved from Google. Processing...')
 
