@@ -14,3 +14,4 @@
 *.PST
 .DS_Store
 Thumbs.db
+login.auth
