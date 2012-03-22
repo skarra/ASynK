@@ -1,24 +1,21 @@
-#!/usr/bin/python
 ## 
-## utils.py
-##
-## Created       : Tue Jul 26 06:54:41  2011
-## Last Modified : Tue Nov 29 18:05:38 IST 2011
+## Created       : Tue Jul 26 06:54:41 IST 2011
+## Last Modified : Thu Mar 22 12:20:47 IST 2012
 ## 
-## Copyright (C) 2011 by Sriram Karra <karra.etc@gmail.com>
-## All rights reserved.
+## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
 ## Licensed under the GPL v3
 ## 
 
-import pywintypes
-
-def yyyy_mm_dd_to_pytime (date_str):
-    dt = datetime.strptime(date_str, '%Y-%m-%d')
-    return pywintypes.Time(dt.timetuple())
-
-def pytime_to_yyyy_mm_dd (pyt):
-    return ('%04d-%02d-%02d' % (pyt.year, pyt.month, pyt.day))
+## The follow is a super cool implementation of enum equivalent in
+## Python. Taken with a lot of gratitude from this post on Stackoverflow:
+## http://stackoverflow.com/a/1695250/987738
+##
+## It is used like so: Numbers = enum(ONE=1, TWO=2, THREE='three')
+## and, Numbers = enum('ZERO', 'ONE', 'TWO') # for auto initialization
+def enum(*sequential, **named):
+	enums = dict(zip(sequential, range(len(sequential))), **named)
+	return type('Enum', (), enums)
 
 def get_link_rel (links, rel):
     """From a Google data entry links array, fetch the link with the
