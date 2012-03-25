@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Mar 21 17:36:39 IST 2012
+## Last Modified : Thu Mar 22 11:10:50 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -9,13 +9,26 @@
 ## This file defines an abstract base Item class. Contact, Task, Appointment
 ## and Note can / will be derived from this base class and will reside in
 ## their own files.
+##
 
 from abc     import ABCMeta, abstractmethod
 from pimdb   import PIMDB, GoutInvalidPropValueError
 from folder  import Folder
 
 class Item:
-    """A generic PIM item - can be a Contact, Task, Note, or Appointment."""
+    """A generic PIM item - can be a Contact, Task, Note, or Appointment.
+
+    Items have two types of properties: props and atts - props are properties
+    of a contact that are made persistent in a PIM Database. Examples are:
+    name, phone numbers, email addresses, etc. atts are attributes of the
+    class or object thare are needed for the code to work, and are not stored
+    to the database. Examples of such attributes include a reference to the
+    enclosing folder object, PIMDB session, config and application state
+    values, etc.
+
+    It is important to keep this difference in mind, and there are different
+    accessors for properties and attributes.
+    """
 
     __metaclass__ = ABCMeta
 
@@ -30,6 +43,13 @@ class Item:
         self.props = {'itemid'      : None,
                       'type'        : None,
                       'sync_tags'   : {},
+                      }
+
+        # Attributes are non-persistent properties of the class or object,
+        # such as references to the enclosing folder, PIMDB, etc.
+        self.atts  = {'config'     : None,
+                      'db'         : None,
+                      'folder'     : None,
                       }
 
         # Then there are many class attributes that are needed to work with
@@ -86,29 +106,62 @@ class Item:
         else:
             self.props[prop].update({which : val})
 
+    def _get_att (self, key):
+        return self.atts[key]
+
+    def _set_att (self, key, val):
+        self.atts.update({key : val})
+        return val
+
+    def _append_to_att (self, key, val):
+        """In the particular atterty value is an array, we would like to
+        append individual elements to the attribute value. this method does
+        exactly that."""
+
+        if not self.atts[key]:
+            self.atts[key] = [val]
+        else:
+            self.atts[key].append(val)
+
+    def _update_att (self, att, which, val):
+        """If a particular attributes value is a dictionary, we would like to
+        update the dictionary with a new mapping or alter an existing
+        mapping. This method does exactly that."""
+
+        if not self.atts[att]:
+            self.atts[att] = {which : val}
+        else:
+            self.atts[att].update({which : val})
+
     ##
     ## Finally, the get_ and set_ methods.
     ##
 
-    ## First the non-props
+    def get_prop_names (self):
+        return self.props.keys()
+
+    def get_att_names (self):
+        return self.atts.keys()
+
+    ## First the object attributes
 
     def get_folder (self):
-        return self.folder
+        return self._get_att('folder')
 
     def set_folder (self, val):
-        self.folder = val
+        return self._set_att('folder', val)
 
     def get_db (self):
-        return self.db
+        return self._get_att('db')
 
     def set_db (self, val):
-        self.db = val
+        return self._set_att('db', val)
 
     def get_config (self):
-        return self.config
+        return self._get_att('config')
 
     def set_config (self, config):
-        self.config = config
+        return self._set_att('config', config)
 
     ## Now, the item properties
 

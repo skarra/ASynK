@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Mar 21 17:31:25 IST 2012
+## Last Modified : Thu Mar 22 11:13:33 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -13,7 +13,7 @@
 ##
 
 import sys, getopt, logging
-import atom, gdata.contacts.data, gdata.contacts.client, base64
+import atom, gdata.contacts.data, gdata.contacts.client
 
 import utils
 from   contact    import Contact
@@ -58,14 +58,14 @@ class GCContact(Contact):
     ##
 
     def get_gce (self):
-        gce = self._get_prop('gce')
+        gce = self._get_att('gce')
         if gce:
             return gce
 
         return self.init_gce_from_props()
 
     def set_gce (self, gce):
-        return self._set_prop('gce', gce)
+        return self._set_att('gce', gce)
 
     def init_props_from_gce (self, gce):
         self._snarf_itemid_from_gce(gce)
@@ -145,7 +145,7 @@ class GCContact(Contact):
 
     def _snarf_notes_from_gce (self, ce):
         if ce.content and ce.content.text:
-            self.set_notes(ce.content.text)
+            self.add_notes(ce.content.text)
 
     def _snarf_emails_from_gce (self, ce):
         """Fetch the email entries in the specified ContactEntry object and
