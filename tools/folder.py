@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Mar 21 17:13:46 IST 2012
+## Last Modified : Thu Mar 22 18:05:00 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -170,7 +170,7 @@ class Folder:
             raise GoutFolderInvalidPropValueError(
                 'Invalid type in Folder:set_type : %s' % t)
 
-        self._set_prop('type', type)
+        self._set_prop('type', t)
 
     def get_dbid (self):
         return self.dbid

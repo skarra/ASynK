@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Mar 21 17:37:58 IST 2012
+## Last Modified : Thu Mar 22 11:10:11 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -20,6 +20,12 @@ class Contact(Item):
     __metaclass__ = ABCMeta
 
     def __init__ (self, folder, con=None):
+        """Constructor for the abstract base class Contact. If con is not
+        None, this behaves like pseudo copy constructor, copying all the
+        contact properties from the pass contact. Note, in particular that all
+        the 'object attributes' of con are left untouched, and are populated
+        as per the general rules of creating a new contact."""
+
         Item.__init__(self, folder)
 
         if con:
@@ -73,9 +79,6 @@ class Contact(Item):
             val = copy.deepcopy(getattr(con, get_method)())
             print 'setting value (', val, ') using method ', set_method
             getattr(self, set_method)(val)
-
-    def get_prop_names (self):
-        return self.props.keys()
 
     def get_firstname (self):
         return self._get_prop('firstname')
