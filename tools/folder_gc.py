@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Mar 21 17:19:00 IST 2012
+## Last Modified : Mon Mar 26 14:38:25 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -50,10 +50,61 @@ class GCContactsFolder(Folder):
     ## Implementation of the abstract methods inherited from Folder
     ##
 
-    def prep_sync_lists (self, destid, last_sync_stop, limit=0):
+    def prep_sync_lists (self, destid, updated_min=None, cnt=0):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        logging.info('Querying Google for status of Contact Entries...')
+
+        ## Sort the DBIds so dest1 has the 'lower' ID
+        db1 = self.get_db().get_dbid()
+        if db1 > destid:
+            db2 = db11
+            db1 = destid
+        else:
+            db2 = destid
+
+        if not updated_min:
+            updated_min = self.get_config().get_last_sync_stop(db1, db2)
+
+        feed = self._get_group_feed(updated_min=updated_min, showdeleted='false')
+
+        logging.info('Response recieved from Google. Processing...')
+
+        self._reset_sync_lists()
+
+        if not feed.entry:
+            logging.info('No entries in feed.')
+            return
+
+        skip = 0
+
+        for i, entry in enumerate(feed.entry):
+            gcid = utils.get_link_rel(entry.link, 'edit')
+            olid = get_udp_by_key(entry.user_defined_field, 'olid')
+            epd  = entry.deleted
+
+            if epd:
+                if olid:
+                    self.con_gc_del[gcid] = olid
+                else:
+                    # Deleted before it got synched. Get on with life
+                    skip += 1
+                    continue
+            else:
+                if olid:
+                    self.con_gc_mod[gcid] = olid
+                else:
+                    self.con_gc_new.append(gcid)
+
+        logging.debug('==== GC =====')
+        logging.debug('num processed    : %5d', i+1)
+        logging.debug('num total        : %5d', len(self.con_all.items()))
+        logging.debug('num new          : %5d', len(self.con_gc_new))
+        logging.debug('num mod          : %5d', len(self.con_gc_mod))
+        logging.debug('num del          : %5d', len(self.con_gc_del))
+        logging.debug('num del bef sync : %5d', skip)
+
+        return (self.get_con_new(), self.get_con_mod(), self.get_con_del())
 
     def insert_new_items (self, items):
         """See the documentation in folder.Folder"""
@@ -142,8 +193,7 @@ class GCContactsFolder(Folder):
         self.con_gc_mod = self.del_dict_items(self.con_gc_mod,
                                               ary, False)
 
-    def reset_sync_lists (self):
-        """In these structures, all olids are base64 encoded."""
+    def _reset_sync_lists (self):
         self.con_all    = {}
         self.con_gc_del = {}
         self.con_gc_mod = {}
@@ -155,44 +205,10 @@ class GCContactsFolder(Folder):
     def get_con_mod (self):
         return self.con_gc_mod
 
-    def prep_gc_contact_lists (self, cnt=0):
-        logging.info('Querying Google for status of Contact Entries...')
+    def get_con_del (self):
+        return self.con_gc_del
 
-        updated_min = self.get_config().get_last_sync_stop('gc', 'ol')
-        feed = self._get_group_feed(updated_min=updated_min, showdeleted='false')
-
-        logging.info('Response recieved from Google. Processing...')
-
-        self.reset_sync_lists()
-
-        if not feed.entry:
-            logging.info('No entries in feed.')
-            return
-
-        skip = 0
-
-        for i, entry in enumerate(feed.entry):
-            gcid = utils.get_link_rel(entry.link, 'edit')
-            olid = get_udp_by_key(entry.user_defined_field, 'olid')
-            epd  = entry.deleted
-
-            if epd:
-                if olid:
-                    self.con_gc_del[gcid] = olid
-                else:
-                    # Deleted before it got synched. Get on with life
-                    skip += 1
-                    continue
-            else:
-                if olid:
-                    self.con_gc_mod[gcid] = olid
-                else:
-                    self.con_gc_new.append(gcid)
-
-        logging.debug('==== GC =====')
-        logging.debug('num processed    : %5d', i+1)
-        logging.debug('num total        : %5d', len(self.con_all.items()))
-        logging.debug('num new          : %5d', len(self.con_gc_new))
-        logging.debug('num mod          : %5d', len(self.con_gc_mod))
-        logging.debug('num del          : %5d', len(self.con_gc_del))
-        logging.debug('num del bef sync : %5d', skip)
+    ## FIXME: Mon Mar 26 12:23:50 IST 2012: This routine ans the supporting
+    ## methods above are in working order, and can be tested from the Tests()
+    ## harnes in contact_gc.py. It needs to be renamed and modified to
+    ## implement the prep_sync_lists() method inherited from folder.Folder

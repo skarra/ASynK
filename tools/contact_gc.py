@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Mar 22 11:13:33 IST 2012
+## Last Modified : Mon Mar 26 14:38:54 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -489,7 +489,7 @@ class GCContact(Contact):
 
 def main ():
     tests = TestGCContact()
-    tests.test_fetch_group_entries()
+    tests.test_sync_status()
 
 class TestGCContact:
     def __init__ (self):
@@ -583,8 +583,15 @@ class TestGCContact:
         cs = self.get_folder_contacts(f)
         print 'Got %d entries\n' % len(cs)
         for i, c in enumerate(cs):
-            print 'Contat No %d: ' % i
+            print 'Contact No %d: ' % i
             print str(c)
+
+    def test_sync_status (self, gid=None):
+        if not gid:
+            gid = self.gid
+
+        f = self.find_group(gid)
+        f.prep_sync_lists('ol')
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
