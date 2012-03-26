@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Mar 20 14:46:54 IST 2012
+## Last Modified : Thu Mar 22 18:14:41 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -61,6 +61,14 @@ class MessageStores:
 
         return self.get_default_store()
 
+    def get_stores (self):
+        """Return an array of all the MessageStore objects."""
+
+        return self._store_by_eid.values()
+
+    ## This get and put stuff needs to be brought in line with the rest of the
+    ## code conventions
+
     def put (self, eid, name, default, store):
         self._store_by_eid[eid]   = store
         self._store_by_name[name] = store
@@ -71,7 +79,7 @@ class MessageStores:
         """Walk through the message store table in Outlook, extract some key
         properties of each store and keep track of them for later use."""
 
-        messagestorestable = self.ol.session.GetMsgStoresTable(0)
+        messagestorestable = self.ol.get_olsession().GetMsgStoresTable(0)
 
         # This is where we need to add columns if we want to extract and store
         # more information per Store
@@ -102,6 +110,8 @@ class MessageStores:
                              default=def_store)
                 except Exception, e:
                     logging.debug('Error in opening message store. Skipping.')
+                    logging.debug('Full Exception as here: %s',
+                                  traceback.format_exc())
             else:
                 logging.debug('Msgstore #%2d: %s - skipped non-default one',
                               i, name)
@@ -129,11 +139,14 @@ class MessageStore:
     def __init__ (self, ol, eid, name, default):
         self.ol      = ol
         self.eid     = eid
-        self.name    = name
+        self.set_name(name)
         self.default = default
         self.obj     = None
 
-        self.folders       = None
+        self.folders      = {'contacts':[],'tasks':[],'notes':[],'appts':[],}
+        self.sync_folders = {'contacts':[],'tasks':[],'notes':[],'appts':[],}
+        self.def_folder   = {'contacts'  : None, 'tasks'     : None,
+                             'notes'     : None, 'appts' : None,}
 
         # This should really be done 'lazily' but let's go with the flow for
         # now... FIXME
@@ -145,21 +158,68 @@ class MessageStore:
         if self.obj:
             return self.obj
 
-        # Open it.
-        logging.debug('OpenMsgStore on eid: %s', base64.b64encode(self.eid))
-        self.obj = self.ol.session.OpenMsgStore(0, self.eid, None,
-                                                (mapi.MDB_NO_DIALOG |
-                                                  MOD_FLAG))
-
+        self.obj = self.ol.get_olsession().OpenMsgStore(0, self.eid, None,
+                                                        (mapi.MDB_NO_DIALOG |
+                                                         MOD_FLAG))
         return self.obj
 
-    def get_default_contacts_folder (self):
-        # Somewhat of a hack. There might be more than one contacts folder
-        # inside the store... FIXME
-        if self.contacts_folders and len(self.contacts_folders) > 0:
-            return self.contacts_folders[0]
+    def get_name (self):
+        return self.name
 
-        return None
+    def set_name (self, name):
+        self.name = name
+        return name
+
+    def get_folders (self, ftype=None):
+        """Return all the folders of specified type. ftype should be one of
+        the valid folder types. If none is specifiedfor ftype, then the entire
+        dictionary is returned as is. If ftype is an invalid type, then this
+        routine returns None"""
+        
+        if ftype and not (ftype in Folder.valid_types):
+            return None
+
+        ftypename = Folder.type_names[ftype]
+        return self.folders[ftypename] if ftype else self.folders
+
+    def set_folders_of_type (self, ftypestr, val):
+        self.folders[ftypestr] = val
+
+    def add_to_folders (self, fold):
+        ftype = fold.get_type()
+        f     = self.get_folders(ftype)
+
+        if not f:
+            f = []
+            self.set_folders_of_type(Folder.type_names[ftype], f)
+        f.append(fold)
+
+        return fold
+
+    def get_folders (self, ftype=None):
+        """Return all the folders of specified type. ftype should be one of
+        the valid folder types. If none is specifiedfor ftype, then the entire
+        dictionary is returned as is. If ftype is an invalid type, then this
+        routine returns None"""
+        
+        if ftype and not (ftype in Folder.valid_types):
+            return None
+
+        ftypename = Folder.type_names[ftype]
+        return self.folders[ftypename] if ftype else self.folders
+
+    def get_def_folder (self, ftype=None):
+        """Return the default folder for the  message store. ftype has to be
+        oneo f the values from Folder.valid_types. If it is none, the default
+        contacts folder is returned"""
+        
+        if not ftype:
+           ftype = Folder.CONTACT_t
+
+        return self.def_folder[Folder.type_names[ftype]]
+
+    def get_def_contacts_folder (self):
+        return self.get_def_folder(Folder.CONTACT_t)
 
     def get_inbox (self, msgstore):
         inbox_id, c = msgstore.GetReceiveFolder("IPM.Note", 0)
@@ -188,22 +248,17 @@ class MessageStore:
         return (eid, name, f)
 
     def _populate_folders (self):
-        if self.folders:
-            return self.folders
-
-        self.folders = {'contacts':[],'tasks':[],'notes':[],'appts':[],}
-
         msgstore = self.get_obj()
         inbox    = self.get_inbox(msgstore)
 
         logging.debug('Building Folder list for Message Store: %s...',
                       self.name)
-        #    def __init__ (self, db, entryid, name, fobj, msgstore):
+
         try:
             (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_CONTACT_ENTRYID,
                                                  inbox)
             cf = OLContactsFolder(self.ol, eid, name, f, self)
-            self.folders['contacts'].append(cf)
+            self.add_to_folders(cf)
         except TypeError, e:
             logging.debug('Actual exception: %s', e)
             logging.info('No Contacts Folder for message store: %s',
@@ -213,7 +268,7 @@ class MessageStore:
             (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_NOTE_ENTRYID,
                                                  inbox)
             nf = OLNotesFolder(self.ol, eid, name, f, self)
-            self.folders['notes'].append(nf)
+            self.add_to_folders(nf)
         except TypeError, e:
             logging.debug('Actual exception: %s', e)
             logging.info('No Notes Folder for message store: %s',
@@ -223,7 +278,7 @@ class MessageStore:
             (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_TASK_ENTRYID,
                                                  inbox)
             tf = OLTasksFolder(self.ol, eid, name, f, self)
-            self.folders['tasks'].append(tf)
+            self.add_to_folders(tf)
         except TypeError, e:
             logging.debug('Actual exception: %s', e)
             logging.info('No Tasks Folder for message store: %s',
@@ -256,7 +311,10 @@ class OLPIMDB(PIMDB):
     def __init__ (self, config):
         PIMDB.__init__(self, config)
         self.mapi_initialize()
-        self.msgstores = MessageStores(self)
+        self.set_msgstores(MessageStores(self))
+        self.set_folders()
+        self.set_def_folders()
+        self.set_sync_folders()
 
     def __del__ (self):
         logging.debug('Destroying mapi session...')
@@ -271,14 +329,27 @@ class OLPIMDB(PIMDB):
 
         return 'ol'
 
-    @abstractmethod
+    def get_msgstores (self):
+        return self.msgstores
+
+    def set_msgstores (self, ms):
+        self.msgstores = ms
+        return ms
+
     def new_folder (self, fname, type):
         """Create a new folder of specified type and return an id. The folder
         will not contain any items"""
 
         raise NotImplementedError
 
-    @abstractmethod
+    def get_olsession (self):
+        """Return a reference to the Outlook MAPI session."""
+
+        return self._get_att('olsession')
+
+    def set_olsession (self, olsession):
+        return self._set_att('olsession', olsession)
+
     def del_folder (self, itemid):
         """Get rid of the specified folder."""
 
@@ -287,7 +358,20 @@ class OLPIMDB(PIMDB):
     def set_folders (self):
         """See the documentation in class PIMDB"""
 
-        self.folders = self.msgstores.folders
+        ## This copies all the folders from the underlying message stores into
+        ## the current object for easy referencing
+        logging.debug('OLPIMDB.set_folders(): Begin')
+
+        for store in self.get_msgstores().get_stores():
+            logging.debug('\tProcessing store: %s',
+                          store.get_name())
+            for ftype in Folder.valid_types:
+                for f in store.get_folders(ftype):
+                    logging.debug('\t\tAdded Folder %s of type %s',
+                                  f.get_name(), Folder.type_names[f.get_type()])
+                    self.add_to_folders(f)         
+
+        logging.debug('OLPIMDB.set_folders(): Done.')
 
     def set_def_folders (self):
         """See the documentation in class PIMDB"""
@@ -313,4 +397,4 @@ class OLPIMDB(PIMDB):
         flags = (mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT | MOD_FLAG)
 
         logging.debug('Opening default profile in MAPI...')
-        self.session = mapi.MAPILogonEx(0, "", None, flags)
+        self.set_olsession(mapi.MAPILogonEx(0, "", None, flags))

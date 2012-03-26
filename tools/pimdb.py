@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Mar 20 16:27:45 IST 2012
+## Last Modified : Thu Mar 22 18:18:48 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -39,7 +39,9 @@ class PIMDB:
     __metaclass__ = ABCMeta
 
     def __init__ (self, config):
-        self.config = config
+        self.atts = {}
+
+        self.set_config(config)
 
         self.folders      = {'contacts':[],'tasks':[],'notes':[],'appts':[],}
         self.sync_folders = {'contacts':[],'tasks':[],'notes':[],'appts':[],}
@@ -105,8 +107,18 @@ class PIMDB:
     ## Now on to the non-abstract methods
     ##
 
+    def _get_att (self, key):
+        return self.atts[key]
+
+    def _set_att (self, key, val):
+        self.atts[key] = val
+        return val
+
     def get_config (self):
-        return self.config
+        return self._get_att('config')
+
+    def set_config (self, config):
+        return self._set_att('config', config)
 
     def get_folders (self, ftype=None):
         """Return all the folders of specified type. ftype should be one of
@@ -130,6 +142,20 @@ class PIMDB:
         except ValueError, e:
             logging.debug('Attemped to remove unlisted folder %s of type %s',
                           f.get_name(), f.get_type())
+
+    def set_folders_of_type (self, ftypestr, val):
+        self.folders[ftypestr] = val
+
+    def add_to_folders (self, fold):
+        ftype = fold.get_type()
+        f     = self.get_folders(ftype)
+
+        if not f:
+            f = []
+            self.set_folders_of_type(Folder.type_names[ftype], f)
+        f.append(fold)
+
+        return fold
 
     def add_contacts_folder (self, f):
         """Append specified folder f to the list of Contacts folder in the
@@ -231,8 +257,15 @@ class PIMDB:
         """Returns the default Appts folder object."""
         return self.def_folder['appts']
 
-    def get_def_folder (self, key):
-        return self.def_folder[key]
+    def get_def_folder (self, ftype=None):
+        """Return the default folder for the  message store. ftype has to be
+        oneo f the values from Folder.valid_types. If it is none, the default
+        contacts folder is returned"""
+        
+        if not ftype:
+           ftype = Folder.CONTACT_t
+
+        return self.def_folder[Folder.type_names[ftype]]
 
     def set_def_folder (self, key, value):
         self.def_folder[key] = value
