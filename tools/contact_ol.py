@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Mon Mar 26 12:49:35 IST 2012
+## Last Modified : Mon Mar 26 14:23:10 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -580,7 +580,7 @@ class TestOLContact:
         c.save()
 
     def test_sync_status (self):
-        self.deff.prep_ol_contact_lists()
+        self.deff.prep_sync_lists('gc')
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
