@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Wed Mar 21 17:31:53 IST 2012
+## Last Modified : Mon Mar 26 15:09:37 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -16,6 +16,22 @@ from   state        import Config
 from   pimdb        import PIMDB, GoutInvalidPropValueError
 from   folder       import Folder
 from   folder_gc    import GCContactsFolder
+
+def sync_status_str (const):
+    for name, val in globals().iteritems():
+        if name[:5] == 'SYNC_' and val == const:
+            return name
+
+    return None
+
+SYNC_OK                    = 200
+SYNC_CREATED               = 201
+SYNC_NOT_MODIFIED          = 304
+SYNC_BAD_REQUEST           = 400
+SYNC_UNAUTHORIZED          = 401
+SYNC_FORBIDDEN             = 403
+SYNC_CONFLICT              = 409
+SYNC_INTERNAL_SERVER_ERROR = 500
 
 class GCPIMDB (PIMDB):
     """GC object is a wrapper for a Google Contacts stream API."""
@@ -199,6 +215,114 @@ class GCPIMDB (PIMDB):
         return self.get_gdc().ExecuteBatch(
             batch_feed, gdata.contacts.client.DEFAULT_BATCH_URL)
 
+
+class BatchState:
+    """This class is used as a temporary store of state related to batch
+    operations in the Google API. Useful when we are operating in bulk data
+    on Google"""
+
+    def __init__ (self, num, f, op=None):
+        self.size = 0
+        self.cnt  = 0
+        self.num  = num
+        self.f    = f
+        self.operation = op
+        self.cons = {}      # can be either Contact or ContactEntry
+
+    def get_size (self):
+        """Return size of feed in kilobytess."""
+        self.size = len(str(self.f))/1024.0
+        return self.size
+
+    def incr_cnt (self):
+        self.cnt += 1
+        return self.cnt
+
+    def get_cnt (self):
+        return self.cnt
+
+    def get_bnum (self):
+        return self.num
+
+    def add_con (self, olid_b64, con):
+        self.cons[olid_b64] = con
+
+    def get_con (self, olid_b64):
+        return self.cons[olid_b64]
+
+    def get_operation (self):
+        return self.operation
+
+    def set_operation (self, op):
+        self.operation = op
+
+def process_batch_response (self, resp, bstate):
+    """resp is the response feed obtained from a batch operation to
+    google.
+
+    bstate contains the stats and other state for all the Contact
+    objects involved in the batch operation.
+
+    This routine will walk through the batch response entries, and
+    make note in the outlook database for succesful sync, or handle
+    errors appropriately."""
+
+    op   = bstate.get_operation()
+    cons = []
+
+    for entry in resp.entry:
+        bid    = entry.batch_id.text if entry.batch_id else None
+        if not entry.batch_status:
+            # There is something seriously wrong with this request.
+            logging.error('Unknown fatal error in response. Full resp: %s',
+                          entry)
+            continue
+
+        code   = int(entry.batch_status.code)
+        reason = entry.batch_status.reason
+
+        if code != SYNC_OK and code != SYNC_CREATED:
+            # FIXME this code path needs to be tested properly
+            err = sync_status_str(code)
+            err_str = '' if err is None else ('Code: %s' % err)
+            err_str = 'Reason: %s. %s' % (reason, err_str)
+
+            if op == 'insert' or op == 'update':
+                logging.error('Upload to Google failed for: %s: %s',
+                              bstate.get_con(bid).name, err_str)
+            elif op == 'Writeback olid':
+                logging.error('Could not complete sync for: %s: %s',
+                              bstate.get_con(bid).name, err_str)
+            else:
+                ## We could just print a more detailed error for all
+                ## cases. Should do some time FIXME.
+                logging.error('Sync failed for bid %s: %s',
+                               bid, err_str)
+        else:
+            if op == 'query':
+                con = entry
+                # We could build and return array for all cases, but
+                # why waste memory...
+                cons.append(con)
+            else:
+                con  = bstate.get_con(bid)
+                gcid = utils.get_link_rel(entry.link, 'edit')
+                con.update_prop_by_name([(self.config.get_gc_guid(),
+                                          self.config.get_gc_id())],
+                                        mapitags.PT_UNICODE,
+                                        gcid)
+                t = None
+                if op == 'insert':
+                    t = 'created'
+                elif op == 'update':
+                    t = 'updated'
+
+                if t:
+                    name = con.name
+                    logging.info('Successfully %s gmail entry for %s',
+                                 t, name)
+
+    return cons
 
 def main():
     config = Config('../app_state.json')

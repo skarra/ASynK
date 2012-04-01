@@ -1,218 +1,196 @@
-#!/usr/bin/env python
-
-## Created	 : Tue Jul 19 15:04:46  2011
-## Last Modified : Thu Dec 22 17:34:05 IST 2011
 ##
-## Copyright 2011 Sriram Karra <karra.etc@gmail.com>
+## Created       : Tue Jul 19 15:04:46 IST 2011
+## Last Modified : Sun Apr 01 16:12:25 IST 2012
+##
+## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
-## 
+##
+## This is the sync driver. At some point this might become the main driver
+## replacing gout.py
 
+# from   ol_wrapper    import Outlook
+# from   ol_contact    import Contact
+# from   gc_wrapper    import GC
+# from   win32com.mapi import mapitags, mapiutil
+# import atom, gdata.contacts.client
+
+import getopt, logging, os, sys, traceback
+
+if __name__ == "__main__":
+    ## Being able to fix the sys.path thusly makes is easy to execute this
+    ## script standalone from IDLE. Hack it is, but what the hell.
+    DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
+    EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib')]
+    sys.path = EXTRA_PATHS + sys.path
+
+import state, utils
 from   state         import Config
-from   ol_wrapper    import Outlook
-from   ol_contact    import Contact
-from   gc_wrapper    import GC
-from   win32com.mapi import mapitags, mapiutil
+import demjson, base64
 
-import state
-import utils
-import gdata.contacts.client
-import atom
-
-import demjson
-import base64
-
-import logging, traceback
-
-def sync_status_str (const):
-    for name, val in globals().iteritems():
-        if name[:5] == 'SYNC_' and val == const:
-            return name
-
-    return None
-
-SYNC_OK                    = 200
-SYNC_CREATED               = 201
-SYNC_NOT_MODIFIED          = 304
-SYNC_BAD_REQUEST           = 400
-SYNC_UNAUTHORIZED          = 401
-SYNC_FORBIDDEN             = 403
-SYNC_CONFLICT              = 409
-SYNC_INTERNAL_SERVER_ERROR = 500
+import atom, gdata, gdata.client
+from   gdata.client import BadAuthentication
+from   pimdb_gc     import GCPIMDB
+import gdata.contacts.data, gdata.contacts.client
 
 class Sync:
     BATCH_SIZE = 100
 
-    def __init__ (self, config, fields, ol, gc, dirn=state.SYNC_2_WAY):
-        self.config = config
-        self.fields = fields
-        self.ol     = ol
-        self.gc     = gc
-        self.dir    = dirn
+    def __init__ (self, config, f1, f2, dirn='SYNC2WAY'):
+        self.atts = {}
 
-        self.olcf   = self.ol.get_default_contacts_folder()
+        self.set_config(config)
+
+        db1 = f1.get_db()
+        db2 = f2.get_db()
+
+        self.set_f1(f1)
+        self.set_f2(f2)
+        self.set_db1(db1)
+        self.set_db2(db2)
+        self.set_db1id(db1.get_dbid())
+        self.set_db2id(db2.get_dbid())
+
+        self.set_dir(dirn)
+
+    ##
+    ## First some internal helper routines
+    ##
+
+    def _get_att (self, key):
+        return self.atts[key]
+
+    def _set_att (self, key, val):
+        self.atts[key] = val
+        return val
+              
+    def get_config (self):
+        return self._get_att('config')
+
+    def set_config (self, config):
+        return self._set_att('config', config)
+
+    def get_f1 (self):
+        return self._get_att('f1')
+
+    def set_f1 (self, f1):
+        return self._set_att('f1', f1)
+
+    def get_f2 (self):
+        return self._get_att('f2')
+
+    def set_f2 (self, f2):
+        return self._set_att('f2', f2)
+
+    def get_db1 (self):
+        return self._get_att('db1')
+
+    def set_db1 (self, db1):
+        return self._set_att('db1', db1)
+
+    def get_db2 (self):
+        return self._get_att('db2')
+
+    def set_db2 (self, db2):
+        return self._set_att('db2', db2)
+
+    def get_db1id (self):
+        return self._get_att('db1id')
+
+    def set_db1id (self, db1id):
+        return self._set_att('db1id', db1id)
+
+    def get_db2id (self):
+        return self._get_att('db2id')
+
+    def set_db2id (self, db2id):
+        return self._set_att('db2id', db2id)
+
+    def get_dir (self):
+        return self._get_att('dir')
+
+    def set_dir (self, dir):
+        return self._set_att('dir', dir)
 
     def reset_state (self):
         """Reset counters and other state information before starting."""
         pass
 
-
     def _prep_lists_2_way (self):
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
-        self.gc.prep_gc_contact_lists()
-        self.olcf.prep_ol_contact_lists()
+        f1sl = SyncLists(self.get_f1(), self.get_f2())
+        f2sl = SyncLists(self.get_f2(), self.get_f1())
 
-        # Identify potential conflicts in the modified lists and resolve
-        # them by deleting the conflict entries from one of the two
-        # lists
+        self.get_f1().prep_sync_lists(self.get_db2id(), f1sl)
+        self.get_f2().prep_sync_lists(self.get_db1id(), f2sl)
 
-        old = self.olcf.con_mod
-        gcd = self.gc.con_gc_mod
+        f1_mod = f1sl.get_mods()
+        f2_mod = f2sl.get_mods()
 
-        coma = [ol for ol,gc in old.iteritems() if gc in gcd.keys()]
+        ## Identify potential conflicts in the modified lists and resolve them
+        ## by deleting the conflict entries from one of the two lists
+
+        # First create a list of matching entries. comd will be a dictionary
+        # of common entries represented as a dictionary of 'f1_id : f2_id'
+        # pairs: essentially an extract of the f1_mod
+        coma = [id1 for id1,id2 in f1_mod.iteritems() if id2 in f2_mod.keys()]
 
         logging.info('Number of entries modified both places (conflicts): %d',
                      len(coma) if coma else 0)
 
-        cr = self.config.get_resolve()
-        if cr == self.config.OUTLOOK:
-            # The olids in google contacts side are all base64
-            # encoded. Ensure we send an encoded array as well
-            coma = [base64.b64encode(x) for x in coma]
-            self.gc.del_con_mod_by_values(coma)
-        elif cr == self.config.GOOGLE:
-            self.olcf.del_con_mod_by_keys(coma)
+        db1id = self.get_db1id()
+        db2id = self.get_db2id()
 
-        logging.debug('conflict resolve direction : %d', cr)
-        logging.debug('After conflict resolution, size of gc mods : %5d',
-                      len(self.gc.con_gc_mod))
-        logging.debug('After conflict resolution, size of ol mods : %5d',
-                      len(self.olcf.con_mod))
+        # The two db ids need to be specified in sorted order
+        db1 = db1id if db1id < db2id else db2id
+        db2 = db2id if db1id < db2id else db1id
+        cr = self.get_config().get_conflict_resolve(db1, db2)
 
-    def _prep_lists_1_way_o2g (self):
-        self.olcf.prep_ol_contact_lists()
-        print 'size of ol mod: ', len(self.olcf.con_mod)
+        ## FIXME: Review this piece of code. Appears more complex than it
+        ## needs to be and does not appear 'symmetric'
 
-    def _prep_lists_1_way_g2o (self):
-        self.gc.prep_gc_contact_lists()
-        print 'size of gc mod: ', len(self.gc.con_gc_mod)
+        # if cr == self.config.OUTLOOK:
+        #     # The olids in google contacts side are all base64
+        #     # encoded. Ensure we send an encoded array as well
+        #     coma = [base64.b64encode(x) for x in coma]
+        #     self.gc.del_con_mod_by_values(coma)
+        # elif cr == self.config.GOOGLE:
+        #     self.olcf.del_con_mod_by_keys(coma)
+
+        print coma
+
+        if cr == db2id:
+            f1_mod = f1sl.remove_keys(f1_mod, coma)
+        elif cr == db1id:
+            f2_mod = f2sl.remove_values(f2_mod, coma)
+        else:
+            logging.error('Unknown conflict resolution dir: %s', cr)
+
+        logging.debug('conflict resolve direction : %s. db1id: %s, db2id: %s',
+                      cr, db1id, db2id)
+        logging.debug('After conflict resolution, size of f1_mod : %5d',
+                      len(f1_mod))
+        logging.debug('After conflict resolution, size of f2_mod : %5d',
+                      len(f2_mod))
+
+    def _prep_lists_1_way (self, f):
+        (new, mod, dels) = f.prep_sync_lists()
+        logging.debug('f: %s; size of mod: %d', f.get_db().get_dbid(), len(mod))
 
     def _prep_lists (self):
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
-        if (self.dir == state.SYNC_2_WAY):
+        dirn = self.get_dir()
+        if (dirn == 'SYNC2WAY'):
             self._prep_lists_2_way()
-        elif (self.dir == state.SYNC_1_WAY_O2G):
-            self._prep_lists_1_way_o2g()
-        elif (self.dir == state.SYNC_1_WAY_G2O):
-            self._prep_lists_1_way_g2o()
-
-    class BatchState:
-        def __init__ (self, num, f, op=None):
-            self.size = 0
-            self.cnt  = 0
-            self.num  = num
-            self.f    = f
-            self.operation = op
-            self.cons = {}      # can be either Contact or ContactEntry
-
-        def get_size (self):
-            """Return size of feed in kilobytess."""
-            self.size = len(str(self.f))/1024.0
-            return self.size
-
-        def incr_cnt (self):
-            self.cnt += 1
-            return self.cnt
-
-        def get_cnt (self):
-            return self.cnt
-
-        def get_bnum (self):
-            return self.num
-
-        def add_con (self, olid_b64, con):
-            self.cons[olid_b64] = con
-
-        def get_con (self, olid_b64):
-            return self.cons[olid_b64]
-
-        def get_operation (self):
-            return self.operation
-
-        def set_operation (self, op):
-            self.operation = op
-
-    def process_batch_response (self, resp, bstate):
-        """resp is the response feed obtained from a batch operation to
-        google.
-
-        bstate contains the stats and other state for all the Contact
-        objects involved in the batch operation.
-
-        This routine will walk through the batch response entries, and
-        make note in the outlook database for succesful sync, or handle
-        errors appropriately."""
-
-        op   = bstate.get_operation()
-        cons = []
-
-        for entry in resp.entry:
-            bid    = entry.batch_id.text if entry.batch_id else None
-            if not entry.batch_status:
-                # There is something seriously wrong with this request.
-                logging.error('Unknown fatal error in response. Full resp: %s',
-                              entry)
-                continue
-
-            code   = int(entry.batch_status.code)
-            reason = entry.batch_status.reason
-
-            if code != SYNC_OK and code != SYNC_CREATED:
-                # FIXME this code path needs to be tested properly
-                err = sync_status_str(code)
-                err_str = '' if err is None else ('Code: %s' % err)
-                err_str = 'Reason: %s. %s' % (reason, err_str)
-
-                if op == 'insert' or op == 'update':
-                    logging.error('Upload to Google failed for: %s: %s',
-                                  bstate.get_con(bid).name, err_str)
-                elif op == 'Writeback olid':
-                    logging.error('Could not complete sync for: %s: %s',
-                                  bstate.get_con(bid).name, err_str)
-                else:
-                    ## We could just print a more detailed error for all
-                    ## cases. Should do some time FIXME.
-                    logging.error('Sync failed for bid %s: %s',
-                                   bid, err_str)
-            else:
-                if op == 'query':
-                    con = entry
-                    # We could build and return array for all cases, but
-                    # why waste memory...
-                    cons.append(con)
-                else:
-                    con  = bstate.get_con(bid)
-                    gcid = utils.get_link_rel(entry.link, 'edit')
-                    con.update_prop_by_name([(self.config.get_gc_guid(),
-                                              self.config.get_gc_id())],
-                                            mapitags.PT_UNICODE,
-                                            gcid)
-                    t = None
-                    if op == 'insert':
-                        t = 'created'
-                    elif op == 'update':
-                        t = 'updated'
-
-                    if t:
-                        name = con.name
-                        logging.info('Successfully %s gmail entry for %s',
-                                     t, name)
-
-        return cons
+        elif (dirn == 'SYNC1WAY'):
+            self._prep_lists_1_way(self.get_f1())
+        else:
+            logging.error('_prep_lists(): Huh? Unknown sync dir in config: %s',
+                          dirn)
 
     def _send_new_ol_to_gc (self):
         logging.info('=====================================================')
@@ -515,16 +493,145 @@ class Sync:
             self.dir == state.SYNC_1_WAY_O2G):
             self._send_new_ol_to_gc()
             self._send_mod_ol_to_gc()
-#            self._del_gc()
+            self._del_gc()
 
         if (self.dir == state.SYNC_2_WAY or
             self.dir == state.SYNC_1_WAY_G2O):
             self._get_new_gc_to_ol()
             self._get_mod_gc_to_ol()
-#            self._del_ol()
+            self._del_ol()
 
-def main (argv = None):
-    print 'Hello World'
+class SyncLists:
+    """Wrapper around lists of items that need to be synched from one place to
+    another. Just for convenience."""
+
+    def __init__ (self, f1, db2id):
+        self.f1 = f1
+        self.db1id = f1.get_db().get_dbid()
+        self.db2id = db2id
+
+        self.all  = {}                    # Not sure we need this?
+        self.news = []
+        self.mods = {}                    # Hash of f1 id -> f2 id
+        self.dels = {}
+
+    def remove_keys (self, d, k):
+        """Remove all the keys specified in the array k from the passed
+        dictionary and return the new dictionary. This routine is typically
+        used to manipulate one of the self.dictoinaries."""
+
+        d = dict([(x,y) for x,y in d.iteritems() if not x in k])
+        return d
+
+    def remove_values (self, d, v):
+        """Remove all the values specified in the array k from the passed
+        dictionary and return the new dictionary. This routine is typically
+        used to manipulate one of the self.dictoinaries."""
+
+        d = dict([(x,y) for x,y in d.iteritems() if not y in v])
+        return d
+
+    def add_all (self, f1id, f2id):
+        self.all.update({f1id : f2id})
+
+    def add_new (self, fid):
+        self.news.append(fid)
+
+    def add_mod (self, f1id, f2id):
+        self.mods.update({f1id : f2id})
+
+    def add_del (self, f1id, f2id):
+        self.dels.update({f1id : f2id})
+
+    def get_all (self):
+        return self.all
+
+    def get_news (self):
+        return self.news
+
+    def get_mods (self):
+        return self.mods
+
+    def get_dels (self):
+        return self.mods
+
+def main ():
+    tests = TestSync()
+    tests.test_sync_status()
+
+class TestSync:
+    def __init__ (self):
+        self.config = Config('../app_state.json')
+        self.pimgc = self._login_gc()
+        self.pimol = self._login_ol()
+
+    def _login_gc (self):
+        # The following is the 'Gout' group on karra.etc@gmail.com
+        self.gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/41baff770f898d85'
+
+        # Parse command line options
+        try:
+            opts, args = getopt.getopt(sys.argv[1:], '', ['user=', 'pw='])
+        except getopt.error, msg:
+            print 'python gc_wrapper.py --user [username] --pw [password]'
+            sys.exit(2)
+
+        user = ''
+        pw = ''
+        # Process options
+        for option, arg in opts:
+            if option == '--user':
+                user = arg
+            elif option == '--pw':
+                pw = arg
+
+        if not user:
+            user = 'karra.etc'
+
+        if not pw:
+            pw = 'JanaIvetcetc'
+
+        while not user:
+            user = raw_input('Please enter your username: ')
+
+        while not pw:
+            pw = raw_input('Password: ')
+            if not pw:
+                print 'Password cannot be blank'
+
+        try:
+            return GCPIMDB(self.config, user, pw)
+        except BadAuthentication:
+            print 'Invalid credentials. WTF.'
+            raise
+
+    def _login_ol (self):
+        from pimdb_ol import OLPIMDB
+
+        return OLPIMDB(self.config)
+
+    def test_sync_status (self):
+        olcf = self.pimol.get_def_folder()
+        gccf = self.find_group(self.gid)
+
+        self.sync = Sync(self.config, olcf, gccf)
+        self.sync._prep_lists()
+
+    def find_group (self, gid):
+        gc, ftype = self.pimgc.find_folder(gid)
+        if gc:
+            print 'Found the sucker. Name is: ', gc.get_name()
+            return gc
+        else:
+            print 'D''oh. Folder not found.'
+            return
 
 if __name__ == "__main__":
-    main()
+    logging.getLogger().setLevel(logging.DEBUG)
+    try:
+        main()
+    except Exception, e:
+        print 'Caught Exception... Hm. Need to cleanup.'
+        print 'Full Exception as here:', traceback.format_exc()
+
+## FIXME: Needs more thorough unit testing.
