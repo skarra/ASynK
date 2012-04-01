@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Mar 22 18:05:00 IST 2012
+## Last Modified : Sat Mar 31 00:29:42 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -59,7 +59,7 @@ class Folder:
         raise NotImplementedError
 
     @abstractmethod
-    def prep_sync_lists (self, destid, last_sync_stop, limit=0):
+    def prep_sync_lists (self, destid, last_sync_stop=None, limit=0):
         """Prepare and return a set of list of new, modified and deleted
         entries in the current folder since the last sync to the corresponding
         folder in the destination PIM Database identified by destid.
@@ -189,6 +189,7 @@ class Folder:
 
     def is_appt_folder (self):
         return True if self.type == Folder.PR_IPM_APPOINTMENT_ENTRYID else False
+
 
 ## FIXME: This file needs extensive unit testing. There's quite a bit of
 ## pseudo-repititive codet hat has been produced by manual cop-n-paste, which

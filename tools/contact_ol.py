@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Mon Mar 26 14:23:10 IST 2012
+## Last Modified : Sun Apr 01 16:19:52 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -9,9 +9,8 @@
 ## This file extends the Contact base class to implement an Outlook Contact
 ## item while implementing the base class methods.
 
-import logging, os, sys, traceback
+import base64, logging, os, sys, traceback, utils
 from   datetime import datetime
-import utils
 
 if __name__ == "__main__":
     ## Being able to fix the sys.path thusly makes is easy to execute this
@@ -78,7 +77,7 @@ class OLContact(Contact):
 
     def save (self):
         """Saves the current contact to Outlook so it is persistent. Returns
-        the itemid/entryid for the saved entry. Returns None in case of an error"""
+        the itemid for the saved entry. Returns None in case of an error"""
 
         ## FIXME: This only takes care of new insertions. In-place updates are
         ## not taken care of by this. The situation needs fixing on a fairly
@@ -105,7 +104,7 @@ class OLContact(Contact):
         hr, props  = msg.GetProps([mt.PR_ENTRYID], mapi.MAPI_UNICODE)
         (tag, val) = props[0]
         if mt.PROP_TYPE(tag) == mt.PT_ERROR:
-            logging.error('push_to_outlook(): EntryID could not be found. Weird')
+            logging.error('save: EntryID could not be found. Weird')
             return None
         else:
             return val
@@ -114,10 +113,15 @@ class OLContact(Contact):
     ##
 
     def get_entryid (self):
-        return self.get_itemid()
+        return self._get_att('entryid')
 
     def set_entryid (self, eid):
-        return self.set_itemid(eid)
+        """Set the entryid, and also the itemid - which is the base64 encoded
+        value of the binary entryid."""
+
+        self._set_att('entryid', eid)
+        self.set_itemid(base64.b64encode(eid))
+        return eid
 
     def get_db_config (self):
         return self._get_att('db_config')
@@ -268,9 +272,9 @@ class OLContact(Contact):
 
     def _snarf_emails_from_olprops (self, olprop):
         ## Build an array out of the three email addresses as applicable
-        email1 = self.get_proptags().valu('GOUT_PR_EMAIL_1')
-        email2 = self.get_proptags().valu('GOUT_PR_EMAIL_2')
-        email3 = self.get_proptags().valu('GOUT_PR_EMAIL_3')
+        email1 = self.get_proptags().valu('ASYNK_PR_EMAIL_1')
+        email2 = self.get_proptags().valu('ASYNK_PR_EMAIL_2')
+        email3 = self.get_proptags().valu('ASYNK_PR_EMAIL_3')
 
         eds = self.get_email_domains()
 
@@ -369,14 +373,14 @@ class OLContact(Contact):
 
 
     # def left_overs (self):
-    #     self.gcid = self._get_prop(self.get_proptags().valu('GOUT_PR_GCID'))
+    #     self.gcid = self._get_prop(self.get_proptags().valu('ASYNK_PR_GCID'))
     #     self.last_mod  = self._get_olprop(olpd, mt.PR_LAST_MODIFICATION_TIME)
 
     def _snarf_ims_from_olprops (self, olpd):
         """In Outlook IM Addresses are also named properties like Email
         addresses..."""
 
-        im = self.get_proptags().valu('GOUT_PR_IM_1')
+        im = self.get_proptags().valu('ASYNK_PR_IM_1')
         self.add_im(self._get_olprop(olpd, im))
 
     def _snarf_custom_props_from_olprops (self, olpd):
@@ -407,7 +411,7 @@ class OLContact(Contact):
         if n:
             olprops.append((mt.PR_DISPLAY_NAME, n))
 
-        fatag = self.get_proptags().valu('GOUT_PR_FILE_AS')
+        fatag = self.get_proptags().valu('ASYNK_PR_FILE_AS')
         if self.get_fileas():
             olprops.append((fatag, self.get_fileas()))
         else:
@@ -450,7 +454,7 @@ class OLContact(Contact):
             if i > 3:
                 return
 
-            tag = self.get_proptags().valu('GOUT_PR_EMAIL_%d' % i)
+            tag = self.get_proptags().valu('ASYNK_PR_EMAIL_%d' % i)
             olprops.append((tag, email))
 
         for email in self.get_email_work():
@@ -458,7 +462,7 @@ class OLContact(Contact):
             if i > 3:
                 return
 
-            tag = self.get_proptags().valu('GOUT_PR_EMAIL_%d' % i)
+            tag = self.get_proptags().valu('ASYNK_PR_EMAIL_%d' % i)
             olprops.append((tag, email))
 
         for email in self.get_email_other():
@@ -466,7 +470,7 @@ class OLContact(Contact):
             if i > 3:
                 return
 
-            tag = self.get_proptags().valu('GOUT_PR_EMAIL_%d' % i)
+            tag = self.get_proptags().valu('ASYNK_PR_EMAIL_%d' % i)
             olprops.append((tag, email))
 
     def _add_postal_to_olprops (self, olprops):
@@ -549,7 +553,7 @@ class OLContact(Contact):
     def _add_ims_to_olprops (self, olprops):
         im = self.get_im()
         if im:
-            tag = self.get_proptags().valu('GOUT_PR_IM_1')
+            tag = self.get_proptags().valu('ASYNK_PR_IM_1')
             olprops.append((tag, im[0]))
 
     def _add_custom_props_to_olprops (self, olprops):
@@ -580,7 +584,9 @@ class TestOLContact:
         c.save()
 
     def test_sync_status (self):
-        self.deff.prep_sync_lists('gc')
+        from   sync       import SyncLists
+        sl = SyncLists(self.deff, 'gc')
+        self.deff.prep_sync_lists('gc', sl)
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
