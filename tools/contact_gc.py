@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Mar 26 14:38:54 IST 2012
+## Last Modified : Sat Mar 31 01:10:18 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -151,23 +151,29 @@ class GCContact(Contact):
         """Fetch the email entries in the specified ContactEntry object and
         populate them in the internal email address strutures."""
 
-        ## FIXME: Need to figure out a way to identify and track the primary
-        ## email address from the contact entry 'primary' field.
-
         if ce.email:
             for email in ce.email:
-                if email.rel and email.address:
-                    if email.rel == gdata.data.WORK_REL:
-                        self.add_email_work(email.address)
-                    elif email.rel == gdata.data.HOME_REL:
-                        self.add_email_home(email.address)
-                    elif email.rel == gdata.data.OTHER_REL:
+                if email.address:
+                    if email.rel:
+                        if email.rel == gdata.data.WORK_REL:
+                            self.add_email_work(email.address)
+                        elif email.rel == gdata.data.HOME_REL:
+                            self.add_email_home(email.address)
+                        elif email.rel == gdata.data.OTHER_REL:
+                            self.add_email_other(email.address)
+                    else:
                         self.add_email_other(email.address)
+
+                    if email.primary:
+                        self.set_email_prim(email.address)
 
     def _snarf_postal_from_gce (self, ce):
         if ce.structured_postal_address:
-            # FIXME: Need to implement this
-            pass
+            ## FIXME: What a pain. Who really cares for this level of detail
+            ## anyway... Look into it at some point
+            logging.error('_snarf_postal_from_gce(): Skipping structured postal')
+
+            self.set_postal(ce.structured_postal_address.formatted_address)
 
     def _snarf_org_details_from_gce (self, ce):
         if ce.organization:
@@ -226,8 +232,15 @@ class GCContact(Contact):
                     self.add_web_work(site.href)
 
     def _snarf_ims_from_gce (self, ce):
-        ## FIXME: Implement this routine
-        pass
+        ## FIXME: The Google IMs list implementation is rather complex. There
+        ## can be labels, rels, and protocols. They all appear
+        ## redundant. Perhaps label will not always be set? This needs to be
+        ## investigated. But this is a good start
+        if ce.im:
+            for im in ce.im:
+                self.add_im(im.label, im.address)
+                if im.prim:
+                    self.set_im_prim(im.address)
 
     def _snarf_custom_props_from_gce (self, ce):
         logging.error("_snarf_custom_props(): Not Implemented Yet")
@@ -293,7 +306,10 @@ class GCContact(Contact):
         now only the first Notes entry is copied. In future the remaining
         ones will be mapped into the custom fields section."""
 
-        ## FIXME: Do something about the other entries if any
+        ## FIXME: Google allows only a single notes field, Others, like BBDB,
+        ## can have multiple. For now just deal with the first entry and
+        ## ignore the rest. Eventually we could put these things in custom
+        ## fields...
 
         notes = self.get_notes()
         if notes:
@@ -304,7 +320,7 @@ class GCContact(Contact):
         ContactEntry object."""
 
         ## FIXME: Deal explicitly with the multi-group membership issue. As
-        ## things are now, it is a recipe for infomration loss sooner or
+        ## things are now, it is a recipe for information loss sooner or
         ## later. One approach to dealing with the situation is to explicitly
         ## have a gids flag in the Contact properties which can be suitably
         ## populated when the contact is created from a ContactEntry
@@ -343,10 +359,9 @@ class GCContact(Contact):
         """Insert the address fields from current contact object into the
         ContactEntry object."""
 
-        ## FIXME: This is an abominable 'placeholder' of a hack. We should
-        ## really handle all sorts of addresses not just HOME addresses, and
-        ## also deal with the structured nature of these addresses as Google
-        ## itself provides some amount of support
+        ## FIXME: We should really handle all sorts of addresses not just HOME
+        ## addresses, and also deal with the structured nature of these
+        ## addresses as Google itself provides some amount of support
 
         postal = self.get_postal()
         if postal:
@@ -450,7 +465,11 @@ class GCContact(Contact):
             gce.website.append(work)
 
     def _add_ims_to_gce (self, gce):
-        pass
+        im_prim = self.get_im_prim()
+        for label, addr in self.get_ims().iteritems():
+            prim = 'true' if im_prim == addr else 'false'
+            im = gdata.data.Im(label=label, address=addr, primary=prim)
+            gce.im.append(im)
 
     def _add_custom_props_to_gce (self, gce):
         ## FIXME: This needs to get implemented on priority. This is where all
@@ -587,11 +606,14 @@ class TestGCContact:
             print str(c)
 
     def test_sync_status (self, gid=None):
+        from   sync       import SyncLists
+
         if not gid:
             gid = self.gid
 
         f = self.find_group(gid)
-        f.prep_sync_lists('ol')
+        sl = SyncLists(f, 'ol')
+        f.prep_sync_lists('ol', sl)
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)

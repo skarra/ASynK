@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Mar 22 11:10:11 IST 2012
+## Last Modified : Fri Mar 30 16:47:49 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -46,7 +46,7 @@ class Contact(Item):
                                'dept'         : None, 'email_work'   : [],
                                'fileas'       : None, 'email_other'  : [],
                                'prefix'       : None, 'email_prim'   : None,
-                               'im'           : {},
+                               'im'           : {},   'im_prim'      : None,
                                })
 
     ##
@@ -317,6 +317,12 @@ class Contact(Item):
 
     def set_fax_prim (self, val):
         return self._set_prop('fax_prim', val)
+
+    def get_im_prim (self):
+        return self._get_prop('im_prim')
+
+    def set_im_prim (self, val):
+        return self_.set_prop('im_prim', val)
 
     def get_im (self, which=None):
         all_ims = self._get_prop('im')
