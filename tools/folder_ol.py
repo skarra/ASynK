@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Mar 26 14:24:46 IST 2012
+## Last Modified : Sun Apr 01 16:23:04 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -8,7 +8,7 @@
 ##
 
 import sys, os, logging, time, traceback
-import iso8601
+import iso8601, base64
 import utils
 
 if __name__ == "__main__":
@@ -48,7 +48,7 @@ class OLFolder(Folder):
     ## Implementation of some abstract methods inherted from Folder
     ##
 
-    def prep_sync_lists (self, destid, synct_sto=None, cnt=0):
+    def prep_sync_lists (self, destid, sl, synct_sto=None, cnt=0):
         """See the documentation in folder.Folder"""
 
         logging.info('Querying MAPI for status of Contact Entries')
@@ -62,14 +62,15 @@ class OLFolder(Folder):
             dest2 = destid
 
         ctable = self.get_contents()
-        ctable.SetColumns((self.get_proptags().valu('GOUT_PR_GCID'),
+        ## FIXME: This needs to be fixed. The ID will be different based on
+        ## the actual remote database, of course.
+        ctable.SetColumns((self.get_proptags().valu('ASYNK_PR_GCID'),
                            mapitags.PR_ENTRYID,
                            mapitags.PR_LAST_MODIFICATION_TIME),
                           0)
 
         i   = 0
         old = 0
-        self._reset_sync_lists()
 
         synct_str = self.get_config().get_last_sync_start(dest1, dest2)
         if not synct_sto:
@@ -88,11 +89,13 @@ class OLFolder(Folder):
                 break
 
             (gid_tag, gid), (entryid_tag, entryid), (tt, modt) = rows[0]
-            self.con_all[entryid] = gid
+            b64_entryid = base64.b64encode(entryid)
+
+            sl.add_all(b64_entryid, gid)
 
             if mapitags.PROP_TYPE(gid_tag) == mapitags.PT_ERROR:
                 # Was not synced for whatever reason.
-                self.con_new.append(entryid)
+                sl.add_new(b64_entryid)
             else:
                 if mapitags.PROP_TYPE(tt) == mapitags.PT_ERROR:
                     print 'Somethin wrong. no time stamp. i=', i
@@ -100,7 +103,7 @@ class OLFolder(Folder):
                     if utils.utc_time_to_local_ts(modt) <= synct:
                         old += 1
                     else:
-                        self.con_mod[entryid] = gid
+                        sl.add_mod(b64_entryid, gid)
 
             i += 1
             if cnt != 0 and i >= cnt:
@@ -108,13 +111,12 @@ class OLFolder(Folder):
 
         logging.debug('==== OL =====')
         logging.debug('num processed : %5d', i)
-        logging.debug('num total     : %5d', len(self.con_all.items()))
-        logging.debug('num new       : %5d', len(self.con_new))
-        logging.debug('num mod       : %5d', len(self.con_mod))
+        logging.debug('num total     : %5d', len(sl.get_all().items()))
+        logging.debug('num new       : %5d', len(sl.get_news()))
+        logging.debug('num mod       : %5d', len(sl.get_mods()))
         logging.debug('num old unmod : %5d', old)
 
-        return (self.con_new, self.con_mod, [])
-
+        return (sl.get_news(), sl.get_mods(), sl.get_dels())
 
     def insert_new_items (self, items):
         """See the documentation in folder.Folder"""
@@ -129,9 +131,9 @@ class OLFolder(Folder):
         """
         for dbid in dbids:
             if dbid == 'gc':
-                tag = 'GOUT_PR_GCID'
+                tag = 'ASYNK_PR_GCID'
             elif dbid == 'bb':
-                tag = 'GOUT_PR_BBID'
+                tag = 'ASYNK_PR_BBID'
         self._clear_tag(tag)
 
     def __str__ (self):
@@ -166,7 +168,7 @@ class OLFolder(Folder):
 
     def reset_def_cols (self):
         self.def_cols  = (self.get_contents().QueryColumns(0) +
-                          (self.get_proptags().valu('GOUT_PR_GCID'),))
+                          (self.get_proptags().valu('ASYNK_PR_GCID'),))
 
     def get_def_cols (self):
         return self.def_cols
@@ -231,46 +233,6 @@ class OLFolder(Folder):
         logging.info('Num entries cleared: %d. i = %d', cnt, i)
         return cnt
 
-    ## The rest of the methods need to be worked into the system, and are
-    ## copied here from ol_wrapper.py. FIXME.
-
-    def _reset_sync_lists (self):
-        """Prepare three lists of the contacts in the local OL.
-
-        1. dictionary of all Google IDs => PR_ENTRYIDs
-        2. List of entries created after the last sync
-        3. List of entries modified after the last sync
-        """
-        self.con_all = {}
-        self.con_new = []
-        self.con_mod = {}
-
-    # def get_con_new (self):
-    #     return self.con_new
-
-    # def get_con_mod (self):
-    #     return self.con_mod
-
-    # def del_dict_items (self, d, l, keys=True):
-    #     """Delete all the elements in d that match the elements in list
-    #     l. If 'keys' is True the match is done on the keys of d, else
-    #     match is done on the values of d"""
-
-    #     # Don't you love python - all the compactness of Perl less all
-    #     # the chaos
-    #     if keys:
-    #         d = dict([(x,y) for x,y in d.iteritems() if not x in l])
-    #     else:
-    #         d = dict([(x,y) for x,y in d.iteritems() if not y in l])
-
-    #     return d
-
-    # def del_con_mod_by_keys (self, ary):
-    #     """Remove all entries in thr con_mod dictionary whose keys
-    #     appear in the 'ary' list."""
-
-    #     self.con_mod = self.del_dict_items(self.con_mod, ary)
-
 class OLContactsFolder(OLFolder):
     def __init__ (self, db, entryid, name, fobj, msgstore):
         OLFolder.__init__(self, db, entryid, name, fobj, msgstore)
@@ -321,14 +283,14 @@ class OLTasksFolder(OLFolder):
                 subject = 'Not Available'
 
             try:
-                complete = props[self.get_proptags().valu('GOUT_PR_TASK_COMPLETE')]
+                complete = props[self.get_proptags().valu('ASYNK_PR_TASK_COMPLETE')]
                 if complete:
                     completed += 1
             except KeyError, e:
                 complete = 'Not Available'
 
             try:
-                tag = self.get_proptags().valu('GOUT_PR_TASK_RECUR')
+                tag = self.get_proptags().valu('ASYNK_PR_TASK_RECUR')
                 recurr_status = props[tag]
                 if recurr_status:
                     recurring += 1
@@ -336,13 +298,13 @@ class OLTasksFolder(OLFolder):
                 recurr_status = 'Not Available'
 
             try:
-                tag = self.get_proptags().valu('GOUT_PR_TASK_STATE')
+                tag = self.get_proptags().valu('ASYNK_PR_TASK_STATE')
                 state = props[tag]
             except KeyError, e:
                 state = 'Not Available'
 
             try:
-                tag = self.get_proptags().valu('GOUT_PR_TASK_DUE_DATE')
+                tag = self.get_proptags().valu('ASYNK_PR_TASK_DUE_DATE')
                 duedate = utils.pytime_to_yyyy_mm_dd(props[tag])
             except KeyError, e:
                 duedate = 'Not Available'
@@ -406,21 +368,22 @@ class PropTags:
         # Now Add a bunch of named properties that we are specifically
         # interested in.
 
-        self.put(name='GOUT_PR_FILE_AS', value=self.get_file_as_prop_tag())
+        self.put(name='ASYNK_PR_FILE_AS', value=self.get_file_as_prop_tag())
 
-        self.put(name='GOUT_PR_EMAIL_1', value=self.get_email_prop_tag(1))
-        self.put(name='GOUT_PR_EMAIL_2', value=self.get_email_prop_tag(2))
-        self.put(name='GOUT_PR_EMAIL_3', value=self.get_email_prop_tag(3))
+        self.put(name='ASYNK_PR_EMAIL_1', value=self.get_email_prop_tag(1))
+        self.put(name='ASYNK_PR_EMAIL_2', value=self.get_email_prop_tag(2))
+        self.put(name='ASYNK_PR_EMAIL_3', value=self.get_email_prop_tag(3))
 
-        self.put(name='GOUT_PR_IM_1', value=self.get_im_prop_tag(1))
+        self.put(name='ASYNK_PR_IM_1', value=self.get_im_prop_tag(1))
 
-        self.put(name='GOUT_PR_GCID', value=self.get_gid_prop_tag())
+        self.put(name='ASYNK_PR_GCID', value=self.get_gid_prop_tag('gc'))
+        self.put(name='ASYNK_PR_BBID', value=self.get_gid_prop_tag('bb'))
 
-        self.put('GOUT_PR_TASK_DUE_DATE', self.get_task_due_date_tag())
-        self.put('GOUT_PR_TASK_STATE',    self.get_task_state_tag())
-        self.put('GOUT_PR_TASK_RECUR',    self.get_task_recur_tag())
-        self.put('GOUT_PR_TASK_COMPLETE', self.get_task_complete_tag())
-        self.put('GOUT_PR_TASK_DATE_COMPLETED',
+        self.put('ASYNK_PR_TASK_DUE_DATE', self.get_task_due_date_tag())
+        self.put('ASYNK_PR_TASK_STATE',    self.get_task_state_tag())
+        self.put('ASYNK_PR_TASK_RECUR',    self.get_task_recur_tag())
+        self.put('ASYNK_PR_TASK_COMPLETE', self.get_task_complete_tag())
+        self.put('ASYNK_PR_TASK_DATE_COMPLETED',
                  self.get_task_date_completed_tag())
 
     def valu (self, name):
@@ -454,7 +417,7 @@ class PropTags:
         """
         if n <= 1:
             try:
-                return self.valu('GOUT_PR_EMAIL_1')
+                return self.valu('ASYNK_PR_EMAIL_1')
             except KeyError, e:
                 prop_name = [(self.PSETID_Address_GUID, 0x8084)]
                 prop_type = mapitags.PT_UNICODE
@@ -486,7 +449,7 @@ class PropTags:
 
         if n <= 1:
             try:
-                return self.valu('GOUT_PR_IM_1')
+                return self.valu('ASYNK_PR_IM_1')
             except KeyError, e:
                 prop_name = [(self.PSETID_Address_GUID, plid)]
                 prop_type = mapitags.PT_UNICODE
@@ -496,11 +459,9 @@ class PropTags:
         if n > 1:
             return None
 
-    def get_gid_prop_tag (self):
-        ## FIXME: The following is a terrible that needs to be fixed
-        ## immediately...
-        prop_name = [(self.config.get_olsync_guid(),
-                      self.config.get_olsync_gid_next())]
+    def get_gid_prop_tag (self, dbid):
+        gid = self.config.get_olsync_gid(dbid)
+        prop_name = [(self.config.get_olsync_guid(), gid)]
         prop_type = mapitags.PT_UNICODE
         prop_ids  = self.def_cf.GetIDsFromNames(prop_name, 0)
 

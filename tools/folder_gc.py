@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Mar 26 14:38:25 IST 2012
+## Last Modified : Sun Apr 01 16:23:37 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -50,7 +50,7 @@ class GCContactsFolder(Folder):
     ## Implementation of the abstract methods inherited from Folder
     ##
 
-    def prep_sync_lists (self, destid, updated_min=None, cnt=0):
+    def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         """See the documentation in folder.Folder"""
 
         logging.info('Querying Google for status of Contact Entries...')
@@ -70,8 +70,6 @@ class GCContactsFolder(Folder):
 
         logging.info('Response recieved from Google. Processing...')
 
-        self._reset_sync_lists()
-
         if not feed.entry:
             logging.info('No entries in feed.')
             return
@@ -85,26 +83,26 @@ class GCContactsFolder(Folder):
 
             if epd:
                 if olid:
-                    self.con_gc_del[gcid] = olid
+                    sl.add_del(gcid, olid)
                 else:
                     # Deleted before it got synched. Get on with life
                     skip += 1
                     continue
             else:
                 if olid:
-                    self.con_gc_mod[gcid] = olid
+                    sl.add_mod(gcid, olid)
                 else:
-                    self.con_gc_new.append(gcid)
+                    sl.add_new(gcid)
 
         logging.debug('==== GC =====')
         logging.debug('num processed    : %5d', i+1)
-        logging.debug('num total        : %5d', len(self.con_all.items()))
-        logging.debug('num new          : %5d', len(self.con_gc_new))
-        logging.debug('num mod          : %5d', len(self.con_gc_mod))
-        logging.debug('num del          : %5d', len(self.con_gc_del))
+        logging.debug('num total        : %5d', len(sl.get_all().items()))
+        logging.debug('num new          : %5d', len(sl.get_news()))
+        logging.debug('num mod          : %5d', len(sl.get_mods()))
+        logging.debug('num del          : %5d', len(sl.get_dels()))
         logging.debug('num del bef sync : %5d', skip)
 
-        return (self.get_con_new(), self.get_con_mod(), self.get_con_del())
+        return (sl.get_news(), sl.get_mods(), sl.get_dels())
 
     def insert_new_items (self, items):
         """See the documentation in folder.Folder"""
@@ -167,48 +165,3 @@ class GCContactsFolder(Folder):
             logging.info('Deleting ID: %s; Name: %s...', con.id.text,
                          con.name.full_name.text if con.name else '')
             self.get_gdc().Delete(con)
-  
-    ## Temporarily placing keeping this stuff here while we start by cleaning
-    ## up pimdb_gc.py
-
-    def del_dict_items (self, d, l, keys=True):
-        """Delete all the elements in d that match the elements in list
-        l. If 'keys' is True the match is done on the keys of d, else
-        match is done on the values of d"""
-        
-        # Don't you love python - all the compactness of Perl less all
-        # the chaos
-
-        if keys:
-            d = dict([(x,y) for x,y in d.iteritems() if not x in l])
-        else:
-            d = dict([(x,y) for x,y in d.iteritems() if not y in l])
-
-        return d
-
-    def del_con_mod_by_values (self, ary):
-        """Remove all entries in thr con_mod dictionary whose values
-        appear in the 'ary' list."""
-
-        self.con_gc_mod = self.del_dict_items(self.con_gc_mod,
-                                              ary, False)
-
-    def _reset_sync_lists (self):
-        self.con_all    = {}
-        self.con_gc_del = {}
-        self.con_gc_mod = {}
-        self.con_gc_new = []
-
-    def get_con_new (self):
-        return self.con_gc_new
-
-    def get_con_mod (self):
-        return self.con_gc_mod
-
-    def get_con_del (self):
-        return self.con_gc_del
-
-    ## FIXME: Mon Mar 26 12:23:50 IST 2012: This routine ans the supporting
-    ## methods above are in working order, and can be tested from the Tests()
-    ## harnes in contact_gc.py. It needs to be renamed and modified to
-    ## implement the prep_sync_lists() method inherited from folder.Folder
