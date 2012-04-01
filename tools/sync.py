@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Sun Apr 01 16:12:25 IST 2012
+## Last Modified : Sun Apr 01 17:53:29 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -36,7 +36,7 @@ import gdata.contacts.data, gdata.contacts.client
 class Sync:
     BATCH_SIZE = 100
 
-    def __init__ (self, config, f1, f2, dirn='SYNC2WAY'):
+    def __init__ (self, config, f1, f2, dirn=None):
         self.atts = {}
 
         self.set_config(config)
@@ -50,6 +50,10 @@ class Sync:
         self.set_db2(db2)
         self.set_db1id(db1.get_dbid())
         self.set_db2id(db2.get_dbid())
+
+        if not dirn:
+            dirn = self.get_config().get_sync_dir(self.get_db1id(),
+                                                  self.get_db2id())
 
         self.set_dir(dirn)
 
@@ -116,15 +120,15 @@ class Sync:
         """Reset counters and other state information before starting."""
         pass
 
-    def _prep_lists_2_way (self):
+    def _prep_lists_2_way (self, f1, f2):
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
-        f1sl = SyncLists(self.get_f1(), self.get_f2())
-        f2sl = SyncLists(self.get_f2(), self.get_f1())
+        f1sl = SyncLists(f1, f2)
+        f2sl = SyncLists(f2, f1)
 
-        self.get_f1().prep_sync_lists(self.get_db2id(), f1sl)
-        self.get_f2().prep_sync_lists(self.get_db1id(), f2sl)
+        f1.prep_sync_lists(f2.get_dbid(), f1sl)
+        f2.prep_sync_lists(f1.get_dbid(), f2sl)
 
         f1_mod = f1sl.get_mods()
         f2_mod = f2sl.get_mods()
@@ -148,19 +152,6 @@ class Sync:
         db2 = db2id if db1id < db2id else db1id
         cr = self.get_config().get_conflict_resolve(db1, db2)
 
-        ## FIXME: Review this piece of code. Appears more complex than it
-        ## needs to be and does not appear 'symmetric'
-
-        # if cr == self.config.OUTLOOK:
-        #     # The olids in google contacts side are all base64
-        #     # encoded. Ensure we send an encoded array as well
-        #     coma = [base64.b64encode(x) for x in coma]
-        #     self.gc.del_con_mod_by_values(coma)
-        # elif cr == self.config.GOOGLE:
-        #     self.olcf.del_con_mod_by_keys(coma)
-
-        print coma
-
         if cr == db2id:
             f1_mod = f1sl.remove_keys(f1_mod, coma)
         elif cr == db1id:
@@ -175,19 +166,26 @@ class Sync:
         logging.debug('After conflict resolution, size of f2_mod : %5d',
                       len(f2_mod))
 
-    def _prep_lists_1_way (self, f):
-        (new, mod, dels) = f.prep_sync_lists()
-        logging.debug('f: %s; size of mod: %d', f.get_db().get_dbid(), len(mod))
+        return f1sl, f2sl
+
+    def _prep_lists_1_way (self, f1, f2):
+        logging.debug('_prep_lists_1_way(): ')
+        f1sl = SyncLists(f1, f2)
+        f1.prep_sync_lists(f2.get_dbid(), f1sl)
+
+        f1_mod = f1sl.get_mods()
+        logging.debug('f: %s; size of mod: %d', f1.get_dbid(), len(f1_mod))
 
     def _prep_lists (self):
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
         dirn = self.get_dir()
+        logging.debug('Direction: %s', dirn)
         if (dirn == 'SYNC2WAY'):
-            self._prep_lists_2_way()
+            self._prep_lists_2_way(self.get_f1(), self.get_f2())
         elif (dirn == 'SYNC1WAY'):
-            self._prep_lists_1_way(self.get_f1())
+            self._prep_lists_1_way(self.get_f1(), self.get_f2())
         else:
             logging.error('_prep_lists(): Huh? Unknown sync dir in config: %s',
                           dirn)
