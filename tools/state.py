@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Sun Mar 18 11:29:14 IST 2012
+## Last Modified : Sun Apr 01 14:18:29 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -115,6 +115,13 @@ class Config:
     def get_olsync_guid (self):
         return self._get_prop('olsync_guid')
 
+    def get_olsync_gid (self, which=None):
+        ret = self._get_prop('olsync_gid')
+        if not which:
+            return ret
+
+        return ret[which]
+
     def get_label_separator (self):
         return self._get_prop('label_separator')
 
@@ -134,12 +141,6 @@ class Config:
 
     def set_label_prefix (self, val, sync=True):
         return self._set_prop('label_prefix', val, sync)
-
-    def get_olsync_gid_next (self):
-        return self._get_prop('olsync_gid_next')
-
-    def set_olsync_gid_next (self, val, sync=True):
-        return self._set_prop('olsync_gid_next', val, sync)
 
     ##
     ## get-set pairs for application modifiable config/state specific to a
@@ -285,11 +286,12 @@ def main (argv=None):
 
     tcnt += 1
     print '\n### Test No. %2d ###\n' % tcnt
-    val = config.get_olsync_gid_next()
-    print 'olsync_gid_next: ', val
-    print 'Incrementing olsync_gid_next'
-    config.set_olsync_gid_next(val+1)
-    print 'olsync_gid_next: ', config.get_olsync_gid_next()
+    val = config.get_olsync_gid()
+    print 'olsync_gid(all): ', val
+    val = config.get_olsync_gid('gc')
+    print 'olsync_gid(gc): ', val
+    val = config.get_olsync_gid('bb')
+    print 'olsync_gid(bb): ', val
 
     tcnt += 1
     print '\n### Test No. %2d ###\n' % tcnt
