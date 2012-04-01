@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Sun Apr 01 14:18:29 IST 2012
+## Last Modified : Sun Apr 01 17:53:08 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -91,8 +91,12 @@ class Config:
         try:
             return self.state['sync_state'][dbs][key]
         except KeyError, e:
-            raise GoutConfigError(('Invalid Config read: %s'
-                                   % (('%s:%s') % (dbs, key))))
+            dbs = ('%s%s%s' % (db2id, self.get_label_separator(), db1id))
+            try:
+                return self.state['sync_state'][dbs][key]
+            except KeyError, e:
+                raise GoutConfigError(('Invalid Config read: %s'
+                                       % (('%s:%s') % (dbs, key))))
 
     def _set_prop_ss (self, db1id, db2id, key, val, sync=True):
         dbs = '%s%s%s' % (db1id, self.get_label_separator(), db2id)
@@ -166,9 +170,13 @@ class Config:
     def get_sync_dir (self, db1id, db2id):
         val = self._get_prop_ss(db1id, db2id, 'sync_dir')
         if not val in sync_dirs:
+            ## Check the reverse as well... Perhaps we should do this for all
+            ## the get_* Hm...
             raise GoutConfigError(
                 ('Invalid value for sync_dir: %s%s%s[sync_dir]: %s' %
-                 (db1id, self.get_label_separator(), db2id, val)))
+                 (db1id, self.get_label_separator(),
+                  db2id, val)))
+
         return val
 
     def set_sync_dir (self, db1id, db2id, val, sync=True):
