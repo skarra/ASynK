@@ -1,19 +1,23 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sun Apr 01 16:23:37 IST 2012
+## Last Modified : Mon Apr 02 20:05:41 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ## 
 
-import sys, os, logging, traceback
+import logging, os, re, sys, traceback
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
+from   contact_gc     import GCContact
+
 import utils
-import gdata.contacts.client
+import atom, gdata.contacts.client
 
 def get_udp_by_key (udps, key):
+    """Get the first User Defined Property from the given list that has the
+    specified key"""
 
     for ep in udps:
         if ep.key == key:
@@ -24,6 +28,37 @@ def get_udp_by_key (udps, key):
                 print 'Value: ', value
 
     return None
+
+def get_udps_by_key_prefix (udps, keyprefix):
+    """Get a dictionary of all the user defind properties whose keys have a
+    prefix match with the specified string"""
+
+    ret = {}
+    for ep in udps:
+        if re.search(('^' + keyprefix), ep.key):
+            if ep.value:
+                ret.updated({ep.key : ep.value})
+            else:
+                value = 'Hrrmph. '
+                print 'Value: ', value
+
+    return ret
+
+def sync_status_str (const):
+    for name, val in globals().iteritems():
+        if name[:5] == 'SYNC_' and val == const:
+            return name
+
+    return None
+
+SYNC_OK                    = 200
+SYNC_CREATED               = 201
+SYNC_NOT_MODIFIED          = 304
+SYNC_BAD_REQUEST           = 400
+SYNC_UNAUTHORIZED          = 401
+SYNC_FORBIDDEN             = 403
+SYNC_CONFLICT              = 409
+SYNC_INTERNAL_SERVER_ERROR = 500
 
 ## Unlike the Outlook case, we will avoid doing another level of abstract
 ## class. When we get to implementing the tasks stuff we can evolve the class
@@ -49,6 +84,9 @@ class GCContactsFolder(Folder):
     ##
     ## Implementation of the abstract methods inherited from Folder
     ##
+
+    def get_batch_size (self):
+        return 100
 
     def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         """See the documentation in folder.Folder"""
@@ -104,10 +142,165 @@ class GCContactsFolder(Folder):
 
         return (sl.get_news(), sl.get_mods(), sl.get_dels())
 
-    def insert_new_items (self, items):
+    def find_item (self, itemid):
+        gce = self.get_gdc().GetContact(itemid)
+        gc  = GCContact(self, gce=gce)
+
+        return gc
+
+    def batch_create (self, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        my_dbid = self.get_dbid()
+        c       = self.get_config()
+        src_sync_tag = utils.get_sync_label_from_dbid(c, src_dbid)
+        dst_sync_tag = utils.get_sync_label_from_dbid(c, my_dbid)
+
+        f     = self.get_db().new_feed()
+        stats = BatchState(1, f, 'insert', sync_tag=dst_sync_tag)
+
+        for item in items:
+            gc  = GCContact(self, con=item)
+            bid = item.get_itemid()
+            gc.update_sync_tags(src_sync_tag, bid)
+
+            gce = gc.get_gce()
+            stats.add_con(bid, new=gc, orig=item)
+            f.add_insert(entry=gce, batch_id_string=bid)
+            stats.incr_cnt()
+            
+            if stats.get_cnt() % self.get_batch_size() == 0:
+                # Feeds have to be less than 1MB. We can push this some
+                # more. FIXME.
+                logging.debug('Uploading new batch # %02d to Google. ' +
+                              'Count: %3d. Size: %6.2fK',
+                              stats.get_bnum(), stats.get_cnt(),
+                              stats.get_size())
+                rf = self.get_db().exec_batch(f)
+                stats.process_batch_response(rf)
+
+                f = self.get_db().new_feed()
+                stats = BatchState(stats.get_bnum()+1, f, 'insert',
+                                   sync_tag=dst_sync_tag)
+           
+        # Upload any leftovers
+        if stats.get_cnt() > 0:
+            logging.debug('New Batch # %02d. Count: %3d. Size: %5.2fK',
+                          stats.get_bnum(), stats.get_cnt(),
+                          stats.get_size())
+            rf = self.get_db().exec_batch(f)
+            stats.process_batch_response(rf)
+
+    def _fetch_gc_entries (self, gcids):
+        """gcids is a list of google contact ids to retrieve contact
+        entries for.
+
+        Returns a list of ContactEntries"""
+
+        f      = self.get_db().new_feed()
+        stats = BatchState(1, f, 'query', sync_tag=None)
+
+        ret = []
+
+        for gcid in gcids:
+            ce = gdata.contacts.data.ContactEntry()
+            ce.id = atom.data.Id(text=gcid)
+            stats.add_con(gcid, ce, orig=None)
+
+            f.add_query(entry=ce, batch_id_string=gcid)
+            stats.incr_cnt()
+
+            if stats.get_cnt() % self.get_batch_size() == 0:
+                # Feeds have to be less than 1MB. We can push this some
+                # more
+                logging.debug('Qry Batch # %02d. Count: %3d. Size: %6.2fK',
+                              stats.get_bnum(), stats.get_cnt(),
+                              stats.get_size())
+
+                rf  = self.gc.exec_batch(f)
+                ces = stats.process_batch_response(rf)
+                [ret.append(x) for x in ces]
+
+                f = self.get_db().new_feed()
+                s = BatchState(stats.get_bnum()+1, f, 'query', sync_tag=None)
+                stats = s
+
+        # Process any leftovers
+        if stats.get_cnt() > 0:
+            logging.debug('Qry Batch # %02d. Count: %3d. Size: %5.2fK',
+                          stats.get_bnum(), stats.get_cnt(),
+                          stats.get_size())
+            
+            rf  = self.get_db().exec_batch(f)
+            ces = stats.process_batch_response(rf)
+            [ret.append(x) for x in ces]
+
+        return ret
+
+    def batch_update (self, src_dbid, items):
+        """See the documentation in folder.Folder"""
+
+        # Updates and deletes on google require not just the entryid but also
+        # its correct etag which is a version identifier. This is to ensure
+        # two apps do not overwrite each other's work without even knowing
+        # about it. So we need to approach this in two steps: (a) Fetch the
+        # ContactEntries for all the items we are interested in. the returned
+        # entry objects have all the required info, including the latest
+        # etag. (b) Modify the same entry with the local updates and send it
+        # back
+
+        # gcids = []
+        # for item in items:
+        #     print 'processing item: ', item.get_itemid()
+        #     print '\tname: ', item.get_name()
+        #     print '\ttags: ', item.get_sync_tags()
+
+        #     gcids.append(item.get_sync_tags('asynk:gc:id'))
+        gcids = [item.get_sync_tags('asynk:gc:id') for item in items]
+        ces = self._fetch_gc_entries(gcids)
+        etags = [ce.etag for ce in ces]
+
+        my_dbid = self.get_dbid()
+        c       = self.get_config()
+        src_sync_tag = utils.get_sync_label_from_dbid(c, src_dbid)
+        dst_sync_tag = utils.get_sync_label_from_dbid(c, my_dbid)
+
+        f     = self.get_db().new_feed()
+        stats = BatchState(1, f, 'update', sync_tag=dst_sync_tag)
+
+        for item, etag in zip(items, etags):
+            gc  = GCContact(self, con=item)
+            bid = item.get_itemid()
+            gc.update_sync_tags(src_sync_tag, bid)
+
+            gce = gc.get_gce()
+            gce.etag = etag
+
+            stats.add_con(bid, new=gc, orig=item)
+            f.add_update(entry=gce, batch_id_string=bid)
+            stats.incr_cnt()
+            
+            if stats.get_cnt() % self.get_batch_size() == 0:
+                # Feeds have to be less than 1MB. We can push this some
+                # more. FIXME.
+                logging.debug('Uploading new batch # %02d to Google. ' +
+                              'Count: %3d. Size: %6.2fK',
+                              stats.get_bnum(), stats.get_cnt(),
+                              stats.get_size())
+                rf = self.get_db().exec_batch(f)
+                stats.process_batch_response(rf)
+
+                f = self.get_db().new_feed()
+                stats = BatchState(stats.get_bnum()+1, f, 'insert',
+                                   sync_tag=dst_sync_tag)
+           
+        # Upload any leftovers
+        if stats.get_cnt() > 0:
+            logging.debug('New Batch # %02d. Count: %3d. Size: %5.2fK',
+                          stats.get_bnum(), stats.get_cnt(),
+                          stats.get_size())
+            rf = self.get_db().exec_batch(f)
+            stats.process_batch_response(rf)
 
     def bulk_clear_sync_flags (self, dbids):
         """See the documentation in folder.Folder"""
@@ -165,3 +358,122 @@ class GCContactsFolder(Folder):
             logging.info('Deleting ID: %s; Name: %s...', con.id.text,
                          con.name.full_name.text if con.name else '')
             self.get_gdc().Delete(con)
+
+class BatchState:
+    """This class is used as a temporary store of state related to batch
+    operations in the Google API. Useful when we are operating in bulk data
+    on Google"""
+
+    def __init__ (self, num, f, op=None, sync_tag=None):
+        self.size = 0
+        self.cnt  = 0
+        self.num  = num
+        self.f    = f
+        self.operation = op
+        self.cons = {}
+        self.origs = {}
+        self.sync_tag = sync_tag
+
+    def get_size (self):
+        """Return size of feed in kilobytess."""
+        self.size = len(str(self.f))/1024.0
+        return self.size
+
+    def incr_cnt (self):
+        self.cnt += 1
+        return self.cnt
+
+    def get_cnt (self):
+        return self.cnt
+
+    def get_bnum (self):
+        return self.num
+
+    def add_con (self, olid_b64, new, orig):
+        self.cons[olid_b64] = new
+        self.origs[olid_b64] = orig
+
+    def get_con (self, olid_b64):
+        return self.cons[olid_b64]
+
+    def get_orig (self, olid_b64):
+        return self.origs[olid_b64]
+
+    def get_operation (self):
+        return self.operation
+
+    def set_operation (self, op):
+        self.operation = op
+
+    def process_batch_response (self, resp):
+        """resp is the response feed obtained from a batch operation to
+        google.
+    
+        This routine will walk through the batch response entries, and
+        make note in the outlook database for succesful sync, or handle
+        errors appropriately."""
+    
+        op   = self.get_operation()
+        cons = []
+    
+        for entry in resp.entry:
+            bid    = entry.batch_id.text if entry.batch_id else None
+            if not entry.batch_status:
+                # There is something seriously wrong with this request.
+                logging.error('Unknown fatal error in response. Full resp: %s',
+                              entry)
+                continue
+    
+            code   = int(entry.batch_status.code)
+            reason = entry.batch_status.reason
+    
+            if code != SYNC_OK and code != SYNC_CREATED:
+                # FIXME this code path needs to be tested properly
+                err = sync_status_str(code)
+                err_str = '' if err is None else ('Code: %s' % err)
+                err_str = 'Reason: %s. %s' % (reason, err_str)
+    
+                if op == 'insert' or op == 'update':
+                    try:
+                        name = self.get_con(bid).name
+                    except Exception, e:
+                        name = self.get_con(bid).get_name()
+                    except Exception, e:
+                        name = "WTH!"    
+
+                    logging.error('Upload to Google failed for: %s: %s',
+                                  name, err_str)
+                elif op == 'Writeback olid':
+                    logging.error('Could not complete sync for: %s: %s',
+                                  self.get_con(bid).name, err_str)
+                else:
+                    ## We could just print a more detailed error for all
+                    ## cases. Should do some time FIXME.
+                    logging.error('Sync failed for bid %s: %s',
+                                   bid, err_str)
+            else:
+                if op == 'query':
+                    con = entry
+                    # We could build and return array for all cases, but
+                    # why waste memory...
+                    cons.append(con)
+                else:
+                    con  = self.get_con(bid)
+                    orig = self.get_orig(bid)
+                    gcid = utils.get_link_rel(entry.link, 'edit')
+                    orig.update_sync_tags(self.sync_tag, gcid, save=True)
+
+    # .update_prop_by_name([(self.config.get_gc_guid(),
+    #                        self.config.get_gc_id())],
+    #                        mapitags.PT_UNICODE,
+                    t = None
+                    if op == 'insert':
+                        t = 'created'
+                    elif op == 'update':
+                        t = 'updated'
+    
+                    if t:
+                        logging.info('Successfully %s gmail entry for %s (%s)',
+                                     t, con.get_name(), con.get_itemid())
+    
+        return cons

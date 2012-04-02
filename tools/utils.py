@@ -1,11 +1,13 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Thu Mar 22 12:20:47 IST 2012
+## Last Modified : Mon Apr 02 14:54:10 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
 ## Licensed under the GPL v3
 ## 
+
+import re
 
 ## The follow is a super cool implementation of enum equivalent in
 ## Python. Taken with a lot of gratitude from this post on Stackoverflow:
@@ -16,6 +18,24 @@
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
 	return type('Enum', (), enums)
+
+
+def get_sync_label_from_dbid (config, dbid):
+    ret =  (config.get_label_prefix() +
+            config.get_label_separator() +
+            dbid + config.get_label_separator() + 'id')
+
+    return ret
+
+def get_dbid_from_sync_label (config, label):
+    pre = config.get_label_prefix()
+    sep = config.get_label_separator()
+    reg =  (pre + sep + '([a-z0-9]+)' + sep + 'id')
+    res = re.match(reg, label)
+    if res:
+        return res.group(1)
+    else:
+        return None
 
 def get_link_rel (links, rel):
     """From a Google data entry links array, fetch the link with the

@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Mar 30 16:47:49 IST 2012
+## Last Modified : Mon Apr 02 14:08:49 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -16,6 +16,8 @@ from abc     import ABCMeta, abstractmethod
 from pimdb   import PIMDB
 from item    import Item
 
+import copy, logging
+
 class Contact(Item):
     __metaclass__ = ABCMeta
 
@@ -28,26 +30,26 @@ class Contact(Item):
 
         Item.__init__(self, folder)
 
+        self.props.update({'firstname'    : None, 'company'      : None,
+                           'lastname'     : None, 'postal'       : None,
+                           'name'         : None, 'notes'        : [],
+                           'suffix'       : None, 'phone_home'   : [],
+                           'title'        : None, 'phone_work'   : [],
+                           'gender'       : None, 'phone_mob'    : [],
+                           'nickname'     : None, 'phone_other'  : [],
+                           'birthday'     : None, 'phone_prim'   : None,
+                           'anniv'        : None, 'fax_home'     : [],
+                           'web_home'     : [],   'fax_work'     : [],
+                           'web_work'     : [],   'fax_prim'     : None,
+                           'web_prim'     : None, 'email_home'   : [],
+                           'dept'         : None, 'email_work'   : [],
+                           'fileas'       : None, 'email_other'  : [],
+                           'prefix'       : None, 'email_prim'   : None,
+                           'im'           : {},   'im_prim'      : None,
+                           })
+
         if con:
             self.init_props_from_con(con)
-        else:
-            self.props.update({'firstname'    : None, 'company'      : None,
-                               'lastname'     : None, 'postal'       : None,
-                               'name'         : None, 'notes'        : [],
-                               'suffix'       : None, 'phone_home'   : [],
-                               'title'        : None, 'phone_work'   : [],
-                               'gender'       : None, 'phone_mob'    : [],
-                               'nickname'     : None, 'phone_other'  : [],
-                               'birthday'     : None, 'phone_prim'   : None,
-                               'anniv'        : None, 'fax_home'     : [],
-                               'web_home'     : [],   'fax_work'     : [],
-                               'web_work'     : [],   'fax_prim'     : None,
-                               'web_prim'     : None, 'email_home'   : [],
-                               'dept'         : None, 'email_work'   : [],
-                               'fileas'       : None, 'email_other'  : [],
-                               'prefix'       : None, 'email_prim'   : None,
-                               'im'           : {},   'im_prim'      : None,
-                               })
 
     ##
     ## Now onto the non-abstract methods. We do not want to use method
@@ -56,28 +58,19 @@ class Contact(Item):
     ## plain english like so.
     ##
 
-    def init_props_from_con (self, con, excl_itemid=True):
+    def init_props_from_con (self, con):
         """Make a deepcopy of all the item properties from con into the props
         dictionary, utilizing the appropriate get_ and set_ routines.
-
-        By default the itemid field is excluded from the copy as the most
-        common usecase is to make a copy of the contact fields in one
-        database format into another database format - i.e. Create an
-        OLContact object from the fields of a GCContact object. In such an
-        instance the itemid field in the destination should really be
-        generated from a store in the database on creation, or through some
-        other such means."""
+        """
 
         prop_names = con.get_prop_names()
-        if excl_itemid:
-            prop_names.remove('itemid')
-
         for prop in prop_names:
             get_method = 'get_%s' % prop
             set_method = 'set_%s' % prop
 
             val = copy.deepcopy(getattr(con, get_method)())
-            print 'setting value (', val, ') using method ', set_method
+            # logging.debug('setting value (%s) using method: %s',
+            #               val, set_method)
             getattr(self, set_method)(val)
 
     def get_firstname (self):
@@ -85,14 +78,14 @@ class Contact(Item):
 
     def set_firstname (self, val):
         self._set_prop('firstname', val)
-        self.update_fullname()
+        #        self.update_fullname()
 
     def get_lastname (self):
         return self._get_prop('lastname')
 
     def set_lastname (self, val):
         self._set_prop('lastname', val)
-        self.update_fullname()
+        #        self.update_fullname()
 
     def update_fullname (self):
         pr = self.get_prefix()
@@ -322,7 +315,7 @@ class Contact(Item):
         return self._get_prop('im_prim')
 
     def set_im_prim (self, val):
-        return self_.set_prop('im_prim', val)
+        return self._set_prop('im_prim', val)
 
     def get_im (self, which=None):
         all_ims = self._get_prop('im')

@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sat Mar 31 00:29:42 IST 2012
+## Last Modified : Mon Apr 02 14:19:40 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -59,6 +59,20 @@ class Folder:
         raise NotImplementedError
 
     @abstractmethod
+    def get_batch_size (self):
+        """When entries are copied during a sync operation, it is frequently
+        efficient to do them in batch operations - when the underlying
+        database provider supports it. For e.g. it is a huge performance boost
+        to use Google Contacts' batch operations. This routine is expected to
+        return the size of such a batch operation in general. In practcise
+        what this means is that a sync operation will send this many Contact
+        entries for processing to the folder / db provider in one go. The
+        actual batching and handling, will be done by the underlying code
+        anyway."""
+
+        raise NotImplementedError
+
+    @abstractmethod
     def prep_sync_lists (self, destid, last_sync_stop=None, limit=0):
         """Prepare and return a set of list of new, modified and deleted
         entries in the current folder since the last sync to the corresponding
@@ -78,13 +92,28 @@ class Folder:
         raise NotImplementedError
 
     @abstractmethod
-    def insert_new_items (self, items):
+    def find_item (self, itemid):
+        """Return an object of some type derived from Item that is specified
+        by the given itemid. It is an error for the given itemid to not be
+        present."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def batch_create (self, items):
         """Insert new items into the database. entries is a list of objects
         derived from pimdb.Item. This routine will ensure relevant fields are
         fetched - which will invoke the source db implementation to get the
         properies and use it to create an appropriate Item type object for
         the destination folder and then store it in the folder
         persistently."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def batch_update (self, items):
+        """Update already existing items to new contents. items is a list of
+        objects derived from pimdb.Item."""
 
         raise NotImplementedError
 

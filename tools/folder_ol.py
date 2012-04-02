@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sun Apr 01 16:23:04 IST 2012
+## Last Modified : Mon Apr 02 15:49:41 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -21,6 +21,7 @@ if __name__ == "__main__":
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
 from   win32com.mapi  import mapi, mapitags, mapiutil
+from   contact_ol     import OLContact
 
 class OLFolder(Folder):
     """An Outlook folder directly corresponds to a MAPI Folder entity. This
@@ -47,6 +48,9 @@ class OLFolder(Folder):
     ##
     ## Implementation of some abstract methods inherted from Folder
     ##
+
+    def get_batch_size (self):
+        return 100
 
     def prep_sync_lists (self, destid, sl, synct_sto=None, cnt=0):
         """See the documentation in folder.Folder"""
@@ -118,7 +122,21 @@ class OLFolder(Folder):
 
         return (sl.get_news(), sl.get_mods(), sl.get_dels())
 
-    def insert_new_items (self, items):
+    def find_item (self, itemid):
+        eid = base64.b64decode(itemid)
+
+        print 'itemid : ', itemid
+        print 'eid    : ', eid
+
+        olc = OLContact(self, eid=eid)
+        return olc
+
+    def batch_create (self, items):
+        """See the documentation in folder.Folder"""
+
+        raise NotImplementedError
+
+    def batch_update (self, items):
         """See the documentation in folder.Folder"""
 
         raise NotImplementedError
@@ -224,7 +242,7 @@ class OLFolder(Folder):
 
             i += 1
             if mapitags.PROP_TYPE(gid_tag) != mapitags.PT_ERROR:
-                entry = store.OpenEntry(entryid, None, MOD_FLAG)
+                entry = store.OpenEntry(entryid, None, mapi.MAPI_BEST_ACCESS)
                 hr, ps = entry.DeleteProps([gid_tag])
                 entry.SaveChanges(mapi.KEEP_OPEN_READWRITE)
 
@@ -463,7 +481,7 @@ class PropTags:
         gid = self.config.get_olsync_gid(dbid)
         prop_name = [(self.config.get_olsync_guid(), gid)]
         prop_type = mapitags.PT_UNICODE
-        prop_ids  = self.def_cf.GetIDsFromNames(prop_name, 0)
+        prop_ids  = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 

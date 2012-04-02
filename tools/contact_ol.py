@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Sun Apr 01 16:19:52 IST 2012
+## Last Modified : Mon Apr 02 19:36:28 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -9,7 +9,8 @@
 ## This file extends the Contact base class to implement an Outlook Contact
 ## item while implementing the base class methods.
 
-import base64, logging, os, sys, traceback, utils
+import string
+import base64, logging, os, re, sys, traceback, utils
 from   datetime import datetime
 
 if __name__ == "__main__":
@@ -22,7 +23,7 @@ if __name__ == "__main__":
 from   contact import Contact
 from   win32com.mapi import mapitags as mt
 from   win32com.mapi import mapi
-import winerror
+import winerror, win32api
 
 def yyyy_mm_dd_to_pytime (date_str):
     dt = datetime.strptime(date_str, '%Y-%m-%d')
@@ -60,7 +61,7 @@ class OLContact(Contact):
         ## properties to make it easier to access them
 
         self.set_db_config(self.get_config().get_db_config(self.get_dbid()))
-        self.set_sync_fields(self.get_db_config()['sync_fields'])
+        self.set_synchable_fields_list()
         self.set_email_domains(self.get_db_config()['email_domains'])
         self.set_proptags(folder.get_proptags())
 
@@ -70,6 +71,45 @@ class OLContact(Contact):
             self.init_props_from_olprops(olprops)
         elif eid:
             self.init_props_from_eid(eid)
+
+    def set_synchable_fields_list (self):
+        fields = self.get_db_config()['sync_fields']
+        fields = self._process_sync_fields(fields)
+
+        olcf = self.get_folder()
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_FILE_AS'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_EMAIL_1'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_EMAIL_2'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_EMAIL_3'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_IM_1'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_GCID'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_BBID'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_DUE_DATE'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_STATE'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_RECUR'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_COMPLETE'))
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_DATE_COMPLETED'))
+
+        self.set_sync_fields(fields)
+
+    ## This method is already defined in item.py, but we need to override it
+    ## here to actually save just the property back to Outlook
+    def update_sync_tags (self, destid, val, save=False):
+        """Update the specified sync tag with given value. If the tag does not
+        already exist an entry is created."""
+
+        self._update_att('sync_tags', destid, val)
+        if save:
+            olitem = self.get_olitem()
+            olprops = []
+            self._add_sync_tags_to_olprops(olprops)
+            try:
+                hr, res = olitem.SetProps(olprops)
+                olitem.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+            except Exception, e:
+                logging.critical('Could not save synctags: %s (%s)',
+                                 olprops, e)
+                raise
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -90,7 +130,9 @@ class OLContact(Contact):
         if not msg:
             return None
 
-        hr, res = msg.SetProps(self.get_olprops())
+        olprops = self.get_olprops()
+
+        hr, res = msg.SetProps(olprops)
         if (winerror.FAILED(hr)):
             logging.critical('push_to_outlook(): unable to SetProps (code: %x)',
                              winerror.HRESULT_CODE(hr))
@@ -118,6 +160,10 @@ class OLContact(Contact):
     def set_entryid (self, eid):
         """Set the entryid, and also the itemid - which is the base64 encoded
         value of the binary entryid."""
+
+        if not eid:
+            logging.debug('Attempting to set None eid ...')
+            return
 
         self._set_att('entryid', eid)
         self.set_itemid(base64.b64encode(eid))
@@ -152,7 +198,7 @@ class OLContact(Contact):
             return None
 
         msgstore = self.get_folder().get_msgstore()
-        res = msgstore.OpenEntry(eid, None, MOD_FLAG)
+        res = msgstore.get_obj().OpenEntry(eid, None, mapi.MAPI_BEST_ACCESS)
         if res:
             return self._set_att('olitem', res)
 
@@ -187,7 +233,15 @@ class OLContact(Contact):
         """This reads the current contact's entire property list from MAPI and
         returns an array of property tuples"""
 
-        pass
+        oli = self.get_olitem()
+        hr, props = oli.GetProps(self.get_folder().get_def_cols(), 0)
+
+        if (winerror.FAILED(hr)):
+            logging.error('get_olprops_from_mapi: Unable to GetProps. Code: %x',
+                          winerror.HRESULT_CODE(hr))
+            logging.error('Formatted error: %s', win32api.FormatMessage(hr))
+
+        return props
 
     def set_olprops (self, olprops):
         return self._set_att('olprops', olprops)
@@ -205,12 +259,20 @@ class OLContact(Contact):
         self._snarf_dates_from_olprops(olpd)
         self._snarf_websites_from_olprops(olpd)
         self._snarf_ims_from_olprops(olpd)
+        self._snarf_sync_tags_from_olprops(olpd)
 
         self._snarf_custom_props_from_olprops(olpd)
 
     def init_props_from_eid (self, eid):
-        self.set_itemid(eid)
-        oli = self.get_olitem()
+        logging.debug('init_props_from_end(): Starting..')
+        self.set_entryid(eid)
+        self.set_itemid(base64.b64encode(eid))
+
+        self.set_olitem(None)
+        props = self.get_olprops_from_mapi()
+
+        ## FIXME: Error checking needed here.
+        return self.init_props_from_olprops(props)
 
     def init_olprops_from_props (self):
         # There are a few message properties that are sort of 'expected' to be
@@ -232,6 +294,7 @@ class OLContact(Contact):
         self._add_dates_to_olprops(olprops)
         self._add_websites_to_olprops(olprops)
         self._add_ims_to_olprops(olprops)
+        self._add_sync_tags_to_olprops(olprops)
 
         self._add_custom_props_to_olprops(olprops)
 
@@ -259,18 +322,18 @@ class OLContact(Contact):
         ## lastname etc instead of just the full display name. Learn to handle
         ## it.
 
-        self.set_name(self._get_olprop(olpd, mt.PR_DISPLAY_NAME))
         self.set_firstname(self._get_olprop(olpd, mt.PR_GIVEN_NAME))
         self.set_lastname(self._get_olprop(olpd, mt.PR_SURNAME))
+        self.set_name(self._get_olprop(olpd, mt.PR_DISPLAY_NAME))
         self.set_prefix(self._get_olprop(olpd, mt.PR_DISPLAY_NAME_PREFIX))
         self.set_suffix(self._get_olprop(olpd, mt.PR_GENERATION))
         self.set_nickname(self._get_olprop(olpd, mt.PR_NICKNAME))
         self.set_gender(self._get_olprop(olpd, mt.PR_GENDER))
 
-    def _snarf_notes_from_olprops (self, olprop):
+    def _snarf_notes_from_olprops (self, olpd):
         self.add_notes(self._get_olprop(olpd, mt.PR_BODY))
 
-    def _snarf_emails_from_olprops (self, olprop):
+    def _snarf_emails_from_olprops (self, olpd):
         ## Build an array out of the three email addresses as applicable
         email1 = self.get_proptags().valu('ASYNK_PR_EMAIL_1')
         email2 = self.get_proptags().valu('ASYNK_PR_EMAIL_2')
@@ -278,11 +341,11 @@ class OLContact(Contact):
 
         eds = self.get_email_domains()
 
-        self._snarf_email (email1, eds)
-        self._snarf_email (email2, eds)
-        self._snarf_email (email3, eds)
+        self._snarf_email (olpd, email1, eds)
+        self._snarf_email (olpd, email2, eds)
+        self._snarf_email (olpd, email3, eds)
 
-    def _snarf_email (self, tag, domains):
+    def _snarf_email (self, olpd, tag, domains):
         """Fetch the email address using the specified tag, classify the
         addres into home, work or other, and file them into the appropriate
         property field.
@@ -292,7 +355,10 @@ class OLContact(Contact):
         dictionary from the app state config file that is used to """
 
         addr = self._get_olprop(olpd, tag)
-        work, work, other = self._classify_email_addr(addr, domains)
+        if not addr:
+            return
+
+        home, work, other = self._classify_email_addr(addr, domains)
 
         ## Note that the following implementation means if the same domain is
         ## specified in more than one category, it ends up being copied to
@@ -357,20 +423,20 @@ class OLContact(Contact):
         self.add_fax_work(
             self._get_olprop(olpd, mt.PR_BUSINESS_FAX_NUMBER))
 
-    def _snarf_dates_from_olprop (self, olpd):
-        date = pytime_to__yyyy_mm_dd(self._get_olprop(olpd, mt.PR_BIRTHDAY))
-        self.set_birthday(date)
+    def _snarf_dates_from_olprops (self, olpd):
+        d = self._get_olprop(olpd, mt.PR_BIRTHDAY)
+        if d:
+            date = pytime_to_yyyy_mm_dd(d)
+            self.set_birthday(date)
 
-        date = pytime_to__yyyy_mm_dd(
-            self._get_olprop(olpd, mt.PR_WEDDING_ANNIVERSARY))
-        self.set_anniv(date)
+        a = self._get_olprop(olpd, mt.PR_WEDDING_ANNIVERSARY)
+        if a:
+            date = pytime_to_yyyy_mm_dd(a)
+            self.set_anniv(date)
 
     def _snarf_websites_from_olprops (self, olpd):
         self.add_web_home(self._get_olprop(olpd, mt.PR_PERSONAL_HOME_PAGE))
         self.add_web_work(self._get_olprop(olpd, mt.PR_BUSINESS_HOME_PAGE))
-
-        ## The End.
-
 
     # def left_overs (self):
     #     self.gcid = self._get_prop(self.get_proptags().valu('ASYNK_PR_GCID'))
@@ -380,11 +446,37 @@ class OLContact(Contact):
         """In Outlook IM Addresses are also named properties like Email
         addresses..."""
 
-        im = self.get_proptags().valu('ASYNK_PR_IM_1')
-        self.add_im(self._get_olprop(olpd, im))
+        imtag = self.get_proptags().valu('ASYNK_PR_IM_1')
+        imadd = self._get_olprop(olpd, imtag)
+        if imadd:
+            self.add_im('Default', imadd)
+
+    def _snarf_sync_tags_from_olprops (self, olpd):
+        conf = self.get_config()
+
+        for dbid in ['gc', 'bb']:
+            tagn = 'ASYNK_PR_%sID' % (string.upper(dbid))
+            tagv = self.get_proptags().valu(tagn)
+            valu = self._get_olprop(olpd, tagv)
+
+            if valu:
+                self.update_sync_tags(utils.get_sync_label_from_dbid(conf, dbid),
+                                      valu)
 
     def _snarf_custom_props_from_olprops (self, olpd):
         logging.error("_snarf_custom_props_ol(): Not Implemented Yet")
+
+    def _get_olprop (self, olprops, key):
+        if not (key in olprops.keys()):
+            return None
+
+        if olprops[key]:
+            if len(olprops[key]) > 0:
+                return olprops[key][0]
+            else:
+                return None
+        else:
+            return None
 
     def _make_olprop_dict (self, olprops, fields):
         """olprops is an array of property tuples - the sort of thing that is
@@ -437,8 +529,8 @@ class OLContact(Contact):
 
     def _add_notes_to_olprops (self, olprops):
         notes = self.get_notes()
-        if notes:
-            olprops.append((mt.PR_BODY, notes))
+        if notes and len(notes) > 0:
+            olprops.append((mt.PR_BODY, notes[0]))
 
     def _add_emails_to_olprops (self, olprops):
         """Outlook has space only for 3 email addressess. The Gout internal
@@ -455,7 +547,8 @@ class OLContact(Contact):
                 return
 
             tag = self.get_proptags().valu('ASYNK_PR_EMAIL_%d' % i)
-            olprops.append((tag, email))
+            if email:
+                olprops.append((tag, email))
 
         for email in self.get_email_work():
             i += 1
@@ -463,7 +556,8 @@ class OLContact(Contact):
                 return
 
             tag = self.get_proptags().valu('ASYNK_PR_EMAIL_%d' % i)
-            olprops.append((tag, email))
+            if email:
+                olprops.append((tag, email))
 
         for email in self.get_email_other():
             i += 1
@@ -471,7 +565,8 @@ class OLContact(Contact):
                 return
 
             tag = self.get_proptags().valu('ASYNK_PR_EMAIL_%d' % i)
-            olprops.append((tag, email))
+            if email:
+                olprops.append((tag, email))
 
     def _add_postal_to_olprops (self, olprops):
         postal = self.get_postal()
@@ -495,22 +590,22 @@ class OLContact(Contact):
         ## FIXME: We have to deal with more than two phone numbers each
         phh     = self.get_phone_home()
         phh_cnt = len(phh)
-        if phh_cnt >= 1:
+        if phh_cnt >= 1 and phh[0]:
             olprops.append((mt.PR_HOME_TELEPHONE_NUMBER, phh[0]))
 
-        if phh_cnt >= 2:
+        if phh_cnt >= 2 and phh[1]:
             olprops.append((mt.PR_HOME2_TELEPHONE_NUMBER, phh[1]))
 
         phw     = self.get_phone_work()
         phw_cnt = len(phw)
-        if phw_cnt >= 1:
+        if phw_cnt >= 1 and phw[0]:
             olprops.append((mt.PR_BUSINESS_TELEPHONE_NUMBER, phw[0]))
 
-        if phw_cnt >= 2:
+        if phw_cnt >= 2 and phw[1]:
             olprops.append((mt.PR_BUSINESS2_TELEPHONE_NUMBER, phw[1]))
 
         phm = self.get_phone_mob()
-        if len(phm) >= 1:
+        if len(phm) >= 1 and phm[0]:
             olprops.append((mt.PR_MOBILE_TELEPHONE_NUMBER, phm[0]))
 
         ph_prim = self.get_phone_prim()
@@ -518,11 +613,11 @@ class OLContact(Contact):
             olprops.append((mt.PR_PRIMARY_TELEPHONE_NUMBER, ph_prim))
 
         fah = self.get_fax_home()
-        if len(fah) >= 1:
+        if len(fah) >= 1 and fah[0]:
             olprops.append((mt.PR_HOME_FAX_NUMBER, fah[0]))
 
         faw = self.get_fax_work()
-        if len(faw) >= 1:
+        if len(faw) >= 1 and faw[0]:
             olprops.append((mt.PR_BUSINESS_FAX_NUMBER, faw[0]))
 
         fax_prim = self.get_fax_prim()
@@ -533,35 +628,62 @@ class OLContact(Contact):
         bday = self.get_birthday()
         if bday:
             bday = yyyy_mm_dd_to_pytime(bday)
-            props.append((mt.PR_BIRTHDAY, bday))
+            olprops.append((mt.PR_BIRTHDAY, bday))
 
         anniv = self.get_anniv()
         if anniv:
             anniv = yyyy_mm_dd_to_pytime(anniv)
-            props.append((mt.PR_WEDDING_ANNIVERSARY, anniv))
+            olprops.append((mt.PR_WEDDING_ANNIVERSARY, anniv))
 
     def _add_websites_to_olprops (self, olprops):
         ## FIXME: What happens to additional websites?
         web = self.get_web_home()
-        if web:
-            props.append((mt.PR_PERSONAL_HOME_PAGE, web[0]))
+        if web and web[0]:
+            olprops.append((mt.PR_PERSONAL_HOME_PAGE, web[0]))
 
         web = self.get_web_work()
-        if web:
-            props.append((mt.PR_BUSINESS_HOME_PAGE, web[0]))
+        if web and web[0]:
+            olprops.append((mt.PR_BUSINESS_HOME_PAGE, web[0]))
 
     def _add_ims_to_olprops (self, olprops):
         im = self.get_im()
-        if im:
+        if im and im[0]:
             tag = self.get_proptags().valu('ASYNK_PR_IM_1')
             olprops.append((tag, im[0]))
+
+    def _add_sync_tags_to_olprops (self, olprops):
+        conf = self.get_config()
+        for key, val in self.get_sync_tags().iteritems():
+            if not val:
+                continue
+
+            dbid = utils.get_dbid_from_sync_label(conf, key)
+            tagn = 'ASYNK_PR_%sID' % (string.upper(dbid))
+            tagv = self.get_proptags().valu(tagn)
+
+            olprops.append((tagv, val))
 
     def _add_custom_props_to_olprops (self, olprops):
         logging.error("_add_custom_props_ol(): Not Implemented Yet")
 
+    def _process_sync_fields (self, fields):
+        """Convert the string representation of the mapi property tags to
+        their actual values and return as array."""
+
+        ar = []
+        for field in fields:
+            try:
+                v = getattr(mt, field)
+                ar.append(v)
+            except AttributeError, e:
+                logging.error('Field %s not found', field)
+
+        return ar
+
 def main (argv=None):
     tests = TestOLContact()
-    tests.test_sync_status()
+    tests.test_new_contact()
+    #    tests.test_sync_status()
 
 class TestOLContact:
     def __init__ (self):
@@ -578,9 +700,9 @@ class TestOLContact:
 
     def test_new_contact (self):
         c = OLContact(self.deff)
-        c.set_name('Goofy Ball')
+        c.set_name('Supeman')
         c.set_gender('Male')
-        c.set_notes('This is a test from the newly created good stuff')
+        c.set_notes('This is a second test contact')
         c.save()
 
     def test_sync_status (self):
