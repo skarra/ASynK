@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sat Mar 31 01:10:18 IST 2012
+## Last Modified : Mon Apr 02 20:07:40 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -24,6 +24,18 @@ class GCContact(Contact):
 
     def __init__ (self, folder, con=None, gce=None):
         Contact.__init__(self, folder, con)
+
+        ## Sometimes we might be creating a contact object from Outlook or
+        ## other entry which might have the google contact ID in its sync tags
+        ## field. if that is present, we should use it to initialize the
+        ## itemid field for the current object
+
+        try:
+            ## FIXME: fix the hard coded stuff below.
+            itemid = con.get_sync_tags('asynk:gc:id')
+            self.set_itemid(itemid)
+        except KeyError, e:
+            logging.debug("Hm, nothing found; move on.")
 
         self.set_gce(gce)
         if gce:
@@ -57,9 +69,9 @@ class GCContact(Contact):
     ## Now onto the non-abstract methods.
     ##
 
-    def get_gce (self):
+    def get_gce (self, refresh=False):
         gce = self._get_att('gce')
-        if gce:
+        if gce and (not refresh):
             return gce
 
         return self.init_gce_from_props()
@@ -78,6 +90,7 @@ class GCContact(Contact):
         self._snarf_dates_from_gce(gce)
         self._snarf_websites_from_gce(gce)
         self._snarf_ims_from_gce(gce)
+        self._snarf_sync_tags_from_gce(gce)
 
         self._snarf_custom_props_from_gce(gce)
 
@@ -95,6 +108,7 @@ class GCContact(Contact):
         self._add_dates_to_gce(gce)
         self._add_websites_to_gce(gce)
         self._add_ims_to_gce(gce)
+        self._add_sync_tags_to_gce(gce)
 
         self._add_custom_props_to_gce(gce)
 
@@ -115,6 +129,7 @@ class GCContact(Contact):
 
     def _snarf_itemid_from_gce (self, ce):
         if ce.id:
+            logging.debug('set itemid for google entry')
             self.set_itemid(ce.id.text)
 
     def _snarf_names_gender_from_gce (self, ce):
@@ -242,7 +257,16 @@ class GCContact(Contact):
                 if im.prim:
                     self.set_im_prim(im.address)
 
-    def _snarf_custom_props_from_gce (self, ce):
+    def _snarf_sync_tags_from_gce (self, ce):
+        logging.error("_snarf_sync_tags(): Not Implemented Yet")
+        if ce.user_defined_field:
+            keyprefix = (self.get_config().get_label_prefix() +
+                         self.get_config().get_label_separator())
+            self.set_sync_tags(get_udp_by_key_prefix(ce.user_defined_field,
+                                                     keyprefix))
+            print '===== sync_tags: ', self.get_sync_tags()
+
+    def _snarf_custom_props_from_gce (self, ce):        
         logging.error("_snarf_custom_props(): Not Implemented Yet")
 
     def _is_valid_phone_number (self, phone, type, name):
@@ -260,7 +284,7 @@ class GCContact(Contact):
     def _add_itemid_to_gce (self, gce):
         itemid = self.get_itemid()
         if itemid:
-            gce.id = atom.data.Id(text=gcid)
+            gce.id = atom.data.Id(text=itemid)
 
     def _add_names_gender_to_gce (self, gce):
         """Populate the Name fields in gce, which is a Google ContactEntry
@@ -278,7 +302,6 @@ class GCContact(Contact):
             n.family_name = gdata.data.FamilyName(text=text)
 
         text = self.get_name()
-        print 'name: ', text
         if text:
             n.full_name = gdata.data.FullName(text=text)
 
@@ -337,18 +360,24 @@ class GCContact(Contact):
         email_prim = self.get_email_prim()
 
         for email in self.get_email_home():
+            if not email:
+                continue
             prim = 'true' if email == email_prim else 'false'
             em = gdata.data.Email(address=email, primary=prim,
                                   rel=gdata.data.HOME_REL)
             gce.email.append(em)
 
         for email in self.get_email_work():
+            if not email:
+                continue
             prim = 'true' if email == email_prim else 'false'
             em = gdata.data.Email(address=email, primary=prim,
                                   rel=gdata.data.WORK_REL)
             gce.email.append(em)
 
         for email in self.get_email_other():
+            if not email:
+                continue
             prim = 'true' if email == email_prim else 'false'
             em = gdata.data.Email(address=email, primary=prim,
                                   rel=gdata.data.OTHER_REL)
@@ -395,24 +424,32 @@ class GCContact(Contact):
         ph_prim = self.get_phone_prim()
 
         for ph in self.get_phone_home():
+            if not ph:
+                continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
                                            rel=gdata.data.HOME_REL)
             gce.phone_number.append(phone)
 
         for ph in self.get_phone_work():
+            if not ph:
+                continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
                                            rel=gdata.data.WORK_REL)
             gce.phone_number.append(phone)
 
         for ph in self.get_phone_other():
+            if not ph:
+                continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
                                            rel=gdata.data.OTHER_REL)
             gce.phone_number.append(phone)
 
         for ph in self.get_phone_mob():
+            if not ph:
+                continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
                                            rel=gdata.data.MOBILE_REL)
@@ -421,12 +458,16 @@ class GCContact(Contact):
         fax_prim = self.get_fax_prim()
 
         for fa in self.get_fax_home():
+            if not fa:
+                continue
             prim = 'true' if fa == fax_prim else 'false'
             fax  = gdata.data.PhoneNumber(text=ph, primary=prim,
                                           rel=gdata.data.HOME_FAX_REL)
             gce.phone_number.append(fax)
 
         for fa in self.get_fax_work():
+            if not fa:
+                continue
             prim = 'true' if fa == fax_prim else 'false'
             fax  = gdata.data.PhoneNumber(text=ph, primary=prim,
                                           rel=gdata.data.WORK_FAX_REL)
@@ -453,12 +494,16 @@ class GCContact(Contact):
         web_prim = self.get_web_prim()
 
         for web in self.get_web_home():
+            if not web:
+                continue
             prim = 'true' if web == web_prim else 'false'
             home = gdata.contacts.data.Website(href=web, primary=prim,
                                                rel='home-page')
             gce.website.append(home)
 
         for web in self.get_web_work():
+            if not web:
+                continue
             prim = 'true' if web == web_prim else 'false'
             work = gdata.contacts.data.Website(href=web, primary=prim,
                                                rel='work')
@@ -466,10 +511,20 @@ class GCContact(Contact):
 
     def _add_ims_to_gce (self, gce):
         im_prim = self.get_im_prim()
-        for label, addr in self.get_ims().iteritems():
+        for label, addr in self.get_im().iteritems():
             prim = 'true' if im_prim == addr else 'false'
             im = gdata.data.Im(label=label, address=addr, primary=prim)
             gce.im.append(im)
+
+    def _add_sync_tags_to_gce (self, gce):
+        ## These will be stored as extended properties. Note that if this
+        ## routine keeps appending the sync_tags tot he user_defined_fields,
+        ## with no regard for whether it already exists or not...
+        for key, val in self.get_sync_tags().iteritems():
+            ud       = gdata.contacts.data.UserDefinedField()
+            ud.key   = key
+            ud.value = val
+            gce.user_defined_field.append(ud)
 
     def _add_custom_props_to_gce (self, gce):
         ## FIXME: This needs to get implemented on priority. This is where all
