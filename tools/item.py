@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Mar 26 11:36:28 IST 2012
+## Last Modified : Mon Apr 02 15:57:14 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -40,16 +40,16 @@ class Item:
         # database. We call them 'props'. These are defined and tracked in a
         # single dictionary. Each of the derived classes will, of course, add
         # to this stuff.
-        self.props = {'itemid'      : None,
-                      'type'        : None,
-                      'sync_tags'   : {},
-                      }
+        self.props = {}
 
         # Attributes are non-persistent properties of the class or object,
         # such as references to the enclosing folder, PIMDB, etc.
         self.atts  = {'config'     : None,
                       'db'         : None,
                       'folder'     : None,
+                      'itemid'      : None,
+                      'type'        : None,
+                      'sync_tags'   : {},
                       }
 
         # Then there are many class attributes that are needed to work with
@@ -166,10 +166,10 @@ class Item:
     ## Now, the item properties
 
     def get_itemid (self):
-        return self._get_prop('itemid')
+        return self._get_att('itemid')
 
     def set_itemid (self, val):
-        self._set_prop('itemid', val)
+        self._set_att('itemid', val)
 
     def get_dbid (self):
         return self.dbid
@@ -178,34 +178,38 @@ class Item:
         self.dbid = val
 
     def get_type (self):
-        return self._get_prop('type')
+        return self._get_att('type')
 
     def set_type (self, val):
         if not val in self.valid_types:
-            raise GoutInvalidPropValueError('Invalid type: %s', val)
+            raise GoutInvalidPropValueError('Invalid type: %s' % val)
 
-        self._set_prop('type', val)
+        self._set_att('type', val)
 
     def get_sync_tags (self, destid=None):
         """Return the sync tag corresponding to specified DBID: destid. If
         destid is None, the full dictionary of sync tags is returned to the
         uesr."""
 
-        tags = self._get_prop('sync_tags')
+        tags = self._get_att('sync_tags')
         return tags[destid] if destid else tags
 
-    def set_sync_tags (self, val):
+    def set_sync_tags (self, val, save=False):
         """While this is not anticipated to be used much, this routine gives
         the flexibility to set the entire sync_tags dictionary
         wholesale. Potential use cases include clearing all existing values,
         etc."""
 
-        self._set_props('sync_tags', val)
+        self._set_att('sync_tags', val)
+        if save:
+            self.save()
 
-    def update_sync_tags (self, destid, val):
+    def update_sync_tags (self, destid, val, save=False):
         """Update the specified sync tag with given value. If the tag does not
         already exist an entry is created."""
 
-        self._update_prop('sync_tags', destid, val)
+        self._update_att('sync_tags', destid, val)
+        if save:
+            self.save()
 
 ## FIXME: This file needs extensive unit testing
