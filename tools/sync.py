@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Mon Apr 02 20:11:00 IST 2012
+## Last Modified : Mon Apr 02 20:21:10 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -539,12 +539,6 @@ class TestSync:
                 user = arg
             elif option == '--pw':
                 pw = arg
-
-        if not user:
-            user = 'karra.etc'
-
-        if not pw:
-            pw = 'JanaIvetcetc'
 
         while not user:
             user = raw_input('Please enter your username: ')
