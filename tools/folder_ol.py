@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Apr 02 15:49:41 IST 2012
+## Last Modified : Tue Apr 03 18:10:43 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -95,7 +95,7 @@ class OLFolder(Folder):
             (gid_tag, gid), (entryid_tag, entryid), (tt, modt) = rows[0]
             b64_entryid = base64.b64encode(entryid)
 
-            sl.add_all(b64_entryid, gid)
+            sl.add_entry(b64_entryid, gid)
 
             if mapitags.PROP_TYPE(gid_tag) == mapitags.PT_ERROR:
                 # Was not synced for whatever reason.
@@ -115,7 +115,7 @@ class OLFolder(Folder):
 
         logging.debug('==== OL =====')
         logging.debug('num processed : %5d', i)
-        logging.debug('num total     : %5d', len(sl.get_all().items()))
+        logging.debug('num total     : %5d', len(sl.get_entries()))
         logging.debug('num new       : %5d', len(sl.get_news()))
         logging.debug('num mod       : %5d', len(sl.get_mods()))
         logging.debug('num old unmod : %5d', old)
@@ -131,15 +131,61 @@ class OLFolder(Folder):
         olc = OLContact(self, eid=eid)
         return olc
 
-    def batch_create (self, items):
+    def find_items (self, iids):
+        return [OLContact(self, eid=base64.b64decode(iid)) for iid in iids]
+
+    def batch_create (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        my_dbid = self.get_dbid()
+        c       = self.get_config()
+        src_sync_tag = utils.get_sync_label_from_dbid(c, src_dbid)
+        dst_sync_tag = utils.get_sync_label_from_dbid(c, my_dbid)
 
-    def batch_update (self, items):
+        for item in items:
+            olc = OLContact(self, con=item)
+            rid = item.get_itemid()
+            olc.update_sync_tags(src_sync_tag, rid)
+
+            ## FIXME: I strongly suspect this is not the most efficient way to
+            ## do this. We should test by importing items in bulk into
+            ## Outlook and measure performance, and fix this if needed.
+
+            eid = olc.save()
+            iid = olc.get_itemid()
+            item.update_sync_tags(dst_sync_tag, iid)
+
+    def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        store = self.get_msgstore().get_obj()
+        for item in items:
+            olc = OLContact(self, con=item)
+            olprops = olc.get_olprops()
+
+            def_cols = self.get_def_cols()
+            oli = olc.get_olitem()
+
+            ## Wipe out the sucker
+            try:
+                hr, ps = oli.DeleteProps(def_cols)
+            except Exception, e:
+                logging.error('%s: Could not clear our MAPI props for: %s',
+                              'gc:batch_update()', item.get_name())
+
+            ## Now shove the new property set in
+            try:
+                hr, ps = oli.SetProps(olprops)
+                oli.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+                logging.info('Successfully updated changes to Outlook for %s',
+                             item.get_name())
+            except Exception, e:
+                logging.error('%s: Could not set new props set for: %s',
+                              'gc:batch_update()', item.get_name())
+
+    def writeback_sync_tags (self, items):
+        for item in items:
+            item.save_sync_tags()
 
     def bulk_clear_sync_flags (self, dbids):
         """See the documentation in folder.Folder.
@@ -147,12 +193,20 @@ class OLFolder(Folder):
         Need to explore if there is a faster way than iterating through
         entries after a table lookup.
         """
+        print dbids
+
         for dbid in dbids:
+            tag = ''
+
             if dbid == 'gc':
                 tag = 'ASYNK_PR_GCID'
             elif dbid == 'bb':
                 tag = 'ASYNK_PR_BBID'
-        self._clear_tag(tag)
+            else:
+                continue
+
+            print 'Processing tag: ', tag
+            self._clear_tag(tag)
 
     def __str__ (self):
         if self.type == Folder.PR_IPM_CONTACT_ENTRYID:
@@ -229,7 +283,7 @@ class OLFolder(Folder):
 
         cnt = 0
         i   = 0
-        store = self.get_msgstore()
+        store = self.get_msgstore().get_obj()
         hr = ctable.SeekRow(mapi.BOOKMARK_BEGINNING, 0)
 
         while True:
@@ -439,7 +493,7 @@ class PropTags:
             except KeyError, e:
                 prop_name = [(self.PSETID_Address_GUID, 0x8084)]
                 prop_type = mapitags.PT_UNICODE
-                prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+                prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
                 return (prop_type | prop_ids[0])
 
         prev_tag      = self.get_email_prop_tag(n-1)
@@ -471,7 +525,7 @@ class PropTags:
             except KeyError, e:
                 prop_name = [(self.PSETID_Address_GUID, plid)]
                 prop_type = mapitags.PT_UNICODE
-                prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+                prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
                 return (prop_type | prop_ids[0])
 
         if n > 1:
@@ -488,42 +542,42 @@ class PropTags:
     def get_file_as_prop_tag (self):
         prop_name = [(self.PSETID_Address_GUID, 0x8005)]
         prop_type = mapitags.PT_UNICODE
-        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_due_date_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x8105)]
         prop_type = mapitags.PT_SYSTIME
-        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_date_completed_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x810f)]
         prop_type = mapitags.PT_SYSTIME
-        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_state_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x8113)]
         prop_type = mapitags.PT_LONG
-        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_complete_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x811c)]
         prop_type = mapitags.PT_BOOLEAN
-        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_recur_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x8126)]
         prop_type = mapitags.PT_BOOLEAN
-        prop_ids = self.def_cf.GetIDsFromNames(prop_name, 0)
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 

@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Apr 02 20:05:41 IST 2012
+## Last Modified : Tue Apr 03 17:14:05 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -37,7 +37,7 @@ def get_udps_by_key_prefix (udps, keyprefix):
     for ep in udps:
         if re.search(('^' + keyprefix), ep.key):
             if ep.value:
-                ret.updated({ep.key : ep.value})
+                ret.update({ep.key : ep.value})
             else:
                 value = 'Hrrmph. '
                 print 'Value: ', value
@@ -92,6 +92,7 @@ class GCContactsFolder(Folder):
         """See the documentation in folder.Folder"""
 
         logging.info('Querying Google for status of Contact Entries...')
+        stag = utils.get_sync_label_from_dbid(self.get_config(), destid)
 
         ## Sort the DBIds so dest1 has the 'lower' ID
         db1 = self.get_db().get_dbid()
@@ -112,11 +113,13 @@ class GCContactsFolder(Folder):
             logging.info('No entries in feed.')
             return
 
-        skip = 0
+        skip     = 0
+        etag_cnt = 0
 
         for i, entry in enumerate(feed.entry):
             gcid = utils.get_link_rel(entry.link, 'edit')
-            olid = get_udp_by_key(entry.user_defined_field, 'olid')
+            olid = get_udp_by_key(entry.user_defined_field, stag)
+            etag = entry.etag
             epd  = entry.deleted
 
             if epd:
@@ -132,9 +135,16 @@ class GCContactsFolder(Folder):
                 else:
                     sl.add_new(gcid)
 
+            if etag:
+                sl.add_etag(gcid, etag)
+                etag_cnt += 1
+            else:
+                sl.add_entry(gcid)
+
         logging.debug('==== GC =====')
         logging.debug('num processed    : %5d', i+1)
-        logging.debug('num total        : %5d', len(sl.get_all().items()))
+        logging.debug('num total        : %5d', len(sl.get_entries()))
+        logging.debug('num with etags   : %5d', etag_cnt)
         logging.debug('num new          : %5d', len(sl.get_news()))
         logging.debug('num mod          : %5d', len(sl.get_mods()))
         logging.debug('num del          : %5d', len(sl.get_dels()))
@@ -148,7 +158,15 @@ class GCContactsFolder(Folder):
 
         return gc
 
-    def batch_create (self, src_dbid, items):
+    def find_items (self, itemids):
+        """See documentation in folder.Folder"""
+
+        ces = self._fetch_gc_entries(itemids)
+        ret = [GCContact(self, gce=ce) for ce in ces]
+
+        return ret
+
+    def batch_create (self, src_sl, src_dbid, items):
         """See the documentation in folder.Folder"""
 
         my_dbid = self.get_dbid()
@@ -165,6 +183,7 @@ class GCContactsFolder(Folder):
             gc.update_sync_tags(src_sync_tag, bid)
 
             gce = gc.get_gce()
+
             stats.add_con(bid, new=gc, orig=item)
             f.add_insert(entry=gce, batch_id_string=bid)
             stats.incr_cnt()
@@ -217,7 +236,7 @@ class GCContactsFolder(Folder):
                               stats.get_bnum(), stats.get_cnt(),
                               stats.get_size())
 
-                rf  = self.gc.exec_batch(f)
+                rf  = self.get_db().exec_batch(f)
                 ces = stats.process_batch_response(rf)
                 [ret.append(x) for x in ces]
 
@@ -237,7 +256,7 @@ class GCContactsFolder(Folder):
 
         return ret
 
-    def batch_update (self, src_dbid, items):
+    def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
 
         # Updates and deletes on google require not just the entryid but also
@@ -249,15 +268,9 @@ class GCContactsFolder(Folder):
         # etag. (b) Modify the same entry with the local updates and send it
         # back
 
-        # gcids = []
-        # for item in items:
-        #     print 'processing item: ', item.get_itemid()
-        #     print '\tname: ', item.get_name()
-        #     print '\ttags: ', item.get_sync_tags()
-
-        #     gcids.append(item.get_sync_tags('asynk:gc:id'))
         gcids = [item.get_sync_tags('asynk:gc:id') for item in items]
-        ces = self._fetch_gc_entries(gcids)
+        logging.debug('Refreshing etags for modified entries...')
+        ces   = self._fetch_gc_entries(gcids)
         etags = [ce.etag for ce in ces]
 
         my_dbid = self.get_dbid()
@@ -283,7 +296,7 @@ class GCContactsFolder(Folder):
             if stats.get_cnt() % self.get_batch_size() == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more. FIXME.
-                logging.debug('Uploading new batch # %02d to Google. ' +
+                logging.debug('Uploading mod batch # %02d to Google. ' +
                               'Count: %3d. Size: %6.2fK',
                               stats.get_bnum(), stats.get_cnt(),
                               stats.get_size())
@@ -291,16 +304,61 @@ class GCContactsFolder(Folder):
                 stats.process_batch_response(rf)
 
                 f = self.get_db().new_feed()
-                stats = BatchState(stats.get_bnum()+1, f, 'insert',
+                stats = BatchState(stats.get_bnum()+1, f, 'update',
                                    sync_tag=dst_sync_tag)
            
         # Upload any leftovers
         if stats.get_cnt() > 0:
-            logging.debug('New Batch # %02d. Count: %3d. Size: %5.2fK',
+            logging.debug('Mod Batch # %02d. Count: %3d. Size: %5.2fK',
                           stats.get_bnum(), stats.get_cnt(),
                           stats.get_size())
             rf = self.get_db().exec_batch(f)
             stats.process_batch_response(rf)
+
+    def writeback_sync_tags (self, items):
+        ## FIXME: fix the hardcoding below
+        stag  = 'asynk:ol:id'
+        f     = self.get_db().new_feed()
+        stats = BatchState(1, f, 'Writeback olid', sync_tag=stag)
+
+        for item in items:
+            etag = item.get_etag()
+            if not etag:
+                logging.error('GC (%s: %s) is expected to have a etag.',
+                              item.get_name(), item.get_itemid())
+                continue
+
+            iid = item.get_sync_tags(stag)
+            gce = item.get_gce()
+
+            stats.add_con(iid, new=gce, orig=item)
+            f.add_update(entry=gce, batch_id_string=iid)
+            stats.incr_cnt()
+            
+            if stats.get_cnt() % self.get_batch_size() == 0:
+                # Feeds have to be less than 1MB. We can push this some
+                # more. FIXME.
+                logging.info('Uploading Oulook EntryIDs to Google...')
+                logging.debug('Batch #%02d. Count: %3d. Size: %6.2fK',
+                              stats.get_bnum(), stats.get_cnt(),
+                              stats.get_size())
+
+                rf = self.get_db().exec_batch(f)
+                stats.process_batch_response(rf)
+
+                f = self.get_db().new_feed()
+                stats = BatchState(stats.get_bnum()+1, f, 'Writeback olid',
+                                   sync_tag=dst_sync_tag)
+           
+        # Upload any leftovers
+        if stats.get_cnt() > 0:
+            logging.info('Uploading Oulook EntryIDs to Google...')
+            logging.debug('Batch # %02d. Count: %3d. Size: %5.2fK',
+                          stats.get_bnum(), stats.get_cnt(),
+                          stats.get_size())
+
+            rf = self.get_db().exec_batch(f)
+            stats.process_batch_response(rf)                
 
     def bulk_clear_sync_flags (self, dbids):
         """See the documentation in folder.Folder"""
@@ -461,7 +519,8 @@ class BatchState:
                     con  = self.get_con(bid)
                     orig = self.get_orig(bid)
                     gcid = utils.get_link_rel(entry.link, 'edit')
-                    orig.update_sync_tags(self.sync_tag, gcid, save=True)
+                    orig.update_sync_tags(self.sync_tag, gcid)
+                    cons.append(orig)
 
     # .update_prop_by_name([(self.config.get_gc_guid(),
     #                        self.config.get_gc_id())],
@@ -474,6 +533,6 @@ class BatchState:
     
                     if t:
                         logging.info('Successfully %s gmail entry for %s (%s)',
-                                     t, con.get_name(), con.get_itemid())
+                                     t, con.get_name(), orig.get_itemid())
     
         return cons

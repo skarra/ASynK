@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 02 14:19:40 IST 2012
+## Last Modified : Tue Apr 03 14:18:54 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -100,20 +100,36 @@ class Folder:
         raise NotImplementedError
 
     @abstractmethod
-    def batch_create (self, items):
+    def find_items (self, itemids):
+        """Return an array of Items whose ids are in the specified array."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def batch_create (self, src_sl, src_dbid, items):
         """Insert new items into the database. entries is a list of objects
         derived from pimdb.Item. This routine will ensure relevant fields are
         fetched - which will invoke the source db implementation to get the
         properies and use it to create an appropriate Item type object for
         the destination folder and then store it in the folder
-        persistently."""
+        persistently. On successful creation, the other side ID should be
+        filled out in the sync tag"""
 
         raise NotImplementedError
 
     @abstractmethod
-    def batch_update (self, items):
+    def batch_update (self, src_sl, src_dbid, items):
         """Update already existing items to new contents. items is a list of
         objects derived from pimdb.Item."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def writeback_sync_tags (self, items):
+        """After a create operation (above), the IDs will need to be written
+        on the other side DB. This routine should do that. The operation is
+        explicitly separated out because it could be a batch operation by
+        itself, for e.g. for Google Contacts"""
 
         raise NotImplementedError
 

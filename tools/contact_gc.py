@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 02 20:07:40 IST 2012
+## Last Modified : Tue Apr 03 17:15:14 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -17,6 +17,7 @@ import atom, gdata.contacts.data, gdata.contacts.client
 
 import utils
 from   contact    import Contact
+import folder_gc
 
 class GCContact(Contact):
     """This class extends the Contact abstract base class to wrap a Google
@@ -30,12 +31,14 @@ class GCContact(Contact):
         ## field. if that is present, we should use it to initialize the
         ## itemid field for the current object
 
-        try:
-            ## FIXME: fix the hard coded stuff below.
-            itemid = con.get_sync_tags('asynk:gc:id')
-            self.set_itemid(itemid)
-        except KeyError, e:
-            logging.debug("Hm, nothing found; move on.")
+        if con:
+            try:
+                label = utils.get_sync_label_from_dbid(self.get_config(),
+                                                       self.get_dbid())
+                itemid = con.get_sync_tags(label)
+                self.set_itemid(itemid)
+            except Exception, e:
+                pass
 
         self.set_gce(gce)
         if gce:
@@ -78,6 +81,15 @@ class GCContact(Contact):
 
     def set_gce (self, gce):
         return self._set_att('gce', gce)
+
+    def get_etag (self):
+        try:
+            return self._get_att('etag')
+        except Exception, e:
+            return None
+
+    def set_etag (self, etag):
+        return self._set_att('etag', etag)
 
     def init_props_from_gce (self, gce):
         self._snarf_itemid_from_gce(gce)
@@ -129,8 +141,10 @@ class GCContact(Contact):
 
     def _snarf_itemid_from_gce (self, ce):
         if ce.id:
-            logging.debug('set itemid for google entry')
             self.set_itemid(ce.id.text)
+
+        if ce.etag:
+            self.set_etag(ce.etag)
 
     def _snarf_names_gender_from_gce (self, ce):
         if ce.name:
@@ -184,11 +198,8 @@ class GCContact(Contact):
 
     def _snarf_postal_from_gce (self, ce):
         if ce.structured_postal_address:
-            ## FIXME: What a pain. Who really cares for this level of detail
-            ## anyway... Look into it at some point
-            logging.error('_snarf_postal_from_gce(): Skipping structured postal')
-
-            self.set_postal(ce.structured_postal_address.formatted_address)
+            if len(ce.structured_postal_address) > 0:
+                self.set_postal(ce.structured_postal_address[0].formatted_address)
 
     def _snarf_org_details_from_gce (self, ce):
         if ce.organization:
@@ -254,37 +265,43 @@ class GCContact(Contact):
         if ce.im:
             for im in ce.im:
                 self.add_im(im.label, im.address)
-                if im.prim:
+                if im.primary:
                     self.set_im_prim(im.address)
 
     def _snarf_sync_tags_from_gce (self, ce):
-        logging.error("_snarf_sync_tags(): Not Implemented Yet")
         if ce.user_defined_field:
             keyprefix = (self.get_config().get_label_prefix() +
                          self.get_config().get_label_separator())
-            self.set_sync_tags(get_udp_by_key_prefix(ce.user_defined_field,
-                                                     keyprefix))
-            print '===== sync_tags: ', self.get_sync_tags()
+            self.set_sync_tags(folder_gc.get_udps_by_key_prefix(
+                ce.user_defined_field, keyprefix))
 
     def _snarf_custom_props_from_gce (self, ce):        
-        logging.error("_snarf_custom_props(): Not Implemented Yet")
+        #        logging.error("_snarf_custom_props(): Not Implemented Yet")
+        pass
 
-    def _is_valid_phone_number (self, phone, type, name):
+    def _is_valid_ph (self, phone, type):
         phone = phone.strip()
         valid = True
         if (phone == '' or phone == '-' or phone == '_'):
             valid = False
 
         if not valid:
-            logging.info('Invalid %12s number for contact %s. Skipping field',
-                         type, name)
+            logging.info('Invalid %s number for contact %s. Skipping field',
+                         type, self.get_name())
 
         return valid
+
+    def _is_invalid_ph (self, phone, type):
+        return (not self._is_valid_ph(phone, type))
 
     def _add_itemid_to_gce (self, gce):
         itemid = self.get_itemid()
         if itemid:
             gce.id = atom.data.Id(text=itemid)
+
+        etag = self.get_etag()
+        if etag:
+            gce.etag = etag
 
     def _add_names_gender_to_gce (self, gce):
         """Populate the Name fields in gce, which is a Google ContactEntry
@@ -424,7 +441,7 @@ class GCContact(Contact):
         ph_prim = self.get_phone_prim()
 
         for ph in self.get_phone_home():
-            if not ph:
+            if not ph or self._is_invalid_ph(ph, 'Home'):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
@@ -432,7 +449,7 @@ class GCContact(Contact):
             gce.phone_number.append(phone)
 
         for ph in self.get_phone_work():
-            if not ph:
+            if not ph or self._is_invalid_ph(ph, 'Work'):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
@@ -440,7 +457,7 @@ class GCContact(Contact):
             gce.phone_number.append(phone)
 
         for ph in self.get_phone_other():
-            if not ph:
+            if not ph or self._is_invalid_ph(ph, 'Other'):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
@@ -448,7 +465,7 @@ class GCContact(Contact):
             gce.phone_number.append(phone)
 
         for ph in self.get_phone_mob():
-            if not ph:
+            if not ph or self._is_invalid_ph(ph, 'Mobile'):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
@@ -458,18 +475,18 @@ class GCContact(Contact):
         fax_prim = self.get_fax_prim()
 
         for fa in self.get_fax_home():
-            if not fa:
+            if not fa or self._is_invalid_ph(fa, 'Home Fax'):
                 continue
             prim = 'true' if fa == fax_prim else 'false'
-            fax  = gdata.data.PhoneNumber(text=ph, primary=prim,
+            fax  = gdata.data.PhoneNumber(text=fa, primary=prim,
                                           rel=gdata.data.HOME_FAX_REL)
             gce.phone_number.append(fax)
 
         for fa in self.get_fax_work():
-            if not fa:
+            if not fa or self._is_invalid_ph(fa, 'Work Fax'):
                 continue
             prim = 'true' if fa == fax_prim else 'false'
-            fax  = gdata.data.PhoneNumber(text=ph, primary=prim,
+            fax  = gdata.data.PhoneNumber(text=fa, primary=prim,
                                           rel=gdata.data.WORK_FAX_REL)
             gce.phone_number.append(fax)
 
@@ -529,7 +546,8 @@ class GCContact(Contact):
     def _add_custom_props_to_gce (self, gce):
         ## FIXME: This needs to get implemented on priority. This is where all
         ## the sync tags and stuff will get stored.
-        logging.error("_add_custom_props(): Not Implemented Yet")
+        #        logging.error("_add_custom_props(): Not Implemented Yet")
+        pass
 
     ##
     ## Temporarily placing keeping this stuff here while we start by cleaning
@@ -563,7 +581,9 @@ class GCContact(Contact):
 
 def main ():
     tests = TestGCContact()
-    tests.test_sync_status()
+    #tests.test_sync_status()
+    #tests.test_del_item('http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/1fabc8309273c15')
+    # tests.test_del_item('http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/1fabc8309273c15')
 
 class TestGCContact:
     def __init__ (self):
@@ -613,6 +633,17 @@ class TestGCContact:
         else:
             print 'D''oh. Folder not found.'
             return
+
+    def test_find_item (self, gcid):
+        f = self.find_group(self.gid)
+        gce = f.get_gdc().GetContact(gcid)
+        logging.debug('ID  : %s', gcid)
+        logging.debug('Name: %s', gce.name.text if gce.name else None)
+
+    def test_del_item (self, gcid):
+        f = self.find_group(self.gid)
+        gce = f.get_gdc().GetContact(gcid)
+        f.get_gdc().Delete(gce)
 
     def test_create_contact (self, f=None):
         if not f:
