@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 03 18:10:43 IST 2012
+## Last Modified : Tue Apr 03 19:17:16 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -126,7 +126,6 @@ class OLFolder(Folder):
         eid = base64.b64decode(itemid)
 
         print 'itemid : ', itemid
-        print 'eid    : ', eid
 
         olc = OLContact(self, eid=eid)
         return olc
@@ -158,16 +157,22 @@ class OLFolder(Folder):
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
 
+        src_tag = utils.get_sync_label_from_dbid(self.get_config(), src_dbid)
+
         store = self.get_msgstore().get_obj()
         for item in items:
             olc = OLContact(self, con=item)
-            olprops = olc.get_olprops()
 
-            def_cols = self.get_def_cols()
-            oli = olc.get_olitem()
+            ## We lose the sync tag as well when we blow everything. To ensure
+            ## this gets recreated, put it back in.
+
+            olc.update_sync_tags(src_tag, item.get_itemid())
+            olprops = olc.get_olprops()
+            oli     = olc.get_olitem()
 
             ## Wipe out the sucker
             try:
+                def_cols = self.get_def_cols()
                 hr, ps = oli.DeleteProps(def_cols)
             except Exception, e:
                 logging.error('%s: Could not clear our MAPI props for: %s',
@@ -180,8 +185,8 @@ class OLFolder(Folder):
                 logging.info('Successfully updated changes to Outlook for %s',
                              item.get_name())
             except Exception, e:
-                logging.error('%s: Could not set new props set for: %s',
-                              'gc:batch_update()', item.get_name())
+                logging.error('%s: Could not set new props set for: %s (%s)',
+                              'gc:batch_update()', item.get_name(), e)
 
     def writeback_sync_tags (self, items):
         for item in items:
