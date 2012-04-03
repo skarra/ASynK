@@ -1,7 +1,7 @@
--*- Outline -*- 
+-*- org -*- 
 
-Created	    	: Tue Jul 12 18:45:48 IST 2011
-Last Modified	: Thu Dec 01 16:54:04 IST 2011
+Created	      : Tue Jul 12 18:45:48 IST 2011
+Last Modified : Tue Apr 03 19:19:30 IST 2012
 
 * TODO
 
@@ -21,11 +21,11 @@ branch out to experiment this.
 
 ** Features
 
-*** Support more contact fields to be uploaded
+*** BBDB Support
 
-    More contact fields need to get synched, including: 
-
-    - IM
+    As of April 2012, significant rewrite has happened on the f_tasks branch
+    setting the ground for supporting BBDB as a third database
+    provider. Interesting times lie ahead.
 
 *** Support more than one message store
 
@@ -34,7 +34,24 @@ branch out to experiment this.
     There could be more than one message store in the default Outlook
     Profile. Need to be able to look into all of them for contact items.
 
+    some preliminary support is now implemented. Not really user visible.
+
 * Done
+
+** Sync tag is lost on OL side aftear a mod update from GC
+
+    Tue Apr 03 19:02:43 IST 2012
+
+    There is a problem in the way we blow up all the props and then
+    repopulate. In this approach the original synctag is lost... This needs to
+    be fixed, and as of now this is the only known bug with the sync logic.
+
+** Support more contact fields to be uploaded
+
+    More contact fields need to get synched, including: 
+
+    - IM ... done
+
 
 ** Many key changes related to Gmail -> OL are missing
 
