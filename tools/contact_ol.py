@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Mon Apr 02 19:36:28 IST 2012
+## Last Modified : Tue Apr 03 18:02:20 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -57,6 +57,20 @@ class OLContact(Contact):
 
         Contact.__init__(self, folder, con)
 
+        ## Sometimes we might be creating a contact object from GC or other
+        ## entry which might have the Entry ID in its sync tags
+        ## field. if that is present, we should use it to initialize the
+        ## itemid field for the current object
+
+        if con:
+            try:
+                label = utils.get_sync_label_from_dbid(self.get_config(),
+                                                       self.get_dbid())
+                itemid = con.get_sync_tags(label)
+                self.set_entryid(base64.b64decode(itemid))
+            except Exception, e:
+                pass
+
         ## Set up some of the basis object attributes and parent folder/db
         ## properties to make it easier to access them
 
@@ -100,16 +114,24 @@ class OLContact(Contact):
 
         self._update_att('sync_tags', destid, val)
         if save:
-            olitem = self.get_olitem()
-            olprops = []
-            self._add_sync_tags_to_olprops(olprops)
-            try:
-                hr, res = olitem.SetProps(olprops)
-                olitem.SaveChanges(mapi.KEEP_OPEN_READWRITE)
-            except Exception, e:
-                logging.critical('Could not save synctags: %s (%s)',
-                                 olprops, e)
-                raise
+            self.save_sync_tags()
+
+    def save_sync_tags (self):
+        olitem = self.get_olitem()
+        olprops = []
+        self._add_sync_tags_to_olprops(olprops)
+        if olprops == []:
+            ## this is happening because the item could not be saved for
+            ## whatever reason on remote, and a sync tag was not set as a result.
+            return
+
+        try:
+            hr, res = olitem.SetProps(olprops)
+            olitem.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+        except Exception, e:
+            logging.critical('Could not save synctags(%s) for %s (reason: %s)',
+                             olprops, self.get_name(), e)
+            logging.critical('Will try to continue...')
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -149,13 +171,17 @@ class OLContact(Contact):
             logging.error('save: EntryID could not be found. Weird')
             return None
         else:
-            return val
+            return self.set_entryid(val)
+
     ##
     ## Now onto the non-abstract methods.
     ##
 
     def get_entryid (self):
-        return self._get_att('entryid')
+        try:
+            return self._get_att('entryid')
+        except KeyError, e:
+            return None
 
     def set_entryid (self, eid):
         """Set the entryid, and also the itemid - which is the base64 encoded
@@ -188,7 +214,11 @@ class OLContact(Contact):
         that case a None is returned. None is also returned in case of some
         error."""
 
-        res = self._get_att('olitem')
+        try:
+            res = self._get_att('olitem')
+        except KeyError, e:
+            res = None
+
         if res:
             return res
 
@@ -264,7 +294,6 @@ class OLContact(Contact):
         self._snarf_custom_props_from_olprops(olpd)
 
     def init_props_from_eid (self, eid):
-        logging.debug('init_props_from_end(): Starting..')
         self.set_entryid(eid)
         self.set_itemid(base64.b64encode(eid))
 
@@ -341,9 +370,9 @@ class OLContact(Contact):
 
         eds = self.get_email_domains()
 
-        self._snarf_email (olpd, email1, eds)
-        self._snarf_email (olpd, email2, eds)
-        self._snarf_email (olpd, email3, eds)
+        self._snarf_email(olpd, email1, eds)
+        self._snarf_email(olpd, email2, eds)
+        self._snarf_email(olpd, email3, eds)
 
     def _snarf_email (self, olpd, tag, domains):
         """Fetch the email address using the specified tag, classify the
@@ -367,13 +396,13 @@ class OLContact(Contact):
         ## the record
 
         if home:
-            self.add_email_home(e1)
-
-        if work:
-            self.add_email_work(e1)
-
-        if other:
-            self.add_email_other(e1)
+            self.add_email_home(addr)
+        elif work:
+            self.add_email_work(addr)
+        elif other:
+            self.add_email_other(addr)
+        else:
+            self.add_email_work(addr)
 
     def _classify_email_addr (self, addr, domains):
         """Return a tuple of (home, work, other) booleans classifying if the
@@ -464,7 +493,9 @@ class OLContact(Contact):
                                       valu)
 
     def _snarf_custom_props_from_olprops (self, olpd):
-        logging.error("_snarf_custom_props_ol(): Not Implemented Yet")
+        #        logging.error("_snarf_custom_props_ol(): Not Implemented
+        #        Yet")
+        pass
 
     def _get_olprop (self, olprops, key):
         if not (key in olprops.keys()):
@@ -506,10 +537,10 @@ class OLContact(Contact):
         fatag = self.get_proptags().valu('ASYNK_PR_FILE_AS')
         if self.get_fileas():
             olprops.append((fatag, self.get_fileas()))
-        else:
+        elif n:
             ## If there is no fileas set, Let's put in some default.
             ## The default should be configurable the user: FIXME
-            olprops.append((fatag, self.get_name()))
+            olprops.append((fatag, n))
 
         ln = self.get_lastname()
         if ln:
@@ -525,7 +556,7 @@ class OLContact(Contact):
 
         su = self.get_suffix()
         if su:
-            olprops.append((mt.PR_GENERATION, pr))
+            olprops.append((mt.PR_GENERATION, su))
 
     def _add_notes_to_olprops (self, olprops):
         notes = self.get_notes()
@@ -661,10 +692,12 @@ class OLContact(Contact):
             tagn = 'ASYNK_PR_%sID' % (string.upper(dbid))
             tagv = self.get_proptags().valu(tagn)
 
-            olprops.append((tagv, val))
+            if val:
+                olprops.append((tagv, val))
 
     def _add_custom_props_to_olprops (self, olprops):
-        logging.error("_add_custom_props_ol(): Not Implemented Yet")
+        #        logging.error("_add_custom_props_ol(): Not Implemented Yet")
+        pass
 
     def _process_sync_fields (self, fields):
         """Convert the string representation of the mapi property tags to
@@ -682,7 +715,10 @@ class OLContact(Contact):
 
 def main (argv=None):
     tests = TestOLContact()
-    tests.test_new_contact()
+    
+    tests.test_read_emails('AAAAADWE5+lnNclLmn8GpZUD04fE7C0A')
+
+    # tests.test_new_contact()
     #    tests.test_sync_status()
 
 class TestOLContact:
@@ -704,6 +740,22 @@ class TestOLContact:
         c.set_gender('Male')
         c.set_notes('This is a second test contact')
         c.save()
+
+    def test_read_emails (self, itemid):
+        eid = base64.b64decode(itemid)
+        olcf = self.deff
+        
+        prop_tag = olcf.get_proptags().valu('ASYNK_PR_EMAIL_1')
+        store    = olcf.get_msgstore()
+        item     = store.get_obj().OpenEntry(eid, None, mapi.MAPI_BEST_ACCESS)
+
+        hr, props = item.GetProps([prop_tag], mapi.MAPI_UNICODE)
+        (tag, val) = props[0]
+        if mt.PROP_TYPE(tag) == mt.PT_ERROR:
+            print 'Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
+                                                                (tag % (2**64)))
+        else:
+            print 'Email address found: ', val
 
     def test_sync_status (self):
         from   sync       import SyncLists

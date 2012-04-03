@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Mon Apr 02 20:21:10 IST 2012
+## Last Modified : Tue Apr 03 18:57:07 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -124,8 +124,8 @@ class Sync:
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
-        f1sl = SyncLists(f1, f2)
-        f2sl = SyncLists(f2, f1)
+        f1sl = SyncLists(f1)
+        f2sl = SyncLists(f2)
 
         f1.prep_sync_lists(f2.get_dbid(), f1sl)
         f2.prep_sync_lists(f1.get_dbid(), f2sl)
@@ -170,7 +170,7 @@ class Sync:
 
     def _prep_lists_1_way (self, f1, f2):
         logging.debug('_prep_lists_1_way(): ')
-        f1sl = SyncLists(f1, f2)
+        f1sl = SyncLists(f1)
         f1.prep_sync_lists(f2.get_dbid(), f1sl)
 
         f1_mod = f1sl.get_mods()
@@ -193,145 +193,145 @@ class Sync:
                           dirn)
             return None, None
 
-    def _fetch_gc_entries (self, gcids):
-        """gcids is a list of google contact ids to retrieve contact
-        entries for.
+    # def _fetch_gc_entries (self, gcids):
+    #     """gcids is a list of google contact ids to retrieve contact
+    #     entries for.
 
-        Returns a list of ContactEntries"""
+    #     Returns a list of ContactEntries"""
 
-        gid    = self.config.get_gid()
-        f      = self.gc.new_feed()
-        stats = Sync.BatchState(1, f, 'query')
+    #     gid    = self.config.get_gid()
+    #     f      = self.gc.new_feed()
+    #     stats = Sync.BatchState(1, f, 'query')
 
-        ret = []
+    #     ret = []
 
-        for gcid in gcids:
-            ce = gdata.contacts.data.ContactEntry()
-            ce.id = atom.data.Id(text=gcid)
-            stats.add_con(gcid, ce)
+    #     for gcid in gcids:
+    #         ce = gdata.contacts.data.ContactEntry()
+    #         ce.id = atom.data.Id(text=gcid)
+    #         stats.add_con(gcid, ce)
 
-            f.add_query(entry=ce, batch_id_string=gcid)
-            stats.incr_cnt()
+    #         f.add_query(entry=ce, batch_id_string=gcid)
+    #         stats.incr_cnt()
 
-            if stats.get_cnt() % self.BATCH_SIZE == 0:
-                # Feeds have to be less than 1MB. We can push this some
-                # more
-                logging.debug('Qry Batch # %02d. Count: %3d. Size: %6.2fK',
-                              stats.get_bnum(), stats.get_cnt(),
-                              stats.get_size())
+    #         if stats.get_cnt() % self.BATCH_SIZE == 0:
+    #             # Feeds have to be less than 1MB. We can push this some
+    #             # more
+    #             logging.debug('Qry Batch # %02d. Count: %3d. Size: %6.2fK',
+    #                           stats.get_bnum(), stats.get_cnt(),
+    #                           stats.get_size())
 
-                rf  = self.gc.exec_batch(f)
-                ces = self.process_batch_response(rf, stats)
-                [ret.append(x) for x in ces]
+    #             rf  = self.gc.exec_batch(f)
+    #             ces = self.process_batch_response(rf, stats)
+    #             [ret.append(x) for x in ces]
 
-                f = self.gc.new_feed()
-                s = Sync.BatchState(stats.get_bnum()+1, f, 'query')
-                stats = s
+    #             f = self.gc.new_feed()
+    #             s = Sync.BatchState(stats.get_bnum()+1, f, 'query')
+    #             stats = s
 
-        # Process any leftovers
-        if stats.get_cnt() > 0:
-            logging.debug('Qry Batch # %02d. Count: %3d. Size: %5.2fK',
-                          stats.get_bnum(), stats.get_cnt(),
-                          stats.get_size())
+    #     # Process any leftovers
+    #     if stats.get_cnt() > 0:
+    #         logging.debug('Qry Batch # %02d. Count: %3d. Size: %5.2fK',
+    #                       stats.get_bnum(), stats.get_cnt(),
+    #                       stats.get_size())
             
-            rf  = self.gc.exec_batch(f)
-            ces = self.process_batch_response(rf, stats)
-            [ret.append(x) for x in ces]
+    #         rf  = self.gc.exec_batch(f)
+    #         ces = self.process_batch_response(rf, stats)
+    #         [ret.append(x) for x in ces]
 
-        return ret
+    #     return ret
 
-    def _get_new_gc_to_ol (self):
-        logging.info('=====================================================')
-        logging.info('   Fetching new entries from Google Contacts')
-        logging.info('=====================================================')
-        logging.info('Querying status from Google...')
+    # def _get_new_gc_to_ol (self):
+    #     logging.info('=====================================================')
+    #     logging.info('   Fetching new entries from Google Contacts')
+    #     logging.info('=====================================================')
+    #     logging.info('Querying status from Google...')
 
-        ces = self._fetch_gc_entries(self.gc.get_con_new())
-        if ces and len(ces)>0:
-            resp = '%d new entries created on Google will be copied.' % len(ces)
-        else:
-            resp = 'No new contacts found in Google Contacts. Nothing to copy.'
+    #     ces = self._fetch_gc_entries(self.gc.get_con_new())
+    #     if ces and len(ces)>0:
+    #         resp = '%d new entries created on Google will be copied.' % len(ces)
+    #     else:
+    #         resp = 'No new contacts found in Google Contacts. Nothing to copy.'
 
-        logging.info(resp)
+    #     logging.info(resp)
 
-        self._write_ces_to_ol(ces)
+    #     self._write_ces_to_ol(ces)
 
-    def _get_mod_gc_to_ol (self):
-        """Fetch the entries that we know have been modified on Google side
-        and that we want to store in Outlook."""
+    # def _get_mod_gc_to_ol (self):
+    #     """Fetch the entries that we know have been modified on Google side
+    #     and that we want to store in Outlook."""
 
-        logging.info('=====================================================')
-        logging.info('   Fetching modified entries from Google Contacts')
-        logging.info('=====================================================')
-        logging.info('Querying status from Google...')
+    #     logging.info('=====================================================')
+    #     logging.info('   Fetching modified entries from Google Contacts')
+    #     logging.info('=====================================================')
+    #     logging.info('Querying status from Google...')
 
-        ces = self._fetch_gc_entries(self.gc.get_con_mod().keys())
+    #     ces = self._fetch_gc_entries(self.gc.get_con_mod().keys())
 
-        if ces and len(ces)>0:
-            resp = '%d modified contacts from Google will be copied.' % len(ces)
-        else:
-            resp = 'No contacts modified in Google Contacts. Nothing to copy.'
+    #     if ces and len(ces)>0:
+    #         resp = '%d modified contacts from Google will be copied.' % len(ces)
+    #     else:
+    #         resp = 'No contacts modified in Google Contacts. Nothing to copy.'
 
-        logging.info(resp)
+    #     logging.info(resp)
 
-        # Synching entries modified on Google is nothing but deleting local
-        # copies in Outlook and creating fresh entries. This is hack, and in
-        # future we might decide to implement a 'inplace' updatiion. TODO.
-        self._write_ces_to_ol(ces)
+    #     # Synching entries modified on Google is nothing but deleting local
+    #     # copies in Outlook and creating fresh entries. This is hack, and in
+    #     # future we might decide to implement a 'inplace' updatiion. TODO.
+    #     self._write_ces_to_ol(ces)
 
-        eids = [base64.b64decode(x) for x in self.gc.get_con_mod().values()]
-        self.olcf.del_entries(eids)
+    #     eids = [base64.b64decode(x) for x in self.gc.get_con_mod().values()]
+    #     self.olcf.del_entries(eids)
 
-    def _write_ces_to_ol (self, ces, writeback_olid=True):
-        """ces is a list of ContactEntry objects which need to be saved to
-        outlook. If the entires do not exist in Outlook we will need to save
-        hte Outlook EntryIDs to Google on successful save to Outlook. This
-        step can be skipped if we are only writing modifications and an entry
-        already exists in Outlook. The writeback behaviour is controlled by
-        the value of the writeback_olid parameter."""
+    # def _write_ces_to_ol (self, ces, writeback_olid=True):
+    #     """ces is a list of ContactEntry objects which need to be saved to
+    #     outlook. If the entires do not exist in Outlook we will need to save
+    #     hte Outlook EntryIDs to Google on successful save to Outlook. This
+    #     step can be skipped if we are only writing modifications and an entry
+    #     already exists in Outlook. The writeback behaviour is controlled by
+    #     the value of the writeback_olid parameter."""
 
-        f = self.gc.new_feed()
-        stats = Sync.BatchState(1, f, 'Writeback olid')
+    #     f = self.gc.new_feed()
+    #     stats = Sync.BatchState(1, f, 'Writeback olid')
 
-        for ce in ces:
-            c  = Contact(fields=self.fields, config=self.config,
-                         ol=self.ol, entryid=None, props=None,
-                         gcapi=self.gc, gcentry=ce, data_from_ol=False)
+    #     for ce in ces:
+    #         c  = Contact(fields=self.fields, config=self.config,
+    #                      ol=self.ol, entryid=None, props=None,
+    #                      gcapi=self.gc, gcentry=ce, data_from_ol=False)
 
-            # Save changes in Outlook and write back the olid to the Google
-            # Entry
+    #         # Save changes in Outlook and write back the olid to the Google
+    #         # Entry
 
-            eid = c.push_to_outlook()
-            bid = base64.b64encode(eid)
-            stats.add_con(bid, c)
+    #         eid = c.push_to_outlook()
+    #         bid = base64.b64encode(eid)
+    #         stats.add_con(bid, c)
 
-            ce = self.gc.add_olid_to_ce(ce, eid)
+    #         ce = self.gc.add_olid_to_ce(ce, eid)
 
-            if (writeback_olid):
-                f.add_update(entry=ce, batch_id_string=bid)
-                stats.incr_cnt()
+    #         if (writeback_olid):
+    #             f.add_update(entry=ce, batch_id_string=bid)
+    #             stats.incr_cnt()
 
-                if stats.get_cnt() % self.BATCH_SIZE == 0:
-                    logging.info('Uploading Oulook EntryIDs to Google...')
-                    logging.debug('Batch #%02d. Count: %3d. Size: %6.2fK',
-                                  stats.get_bnum(), stats.get_cnt(),
-                                  stats.get_size())
+    #             if stats.get_cnt() % self.BATCH_SIZE == 0:
+    #                 logging.info('Uploading Oulook EntryIDs to Google...')
+    #                 logging.debug('Batch #%02d. Count: %3d. Size: %6.2fK',
+    #                               stats.get_bnum(), stats.get_cnt(),
+    #                               stats.get_size())
     
-                    rf = self.gc.exec_batch(f)
-                    self.process_batch_response(rf, stats)
+    #                 rf = self.gc.exec_batch(f)
+    #                 self.process_batch_response(rf, stats)
      
-                    f = self.gc.new_feed()
-                    s = Sync.BatchState(stats.get_bnum()+1, f, 'Writeback olid')
-                    stats = s
+    #                 f = self.gc.new_feed()
+    #                 s = Sync.BatchState(stats.get_bnum()+1, f, 'Writeback olid')
+    #                 stats = s
 
-        # Upload any leftovers
-        if writeback_olid and stats.get_cnt() > 0:
-            logging.info('Uploading Oulook EntryIDs to Google...')
-            logging.debug('Batch # %02d. Count: %3d. Size: %5.2fK',
-                          stats.get_bnum(), stats.get_cnt(),
-                          stats.get_size())
-            rf = self.gc.exec_batch(f)
-            self.process_batch_response(rf, stats)
+    #     # Upload any leftovers
+    #     if writeback_olid and stats.get_cnt() > 0:
+    #         logging.info('Uploading Oulook EntryIDs to Google...')
+    #         logging.debug('Batch # %02d. Count: %3d. Size: %5.2fK',
+    #                       stats.get_bnum(), stats.get_cnt(),
+    #                       stats.get_size())
+    #         rf = self.gc.exec_batch(f)
+    #         self.process_batch_response(rf, stats)
 
     def _del_ol (self):
         pass
@@ -382,12 +382,14 @@ class SyncLists:
     """Wrapper around lists of items that need to be synched from one place to
     another. Just for convenience."""
 
-    def __init__ (self, fold, db2id):
-        self.fold = fold
-        self.db1id = fold.get_dbid()
-        self.db2id = db2id
+    def __init__ (self, src_fold):
+        """fold is the source for the entries."""
+        self.fold  = src_fold
+        self.db1id = self.fold.get_dbid()
 
-        self.all  = {}                    # Not sure we need this?
+        # Has of ID to Etag where appliable (like in Google Contacts. or just
+        # a ID : None mapping to mark presence.
+        self.all  = {}
         self.news = []
         self.mods = {}                    # Hash of f1 id -> f2 id
         self.dels = {}
@@ -408,9 +410,6 @@ class SyncLists:
         d = dict([(x,y) for x,y in d.iteritems() if not y in v])
         return d
 
-    def add_all (self, f1id, f2id):
-        self.all.update({f1id : f2id})
-
     def add_new (self, fid):
         self.news.append(fid)
 
@@ -420,8 +419,26 @@ class SyncLists:
     def add_del (self, f1id, f2id):
         self.dels.update({f1id : f2id})
 
-    def get_all (self):
-        return self.all
+    def entry_exists (self, f1id):
+        try:
+            val = self.all[f1id]
+            return True
+        except KeyError, e:
+            return False
+
+    def add_entry (self, f1id, f2id):
+        self.add_etag(f1id, f2id)
+
+    def get_entries (self):
+        return self.all.keys()
+
+    ## Just an alias for add_entry; used to clarify the nature of the value
+    ## being added.
+    def add_etag (self, f1id, f2id):
+        self.all.update({f1id : f2id})
+
+    def get_etag (self, f1id):
+        return self.all[f1id]
 
     def get_news (self):
         return self.news
@@ -445,24 +462,9 @@ class SyncLists:
             logging.info('No new entries that need to be synched')
             return
 
-        batch_size = df.get_batch_size()
-        batch = []
-        i = 0
-        for itemid in self.get_news():
-            item = self.fold.find_item(itemid)
-            logging.debug('Processing %s...', item.get_name())
-
-            if i < batch_size:
-                i += 1
-                batch.append(item)
-            else:
-                i = 0
-                df.batch_create(self.db1id, batch)
-                batch = []
-
-        # Deal with any leftovers
-        if len(batch) > 0:
-            df.batch_create(self.db1id, batch)
+        items = self.fold.find_items(self.get_news())
+        df.batch_create(self, self.db1id, items)
+        self.fold.writeback_sync_tags(items)
 
     ## FIXME: There appears to be a lot of code repitition between the above
     ## routine and this one. Eplore how to eliminate this stuff...
@@ -479,24 +481,8 @@ class SyncLists:
             logging.info('No modified entries that need to be synched')
             return
 
-        batch_size = df.get_batch_size()
-        batch = []
-        i = 0
-        for itemid in self.get_mods():
-            item = self.fold.find_item(itemid)
-            logging.debug('Processing %s...', item.get_name())
-
-            if i < batch_size:
-                i += 1
-                batch.append(item)
-            else:
-                i = 0
-                df.batch_update(self.db1id, batch)
-                batch = []
-
-        # Deal with any leftovers
-        if len(batch) > 0:
-            df.batch_update(self.db1id, batch)
+        items = self.fold.find_items(self.get_mods())
+        df.batch_update(self, self.db1id, items)
 
     def send_dels_to_folder (self, df):
         """df is the destination folder."""
@@ -509,9 +495,13 @@ class SyncLists:
 
 def main ():
     tests = TestSync()
-    #    tests.test_sync_status()
+
+    # tests.test_sync_status()
     tests.test_sync()
-    # tests.read_gcid('AAAAADWE5+lnNclLmn8GpZUD04ekP2MA')
+
+    # tests.test_clear_ol_sync_flags()
+
+    # tests.del_gcid('AAAAADWE5+lnNclLmn8GpZUD04fEQGMA')
     # tests.read_gcid('AAAAADWE5+lnNclLmn8GpZUD04ekQGMA')
 
 class TestSync:
@@ -559,7 +549,30 @@ class TestSync:
 
         return OLPIMDB(self.config)
 
+    def del_gcid (self, itemid):
+        ## This should really go into contact_ol.py
+        from win32com.mapi import mapi, mapitags
+        import winerror
+        from contact_ol import OLContact
+
+        olcf     = self.pimol.get_def_folder()
+        eid      = base64.b64decode(itemid)
+        
+        prop_tag = olcf.get_proptags().valu('ASYNK_PR_GCID')
+        store    = olcf.get_msgstore()
+        item     = store.get_obj().OpenEntry(eid, None, mapi.MAPI_BEST_ACCESS)
+
+        hr, ps = item.DeleteProps([prop_tag])
+        item.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+
+        if winerror.FAILED(hr):
+            logging.info('Failed to clear GCID for itemid: %s (%s)',
+                         itemid, winerror.HRESULT_CODE(hr))
+        else:
+            logging.info('Successfully Cleared GCID for itemid: %s', itemid)
+
     def read_gcid (self, itemid):
+        ## This should really go into contact_ol.py
         from win32com.mapi import mapi, mapitags
         from contact_ol import OLContact
 
@@ -582,18 +595,23 @@ class TestSync:
         olcf = self.pimol.get_def_folder()
         gccf = self.find_group(self.gid)
 
-        self.sync = Sync(self.config, olcf, gccf)
+        self.sync = Sync(self.config, gccf, olcf)
         self.sync._prep_lists()
 
     def test_sync (self):
-        logging.debug('test_sync()... Starting Sync')
+        logging.debug('test_sync()... Starting Sync to Outlook')
         olcf = self.pimol.get_def_folder()
         gccf = self.find_group(self.gid)
 
         self.sync = Sync(self.config, olcf, gccf)
         sl1, sl2 = self.sync._prep_lists()
         sl1.sync_to_folder(gccf)
+        sl2.sync_to_folder(olcf)
         logging.debug('test_sync()... Finished Sync')
+
+    def test_clear_ol_sync_flags (self):
+        olcf = self.pimol.get_def_folder()
+        olcf.bulk_clear_sync_flags(['bb', 'gc'])
 
     def find_group (self, gid):
         gc, ftype = self.pimgc.find_folder(gid)
