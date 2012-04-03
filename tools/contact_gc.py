@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 03 17:15:14 IST 2012
+## Last Modified : Tue Apr 03 19:12:01 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -199,7 +199,8 @@ class GCContact(Contact):
     def _snarf_postal_from_gce (self, ce):
         if ce.structured_postal_address:
             if len(ce.structured_postal_address) > 0:
-                self.set_postal(ce.structured_postal_address[0].formatted_address)
+                fa = ce.structured_postal_address[0].formatted_address
+                self.set_postal(fa.text)
 
     def _snarf_org_details_from_gce (self, ce):
         if ce.organization:
