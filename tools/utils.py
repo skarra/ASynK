@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Mon Apr 02 14:54:10 IST 2012
+## Last Modified : Sat Apr 07 23:44:09 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -8,6 +8,16 @@
 ## 
 
 import re
+
+def chompq (s):
+    """Remove any leading and trailing quotes from the passed string."""
+    if len(s) <= 2:
+        return s
+
+    if s[0] == '"' and s[len(s)-1] == '"':
+        return s[1:len(s)-1]
+    else:
+        return s
 
 ## The follow is a super cool implementation of enum equivalent in
 ## Python. Taken with a lot of gratitude from this post on Stackoverflow:
