@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 02 14:08:49 IST 2012
+## Last Modified : Sat Apr 07 16:13:11 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -31,7 +31,7 @@ class Contact(Item):
         Item.__init__(self, folder)
 
         self.props.update({'firstname'    : None, 'company'      : None,
-                           'lastname'     : None, 'postal'       : None,
+                           'lastname'     : None, 'postal'       : {},
                            'name'         : None, 'notes'        : [],
                            'suffix'       : None, 'phone_home'   : [],
                            'title'        : None, 'phone_work'   : [],
@@ -46,6 +46,7 @@ class Contact(Item):
                            'fileas'       : None, 'email_other'  : [],
                            'prefix'       : None, 'email_prim'   : None,
                            'im'           : {},   'im_prim'      : None,
+                           'custom'       : {},
                            })
 
         if con:
@@ -72,6 +73,18 @@ class Contact(Item):
             # logging.debug('setting value (%s) using method: %s',
             #               val, set_method)
             getattr(self, set_method)(val)
+
+    def get_db_config (self):
+        return self._get_att('db_config')
+
+    def set_db_config (self, dbc):
+        return self._set_att('db_config', dbc)
+
+    def get_email_domains (self):
+        return self._get_att('email_domains')
+
+    def set_email_domains (self, sf):
+        return self._set_att('email_domains', sf)
 
     def get_firstname (self):
         return self._get_prop('firstname')
@@ -192,11 +205,25 @@ class Contact(Item):
         if val:
             return self._set_prop('dept', val)
 
-    def get_postal (self):
-        return self._get_prop('postal')
+    def get_postal (self, which=None):
+        postals = self._get_prop('postal')
+        if which:
+            return postals[which]
+        else:
+            return postals
 
     def set_postal (self, val):
         return self._set_prop('postal', val)
+
+    def add_postal (self, which, val):
+        return self._update_prop('postal', which, val)
+
+    def add_postal_detail (self, which, detail, val):
+        postal = self.get_postal(which)
+        if postal:
+            postal.update({detail : val})
+        else:
+            self.set_postal(which, {detail : val})
 
     def get_notes (self):
         return self._get_prop('notes')
@@ -330,6 +357,18 @@ class Contact(Item):
     def add_im (self, which, val):
         return self._update_prop('im', which, val)
 
+    def get_custom (self, which=None):
+        custs = self._get_prop('custom')
+        if which:
+            return custs[which]
+        else:
+            return custs
+
+    def set_custom (self, val):
+        return self._set_prop('custom', val)
+
+    def add_custom (self, which, val):
+        return self._update_prop('custom', which, val)
 
 ## FIXME: This file needs extensive unit testing. There's quite a bit of
 ## pseudo-repititive codet hat has been produced by manual cop-n-paste, which

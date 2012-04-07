@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 02 15:57:14 IST 2012
+## Last Modified : Sat Apr 07 22:07:26 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -211,5 +211,14 @@ class Item:
         self._update_att('sync_tags', destid, val)
         if save:
             self.save()
+
+    def __str__ (self):
+        ret = ''
+
+        props = self.get_prop_names()
+        for prop in props:
+            ret += '%18s: %s\n' % (prop, self._get_prop(prop))
+
+        return ret
 
 ## FIXME: This file needs extensive unit testing

@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Tue Apr 03 18:02:20 IST 2012
+## Last Modified : Sat Apr 07 22:17:54 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -195,12 +195,6 @@ class OLContact(Contact):
         self.set_itemid(base64.b64encode(eid))
         return eid
 
-    def get_db_config (self):
-        return self._get_att('db_config')
-
-    def set_db_config (self, dbc):
-        return self._set_att('db_config', dbc)
-
     def get_proptags (self):
         return self.proptags
 
@@ -240,12 +234,6 @@ class OLContact(Contact):
 
     def set_sync_fields (self, sf):
         return self._set_att('sync_fields', sf)
-
-    def get_email_domains (self):
-        return self._get_att('email_domains')
-
-    def set_email_domains (self, sf):
-        return self._set_att('email_domains', sf)
 
     def get_olprops (self, refresh=True):
         """Get an array of property tuples (tag, value) that is useful in MAPI
@@ -328,15 +316,6 @@ class OLContact(Contact):
         self._add_custom_props_to_olprops(olprops)
 
         return self.set_olprops(olprops)
-
-    def __str__ (self):
-        ret = ''
-
-        props = self.get_prop_names()
-        for prop in props:
-            ret += '%18s: %s\n' % (prop, self._get_prop(prop))
-
-        return ret
 
     ##
     ## Internal functions that are not inteded to be called from outside.
