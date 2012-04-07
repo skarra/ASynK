@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Sat Apr 07 21:01:02 IST 2012
+## Last Modified : Sun Apr 08 00:00:38 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -109,8 +109,8 @@ class BBPIMDB(PIMDB):
         return self._set_att('notes_re', reg)
 
     def _set_regexes (self):
-        res = {'string' : '"[^"]*"|nil',
-               'ws' : '\s*'}
+        res = {'string' : r'"([^"\\]*(?:\\.[^"\\]*)*)"|nil',
+               'ws'     : '\s*'}
         re_str_ar = 'nil|\(((' + res['string'] + ')' + res['ws'] + ')*\)'
         res.update({'string_array' : re_str_ar})
 
@@ -118,7 +118,7 @@ class BBPIMDB(PIMDB):
         re_ph_vec = ('\[\s*(?P<phlabel>' + res['string'] + 
                      ')\s*(?P<number>('  +
                      res['string'] + ')|'+
-                     '(\d\d\d\s+\d\d\d\s+\d\d\d\d?\s+\d+' +
+                     '(\d+\s+\d+\s+\d+\s+\d+' +
                      ')\s*)\]')
         re_phs = 'nil|(\(\s*(' + re_ph_vec + '\s*)+)\)'
         res.update({'ph_vec' : re_phs})
@@ -126,9 +126,9 @@ class BBPIMDB(PIMDB):
         ## Addresses
         re_ad_vec = ('\[\s*(?P<adlabel>' + res['string'] + ')\s*(' +
                      '(?P<streets>' + res['string_array'] + ')\s*' +
-                     '(?P<city>' + res['string'] + ')\s*' +
-                     '(?P<state>' + res['string'] + ')\s*' +
-                     '(?P<zip>(' + res['string'] + ')|(' + '\d\d\d\d\d))\s*' +
+                     '(?P<city>'    + res['string'] + ')\s*' +
+                     '(?P<state>'   + res['string'] + ')\s*' +
+                     '(?P<zip>('    + res['string'] + ')|(' + '\d\d\d\d\d))\s*' +
                      '(?P<country>' + res['string'] + ')' +
                      ')\s*\]')
         re_ads = 'nil|\(\s*(' + re_ad_vec + '\s*)+\)'
