@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Mon Apr 02 08:45:11 IST 2012
+## Last Modified : Sat Apr 07 18:54:11 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -17,10 +17,10 @@ from   pimdb        import PIMDB, GoutInvalidPropValueError
 from   folder       import Folder
 from   folder_gc    import GCContactsFolder
 
-class GCPIMDB (PIMDB):
+class GCPIMDB(PIMDB):
     """GC object is a wrapper for a Google Contacts stream API."""
 
-    def __init__(self, config, user, pw):
+    def __init__ (self, config, user, pw):
         PIMDB.__init__(self, config)
         self.set_user(user)
         self.set_pw(pw)
