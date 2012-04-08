@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Sun Apr 08 00:00:38 IST 2012
+## Last Modified : Sun Apr 08 00:12:21 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -109,7 +109,7 @@ class BBPIMDB(PIMDB):
         return self._set_att('notes_re', reg)
 
     def _set_regexes (self):
-        res = {'string' : r'"([^"\\]*(?:\\.[^"\\]*)*)"|nil',
+        res = {'string' : r'"[^"\\]*(?:\\.[^"\\]*)*"|nil',
                'ws'     : '\s*'}
         re_str_ar = 'nil|\(((' + res['string'] + ')' + res['ws'] + ')*\)'
         res.update({'string_array' : re_str_ar})
