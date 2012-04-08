@@ -84,6 +84,7 @@ class BBContact(Contact):
         self._snarf_emails_from_parse_res(d)
         self._snarf_postal_from_parse_res(d)
         self._snarf_phones_from_parse_res(d)
+        self._snarf_notes_from_parse_res(d)
 
     def _snarf_names_from_parse_res (self, pr):
         n = pr['firstname']
@@ -92,7 +93,8 @@ class BBContact(Contact):
 
         n = pr['lastname']
         if n:
-            self.set_lastname(chompq(n))
+            if n != 'nil':
+                self.set_lastname(chompq(n))
 
         # FIXME: Just what the hell is an 'Affix'? Just use the first one and
         # ditch the rest.
@@ -101,7 +103,17 @@ class BBContact(Contact):
             self.set_suffix(chompq(affix[0]))
 
     def _snarf_aka_from_parse_res (self, pr):
-        self.add_custom('aka', pr['aka'])
+        aka = pr['aka']
+        if aka:
+            str_re = self.get_db().get_str_re()
+            aka    = re.findall(str_re, aka)
+            nick   = aka[0]
+            rest   = aka[1:]
+            if nick:
+                self.set_nickname(chompq(nick))
+
+            if rest:
+                self.add_custom('aka', rest)
 
     def _snarf_company_from_parse_res (self, pr):
         cs = pr['company']
@@ -205,5 +217,64 @@ class BBContact(Contact):
         pass
 
     def _snarf_notes_from_parse_res (self, pr):
-        ## FIXME: Need to fix this, for sure. LIke right now.
-        pass
+        noted = self.get_notes_map()
+        if not noted:
+            logging.error('Error in Config file. No notes_map field for bb')
+            return
+
+        note_re = self.get_db().get_note_re()
+        notes = re.findall(note_re, pr['notes'])
+        custom = {}
+
+        for note in notes:
+            (key, val) = note[:2]
+
+            key = key.rstrip()
+            val = chompq(val)
+
+            if key == noted['created']:
+                self.set_created(val)
+            elif key == noted['updated']:
+                self.set_updated(val)
+            elif key == noted['itemid']:
+                self.set_itemid(val)
+            elif key == noted['prefix']:
+                self.set_prefix(val)
+            elif key == noted['gender']:
+                self.set_gender(val)
+            elif key == noted['title']:
+                self.set_title(val)
+            elif key == noted['dept']:
+                self.set_dept(val)
+            elif key == noted['ims']:
+                logging.info('IMs not supported in this version.')
+            elif key == noted['notes']:
+                self.add_notes(val)
+            elif key == noted['birthday']:
+                if self._is_valid_date(val):
+                    self.set_birthday(val)
+            elif key == noted['anniv']:
+                if self._is_valid_date(val):
+                    self.set_anniv(val)
+            else:
+                ## The rest of the stuff go into the 'Custom' field...
+                custom.update({key : val})
+
+        if len(custom.keys()) > 0:
+            self.add_custom('notes', custom)
+
+    def _is_valid_date (self, date, label):
+        res = re.search('\d\d\d\d-(\d\d)-(\d\d)', date)
+        if not res:
+            logging.error(('%s for %s should be yyyy-mm-dd ' +
+                           'format. Actual value: %s'),
+                           label, self.get_name(), date)
+            return False
+        elif int(res.group(1)) > 12:
+            logging.error('Invalid month (%d) in %s for %s',
+                          int(res.group(1)), label, self.get_name())
+            return False
+        else:
+            ## We should really check the date for validity as well, oh, well,
+            ## later. FIXME
+            return True
