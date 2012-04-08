@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sun Apr 08 14:46:15 IST 2012
+## Last Modified : Sun Apr 08 17:12:55 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -11,9 +11,9 @@
 ## Big Brother Data Base
 ##
 
-import logging, re
+import logging, re, uuid
 from   contact    import Contact
-from   utils      import chompq
+from   utils      import chompq, unchompq
 import folder_bb
 
 class BBContact(Contact):
@@ -29,6 +29,11 @@ class BBContact(Contact):
         if rec:
             self.set_rec(rec)
             self.init_props_from_rec(rec)
+            if not self.get_itemid():
+                iid = uuid.uuid1()
+                logging.info('bbdbid not found for %s. Assigning %s',
+                             self.get_name(), iid)
+                self.set_itemid(iid)
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -73,8 +78,6 @@ class BBContact(Contact):
 
         if not parse_res:
             logging.critical('Could not Parse BBDB contact entry: %s', rec)
-            logging.critical('Cannnot do anything with this chap...')
-
             return
 
         d = parse_res.groupdict()
