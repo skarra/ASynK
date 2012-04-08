@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sat Apr 07 22:04:42 IST 2012
+## Last Modified : Sun Apr 08 09:19:16 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -164,6 +164,7 @@ class BBContact(Contact):
 
     def _snarf_postal_from_parse_res (self, pr):
         adr_re = self.get_db().get_adr_re()
+        str_re = self.get_db().get_str_re()
         addrs  = re.findall(adr_re, pr['addrs'])
 
         for addr in addrs:
@@ -176,28 +177,32 @@ class BBContact(Contact):
                 fields = res.groupdict()
 
                 streets = fields['streets']
-                if streets:
-                    addict.update({'street' : '\n'.join(streets)})
+                sts = re.findall(str_re, streets)
+                sts = [chompq(x) for x in sts]
+
+                if sts:
+                    addict.update({'street' : '\n'.join(sts)})
 
                 city = fields['city']
                 if city:
-                    addict.update({'city' : city})
+                    addict.update({'city' : chompq(city)})
 
                 state = fields['state']
                 if state:
-                    addict.update({'state' : state})
+                    addict.update({'state' : chompq(state)})
 
                 country = fields['country']
                 if country:
-                    addict.update({'country' : country})
+                    addict.update({'country' : chompq(country)})
 
                 pin = fields['zip']
                 if pin:
-                    addict.update({'zip' : pin})
+                    addict.update({'zip' : chompq(pin)})
 
-                self.add_postal(label, addict)
+                self.add_postal(chompq(label), addict)
             else:
-                logging.error('bb:snarf_postal(): Huh? No match for addr.')
+                logging.error('bb:snarf_postal(): Huh? No match for add %s.',
+                              add)
 
     def _snarf_phones_from_parse_res (self, pr):
         ## FIXME: Need to fix this, for sure. LIke right now.
