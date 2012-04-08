@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sat Apr 07 22:14:55 IST 2012
+## Last Modified : Sun Apr 08 22:24:07 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -22,6 +22,8 @@ class BBContactsFolder(Folder):
 
         self.contacts = {}
         self.read_contacts()
+
+        self.write_contacts()
 
     ##
     ## Implementation of the abstract methods inherited from Folder
@@ -64,6 +66,9 @@ class BBContactsFolder(Folder):
     def add_contact (self, itemid, bbc):
         self.contacts.update({itemid : bbc})
 
+    def get_contacts (self):
+        return self.contacts
+
     def read_contacts (self, fn=None):
         if not fn:
             fn = self.get_name()
@@ -96,7 +101,28 @@ class BBContactsFolder(Folder):
 
                 c = BBContact(self, rec=ff.rstrip())
                 self.add_contact(c.get_itemid(), c)
-                logging.debug('Successfully read and processed: %s', c.get_name())
-                #                              str(c))
+                logging.debug('Successfully read and processed: %s',
+                              c.get_name())
+                #str(c))
 
         bbf.close()
+
+    def write_contacts (self, fn=None):
+        if not fn:
+            fn = self.get_name() + '.out'
+
+        with open(fn, 'w') as bbf:
+            bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
+            bbf.write(';;; file-format: 8\n')
+            bbf.write(';;; user-fields: (%s)\n' %
+                      self.get_user_fields_as_string())
+
+            for bbdbid, bbc in self.get_contacts().iteritems():
+                con = bbc.init_rec_from_props()
+                bbf.write('%s\n' % con)
+
+        bbf.close()
+
+    def get_user_fields_as_string (self):
+        # FIXME: Do something meanginful with this
+        return 'mail-alias'

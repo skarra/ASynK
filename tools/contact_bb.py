@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sun Apr 08 17:12:55 IST 2012
+## Last Modified : Sun Apr 08 22:22:37 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -11,7 +11,7 @@
 ## Big Brother Data Base
 ##
 
-import logging, re, uuid
+import copy, logging, re, uuid
 from   contact    import Contact
 from   utils      import chompq, unchompq
 import folder_bb
@@ -89,6 +89,19 @@ class BBContact(Contact):
         self._snarf_phones_from_parse_res(d)
         self._snarf_notes_from_parse_res(d)
 
+    def init_rec_from_props (self):
+        rec = '['
+        rec += self._get_names_as_string()   + ' '
+        rec += self._get_aka_as_string()     + ' '
+        rec += self._get_company_as_string() + ' '
+        rec += self._get_phones_as_string()  + ' '
+        rec += self._get_postal_as_string()  + ' '
+        rec += self._get_emails_as_string()  + ' '
+        rec += self._get_notes_as_string()
+        rec += 'nil ]'
+
+        return rec
+
     def _snarf_names_from_parse_res (self, pr):
         n = pr['firstname']
         if n:
@@ -102,7 +115,7 @@ class BBContact(Contact):
         # FIXME: Just what the hell is an 'Affix'? Just use the first one and
         # ditch the rest.
         affix = pr['affix']
-        if affix:
+        if affix and affix != 'nil':
             self.set_suffix(chompq(affix[0]))
 
     def _snarf_aka_from_parse_res (self, pr):
@@ -281,3 +294,114 @@ class BBContact(Contact):
             ## We should really check the date for validity as well, oh, well,
             ## later. FIXME
             return True
+
+    def _get_names_as_string (self):
+        ret = ''
+        n = self.get_firstname()
+        l = self.get_lastname()
+
+        if (not l) and (not n):
+            n = self.get_name()
+            if n:
+                ret = '"%s" nil' % n
+            else:
+                ret = 'nil nil'
+        else:
+            if n:
+                ret += unchompq(n) + ' '
+            else:
+                ret += 'nil '
+
+            if l:
+                ret += unchompq(l) + ' '
+            else:
+                ret += 'nil '
+
+        a = self.get_suffix()
+        if a:
+            ret += ' ' + unchompq(a)
+        else:
+            ret += 'nil'
+
+        return ret
+
+    def _get_aka_as_string (self):
+        nick = self.get_nickname()
+        if not nick:
+            return 'nil'
+
+        aka = copy.deepcopy(self.get_custom('aka'))
+        aka.insert(0, unchompq(nick))
+        return('(' + ' '.join(aka) + ')')
+
+    def _get_company_as_string (self):
+        comp1 = self.get_company()
+        if not comp1:
+            return 'nil'
+
+        comp = copy.deepcopy(self.get_custom('company'))
+        comp.insert(0, unchompq(comp1))
+        return ('(' + ' '.join(comp) + ')')
+
+    def _get_emails_as_string (self):
+        ems = [unchompq(e) for e in self.get_email_home()]
+        ems.extend([unchompq(e) for e in self.get_email_work()])
+        ems.extend([unchompq(e) for e in self.get_email_other()])
+
+        ret = ' '.join(ems)
+
+        if ret == '':
+            return 'nil'
+        else:
+            return '(' + ret + ')'
+
+    def _get_phones_as_string (self):
+        return 'nil'
+
+    def _get_postal_as_string (self):
+        ## FIXME: Need to fix this, for sure. LIke right now.
+        return 'nil'
+
+    def _get_notes_as_string (self):
+        noted = self.get_notes_map()
+        if not noted:
+            logging.error('_ge(): Error in Config. No notes_map field for bb')
+            return
+
+        ret =  '(bbdb-id . %s) ' % unchompq(self.get_itemid())
+        ret += '(%s . %s) ' % (noted['created'], unchompq(self.get_created()))
+        ret += '(%s . %s) ' % (noted['updated'], unchompq(self.get_updated()))
+
+        p = self.get_prefix()
+        g = self.get_gender()
+        t = self.get_title()
+        d = self.get_dept()
+        b = self.get_birthday()
+        a = self.get_anniv()
+        i = self.get_im()
+        n = self.get_notes()
+
+        if p:
+            ret += '(%s . %s) ' % (noted['prefix'],  unchompq(p))
+        if g:
+            ret += '(%s . %s) ' % (noted['gender'],  unchompq(g))
+        if t:
+            ret += '(%s . %s) ' % (noted['title'],   unchompq(t))
+        if d:
+            ret += '(%s . %s) ' % (noted['dept'],    unchompq(d))
+        if i:
+            logging.info('IMs not supported in this version')
+        if b:
+            ret += '(%s . %s) ' % (noted['birthday'], unchompq(b))
+        if a:
+            ret += '(%s . %s) ' % (noted['anniv'], unchompq(a))
+        if n and len(n) > 0:
+            ret += '(%s . %s) ' % (noted['notes'], unchompq(n[0]))
+
+
+        cnotes = self.get_custom('notes')
+        for label, note in cnotes.iteritems():
+            ret += '(%s . %s) ' % (label, unchompq(note))
+
+        return '(' + ret + ')'
+
