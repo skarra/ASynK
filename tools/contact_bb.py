@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sun Apr 08 09:19:16 IST 2012
+## Last Modified : Sun Apr 08 14:46:15 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -25,10 +25,6 @@ class BBContact(Contact):
         entry on disk."""
 
         Contact.__init__(self, folder, con)
-
-
-        self.set_db_config(self.get_config().get_db_config(self.get_dbid()))
-        self.set_email_domains(self.get_db_config()['email_domains'])
 
         if rec:
             self.set_rec(rec)

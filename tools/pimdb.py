@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Mar 22 18:18:48 IST 2012
+## Last Modified : Sun Apr 08 14:24:49 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -53,7 +53,9 @@ class PIMDB:
         ## at the destination, and which need to be over written, etc.
         self.sync_lists   = {'contacts':{},'tasks':{},'notes':{},'appts':{},}
 
-        self.dbid = ''
+        self.set_db_config()
+        self.set_email_domains()
+        self.set_notes_map()
 
     @abstractmethod
     def get_dbid (self):
@@ -119,6 +121,43 @@ class PIMDB:
 
     def set_config (self, config):
         return self._set_att('config', config)
+
+    def get_db_config (self):
+        return self._get_att('db_config')
+
+    def set_db_config (self):
+        dbc = self.get_config().get_db_config(self.get_dbid())
+        return self._set_att('db_config', dbc)
+
+    def get_email_domains (self):
+        return self._get_att('email_domains')
+
+    def set_email_domains (self):
+        dbc = self.get_db_config()
+        if dbc:
+            try:
+                ed = dbc['email_domains']
+                return self._set_att('email_domains', ed)
+            except KeyError, e:
+                logging.debug('PIMDB %s does not have email_domains.',
+                              self.get_dbid())
+
+        return self._set_att('email_domains', None)
+
+    def get_notes_map (self):
+        return self._get_att('notes_map')
+
+    def set_notes_map (self):
+        dbc = self.get_db_config()
+        if dbc:
+            try:
+                ed = dbc['notes_map']
+                return self._set_att('notes_map', ed)
+            except KeyError, e:
+                logging.debug('PIMDB %s does not have notes_map',
+                              self.get_dbid())
+
+        return self._set_att('notes_map', None)
 
     def get_folders (self, ftype=None):
         """Return all the folders of specified type. ftype should be one of
