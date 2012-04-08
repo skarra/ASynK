@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sat Apr 07 22:15:05 IST 2012
+## Last Modified : Sun Apr 08 08:08:05 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -21,8 +21,15 @@ from folder_bb     import BBContactsFolder
 from contact_bb    import BBContact
 
 def main (argv=None):
+    print sys.argv
+
+    if len(sys.argv) > 1:
+        bbfn = sys.argv[1]
+    else:
+        bbfn = '/Users/sriramkarra/.bbdb.t'
+
     tests = TestBBContact(config_fn='../app_state.json',
-                          bbfn='/Users/sriramkarra/.bbdb')
+                          bbfn=bbfn)
 
 class TestBBContact:
     def __init__ (self, config_fn, bbfn):
