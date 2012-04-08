@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Sat Apr 07 23:44:09 IST 2012
+## Last Modified : Sun Apr 08 08:06:22 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -11,7 +11,7 @@ import re
 
 def chompq (s):
     """Remove any leading and trailing quotes from the passed string."""
-    if len(s) <= 2:
+    if len(s) < 2:
         return s
 
     if s[0] == '"' and s[len(s)-1] == '"':
