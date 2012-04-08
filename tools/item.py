@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sat Apr 07 22:07:26 IST 2012
+## Last Modified : Sun Apr 08 14:34:02 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -40,16 +40,18 @@ class Item:
         # database. We call them 'props'. These are defined and tracked in a
         # single dictionary. Each of the derived classes will, of course, add
         # to this stuff.
-        self.props = {}
+        self.props = {'created'    : None,
+                      'modified'   : None,
+                      }
 
         # Attributes are non-persistent properties of the class or object,
         # such as references to the enclosing folder, PIMDB, etc.
         self.atts  = {'config'     : None,
                       'db'         : None,
                       'folder'     : None,
-                      'itemid'      : None,
-                      'type'        : None,
-                      'sync_tags'   : {},
+                      'itemid'     : None,
+                      'type'       : None,
+                      'sync_tags'  : {},
                       }
 
         # Then there are many class attributes that are needed to work with
@@ -163,19 +165,31 @@ class Item:
     def set_config (self, config):
         return self._set_att('config', config)
 
-    ## Now, the item properties
-
     def get_itemid (self):
         return self._get_att('itemid')
 
     def set_itemid (self, val):
         self._set_att('itemid', val)
 
+    ## Now, the item properties
+
     def get_dbid (self):
         return self.dbid
 
     def set_dbid (self, val):
         self.dbid = val
+
+    def get_created (self):
+        return self._get_prop('created')
+
+    def set_created (self, c):
+        return self._set_prop('created', c)
+
+    def get_updated (self):
+        return self._get_prop('updated')
+
+    def set_updated (self, u):
+        return self._set_prop('updated', u)
 
     def get_type (self):
         return self._get_att('type')
@@ -185,6 +199,12 @@ class Item:
             raise GoutInvalidPropValueError('Invalid type: %s' % val)
 
         self._set_att('type', val)
+
+    def get_email_domains (self):
+        return self.get_db().get_email_domains()
+
+    def get_notes_map (self):
+        return self.get_db().get_notes_map()
 
     def get_sync_tags (self, destid=None):
         """Return the sync tag corresponding to specified DBID: destid. If

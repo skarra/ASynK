@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Sat Apr 07 22:17:54 IST 2012
+## Last Modified : Sun Apr 08 13:56:23 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -74,9 +74,7 @@ class OLContact(Contact):
         ## Set up some of the basis object attributes and parent folder/db
         ## properties to make it easier to access them
 
-        self.set_db_config(self.get_config().get_db_config(self.get_dbid()))
         self.set_synchable_fields_list()
-        self.set_email_domains(self.get_db_config()['email_domains'])
         self.set_proptags(folder.get_proptags())
 
         self.set_olprops(olprops)
