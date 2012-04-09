@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 09 12:38:17 IST 2012
+## Last Modified : Mon Apr 09 18:10:20 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -323,7 +323,7 @@ class PIMDB:
         return self.def_folder[Folder.type_names[ftype]]
 
     def set_def_folder (self, key, value):
-        self.def_folder[key] = value
+        self.def_folder[Folder.type_names[key]] = value
 
     def find_folder (self, itemid):
         """Locate the folder from the folder list. Returns a tuple of (Folder
