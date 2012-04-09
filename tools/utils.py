@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Sun Apr 08 08:06:22 IST 2012
+## Last Modified : Sun Apr 08 22:22:00 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -18,6 +18,9 @@ def chompq (s):
         return s[1:len(s)-1]
     else:
         return s
+
+def unchompq (s):
+    return '"' + str(s) + '"'
 
 ## The follow is a super cool implementation of enum equivalent in
 ## Python. Taken with a lot of gratitude from this post on Stackoverflow:

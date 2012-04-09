@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Sun Apr 01 14:17:28 IST 2012
+// Last Modified : Mon Apr 09 13:08:17 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -179,6 +179,72 @@
 	    }, // db_config['email_domans']
 
 	}, // db_config['ol']
+
+	'bb': {
+	    // See above in 'ol'. this is the same stuff.
+	    "email_domains" : {
+		"home"  : ['hotmail.com', 'gmail.com',
+			  'yahoo.com', 'yahoo.co.uk', 'yahoo.co.in',],
+		"work"  : [],
+		"other" : [],
+	    }, // db_config['email_domains']
+
+	    // The "native" fields supported by BBDB are fairly
+	    // limited, There is no standard way to represent
+	    // websites, Instant Messaging contacts, birthdays, etc. -
+	    // stuff that is available as native fields in Outlook as
+	    // well as Google. However the 'notes' field is a generic
+	    // associative list, and is used to store anything under
+	    // the sun. In the following config parameter, you can
+	    // specify which notes field are to be mapped to which
+	    // 'standard' contact field in the other databases. Any
+	    // notes field that does not appear here will be stored as
+	    // a custom field without any mapping.
+	    //
+	    // The format is 'Standard Field' : 'BBDB Notes Field'
+	    //
+	    // Some fields, such as websites and fax numbers, can be
+	    // present more htan once - i.e. there can be more one
+	    // home website. In such instances, 'BBDB Notes Field' can
+	    // be a regexp. Not that only the fields whose standard
+	    // names end in _re are processed as regexes, and are
+	    // matched against the note field name in BBDB.
+	    "notes_map" : {
+		'fileas'      : 'fileas',
+		'prefix'      : 'prefix',
+		'notes'       : 'notes',
+		'birthday'    : 'birthday',
+		'anniv'       : 'anniversary',
+		'itemid'      : 'bbdb-id',
+		'web_home_re' : 'Home',          // Regexp
+		'web_work_re' : 'Work',          // Regexp
+		'web_other_re': 'Other',         // Regexp
+		'ims'         : 'messenger',
+		'dept'        : 'department',
+		'title'       : 'title',
+		'gender'      : 'gender',
+		'created'     : 'creation-date',
+		'updated'     : 'timestamp',
+	    },
+
+	    // Phone numbers are stored as an array of vectors in BBDB
+	    // Each element of the array has a label and a
+	    // value. There is no built-in classification of the phone
+	    // numbers into 'home', 'mobile, etc. The following map
+	    // specifies this mapping. The label is matched against
+	    // each of these regexes and whichever matches wins. If
+	    // there is no match against any of the
+	    "phones_map" : {
+		'phone_home'  : 'Home',          // Regexp
+		'phone_work'  : 'Work',          // Regexp
+		'phone_mob'   : 'Mobile',        // Regexp
+		'fax_home'    : 'Fax.*Home',     // Regexp
+		'fax_work'    : 'Fax.*Work',     // Regexp
+		'fax_other'   : 'Fax.*Other',    // Regexp
+		'phone_other' : '.*',            // Default Regexp
+	    }, 
+
+	} // db_config['bb']
 
     }, // 'db_config'
 

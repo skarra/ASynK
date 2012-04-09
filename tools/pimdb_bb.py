@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Sun Apr 08 00:12:21 IST 2012
+## Last Modified : Mon Apr 09 12:35:15 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -115,11 +115,11 @@ class BBPIMDB(PIMDB):
         res.update({'string_array' : re_str_ar})
 
         ## Phones
-        re_ph_vec = ('\[\s*(?P<phlabel>' + res['string'] + 
-                     ')\s*(?P<number>('  +
+        re_ph_vec = ('\[\s*((?P<phlabel>' + res['string'] + 
+                     ')\s*(?P<number>(?P<unstructured>'  +
                      res['string'] + ')|'+
-                     '(\d+\s+\d+\s+\d+\s+\d+' +
-                     ')\s*)\]')
+                     '(?P<structured>\d+\s+\d+\s+\d+\s+\d+)' +
+                     '\s*))\]')
         re_phs = 'nil|(\(\s*(' + re_ph_vec + '\s*)+)\)'
         res.update({'ph_vec' : re_phs})
 
