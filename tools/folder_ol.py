@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 03 19:17:16 IST 2012
+## Last Modified : Mon Apr 09 14:51:38 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -585,21 +585,3 @@ class PropTags:
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
-
-def main (argv=None):
-
-    from state import Config
-    from pimdb_ol import OLPIMDB
-
-    logging.debug('Getting started... Reading Config File...')
-    config = Config('../app_state.json')
-
-    ol     = OLPIMDB(config)
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.DEBUG)
-    try:
-        main()
-    except Exception, e:
-        print 'Caught Exception... Hm. Need to cleanup.'
-        print 'Full Exception as here:', traceback.format_exc()
