@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sun Apr 08 22:24:07 IST 2012
+## Last Modified : Mon Apr 09 14:55:09 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -22,8 +22,6 @@ class BBContactsFolder(Folder):
 
         self.contacts = {}
         self.read_contacts()
-
-        self.write_contacts()
 
     ##
     ## Implementation of the abstract methods inherited from Folder
