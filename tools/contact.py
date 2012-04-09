@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sun Apr 08 13:48:25 IST 2012
+## Last Modified : Mon Apr 09 12:56:43 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -254,6 +254,8 @@ class Contact(Item):
 
     def add_email_other (self, val):
         return self._append_to_prop('email_other', val)
+
+    ## Note that all phone values are (label, number-as-string) tuples.
 
     def get_phone_home (self):
         return self._get_prop('phone_home')

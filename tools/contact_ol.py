@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Sun Apr 08 13:56:23 IST 2012
+## Last Modified : Mon Apr 09 17:32:28 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -85,7 +85,7 @@ class OLContact(Contact):
             self.init_props_from_eid(eid)
 
     def set_synchable_fields_list (self):
-        fields = self.get_db_config()['sync_fields']
+        fields = self.get_db().get_db_config()['sync_fields']
         fields = self._process_sync_fields(fields)
 
         olcf = self.get_folder()
@@ -407,27 +407,44 @@ class OLContact(Contact):
         self.set_dept(    self._get_olprop(olpd, mt.PR_DEPARTMENT_NAME))
 
     def _snarf_phones_and_faxes_from_olprops (self, olpd):
-        self.set_phone_prim(
-            self._get_olprop(olpd, mt.PR_PRIMARY_TELEPHONE_NUMBER))
-        self.add_phone_mob(
-            self._get_olprop(olpd, mt.PR_MOBILE_TELEPHONE_NUMBER))
-        self.add_phone_home(
-            self._get_olprop(olpd, mt.PR_HOME_TELEPHONE_NUMBER))
-        self.add_phone_home(
-            self._get_olprop(olpd, mt.PR_HOME2_TELEPHONE_NUMBER))
-        self.add_phone_work(
-            self._get_olprop(olpd, mt.PR_BUSINESS_TELEPHONE_NUMBER))
-        self.add_phone_work(
-            self._get_olprop(olpd, mt.PR_BUSINESS2_TELEPHONE_NUMBER))
-        self.add_phone_other(
-            self._get_olprop(olpd, mt.PR_OTHER_TELEPHONE_NUMBER))
+        ph = self._get_olprop(olpd, mt.PR_PRIMARY_TELEPHONE_NUMBER)
+        if ph:
+            self.set_phone_prim(ph)
 
-        self.set_phone_prim(
+        ph = self._get_olprop(olpd, mt.PR_MOBILE_TELEPHONE_NUMBER)
+        if ph:
+            self.add_phone_mob(('Mobile', ph))
+
+        ph = self._get_olprop(olpd, mt.PR_HOME_TELEPHONE_NUMBER)
+        if ph:
+            self.add_phone_home(('Home', ph))
+             
+        ph = self._get_olprop(olpd, mt.PR_HOME2_TELEPHONE_NUMBER)
+        if ph:
+            self.add_phone_home(('Home2', ph))
+             
+        ph = self._get_olprop(olpd, mt.PR_BUSINESS_TELEPHONE_NUMBER)
+        if ph:
+            self.add_phone_work(('Work', ph))
+             
+        ph = self._get_olprop(olpd, mt.PR_BUSINESS2_TELEPHONE_NUMBER)
+        if ph:
+            self.add_phone_work(('Work2', ph))
+             
+        ph = self._get_olprop(olpd, mt.PR_OTHER_TELEPHONE_NUMBER)
+        if ph:
+            self.add_phone_other(('Other', ph))
+
+        self.set_fax_prim(
             self._get_olprop(olpd, mt.PR_PRIMARY_FAX_NUMBER))
-        self.add_fax_home(
-            self._get_olprop(olpd, mt.PR_HOME_FAX_NUMBER))
-        self.add_fax_work(
-            self._get_olprop(olpd, mt.PR_BUSINESS_FAX_NUMBER))
+
+        ph = self._get_olprop(olpd, mt.PR_HOME_FAX_NUMBER)
+        if ph:
+            self.add_fax_home(('Home', ph))
+             
+        ph = self._get_olprop(olpd, mt.PR_BUSINESS_FAX_NUMBER)
+        if ph:
+            self.add_fax_work(('Work', ph))             
 
     def _snarf_dates_from_olprops (self, olpd):
         d = self._get_olprop(olpd, mt.PR_BIRTHDAY)
@@ -596,37 +613,56 @@ class OLContact(Contact):
 
     def _add_phones_and_faxes_to_olprops (self, olprops):
         ## FIXME: We have to deal with more than two phone numbers each
-        phh     = self.get_phone_home()
-        phh_cnt = len(phh)
-        if phh_cnt >= 1 and phh[0]:
-            olprops.append((mt.PR_HOME_TELEPHONE_NUMBER, phh[0]))
+        ph  = self.get_phone_home()
+        if len(ph) >= 1:
+            label, num = phh[0]
+            if num:
+                olprops.append((mt.PR_HOME_TELEPHONE_NUMBER, num))
+        if len(ph) >= 2:
+            if num:            
+                label, num = ph[1]
+            olprops.append((mt.PR_HOME2_TELEPHONE_NUMBER, num))
+        if len(ph) >= 3:
+            logging.error('Not so silently ignoring %d Home numbers for %s',
+                          len(ph)-2, self.get_name())
 
-        if phh_cnt >= 2 and phh[1]:
-            olprops.append((mt.PR_HOME2_TELEPHONE_NUMBER, phh[1]))
+        ph = self.get_phone_work()
+        if len(ph) >= 1:
+            label, num = ph[0]
+            if num:
+                olprops.append((mt.PR_BUSINESS_TELEPHONE_NUMBER, num))
+        if len(ph) >= 2:
+            label, num = ph[1]
+            if num:
+                olprops.append((mt.PR_BUSINESS2_TELEPHONE_NUMBER, num))
+        if len(ph) >= 3:
+            logging.error('Not so silently ignoring %d Work numbers for %s',
+                          len(ph)-2, self.get_name())
 
-        phw     = self.get_phone_work()
-        phw_cnt = len(phw)
-        if phw_cnt >= 1 and phw[0]:
-            olprops.append((mt.PR_BUSINESS_TELEPHONE_NUMBER, phw[0]))
-
-        if phw_cnt >= 2 and phw[1]:
-            olprops.append((mt.PR_BUSINESS2_TELEPHONE_NUMBER, phw[1]))
-
-        phm = self.get_phone_mob()
-        if len(phm) >= 1 and phm[0]:
-            olprops.append((mt.PR_MOBILE_TELEPHONE_NUMBER, phm[0]))
+        ph = self.get_phone_mob()
+        if len(ph) >= 1:
+            label, num = ph[0]
+            if num:
+                olprops.append((mt.PR_MOBILE_TELEPHONE_NUMBER, num))
+        if len(ph) >= 2:
+            logging.error('Not so silently ignoring %d Mobile numbers for %s',
+                          len(ph)-1, self.get_name())
 
         ph_prim = self.get_phone_prim()
         if ph_prim:
             olprops.append((mt.PR_PRIMARY_TELEPHONE_NUMBER, ph_prim))
 
-        fah = self.get_fax_home()
-        if len(fah) >= 1 and fah[0]:
-            olprops.append((mt.PR_HOME_FAX_NUMBER, fah[0]))
+        ph = self.get_fax_home()
+        if len(ph) >= 1:
+            label, num = ph[0]
+            if num:
+                olprops.append((mt.PR_HOME_FAX_NUMBER, num))
 
-        faw = self.get_fax_work()
-        if len(faw) >= 1 and faw[0]:
-            olprops.append((mt.PR_BUSINESS_FAX_NUMBER, faw[0]))
+        ph = self.get_fax_work()
+        if len(ph) >= 1:
+            label, num = ph[0]
+            if num:
+                olprops.append((mt.PR_BUSINESS_FAX_NUMBER, num))
 
         fax_prim = self.get_fax_prim()
         if fax_prim:
