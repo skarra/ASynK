@@ -199,8 +199,35 @@ class GCContact(Contact):
     def _snarf_postal_from_gce (self, ce):
         if ce.structured_postal_address:
             if len(ce.structured_postal_address) > 0:
-                fa = ce.structured_postal_address[0].formatted_address
-                self.set_postal(fa.text)
+                for addr in ce.structured_postal_address:
+                    label = addr.label.text
+                    ad = {}
+
+                    fa = addr.formatted_address
+                    if fa:
+                        fa.update({'formatted_address' : fa.text})
+
+                    st = addr.street
+                    if st:
+                        fa.update({'streets' : st.text})
+
+                    ci = addr.city
+                    if ci:
+                        fa.update({'city' : ci.text})
+
+                    st = addr.region
+                    if st:
+                        fa.update({'state' : stp.text})
+
+                    co = addr.country
+                    if co:
+                        fa.update({'country' : co.text})
+
+                    zi = addr.postcode
+                    if zi:
+                        fa.update({'zip' : zi.text})
+
+                    self.add_postal(label, ad)
 
     def _snarf_org_details_from_gce (self, ce):
         if ce.organization:
@@ -411,15 +438,41 @@ class GCContact(Contact):
 
         ## FIXME: We should really handle all sorts of addresses not just HOME
         ## addresses, and also deal with the structured nature of these
-        ## addresses as Google itself provides some amount of support
+        ## addresses as Google itself provides some amount of support. The
+        ## address handling in general is a mess...
 
-        postal = self.get_postal()
-        if postal:
-            strt = gdata.data.Street(text=postal)
-            add  = gdata.data.StructuredPostalAddress(
-                street=strt, primary='true', rel=gdata.data.HOME_REL)
+        postals = self.get_postal()
+        for label, postal in postals.iteritems():
+            if postal:
+                add  = gdata.data.StructuredPostalAddress(
+                    label=label, primary='true', rel=gdata.data.HOME_REL)
 
-            gce.structured_postal_address = [add]
+                if postal['street']:
+                    strt = gdata.data.Street(text=postal['street'])
+                    add.street = strt
+
+                if postal['city']:
+                    city = gadata.data.City(text=postal['city'])
+                    add.city = city
+
+                if postal['state']:
+                    state = gadata.data.Region(text=postal['state'])
+                    add.region = state
+
+                if postal['country']:
+                    country = gdata.data.Country(text=postal['country'])
+                    add.country = country
+
+                if postal['zip']:
+                    postcode = gdata.data.Postcode(text=postal['zip'])
+                    add.postcode = postcode
+
+                fa = postal['formatted_address']
+                if fa:
+                    fad = gdata.data.FormattedAddress(text=fa)
+                    add.formatted_address = fad
+
+                gce.structured_postal_address = [add]
 
     def _add_org_details_to_gce (self, gce):
         """Insert the contact's company, department and other such
