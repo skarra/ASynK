@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 03 17:14:05 IST 2012
+## Last Modified : Sat Apr 07 20:05:27 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -70,7 +70,7 @@ class GCContactsFolder(Folder):
     abstract methods, but the real final leaf classes will be the Google
     Contacts and Google Tasks classes"""
 
-    __metaclass__ = ABCMeta
+    #    __metaclass__ = ABCMeta
 
     def __init__ (self, db, gid, gn, gcentry):
         Folder.__init__(self, db)
