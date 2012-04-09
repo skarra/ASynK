@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Mon Apr 09 13:05:58 IST 2012
+## Last Modified : Mon Apr 09 18:24:12 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -98,7 +98,7 @@ class BBContact(Contact):
         rec += self._get_postal_as_string()  + ' '
         rec += self._get_emails_as_string()  + ' '
         rec += self._get_notes_as_string()
-        rec += 'nil ]'
+        rec += ' nil]'
 
         return rec
 
@@ -410,8 +410,27 @@ class BBContact(Contact):
         return ('(' + ' '.join(phs) + ')')
 
     def _get_postal_as_string (self):
-        ## FIXME: Need to fix this, for sure. LIke right now.
-        return 'nil'
+        ret = ''
+        for l, a in self.get_postal().iteritems():
+            ret += '[' + unchompq(l) + ' '
+
+            if a['street']:
+                strts = a['street'].split('\n')
+                ret += '(' + ' '.join([unchompq(x) for x in strts]) + ')'
+            else:
+                ret += 'nil'
+
+            ret += ' ' + (unchompq(a['city'])    if a['city']    else '""')
+            ret += ' ' + (unchompq(a['state'])   if a['state']   else '""')
+            ret += ' ' + (unchompq(a['zip'])     if a['zip']     else '""')
+            ret += ' ' + (unchompq(a['country']) if a['country'] else '""')
+
+            ret += ']'
+
+        if ret == '':
+            return 'nil'
+        else:
+            return '(' + ret + ')'
 
     def _get_notes_as_string (self):
         noted = self.get_notes_map()
