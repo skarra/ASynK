@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sun Apr 08 14:24:49 IST 2012
+## Last Modified : Mon Apr 09 12:38:17 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -56,6 +56,7 @@ class PIMDB:
         self.set_db_config()
         self.set_email_domains()
         self.set_notes_map()
+        self.set_phones_map()
 
     @abstractmethod
     def get_dbid (self):
@@ -158,6 +159,21 @@ class PIMDB:
                               self.get_dbid())
 
         return self._set_att('notes_map', None)
+
+    def get_phones_map (self):
+        return self._get_att('phones_map')
+
+    def set_phones_map (self):
+        dbc = self.get_db_config()
+        if dbc:
+            try:
+                ed = dbc['phones_map']
+                return self._set_att('phones_map', ed)
+            except KeyError, e:
+                logging.debug('set_phones_map(): No phones_map for PIMDB %s',
+                              self.get_dbid())
+
+        return self._set_att('phones_map', None)
 
     def get_folders (self, ftype=None):
         """Return all the folders of specified type. ftype should be one of

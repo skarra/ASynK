@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sun Apr 08 14:34:02 IST 2012
+## Last Modified : Mon Apr 09 11:25:13 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -205,6 +205,9 @@ class Item:
 
     def get_notes_map (self):
         return self.get_db().get_notes_map()
+
+    def get_phones_map (self):
+        return self.get_db().get_phones_map()
 
     def get_sync_tags (self, destid=None):
         """Return the sync tag corresponding to specified DBID: destid. If

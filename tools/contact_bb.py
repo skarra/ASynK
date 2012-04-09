@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sun Apr 08 22:22:37 IST 2012
+## Last Modified : Mon Apr 09 13:05:58 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -229,8 +229,49 @@ class BBContact(Contact):
                               add)
 
     def _snarf_phones_from_parse_res (self, pr):
-        ## FIXME: Need to fix this, for sure. LIke right now.
-        pass
+        ph_re = self.get_db().get_ph_re()
+        phs   = re.findall(ph_re, pr['phones']) if pr['phones'] else None
+
+        if phs:
+            for ph in phs:
+                res = re.search(ph_re, '[' + ph[0] + ']')
+
+                if res:
+                    resg = res.groupdict()
+
+                    if resg['structured']:
+                        phnum = '+1 ' + resg['structured']
+                    else:
+                        phnum = chompq(resg['unstructured'])
+
+                    label = chompq(resg['phlabel'])
+                    self._classify_and_add_phone(label, (label, phnum))
+                else:
+                    logging.debug('Could not parse phone: %s', ph[0])
+
+    def _classify_and_add_phone (self, label, num):
+        nmap = self.get_phones_map()
+
+        if not nmap:
+            logging.error('Mapping of phone labels is not in Config. ' +
+                          'Adding phone %s as Home phone')
+            self.add_phone_home(num)
+            return
+
+        if re.search(nmap['phone_home'], label):
+            self.add_phone_home(num)
+        elif re.search(nmap['phone_work'], label):
+            self.add_phone_work(num)
+        elif re.search(nmap['phone_mob'], label):
+            self.add_phone_mob(num)
+        elif re.search(nmap['fax_home'], label):
+            self.add_fax_home(num)
+        elif re.search(nmap['fax_work'], label):
+            self.add_fax_work(num)
+        elif re.search(nmap['fax_other'], label):
+            self.add_fax_other(num)
+        else:
+            self.add_phone_other(num)
 
     def _snarf_notes_from_parse_res (self, pr):
         noted = self.get_notes_map()
@@ -356,7 +397,17 @@ class BBContact(Contact):
             return '(' + ret + ')'
 
     def _get_phones_as_string (self):
-        return 'nil'
+        ## Note that any BBDB phone number that was structured in the North
+        ## Amerial format will be munged into an equivalent string notation
+        ## for our convenience
+
+        ph  = self.get_phone_home()
+        ph.extend(self.get_phone_work())
+        ph.extend(self.get_phone_mob())
+        ph.extend(self.get_phone_other())
+
+        phs = ['[%s %s]' % (unchompq(l), unchompq(n)) for l,n in ph]
+        return ('(' + ' '.join(phs) + ')')
 
     def _get_postal_as_string (self):
         ## FIXME: Need to fix this, for sure. LIke right now.
