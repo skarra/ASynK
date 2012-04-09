@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 03 19:12:01 IST 2012
+## Last Modified : Mon Apr 09 14:38:51 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -219,27 +219,30 @@ class GCContact(Contact):
                 if not ph.text:
                     continue
 
+                label = ph.label
+                num   = ph.text
+
                 if ph.rel == gdata.data.HOME_REL:
-                    self.add_phone_home(ph.text)
+                    self.add_phone_home((label if label else 'Home', num))
                 elif ph.rel == gdata.data.WORK_REL:
-                    self.add_phone_work(ph.text)
+                    self.add_phone_work((label if label else 'Work', num))
                 elif ph.rel == gdata.data.OTHER_REL:
-                    self.add_phone_other(ph.text)
+                    self.add_phone_other((label if label else 'Other', num))
                 elif ph.rel == gdata.data.MOBILE_REL:
-                    self.add_phone_mob(ph.text)
+                    self.add_phone_mob((label if label else 'Mobile', num))
 
                 elif ph.rel == gdata.data.HOME_FAX_REL:
-                    self.add_fax_home(ph.text)
+                    self.add_fax_home((label if label else 'Home', num))
                 elif ph.rel == gdata.data.WORK_FAX_REL:
-                    self.add_fax_work(ph.text)
+                    self.add_fax_work((label if label else 'Work', num))
 
                 if ph.primary == 'true':
                     if ph.rel in [gdata.data.HOME_REL, gdata.data.WORK_REL,
                                   gdata.data.OTHER_REL, gdata.data.MOBILE_REL]:
-                        self.set_phone_prim(ph.text)
+                        self.set_phone_prim(num)
                     elif ph.rel in [gdata.data.HOME_FAX_REL,
                                     gdata.data.WORK_FAX_REL]:
-                        self.set_fax_prim(ph.text)
+                        self.set_fax_prim(num)
 
     def _snarf_dates_from_gce (self, ce):
         if ce.birthday and ce.birthday.when:
@@ -441,54 +444,60 @@ class GCContact(Contact):
 
         ph_prim = self.get_phone_prim()
 
-        for ph in self.get_phone_home():
+        for label, ph in self.get_phone_home():
             if not ph or self._is_invalid_ph(ph, 'Home'):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
+                                           label=label,
                                            rel=gdata.data.HOME_REL)
             gce.phone_number.append(phone)
 
-        for ph in self.get_phone_work():
+        for label, ph in self.get_phone_work():
             if not ph or self._is_invalid_ph(ph, 'Work'):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
+                                           label=label,
                                            rel=gdata.data.WORK_REL)
             gce.phone_number.append(phone)
 
-        for ph in self.get_phone_other():
+        for label, ph in self.get_phone_other():
             if not ph or self._is_invalid_ph(ph, 'Other'):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
+                                           label=label,                   
                                            rel=gdata.data.OTHER_REL)
             gce.phone_number.append(phone)
 
-        for ph in self.get_phone_mob():
+        for label, ph in self.get_phone_mob():
             if not ph or self._is_invalid_ph(ph, 'Mobile'):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
+                                           label=label,
                                            rel=gdata.data.MOBILE_REL)
             gce.phone_number.append(phone)
 
         fax_prim = self.get_fax_prim()
 
-        for fa in self.get_fax_home():
+        for label, fa in self.get_fax_home():
             if not fa or self._is_invalid_ph(fa, 'Home Fax'):
                 continue
             prim = 'true' if fa == fax_prim else 'false'
             fax  = gdata.data.PhoneNumber(text=fa, primary=prim,
-                                          rel=gdata.data.HOME_FAX_REL)
+                                           label=label,
+                                           rel=gdata.data.HOME_FAX_REL)
             gce.phone_number.append(fax)
 
-        for fa in self.get_fax_work():
+        for label, fa in self.get_fax_work():
             if not fa or self._is_invalid_ph(fa, 'Work Fax'):
                 continue
             prim = 'true' if fa == fax_prim else 'false'
             fax  = gdata.data.PhoneNumber(text=fa, primary=prim,
-                                          rel=gdata.data.WORK_FAX_REL)
+                                           label=label,
+                                           rel=gdata.data.WORK_FAX_REL)
             gce.phone_number.append(fax)
 
     def _add_dates_to_gce (self, gce):
