@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Sun Apr 01 17:53:08 IST 2012
+## Last Modified : Tue Apr 10 08:20:01 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -101,7 +101,7 @@ class Config:
     def _set_prop_ss (self, db1id, db2id, key, val, sync=True):
         dbs = '%s%s%s' % (db1id, self.get_label_separator(), db2id)
         try:
-            self.state['sync_state'][dbs][key] = val
+            self.state['sync_state'][dbs].update({key : val})
             if self.sync_through and sync:
                 self.save()
         except KeyError, e:
@@ -227,16 +227,16 @@ class Config:
         labels. The caller will then have to find the label for the specific
         group he is interested in."""
 
-        group_ids = self._get_prop_ss(db2id, db2id, 'group_ids')
+        group_ids = self._get_prop_ss(db1id, db2id, 'group_ids')
         return group_ids[db][fname]
 
     def set_group_ids (self, db1id, db2id, db, fname, val, sync=True):
         """val should be a dictionary of type {"label" : "value"} which will
         be appended to the right group_ids dictionary"""
 
-        group_ids = self._get_prop_ss(db2id, db2id, 'group_ids')
-        group_ids[db].update({fname, val})
-        self._set_prop_ss(db1id, db2id, group_ids, sync)
+        group_ids = self._get_prop_ss(db1id, db2id, 'group_ids')
+        group_ids[db].update({fname : val})
+        self._set_prop_ss(db1id, db2id, 'group_ids', group_ids, sync)
 
     def save (self, fn=None):
         """fn should be the full absolute path. There is no guarantee
