@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 09 11:25:13 IST 2012
+## Last Modified : Tue Apr 10 13:31:52 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -41,7 +41,8 @@ class Item:
         # single dictionary. Each of the derived classes will, of course, add
         # to this stuff.
         self.props = {'created'    : None,
-                      'modified'   : None,
+                      'updated'    : None,
+                      'sync_tags'  : {},
                       }
 
         # Attributes are non-persistent properties of the class or object,
@@ -51,7 +52,6 @@ class Item:
                       'folder'     : None,
                       'itemid'     : None,
                       'type'       : None,
-                      'sync_tags'  : {},
                       }
 
         # Then there are many class attributes that are needed to work with
@@ -108,12 +108,24 @@ class Item:
         else:
             self.props[prop].update({which : val})
 
+    def _del_prop (self, key, which):
+        """In case the avalue of the specified attribute is a dictionary, this
+        routine can be used to delete an entry in the attribute's value."""
+
+        del self.props[key][which]
+
     def _get_att (self, key):
         return self.atts[key]
 
     def _set_att (self, key, val):
         self.atts.update({key : val})
         return val
+
+    def _del_att (self, key, which):
+        """In case the avalue of the specified attribute is a dictionary, this
+        routine can be used to delete an entry in the attribute's value."""
+
+        del self.atts[key][which]
 
     def _append_to_att (self, key, val):
         """In the particular atterty value is an array, we would like to
@@ -214,7 +226,7 @@ class Item:
         destid is None, the full dictionary of sync tags is returned to the
         uesr."""
 
-        tags = self._get_att('sync_tags')
+        tags = self._get_prop('sync_tags')
         return tags[destid] if destid else tags
 
     def set_sync_tags (self, val, save=False):
@@ -223,7 +235,7 @@ class Item:
         wholesale. Potential use cases include clearing all existing values,
         etc."""
 
-        self._set_att('sync_tags', val)
+        self._set_prop('sync_tags', val)
         if save:
             self.save()
 
@@ -231,9 +243,13 @@ class Item:
         """Update the specified sync tag with given value. If the tag does not
         already exist an entry is created."""
 
-        self._update_att('sync_tags', destid, val)
+        self._update_prop('sync_tags', destid, val)
         if save:
             self.save()
+
+    def del_sync_tags (self, dbids):
+        for dbid in dbids:
+            self._del_prop('sync_tags', dbid)
 
     def __str__ (self):
         ret = ''
