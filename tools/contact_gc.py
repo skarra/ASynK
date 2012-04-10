@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 09 14:38:51 IST 2012
+## Last Modified : Tue Apr 10 12:28:52 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -13,7 +13,7 @@
 ##
 
 import sys, getopt, logging
-import atom, gdata.contacts.data, gdata.contacts.client
+import atom, gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
 import utils
 from   contact    import Contact
@@ -306,7 +306,8 @@ class GCContact(Contact):
             self.set_sync_tags(folder_gc.get_udps_by_key_prefix(
                 ce.user_defined_field, keyprefix))
 
-    def _snarf_custom_props_from_gce (self, ce):        
+    def _snarf_custom_props_from_gce (self, ce):
+        ## FIXME: Need to fix this
         #        logging.error("_snarf_custom_props(): Not Implemented Yet")
         pass
 
@@ -445,18 +446,18 @@ class GCContact(Contact):
         for label, postal in postals.iteritems():
             if postal:
                 add  = gdata.data.StructuredPostalAddress(
-                    label=label, primary='true', rel=gdata.data.HOME_REL)
+                    label=label, primary='true')
 
                 if postal['street']:
                     strt = gdata.data.Street(text=postal['street'])
                     add.street = strt
 
                 if postal['city']:
-                    city = gadata.data.City(text=postal['city'])
+                    city = gdata.data.City(text=postal['city'])
                     add.city = city
 
                 if postal['state']:
-                    state = gadata.data.Region(text=postal['state'])
+                    state = gdata.data.Region(text=postal['state'])
                     add.region = state
 
                 if postal['country']:
@@ -467,7 +468,8 @@ class GCContact(Contact):
                     postcode = gdata.data.Postcode(text=postal['zip'])
                     add.postcode = postcode
 
-                fa = postal['formatted_address']
+                k = 'formatted_address'
+                fa = postal[k] if k in postal else None
                 if fa:
                     fad = gdata.data.FormattedAddress(text=fa)
                     add.formatted_address = fad
@@ -502,8 +504,7 @@ class GCContact(Contact):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
-                                           label=label,
-                                           rel=gdata.data.HOME_REL)
+                                           label=label)
             gce.phone_number.append(phone)
 
         for label, ph in self.get_phone_work():
@@ -511,8 +512,7 @@ class GCContact(Contact):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
-                                           label=label,
-                                           rel=gdata.data.WORK_REL)
+                                           label=label)
             gce.phone_number.append(phone)
 
         for label, ph in self.get_phone_other():
@@ -520,8 +520,7 @@ class GCContact(Contact):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
-                                           label=label,                   
-                                           rel=gdata.data.OTHER_REL)
+                                           label=label)
             gce.phone_number.append(phone)
 
         for label, ph in self.get_phone_mob():
@@ -529,8 +528,7 @@ class GCContact(Contact):
                 continue
             prim = 'true' if ph == ph_prim else 'false'
             phone = gdata.data.PhoneNumber(text=ph, primary=prim,
-                                           label=label,
-                                           rel=gdata.data.MOBILE_REL)
+                                           label=label)
             gce.phone_number.append(phone)
 
         fax_prim = self.get_fax_prim()
