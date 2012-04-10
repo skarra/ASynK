@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 09 12:56:43 IST 2012
+## Last Modified : Tue Apr 10 11:23:32 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -336,10 +336,11 @@ class Contact(Item):
 
     def get_im (self, which=None):
         all_ims = self._get_prop('im')
-        if not which:
-            return all_ims
-        else:
+
+        if which and which in all_ims:
             return all_ims[which]
+        else:
+            return all_ims
 
     def set_im (self, val):
         return self._set_prop('im', val)
@@ -350,7 +351,10 @@ class Contact(Item):
     def get_custom (self, which=None):
         custs = self._get_prop('custom')
         if which:
-            return custs[which]
+           if which in custs:
+               return custs[which]
+           else:
+               return None
         else:
             return custs
 
