@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Sat Apr 07 18:54:11 IST 2012
+## Last Modified : Tue Apr 10 09:12:25 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -37,8 +37,11 @@ class GCPIMDB(PIMDB):
 
         return 'gc'
 
-    def new_folder (self, fname, type):
-        if type != Folder.CONTACT_t:
+    def new_folder (self, fname, ftype=None):
+        if not ftype:
+            ftype = Folder.CONTACT_t
+
+        if ftype != Folder.CONTACT_t:
             logging.erorr('Only Contact Groups are supported at this time.')
             return None
 
@@ -97,6 +100,12 @@ class GCPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         raise NotImplementedError
+
+    def prep_for_sync (self, dbid):
+        ## FIXME: Should read the group name and id of the sync folder and set
+        ## up the sync folder variable, etc.
+
+        pass
 
     ##
     ## Now the non-abstract methods and internal methods

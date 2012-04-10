@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu Mar 22 18:14:41 IST 2012
+## Last Modified : Tue Apr 10 09:10:49 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -385,6 +385,9 @@ class OLPIMDB(PIMDB):
         ## folders can be synched, and it should really be left to the user...
 
         self.sync_folders['contacts'].append(self.folders['contacts'][0])
+
+    def prep_for_sync (self, dbid):
+        pass
 
     ##
     ## Now the non-abstract methods and internal methods

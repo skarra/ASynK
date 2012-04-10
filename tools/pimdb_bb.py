@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Mon Apr 09 12:35:15 IST 2012
+## Last Modified : Tue Apr 10 09:13:31 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -61,6 +61,9 @@ class BBPIMDB(PIMDB):
 
         raise NotImplementedError
 
+    def prep_for_sync (self, dbid):
+        pass
+
     ##
     ## Now the non-abstract methods and internal methods
     ##
@@ -107,6 +110,12 @@ class BBPIMDB(PIMDB):
 
     def set_notes_re (self, reg):
         return self._set_att('notes_re', reg)
+
+    def get_sync_tag_re (self):
+        return self._get_att('sync_tag_re')
+
+    def set_sync_tag_re (self, reg):
+        return self._set_att('sync_tag_re', reg)
 
     def _set_regexes (self):
         res = {'string' : r'"[^"\\]*(?:\\.[^"\\]*)*"|nil',
@@ -162,3 +171,12 @@ class BBPIMDB(PIMDB):
         self.set_ph_re(re_ph_vec)
         self.set_note_re(res['note'])
         self.set_notes_re(res['notes'])
+
+        # Compute and store away a regular expression to match sync tags in
+        # the notes section
+        c = self.get_config()
+        p = c.get_label_prefix()
+        s = c.get_label_separator()
+        r = '%s%s\w+%s' % (p, s, s)
+        self.set_sync_tag_re(r)
+        

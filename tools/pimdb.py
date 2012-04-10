@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 09 18:10:20 IST 2012
+## Last Modified : Tue Apr 10 09:09:29 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -103,6 +103,16 @@ class PIMDB:
         TODO: In future we should provide support for setting synch folders
         specific to a destination pimdb, and for the user to be able to set it
         through the config file."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def prep_for_sync (self, dbid):
+        """This routine will be invoked at the time sync is initialized. dbid
+        is the id of the other PIMDB to which sync is being set up. Please
+        note that the sync direction could be anything. (Perhaps eventually we
+        will pass that or something, but it can be read from the config file
+        anyway..."""
 
         raise NotImplementedError
 
