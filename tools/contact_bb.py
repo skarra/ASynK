@@ -104,13 +104,12 @@ class BBContact(Contact):
 
     def _snarf_names_from_parse_res (self, pr):
         n = pr['firstname']
-        if n:
+        if n and n != 'nil':
             self.set_firstname(chompq(n))
 
         n = pr['lastname']
-        if n:
-            if n != 'nil':
-                self.set_lastname(chompq(n))
+        if n and n != 'nil':
+            self.set_lastname(chompq(n))
 
         # FIXME: Just what the hell is an 'Affix'? Just use the first one and
         # ditch the rest.
@@ -120,7 +119,7 @@ class BBContact(Contact):
 
     def _snarf_aka_from_parse_res (self, pr):
         aka = pr['aka']
-        if aka:
+        if aka and aka != 'nil':
             str_re = self.get_db().get_str_re()
             aka    = re.findall(str_re, aka)
             nick   = aka[0]
@@ -134,7 +133,7 @@ class BBContact(Contact):
     def _snarf_company_from_parse_res (self, pr):
         cs = pr['company']
 
-        if cs:
+        if cs and cs != 'nil':
             ## The first company goes into the Company field, the rest we will
             ## push into the custom field
             str_re = self.get_db().get_str_re()
@@ -372,8 +371,11 @@ class BBContact(Contact):
             return 'nil'
 
         aka = copy.deepcopy(self.get_custom('aka'))
-        aka.insert(0, unchompq(nick))
-        return('(' + ' '.join(aka) + ')')
+        if aka:
+            aka.insert(0, unchompq(nick))
+            return('(' + ' '.join(aka) + ')')
+        else:
+            return '(' + nick + ')'
 
     def _get_company_as_string (self):
         comp1 = self.get_company()
@@ -407,7 +409,11 @@ class BBContact(Contact):
         ph.extend(self.get_phone_other())
 
         phs = ['[%s %s]' % (unchompq(l), unchompq(n)) for l,n in ph]
-        return ('(' + ' '.join(phs) + ')')
+        ret = ' '.join(phs)
+        if ret == '':
+            return 'nil'
+        else:
+            return '(' + ret + ')'
 
     def _get_postal_as_string (self):
         ret = ''
