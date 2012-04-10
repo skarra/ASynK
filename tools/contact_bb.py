@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Mon Apr 09 18:24:12 IST 2012
+## Last Modified : Tue Apr 10 13:26:39 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -14,7 +14,7 @@
 import copy, logging, re, uuid
 from   contact    import Contact
 from   utils      import chompq, unchompq
-import folder_bb
+import folder_bb, utils
 
 class BBContact(Contact):
     """This class extends the Contact abstract base class to wrap a BBDB
@@ -25,6 +25,20 @@ class BBContact(Contact):
         entry on disk."""
 
         Contact.__init__(self, folder, con)
+
+        ## Sometimes we might be creating a contact object from a Google
+        ## contact object or other entry which might have the ID in its sync
+        ## tags field. if that is present, we should use it to initialize the
+        ## itemid field for the current object
+
+        if con:
+            try:
+                label = utils.get_sync_label_from_dbid(self.get_config(),
+                                                       self.get_dbid())
+                itemid = con.get_sync_tags(label)
+                self.set_itemid(itemid)
+            except Exception, e:
+                pass
 
         if rec:
             self.set_rec(rec)
@@ -273,14 +287,22 @@ class BBContact(Contact):
             self.add_phone_other(num)
 
     def _snarf_notes_from_parse_res (self, pr):
+        """Parse the BBDB Notes entry; this contains most of the good
+        stuff... including sync tags and stuff."""
+
         noted = self.get_notes_map()
         if not noted:
             logging.error('Error in Config file. No notes_map field for bb')
             return
 
+        stag_re = self.get_db().get_sync_tag_re()
         note_re = self.get_db().get_note_re()
         notes = re.findall(note_re, pr['notes'])
         custom = {}
+
+        # logging.debug('bb:snfpr:stag_re: %s', stag_re)
+        # keys = [note[0] for note in notes]
+        # logging.debug('bb:snfpr:Keys: %s', keys)
 
         for note in notes:
             (key, val) = note[:2]
@@ -312,6 +334,12 @@ class BBContact(Contact):
             elif key == noted['anniv']:
                 if self._is_valid_date(val):
                     self.set_anniv(val)
+            elif re.search(stag_re, key):
+                self.update_sync_tags(key.rstrip(), val)
+            elif re.search(noted['web_home_re'], key):
+                self.add_web_home(val)
+            elif re.search(noted['web_work_re'], key):
+                self.add_web_work(val)
             else:
                 ## The rest of the stuff go into the 'Custom' field...
                 custom.update({key : val})
@@ -474,10 +502,26 @@ class BBContact(Contact):
         if n and len(n) > 0:
             ret += '(%s . %s) ' % (noted['notes'], unchompq(n[0]))
 
+        ret += self._get_sync_tags_as_str()
 
         cnotes = self.get_custom('notes')
-        for label, note in cnotes.iteritems():
-            ret += '(%s . %s) ' % (label, unchompq(note))
+        if cnotes:
+            for label, note in cnotes.iteritems():
+                ret += '(%s . %s) ' % (label, unchompq(note))
 
         return '(' + ret + ')'
 
+    def _get_sync_tags_as_str (self):
+        ret = ''
+        i = 0
+        for key, val in self.get_sync_tags().iteritems():
+            if not val:
+                continue
+
+            if i > 0:
+                ret += ' '
+            i += 1
+
+            ret += '(' + key + ' . ' + unchompq(val) + ')'
+
+        return ret
