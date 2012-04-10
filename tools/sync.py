@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Tue Apr 03 18:57:07 IST 2012
+## Last Modified : Tue Apr 10 13:02:12 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -50,6 +50,9 @@ class Sync:
         self.set_db2(db2)
         self.set_db1id(db1.get_dbid())
         self.set_db2id(db2.get_dbid())
+
+        db1.prep_for_sync(self.get_db2id())
+        db2.prep_for_sync(self.get_db1id())
 
         if not dirn:
             dirn = self.get_config().get_sync_dir(self.get_db1id(),
@@ -193,146 +196,6 @@ class Sync:
                           dirn)
             return None, None
 
-    # def _fetch_gc_entries (self, gcids):
-    #     """gcids is a list of google contact ids to retrieve contact
-    #     entries for.
-
-    #     Returns a list of ContactEntries"""
-
-    #     gid    = self.config.get_gid()
-    #     f      = self.gc.new_feed()
-    #     stats = Sync.BatchState(1, f, 'query')
-
-    #     ret = []
-
-    #     for gcid in gcids:
-    #         ce = gdata.contacts.data.ContactEntry()
-    #         ce.id = atom.data.Id(text=gcid)
-    #         stats.add_con(gcid, ce)
-
-    #         f.add_query(entry=ce, batch_id_string=gcid)
-    #         stats.incr_cnt()
-
-    #         if stats.get_cnt() % self.BATCH_SIZE == 0:
-    #             # Feeds have to be less than 1MB. We can push this some
-    #             # more
-    #             logging.debug('Qry Batch # %02d. Count: %3d. Size: %6.2fK',
-    #                           stats.get_bnum(), stats.get_cnt(),
-    #                           stats.get_size())
-
-    #             rf  = self.gc.exec_batch(f)
-    #             ces = self.process_batch_response(rf, stats)
-    #             [ret.append(x) for x in ces]
-
-    #             f = self.gc.new_feed()
-    #             s = Sync.BatchState(stats.get_bnum()+1, f, 'query')
-    #             stats = s
-
-    #     # Process any leftovers
-    #     if stats.get_cnt() > 0:
-    #         logging.debug('Qry Batch # %02d. Count: %3d. Size: %5.2fK',
-    #                       stats.get_bnum(), stats.get_cnt(),
-    #                       stats.get_size())
-            
-    #         rf  = self.gc.exec_batch(f)
-    #         ces = self.process_batch_response(rf, stats)
-    #         [ret.append(x) for x in ces]
-
-    #     return ret
-
-    # def _get_new_gc_to_ol (self):
-    #     logging.info('=====================================================')
-    #     logging.info('   Fetching new entries from Google Contacts')
-    #     logging.info('=====================================================')
-    #     logging.info('Querying status from Google...')
-
-    #     ces = self._fetch_gc_entries(self.gc.get_con_new())
-    #     if ces and len(ces)>0:
-    #         resp = '%d new entries created on Google will be copied.' % len(ces)
-    #     else:
-    #         resp = 'No new contacts found in Google Contacts. Nothing to copy.'
-
-    #     logging.info(resp)
-
-    #     self._write_ces_to_ol(ces)
-
-    # def _get_mod_gc_to_ol (self):
-    #     """Fetch the entries that we know have been modified on Google side
-    #     and that we want to store in Outlook."""
-
-    #     logging.info('=====================================================')
-    #     logging.info('   Fetching modified entries from Google Contacts')
-    #     logging.info('=====================================================')
-    #     logging.info('Querying status from Google...')
-
-    #     ces = self._fetch_gc_entries(self.gc.get_con_mod().keys())
-
-    #     if ces and len(ces)>0:
-    #         resp = '%d modified contacts from Google will be copied.' % len(ces)
-    #     else:
-    #         resp = 'No contacts modified in Google Contacts. Nothing to copy.'
-
-    #     logging.info(resp)
-
-    #     # Synching entries modified on Google is nothing but deleting local
-    #     # copies in Outlook and creating fresh entries. This is hack, and in
-    #     # future we might decide to implement a 'inplace' updatiion. TODO.
-    #     self._write_ces_to_ol(ces)
-
-    #     eids = [base64.b64decode(x) for x in self.gc.get_con_mod().values()]
-    #     self.olcf.del_entries(eids)
-
-    # def _write_ces_to_ol (self, ces, writeback_olid=True):
-    #     """ces is a list of ContactEntry objects which need to be saved to
-    #     outlook. If the entires do not exist in Outlook we will need to save
-    #     hte Outlook EntryIDs to Google on successful save to Outlook. This
-    #     step can be skipped if we are only writing modifications and an entry
-    #     already exists in Outlook. The writeback behaviour is controlled by
-    #     the value of the writeback_olid parameter."""
-
-    #     f = self.gc.new_feed()
-    #     stats = Sync.BatchState(1, f, 'Writeback olid')
-
-    #     for ce in ces:
-    #         c  = Contact(fields=self.fields, config=self.config,
-    #                      ol=self.ol, entryid=None, props=None,
-    #                      gcapi=self.gc, gcentry=ce, data_from_ol=False)
-
-    #         # Save changes in Outlook and write back the olid to the Google
-    #         # Entry
-
-    #         eid = c.push_to_outlook()
-    #         bid = base64.b64encode(eid)
-    #         stats.add_con(bid, c)
-
-    #         ce = self.gc.add_olid_to_ce(ce, eid)
-
-    #         if (writeback_olid):
-    #             f.add_update(entry=ce, batch_id_string=bid)
-    #             stats.incr_cnt()
-
-    #             if stats.get_cnt() % self.BATCH_SIZE == 0:
-    #                 logging.info('Uploading Oulook EntryIDs to Google...')
-    #                 logging.debug('Batch #%02d. Count: %3d. Size: %6.2fK',
-    #                               stats.get_bnum(), stats.get_cnt(),
-    #                               stats.get_size())
-    
-    #                 rf = self.gc.exec_batch(f)
-    #                 self.process_batch_response(rf, stats)
-     
-    #                 f = self.gc.new_feed()
-    #                 s = Sync.BatchState(stats.get_bnum()+1, f, 'Writeback olid')
-    #                 stats = s
-
-    #     # Upload any leftovers
-    #     if writeback_olid and stats.get_cnt() > 0:
-    #         logging.info('Uploading Oulook EntryIDs to Google...')
-    #         logging.debug('Batch # %02d. Count: %3d. Size: %5.2fK',
-    #                       stats.get_bnum(), stats.get_cnt(),
-    #                       stats.get_size())
-    #         rf = self.gc.exec_batch(f)
-    #         self.process_batch_response(rf, stats)
-
     def _del_ol (self):
         pass
 
@@ -447,7 +310,7 @@ class SyncLists:
         return self.mods
 
     def get_dels (self):
-        return self.mods
+        return self.dels
 
     def send_news_to_folder (self, df):
         """df is the destination folder."""
@@ -492,142 +355,3 @@ class SyncLists:
         self.send_news_to_folder(df)
         self.send_mods_to_folder(df)
         self.send_dels_to_folder(df)
-
-def main ():
-    tests = TestSync()
-
-    # tests.test_sync_status()
-    tests.test_sync()
-
-    # tests.test_clear_ol_sync_flags()
-
-    # tests.del_gcid('AAAAADWE5+lnNclLmn8GpZUD04fEQGMA')
-    # tests.read_gcid('AAAAADWE5+lnNclLmn8GpZUD04ekQGMA')
-
-class TestSync:
-    def __init__ (self):
-        self.config = Config('../app_state.json')
-        self.pimgc = self._login_gc()
-        self.pimol = self._login_ol()
-
-    def _login_gc (self):
-        # The following is the 'Gout' group on karra.etc@gmail.com
-        self.gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/41baff770f898d85'
-
-        # Parse command line options
-        try:
-            opts, args = getopt.getopt(sys.argv[1:], '', ['user=', 'pw='])
-        except getopt.error, msg:
-            print 'python gc_wrapper.py --user [username] --pw [password]'
-            sys.exit(2)
-
-        user = ''
-        pw = ''
-        # Process options
-        for option, arg in opts:
-            if option == '--user':
-                user = arg
-            elif option == '--pw':
-                pw = arg
-
-        while not user:
-            user = raw_input('Please enter your username: ')
-
-        while not pw:
-            pw = raw_input('Password: ')
-            if not pw:
-                print 'Password cannot be blank'
-
-        try:
-            return GCPIMDB(self.config, user, pw)
-        except BadAuthentication:
-            print 'Invalid credentials. WTF.'
-            raise
-
-    def _login_ol (self):
-        from pimdb_ol import OLPIMDB
-
-        return OLPIMDB(self.config)
-
-    def del_gcid (self, itemid):
-        ## This should really go into contact_ol.py
-        from win32com.mapi import mapi, mapitags
-        import winerror
-        from contact_ol import OLContact
-
-        olcf     = self.pimol.get_def_folder()
-        eid      = base64.b64decode(itemid)
-        
-        prop_tag = olcf.get_proptags().valu('ASYNK_PR_GCID')
-        store    = olcf.get_msgstore()
-        item     = store.get_obj().OpenEntry(eid, None, mapi.MAPI_BEST_ACCESS)
-
-        hr, ps = item.DeleteProps([prop_tag])
-        item.SaveChanges(mapi.KEEP_OPEN_READWRITE)
-
-        if winerror.FAILED(hr):
-            logging.info('Failed to clear GCID for itemid: %s (%s)',
-                         itemid, winerror.HRESULT_CODE(hr))
-        else:
-            logging.info('Successfully Cleared GCID for itemid: %s', itemid)
-
-    def read_gcid (self, itemid):
-        ## This should really go into contact_ol.py
-        from win32com.mapi import mapi, mapitags
-        from contact_ol import OLContact
-
-        olcf     = self.pimol.get_def_folder()
-        eid      = base64.b64decode(itemid)
-
-        prop_tag = olcf.get_proptags().valu('ASYNK_PR_GCID')
-        store    = olcf.get_msgstore()
-        item     = store.get_obj().OpenEntry(eid, None, mapi.MAPI_BEST_ACCESS)
-
-        hr, props = item.GetProps([prop_tag], mapi.MAPI_UNICODE)
-        (tag, val) = props[0]
-        if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
-            print 'Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
-                                                                (tag % (2**64)))
-        else:
-            print 'Google ID found for contact. ID: ', val
-
-    def test_sync_status (self):
-        olcf = self.pimol.get_def_folder()
-        gccf = self.find_group(self.gid)
-
-        self.sync = Sync(self.config, gccf, olcf)
-        self.sync._prep_lists()
-
-    def test_sync (self):
-        logging.debug('test_sync()... Starting Sync to Outlook')
-        olcf = self.pimol.get_def_folder()
-        gccf = self.find_group(self.gid)
-
-        self.sync = Sync(self.config, olcf, gccf)
-        sl1, sl2 = self.sync._prep_lists()
-        sl1.sync_to_folder(gccf)
-        sl2.sync_to_folder(olcf)
-        logging.debug('test_sync()... Finished Sync')
-
-    def test_clear_ol_sync_flags (self):
-        olcf = self.pimol.get_def_folder()
-        olcf.bulk_clear_sync_flags(['bb', 'gc'])
-
-    def find_group (self, gid):
-        gc, ftype = self.pimgc.find_folder(gid)
-        if gc:
-            print 'Found the sucker. Name is: ', gc.get_name()
-            return gc
-        else:
-            print 'D''oh. Folder not found.'
-            return
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.DEBUG)
-    try:
-        main()
-    except Exception, e:
-        print 'Caught Exception... Hm. Need to cleanup.'
-        print 'Full Exception as here:', traceback.format_exc()
-
-## FIXME: Needs more thorough unit testing.
