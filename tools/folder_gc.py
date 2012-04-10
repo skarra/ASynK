@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sat Apr 07 20:05:27 IST 2012
+## Last Modified : Tue Apr 10 11:51:22 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -160,7 +160,10 @@ class GCContactsFolder(Folder):
 
     def find_items (self, itemids):
         """See documentation in folder.Folder"""
-
+        
+        ## Note that it is more efficient to do a single call to fetch all the
+        ## entire and then build GCContact objects, than call find_item
+        ## iteratively...
         ces = self._fetch_gc_entries(itemids)
         ret = [GCContact(self, gce=ce) for ce in ces]
 
@@ -522,9 +525,6 @@ class BatchState:
                     orig.update_sync_tags(self.sync_tag, gcid)
                     cons.append(orig)
 
-    # .update_prop_by_name([(self.config.get_gc_guid(),
-    #                        self.config.get_gc_id())],
-    #                        mapitags.PT_UNICODE,
                     t = None
                     if op == 'insert':
                         t = 'created'
@@ -532,7 +532,7 @@ class BatchState:
                         t = 'updated'
     
                     if t:
-                        logging.info('Successfully %s gmail entry for %s (%s)',
+                        logging.info('Successfully %s gmail entry for %30s (%s)',
                                      t, con.get_name(), orig.get_itemid())
     
         return cons

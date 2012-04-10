@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 03 14:18:54 IST 2012
+## Last Modified : Tue Apr 10 11:17:29 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -29,7 +29,7 @@ class Folder:
     valid_types = [CONTACT_t, NOTE_t, TASK_t, APPT_t]
     type_names  = { CONTACT_t : 'contacts',
                     NOTE_t    : 'notes',
-                    TASK_t   : 'tasks',
+                    TASK_t    : 'tasks',
                     APPT_t    : 'appts',
                     }
 
@@ -43,6 +43,7 @@ class Folder:
                       'type'        : None,
                       'name'        : None,
                       'sync_tags'   : {},
+                      'dirty'       : False,
                       }
 
         # Then there are many class attributes that are needed to work with
@@ -51,7 +52,6 @@ class Folder:
         # like any other object attributes
 
         self.set_db(db)
-        self.set_dbid(db.get_dbid())
         self.set_config(db.get_config())
 
     @abstractmethod
@@ -218,10 +218,7 @@ class Folder:
         self._set_prop('type', t)
 
     def get_dbid (self):
-        return self.dbid
-
-    def set_dbid (self, dbid):
-        self.dbid = dbid
+        return self.get_db().get_dbid()
 
     def is_contacts_folder (self):
         return True if self.type == Folder.PR_IPM_CONTACT_ENTRYID else False

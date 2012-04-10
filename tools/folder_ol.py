@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Apr 09 14:51:38 IST 2012
+## Last Modified : Mon Apr 09 18:50:39 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -124,9 +124,6 @@ class OLFolder(Folder):
 
     def find_item (self, itemid):
         eid = base64.b64decode(itemid)
-
-        print 'itemid : ', itemid
-
         olc = OLContact(self, eid=eid)
         return olc
 
