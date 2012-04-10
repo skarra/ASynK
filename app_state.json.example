@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Mon Apr 09 13:08:17 IST 2012
+// Last Modified : Tue Apr 10 08:27:44 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -77,12 +77,12 @@
 		// contacts are tracked here with a 'group label :
 		// google group id' map, where the google group ID is
 		// a URL as used in the google contacts api.
-		'gc' : {},
+		'gc' : {'asynk:ol' : null},
 
 		// In future - an analogous map on the Outlook
 		// side. The map will be a label to gid (see above for
 		// the olsync_gid field. For now unused.
-		'ol' : {},
+		'ol' : {'asynk:gc' : null},
 	    },
 	},
 
@@ -92,21 +92,22 @@
 	    'sync_dir'         : "SYNC2WAY",
 	    'conflict_resolve' : 'ol',
 	    'group_ids' : {
-		'bb' : {},	// there is no such thing as a BBDB
-				// group at the moment... but wth
-		'ol' : {},
+		// there is no such thing as a BBDB group at the
+		// moment... but wth
+		'bb' : {'asynk:bb' : null},
+		'ol' : {'asynk:ol' : null},
 	    },
 	},
 
 	'bb:gc' : {
 	    'last_sync_start'  : "1980-07-28T16:10:58.96+05:30",
 	    'last_sync_stop'   : "1980-07-18T13:23:12.96+05:30",
-	    'sync_dir'         : "SYNC2WAY",
+	    'sync_dir'         : "SYNC1WAY",
 	    'conflict_resolve' : 'bb',
 	    'group_ids' : {
-		'bb' : {},	// there is no such thing as a BBDB
-				// group at the moment... but wth
-		'gc' : {},
+		// Same as in the case of gc:ol above
+		'gc' : {'asynk:bb' : null},
+		'bb' : {'asynk:gc' : null},
 	    },
 	},
     },
@@ -216,9 +217,8 @@
 		'birthday'    : 'birthday',
 		'anniv'       : 'anniversary',
 		'itemid'      : 'bbdb-id',
-		'web_home_re' : 'Home',          // Regexp
-		'web_work_re' : 'Work',          // Regexp
-		'web_other_re': 'Other',         // Regexp
+		'web_home_re' : 'Web.*Home',  // Regexp
+		'web_work_re' : 'Web.*Work',  // Regexp
 		'ims'         : 'messenger',
 		'dept'        : 'department',
 		'title'       : 'title',
@@ -244,7 +244,10 @@
 		'phone_other' : '.*',            // Default Regexp
 	    }, 
 
-	} // db_config['bb']
+	}, // db_config['bb']
+
+	'gc' : {
+	},
 
     }, // 'db_config'
 
