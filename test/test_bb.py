@@ -1,13 +1,13 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sun Apr 08 08:08:05 IST 2012
+## Last Modified : Tue Apr 10 13:18:29 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ## 
 
-import logging, os, os.path, sys
+import logging, os, os.path, sys, traceback
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
@@ -30,6 +30,8 @@ def main (argv=None):
 
     tests = TestBBContact(config_fn='../app_state.json',
                           bbfn=bbfn)
+    tests.print_contacts(cnt=1)
+    # tests.write_to_file()
 
 class TestBBContact:
     def __init__ (self, config_fn, bbfn):
@@ -39,7 +41,11 @@ class TestBBContact:
         self.bb     = BBPIMDB(self.config, bbfn)
         self.deff   = self.bb.get_def_folder()
 
-        print "\nHurrah: Name is: ", self.deff.get_name() if self.deff else None
+    def print_contacts (self, cnt):
+        self.deff.print_contacts(cnt=cnt)
+
+    def write_to_file (self):
+        self.deff.save_file()
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
