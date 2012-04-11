@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 10 09:10:49 IST 2012
+## Last Modified : Wed Apr 11 19:08:53 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -10,7 +10,7 @@
 ## This is an implementation of the Outlook PIMDB by extending the PIMDB
 ## abstract base class
 
-import os, os.path, sys, logging, time, traceback
+import os, os.path, string, sys, logging, time, traceback
 from   datetime      import datetime
 
 import iso8601, base64
@@ -260,9 +260,8 @@ class MessageStore:
             cf = OLContactsFolder(self.ol, eid, name, f, self)
             self.add_to_folders(cf)
         except TypeError, e:
-            logging.debug('Actual exception: %s', e)
-            logging.info('No Contacts Folder for message store: %s',
-                         self.name)
+            logging.debug('No Contacts Folder for store: %s. (Ex: %s)',
+                          self.name, e)
 
         try:
             (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_NOTE_ENTRYID,
@@ -270,9 +269,8 @@ class MessageStore:
             nf = OLNotesFolder(self.ol, eid, name, f, self)
             self.add_to_folders(nf)
         except TypeError, e:
-            logging.debug('Actual exception: %s', e)
-            logging.info('No Notes Folder for message store: %s',
-                         self.name)
+            logging.debug('No Notes Folder for store: %s. (Ex: %s)',
+                          self.name, e)
 
         try:
             (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_TASK_ENTRYID,
@@ -280,9 +278,8 @@ class MessageStore:
             tf = OLTasksFolder(self.ol, eid, name, f, self)
             self.add_to_folders(tf)
         except TypeError, e:
-            logging.debug('Actual exception: %s', e)
-            logging.info('No Tasks Folder for message store: %s',
-                         self.name)
+            logging.debug('No Tasks Folder for store: %s. (Ex: %s)',
+                         self.name, e)
 
         ## FIXME: We will have to do the above jig and dance for these
         ## Calendars at some point.
@@ -335,6 +332,14 @@ class OLPIMDB(PIMDB):
     def set_msgstores (self, ms):
         self.msgstores = ms
         return ms
+
+    def list_folders (self):
+        i = 1
+        for t in Folder.valid_types:
+            for f in self.get_folders(t):
+                logging.info(' %2d: %s', i, str(f))
+                i += 1
+                             
 
     def new_folder (self, fname, type):
         """Create a new folder of specified type and return an id. The folder
@@ -394,10 +399,11 @@ class OLPIMDB(PIMDB):
     ##
 
     def mapi_initialize (self):
-        logging.debug('Initalizing MAPI...')
-
+        logging.info('Initalizing MAPI...')
         mapi.MAPIInitialize(None)
+        logging.info('Initalizing MAPI...done')
         flags = (mapi.MAPI_EXTENDED | mapi.MAPI_USE_DEFAULT | MOD_FLAG)
 
-        logging.debug('Opening default profile in MAPI...')
+        logging.info('Opening default profile in MAPI...')
         self.set_olsession(mapi.MAPILogonEx(0, "", None, flags))
+        logging.info('Opening default profile in MAPI...done')
