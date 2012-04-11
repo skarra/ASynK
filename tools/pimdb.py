@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 10 09:09:29 IST 2012
+## Last Modified : Wed Apr 11 18:36:40 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -65,6 +65,14 @@ class PIMDB:
         Outlook, and 'bb' for Emacs BBDB. This id is used, among other things,
         to store the source identification in the remote database, track sync
         status between different databases in the application status, etc."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_folders (self):
+        """Print details of all folders in the PIMDB. Detail will typically
+        include one line per folder, with its name, and any identifier that
+        can be used for further referencing."""
 
         raise NotImplementedError
 
@@ -180,7 +188,7 @@ class PIMDB:
                 ed = dbc['phones_map']
                 return self._set_att('phones_map', ed)
             except KeyError, e:
-                logging.debug('set_phones_map(): No phones_map for PIMDB %s',
+                logging.debug('PIMDB %s does not have phones_map',
                               self.get_dbid())
 
         return self._set_att('phones_map', None)

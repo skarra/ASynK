@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Tue Apr 10 09:12:25 IST 2012
+## Last Modified : Wed Apr 11 19:09:54 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -36,6 +36,25 @@ class GCPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         return 'gc'
+
+    def list_folders (self, silent=False):
+        """Apart from doing the usual thing, this also retusn some good
+        stuff..."""
+
+        ret = []
+        feed = self.get_groups_feed()
+
+        if not feed.entry:
+            return ret
+
+        for i, entry in enumerate(feed.entry):
+            name = entry.content.text if entry.content else entry.title.text
+            if not silent:
+                logging.info(' %2d: Contacts Name: %-25s ID: %s',
+                             i, name, entry.id.text)
+            ret.append((entry.id.text, name, entry))
+
+        return ret
 
     def new_folder (self, fname, ftype=None):
         if not ftype:
@@ -86,7 +105,7 @@ class GCPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         logging.debug('Getting Group List to populate folders...')
-        groups = self.list_groups()
+        groups = self.list_folders(silent=True)
         for (gid, gn, gcentry) in groups:
             f = GCContactsFolder(self, gid, gn, gcentry)
             self.add_contacts_folder(f)
@@ -130,7 +149,7 @@ class GCPIMDB(PIMDB):
         self.gdc = gdc
 
     def gc_init (self):
-        logging.debug('Logging into Google...')
+        logging.info('Logging into Google...')
 
         gdc = gdata.contacts.client.ContactsClient(source='Gout-Sync')
         gdc.ClientLogin(self.get_user(), self.get_pw(), gdc.source)
@@ -151,19 +170,6 @@ class GCPIMDB(PIMDB):
     def get_groups_feed (self):
         feed = self.get_gdc().GetGroups()
         return feed
-
-    def list_groups (self):
-        ret = []
-        feed = self.get_groups_feed()
-
-        if not feed.entry:
-            return ret
-
-        for i, entry in enumerate(feed.entry):
-            name = entry.content.text if entry.content else entry.title.text
-            ret.append((entry.id.text, name, entry))
-
-        return ret
 
     def print_groups (self):
         feed = self.get_groups_feed()

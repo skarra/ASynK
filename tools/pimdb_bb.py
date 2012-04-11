@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Tue Apr 10 09:13:31 IST 2012
+## Last Modified : Wed Apr 11 19:07:28 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -31,6 +31,13 @@ class BBPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         return 'bb'
+
+    def list_folders (self):
+        """See the documentation in class PIMDB"""
+
+        ## BBDB is intended to be a one database system...
+        logging.info('  %2d; Name: %-32s ID: %s', 1, self.get_def_fn(),
+                     None)
 
     def new_folder (self, fname, type):
         """See the documentation in class PIMDB"""
