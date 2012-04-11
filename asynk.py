@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed Apr 11 15:58:22 IST 2012
+## Last Modified : Wed Apr 11 19:14:56 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -17,10 +17,28 @@ EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'),
                os.path.join(DIR_PATH, 'tools'),]
 sys.path = EXTRA_PATHS + sys.path
 
+try:
+    from   pimdb_ol         import OLPIMDB
+except ImportError, e:
+    ## This could mean one of two things: (a) we are not on Windows, or (b)
+    ## some of th relevant supporting stuff is not installed (like
+    ## pywin32). these error cases are handled elsewhere, so move on.
+    print 'Skipping ImportError exception (', str(e), ')'
+    pass
+
+from   sync             import Sync
+from   state            import Config
+from   gdata.client     import BadAuthentication
+from   pimdb_gc         import GCPIMDB
+from   pimdb_bb         import BBPIMDB
+
 ## Some Global Variables to get started
 asynk_ver = '0.01'
 
 class AsynkParserError(Exception):
+    pass
+
+class AsynkError(Exception):
     pass
 
 def main ():
@@ -87,12 +105,17 @@ def setup_parser ():
 
     # A Group for BBDB stuff
     gb = p.add_argument_group('BBDB Paramters')
-    gb.add_argument('--file', action='store', default='~/.bbdb',
+    gb.add_argument('--file', action='store', 
+                    default=os.path.expanduser('~/.bbdb'),
                    help='BBDB File is --db=bb is used.')
 
     gw = p.add_argument_group('Web Parameters')
     gw.add_argument('--port', action='store', type=int,
                     help=('Port number on which to start web server.'))
+
+    p.add_argument('--log', action='store',
+                   choices=('debug', 'info', 'error', 'critical'),
+                   default='info', help='Specify level of logging.')
 
     p.add_argument('--version', action='version',
                    version='%(prog)s v' + ('%s' % asynk_ver))
@@ -104,11 +127,21 @@ class Asynk:
         """uinps is a Namespace object as returned from the parse_args()
         routine of argparse module."""
 
-        print uinps
+        level = string.upper(uinps.log)
+        logging.getLogger().setLevel(getattr(logging, level))
 
         self.reset_fields()
         self.validate_and_snarf_uinps(uinps)
 
+        self.set_config(Config('./app_state.json'))
+
+        login_func = 'login_%s' % self.get_db1()
+        self.set_db(self.get_db1(), getattr(self, login_func)())
+
+        if self.get_db2():
+            login_func = 'login_%s' % self.get_db2()
+            self.set_db(self.get_db2(), getattr(self, login_func)())
+            
     def reset_fields (self):
         self.atts = {}
 
@@ -128,11 +161,12 @@ class Asynk:
         # mutual exclusion and so forth.
 
         # Let's start with the db flags
-        if len(uinps.db) > 2:
-            raise AsynkParserError('--db takes 1 or 2 arguments only')
-
-        self.set_db1(uinps.db[0])
-        self.set_db2(uinps.db[1] if len(uinps.db) > 1 else None)
+        if uinps.db:
+            if len(uinps.db) > 2:
+                raise AsynkParserError('--db takes 1 or 2 arguments only')
+    
+            self.set_db1(uinps.db[0])
+            self.set_db2(uinps.db[1] if len(uinps.db) > 1 else None)
 
         op  = string.replace(uinps.op, '-', '_')
         self.set_op(op)
@@ -143,13 +177,41 @@ class Asynk:
         if self.get_op() == 'startweb':
             return
 
-        
+        self.set_bbdb_file(uinps.file)
+        self.set_dry_run(uinps.dry_run)
+
+        if uinps.folder_name and uinps.folder_id:
+            raise AsynkParserError('Only one of --folder-name or --folder-id '
+                                   'can be specified.')
+
+        self.set_folder_name(uinps.folder_name)
+        self.set_folder_id(uinps.folder_id)
+        self.set_item_id(uinps.item_id)
+
+        self.set_gcuser(uinps.user)
+        self.set_gcpw(uinps.pwd)
+
+        if 'gc' in [self.get_db1(), self.get_db2()]:
+            while not self.get_gcuser():
+                self.set_gcuser(raw_input('Please enter your username: '))
+                
+            while not self.get_gcpw():
+                self.set_gcpw(raw_input('Password: '))
+                if not self.get_gcpw():
+                    print 'Password cannot be blank'
+
+        self.set_port(uinps.port)
 
     def dispatch (self):
         res = getattr(self, self.get_op())()
 
     def list_folders (self):
-        logging.debug('%s: Not Implemented', 'list_folders')
+        for db in [self.get_db1(), self.get_db2()]:
+            if not db:
+                continue
+            logging.info('Listing all folders in PIMDB %s...', db)
+            self.get_db(db).list_folders()
+            logging.info('Listing all folders in PIMDB %s...done', db)
 
     def del_folder (self):
         logging.debug('%s; Not Implemented', 'del_folder')
@@ -211,6 +273,82 @@ class Asynk:
     def set_op (self, val):
         return self._set_att('op', val)
 
+    def get_bbdb_file (self):
+        return self._get_att('bbdb_file')
+
+    def set_bbdb_file (self, val):
+        return self._set_att('bbdb_file', val)
+
+    def set_dry_run (self, val):
+        self._set_att('dry_run', val)
+
+    def is_dry_run (self):
+        return self._get_att('dry_run')
+
+    def get_folder_name (self):
+        return self._get_att('folder_name')
+
+    def set_folder_name (self, val):
+        return self._set_att('folder_name', val)
+
+    def get_folder_id (self):
+        return self._get_att('folder_id')
+
+    def set_folder_id (self, val):
+        return self._set_att('folder_id', val)
+
+    def get_item_id (self):
+        return self._get_att('item_id')
+
+    def set_item_id (self, val):
+        return self._set_att('item_id', val)
+
+    def get_remote_db (self):
+        return self._get_att('remote_db')
+
+    def set_remote_db (self, val):
+        return self._set_att('remote_db', val)
+
+    def get_gcuser (self):
+        return self._get_att('gcuser')
+
+    def set_gcuser (self, val):
+        return self._set_att('gcuser', val)
+
+    def get_gcpw (self):
+        return self._get_att('gcpw')
+
+    def set_gcpw (self, val):
+        return self._set_att('gcpw', val)
+
+    def get_port (self):
+        return self._get_att('port')
+
+    def set_port (self, val):
+        return self._set_att('port', val)
+
+    def get_config (self):
+        return self._get_att('config')
+
+    def set_config (self, val):
+        return self._set_att('config', val)
+
+    def login_bb (self):
+        bbfn = self.get_bbdb_file()
+        bb   = BBPIMDB(self.get_config(), bbfn)
+        return bb
+
+    def login_gc (self):
+        try:
+            pimgc = GCPIMDB(self.get_config(),
+                            self.get_gcuser(), self.get_gcpw())
+        except BadAuthentication:
+            raise AsynkError('Invalid Google credentials. Cannot proceed.')
+
+        return pimgc
+
+    def login_ol (self):
+        return OLPIMDB(self.get_config())
+
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.DEBUG)
     main()
