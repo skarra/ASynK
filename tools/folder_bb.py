@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Tue Apr 10 14:04:21 IST 2012
+## Last Modified : Wed Apr 11 17:11:42 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -176,6 +176,8 @@ class BBContactsFolder(Folder):
         if not fn:
             fn = self.get_name()
 
+        logging.info('Parsing BBDB file %s...', fn)
+
         with open(fn) as bbf:
             bbf.readline()
             # Ignore first line which is: ;; -*-coding: utf-8-emacs;-*-
@@ -199,6 +201,7 @@ class BBContactsFolder(Folder):
             bbf.readline()
             # Ignore the user-fields line. What's the point of that anyway...
 
+            cnt = 0
             while True:
                 ff = bbf.readline()
                 if ff == '':
@@ -206,10 +209,9 @@ class BBContactsFolder(Folder):
 
                 c = BBContact(self, rec=ff.rstrip())
                 self.add_contact(c)
-                logging.debug('Successfully read and processed: %s',
-                              c.get_name())
-                # ('\n' + str(c)))
+                cnt += 1
 
+        logging.info('Successfully parsed %d entries.', cnt)
         bbf.close()
 
     def save_file (self, fn=None):

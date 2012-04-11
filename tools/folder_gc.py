@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 10 11:51:22 IST 2012
+## Last Modified : Tue Apr 10 15:17:43 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -97,7 +97,7 @@ class GCContactsFolder(Folder):
         ## Sort the DBIds so dest1 has the 'lower' ID
         db1 = self.get_db().get_dbid()
         if db1 > destid:
-            db2 = db11
+            db2 = db1
             db1 = destid
         else:
             db2 = destid
