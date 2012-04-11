@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon Apr 09 18:50:39 IST 2012
+## Last Modified : Wed Apr 11 19:10:01 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -211,16 +211,16 @@ class OLFolder(Folder):
             self._clear_tag(tag)
 
     def __str__ (self):
-        if self.type == Folder.PR_IPM_CONTACT_ENTRYID:
+        if self.get_type() == Folder.PR_IPM_CONTACT_ENTRYID:
             ret = 'Contacts'
-        elif self.type == Folder.PR_IPM_NOTE_ENTRYID:
+        elif self.get_type() == Folder.PR_IPM_NOTE_ENTRYID:
             ret = 'Notes'
-        elif self.type == Folder.PR_IPM_TASK_ENTRYID:
+        elif self.get_type() == Folder.PR_IPM_TASK_ENTRYID:
             ret = 'Tasks'
 
-        return ('%s.\tName: %s;\tEID: %s;\tStore: %s' % (
-            ret, self.name, base64.b64encode(self.entryid),
-            self.store.name))
+        return ('%-8s Name: %-15s\tEID: %s  Store: %s' % (
+            ret, self.get_name(), base64.b64encode(self.get_entryid()),
+            self.get_msgstore().get_name()))
 
     ##
     ## First some get_ and set_ routines
@@ -311,8 +311,6 @@ class OLContactsFolder(OLFolder):
     def __init__ (self, db, entryid, name, fobj, msgstore):
         OLFolder.__init__(self, db, entryid, name, fobj, msgstore)
         self.set_type(Folder.PR_IPM_CONTACT_ENTRYID)
-
-        self.print_key_stats()
 
     def print_key_stats (self):
         print 'Contacts Folder Name: ', self.get_name()
