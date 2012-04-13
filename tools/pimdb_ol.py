@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Apr 13 17:38:13 IST 2012
+## Last Modified : Fri Apr 13 17:57:06 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -190,6 +190,18 @@ class MessageStore:
         msgstore = self.get_obj()
         return(msgstore.OpenEntry(None, None, MOD_FLAG))
 
+    def get_ipm_subtree_eid (self):
+        msgstore = self.get_obj()
+        hr, ps   = msgstore.GetProps((mapitags.PR_IPM_SUBTREE_ENTRYID))
+        if winerror.FAILED(hr):
+            logging.error('Could not get subtree entryid for store: %s. '
+                          'Error: 0x%x', self.get_name(),
+                          winerror.HRESULT_CODE(hr))
+            return None
+        tag, eid = ps[0]
+
+        return eid
+
     def get_folders (self, ftype=None):
         """Return all the folders of specified type. ftype should be one of
         the valid folder types. If none is specifiedfor ftype, then the entire
@@ -336,13 +348,9 @@ class MessageStore:
 
         msgstore = self.get_obj()
         if not fid:
-            hr, ps   = msgstore.GetProps((mapitags.PR_IPM_SUBTREE_ENTRYID))
-            if winerror.FAILED(hr):
-                logging.error('Could not get subtree entryid for store: %s. '
-                              'Error: 0x%x', self.get_name(),
-                              winerror.HRESULT_CODE(hr))
+            fid = self.get_ipm_subtree_eid()
+            if not fid:
                 return
-            tag, fid = ps[0]
 
         folder   = msgstore.OpenEntry(fid, None, MOD_FLAG)
 
@@ -465,15 +473,20 @@ class OLPIMDB(PIMDB):
         else:
             store = self.get_msgstore(storeid)
 
-        root = store.get_root_folder_obj()
-        if not root:
-            logging.error('Unable to open Root Folder for store : %s',
-                          storeid)
+        ipm_eid = store.get_ipm_subtree_eid()
+        if not ipm_eid:
+            return None
+
+        try:
+            folder = store.get_obj().OpenEntry(ipm_eid, None, MOD_FLAG)
+        except Exception, e:
+            logging.error('Unable to open store: %s. Error: %s',
+                          store.get_name(), str(e))
             return None
 
         cclass = OLFolder.get_cclass_from_ftype(ftype)
         try:
-            nf = root.CreateFolder(mapi.FOLDER_GENERIC, fname, 'Comment',
+            nf = folder.CreateFolder(mapi.FOLDER_GENERIC, fname, 'Comment',
                                    None, 0)
         except Exception, e:
             logging.error('Failed to create new folder %s. CreateFolder '
@@ -500,7 +513,7 @@ class OLPIMDB(PIMDB):
             return None
 
         tag, val = ps[0]
-        return val        
+        return base64.b64encode(val)
 
     def get_olsession (self):
         """Return a reference to the Outlook MAPI session."""
