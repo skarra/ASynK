@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Wed Apr 11 19:09:54 IST 2012
+## Last Modified : Fri Apr 13 15:41:55 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -56,7 +56,7 @@ class GCPIMDB(PIMDB):
 
         return ret
 
-    def new_folder (self, fname, ftype=None):
+    def new_folder (self, fname, ftype=None, storeid=None):
         if not ftype:
             ftype = Folder.CONTACT_t
 

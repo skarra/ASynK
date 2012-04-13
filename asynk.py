@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed Apr 11 19:14:56 IST 2012
+## Last Modified : Fri Apr 13 14:59:20 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -29,6 +29,7 @@ except ImportError, e:
 from   sync             import Sync
 from   state            import Config
 from   gdata.client     import BadAuthentication
+from   folder           import Folder
 from   pimdb_gc         import GCPIMDB
 from   pimdb_bb         import BBPIMDB
 
@@ -60,6 +61,7 @@ def setup_parser ():
 
     p.add_argument('--op', action='store',
                    choices = ('list-folders',
+                              'create-folder',
                               'del-folder',
                               'list-items',
                               'print-item',
@@ -80,6 +82,9 @@ def setup_parser ():
     p.add_argument('--remote-db', action='store', choices=('bb', 'gc', 'ol'),
                     help=('Specifies which remote db''s sync data to be ' +
                           'cleared with clear-sync-artifacts'))
+    p.add_argument('--store-id', action='store',
+                    help=('Specifies ID of Outlook Message store. Useful with '
+                          'certain operations like --create-folder'))
     p.add_argument('--folder-name', action='store', 
                      help='For folder operations specify the name of the '
                      'folder to operate on.')
@@ -158,7 +163,8 @@ class Asynk:
     def validate_and_snarf_uinps (self, uinps):
         # Most of the validation is already done by argparse. This is where we
         # will do some additional sanity checking and consistency enforcement,
-        # mutual exclusion and so forth.
+        # mutual exclusion and so forth. In addition to this, every command
+        # will do some parsing and validation itself.
 
         # Let's start with the db flags
         if uinps.db:
@@ -184,6 +190,7 @@ class Asynk:
             raise AsynkParserError('Only one of --folder-name or --folder-id '
                                    'can be specified.')
 
+        self.set_store_id(uinps.store_id)
         self.set_folder_name(uinps.folder_name)
         self.set_folder_id(uinps.folder_id)
         self.set_item_id(uinps.item_id)
@@ -212,6 +219,30 @@ class Asynk:
             logging.info('Listing all folders in PIMDB %s...', db)
             self.get_db(db).list_folders()
             logging.info('Listing all folders in PIMDB %s...done', db)
+
+    def create_folder (self):
+        ## Let's start with some sanity checking of arguments
+
+        # We need to have a --folder-name flag specified
+        fname = self.get_folder_name()
+        if not fname:
+            raise AsynkParserError('--create-folder needs a folder name '
+                                   'through --folder-name')
+
+        # There should only be one DB specified
+        if self.get_db2():
+            raise AsynkParserError('Please specify only 1 db with --db '
+                                   'where new folder is to be created')
+
+        if not self.get_db1():
+            raise AsynkParserError('Please specify the PIMDB where new folder '
+                                   'is to be created, with --db option')
+
+        storeid = self.get_store_id()
+
+        db = self.get_db(self.get_db1())
+        db.new_folder(fname, Folder.CONTACT_t, storeid)
+            
 
     def del_folder (self):
         logging.debug('%s; Not Implemented', 'del_folder')
@@ -308,6 +339,12 @@ class Asynk:
 
     def set_remote_db (self, val):
         return self._set_att('remote_db', val)
+
+    def get_store_id (self):
+        return self._get_att('store_id')
+
+    def set_store_id (self, val):
+        return self._set_att('store_id', val)
 
     def get_gcuser (self):
         return self._get_att('gcuser')

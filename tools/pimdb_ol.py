@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Apr 13 14:06:46 IST 2012
+## Last Modified : Fri Apr 13 15:38:48 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -170,6 +170,11 @@ class MessageStore:
     def set_name (self, name):
         self.name = name
         return name
+
+    def get_root_folder_obj (self):
+        """Return the root folder object of the current messages store."""
+        msgstore = self.get_obj()
+        return(msgstore.OpenEntry(None, None, MOD_FLAG))
 
     def get_folders (self, ftype=None):
         """Return all the folders of specified type. ftype should be one of
@@ -395,11 +400,60 @@ class OLPIMDB(PIMDB):
                 i += 1
                              
 
-    def new_folder (self, fname, type):
+    def new_folder (self, fname, ftype, storeid=None):
         """Create a new folder of specified type and return an id. The folder
-        will not contain any items"""
+        will not contain any items. If storeid is None the folder is
+        created in the default message store.
 
-        raise NotImplementedError
+        type has to be one of the Folder.valid_types
+
+        """
+
+        if not ftype in Folder.valid_types:
+            logging.error('Cannot create folder of type: %s', ftype)
+            return None
+
+        if not storeid:
+            store = self.get_default_msgstore()
+        else:
+            store = self.get_msgstore(storeid)
+
+        root = store.get_root_folder_obj()
+        if not root:
+            logging.error('Unable to open Root Folder for store : %s',
+                          storeid)
+            return None
+
+        cclass = OLFolder.get_cclass_from_ftype(ftype)
+        try:
+            nf = root.CreateFolder(mapi.FOLDER_GENERIC, fname, 'Comment',
+                                   None, 0)
+        except Exception, e:
+            logging.error('Failed to create new folder %s. CreateFolder '
+                          'returned  error code: %s', fname,
+                          str(e))
+            return None
+
+        hr, ps = nf.SetProps([(mapitags.PR_CONTAINER_CLASS, cclass)])
+        if winerror.FAILED(hr):
+            logging.error('Failed to Set Container class for newly created '
+                          'folder %s. Hm. tough luck... Delete the sucker '
+                          'manually from Outlook. Sorry for the bother. '
+                          'Error Code retruned by SetProps: 0x%x',fname,
+                          winerror.HRESULT_CODE(hr))
+            return None
+        
+        hr, ps = nf.GetProps((mapitags.PR_ENTRYID))
+        if winerror.FAILED(hr):
+            logging.error('Failed to get Entry_ID for newly created '
+                          'folder %s. Hm. tough luck... Delete the sucker '
+                          'manually from Outlook. Sorry for the bother. '
+                          'Error Code retruned by SetProps: 0x%x',fname,
+                          winerror.HRESULT_CODE(hr))
+            return None
+
+        tag, val = ps[0]
+        return val        
 
     def get_olsession (self):
         """Return a reference to the Outlook MAPI session."""
@@ -444,6 +498,13 @@ class OLPIMDB(PIMDB):
         ## folders can be synched, and it should really be left to the user...
 
         self.sync_folders['contacts'].append(self.folders['contacts'][0])
+
+    def get_default_msgstore (self):
+        stores = self.get_msgstores()
+        return stores.get_default_store()
+        
+    def get_msgstore (self, eid):
+        return self.get_msgstore().get(eid=eid)
 
     def prep_for_sync (self, dbid):
         pass

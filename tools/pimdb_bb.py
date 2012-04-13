@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Wed Apr 11 19:07:28 IST 2012
+## Last Modified : Fri Apr 13 15:46:20 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -39,10 +39,19 @@ class BBPIMDB(PIMDB):
         logging.info('  %2d; Name: %-32s ID: %s', 1, self.get_def_fn(),
                      None)
 
-    def new_folder (self, fname, type):
-        """See the documentation in class PIMDB"""
+    def new_folder (self, fname, ftype=None, storeid=None):
+        """See the documentation in class PIMDB.
 
-        raise NotImplementedError
+        fname should be a filename in this case.
+        """
+
+        with open(fname, 'w') as bbf:
+            bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
+            bbf.write(';;; file-format: 8\n')
+            bbf.write(';;; user-fields: \n')
+            bbf.close()
+
+        logging.info('Successfully Created BBDB file: %s', fname)
 
     def del_folder (self, gid):
         """See the documentation in class PIMDB"""
