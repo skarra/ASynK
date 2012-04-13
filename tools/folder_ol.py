@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Apr 11 19:10:01 IST 2012
+## Last Modified : Thu Apr 12 16:41:38 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -306,6 +306,32 @@ class OLFolder(Folder):
 
         logging.info('Num entries cleared: %d. i = %d', cnt, i)
         return cnt
+
+    @classmethod
+    def get_folder_type (self, store, eid):
+        """Returns a Folder_type, folder_obj tuple for the provided folder eid
+        in the provided store.
+
+        This fellow could really be anywhere in the *.ol.py files, but
+        let's amuse ourselves a bit."""
+
+        f = store.OpenEntry(eid, None, 0)
+        hr, props = f.GetProps([mapitags.PR_CONTAINER_CLASS,
+                                mapitags.PR_DISPLAY_NAME], mapi.MAPI_UNICODE)
+        (ttag, tval), (ntag, nval) = props
+
+        try:
+            d = {'IPF.Contact'     : Folder.CONTACT_t,
+                 'IPF.Task'        : Folder.TASK_t,
+                 'IPF.StickyNote'  : Folder.NOTE_t,
+                 'IPF.Appointment' : Folder.APPT_t,
+                 }
+            tval = d[tval]
+        except KeyError, e:
+            tval = Folder.UKNOWN_t
+
+        return tval, f
+
 
 class OLContactsFolder(OLFolder):
     def __init__ (self, db, entryid, name, fobj, msgstore):
