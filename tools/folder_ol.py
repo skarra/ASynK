@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu Apr 12 16:41:38 IST 2012
+## Last Modified : Fri Apr 13 14:56:36 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -33,6 +33,16 @@ class OLFolder(Folder):
     """
 
     __metaclass__ = ABCMeta
+
+    cclass_ftype_d = {'IPF.Contact'     : Folder.CONTACT_t,
+                      'IPF.Task'        : Folder.TASK_t,
+                      'IPF.StickyNote'  : Folder.NOTE_t,
+                      'IPF.Appointment' : Folder.APPT_t,
+                      'IPF.Note'        : Folder.UNKNOWN_t,
+                      }
+    ftype_cclass_d = {}
+    for key, val in cclass_ftype_d.iteritems():
+        ftype_cclass_d.update({val : key})
 
     def __init__ (self, db, entryid, name, fobj, msgstore):
         Folder.__init__(self, db)
@@ -321,16 +331,19 @@ class OLFolder(Folder):
         (ttag, tval), (ntag, nval) = props
 
         try:
-            d = {'IPF.Contact'     : Folder.CONTACT_t,
-                 'IPF.Task'        : Folder.TASK_t,
-                 'IPF.StickyNote'  : Folder.NOTE_t,
-                 'IPF.Appointment' : Folder.APPT_t,
-                 }
-            tval = d[tval]
+            tval = self.get_ftype_from_cclass(tval)
         except KeyError, e:
-            tval = Folder.UKNOWN_t
+            tval = Folder.UNKNOWN_t
 
         return tval, f
+
+    @classmethod
+    def get_cclass_from_ftype (self, ftype):
+        return self.ftype_cclass_d[ftype]
+
+    @classmethod
+    def get_ftype_from_cclass (self, cclass):
+        return self.cclass_ftype_d[cclass]
 
 
 class OLContactsFolder(OLFolder):
