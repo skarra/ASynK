@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Apr 11 19:08:53 IST 2012
+## Last Modified : Fri Apr 13 14:06:46 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -20,7 +20,8 @@ from   win32com.mapi import mapi, mapitags, mapiutil
 import utils
 from   pimdb         import PIMDB, GoutInvalidPropValueError
 from   folder        import Folder
-from   folder_ol     import OLContactsFolder, OLTasksFolder, OLNotesFolder
+from   folder_ol     import OLFolder,      OLContactsFolder
+from   folder_ol     import OLTasksFolder, OLNotesFolder
 
 MOD_FLAG = mapi.MAPI_BEST_ACCESS
 
@@ -219,8 +220,45 @@ class MessageStore:
         return self.def_folder[Folder.type_names[ftype]]
 
     def get_def_contacts_folder (self):
-        return self.get_def_folder(Folder.CONTACT_t)
+        return self.get_def_folder(Folder.CONTACT_t)        
 
+    
+    ## Unused for now...
+    def enumerate_folders (self, folder_eid=None, depth='  '):
+        """Walk through the entire folder hierarchy of the message store and
+        print one line per folder with some critical information."""
+
+        msgstore = self.get_obj()
+        folder   = msgstore.OpenEntry(folder_eid, None, MOD_FLAG)
+        htable = folder.GetHierarchyTable((mapi.CONVENIENT_DEPTH |
+                                           mapi.MAPI_UNICODE))
+
+        htable.SetColumns((mapitags.PR_ENTRYID, mapitags.PR_DISPLAY_NAME,
+                           mapitags.PR_FOLDER_TYPE, mapitags.PR_SUBFOLDERS,
+                           mapitags.PR_CONTENT_COUNT, mapitags.PR_DEPTH), 0)
+
+        hr  = htable.SeekRow(mapi.BOOKMARK_BEGINNING, 0)
+        cnt = 0
+        while True:
+            rows = htable.QueryRows(1, 0)
+            if len(rows) != 1:
+                logging.debug('\tbreaking... %d', len(rows))
+                break
+
+            ((eidt, eid), (dnt, dn), (ftt, ft), (sft, sf), (cct, cc),
+             (dt, d)) = rows[0]
+            cnt += 1
+
+            if mapitags.PROP_TYPE(eidt) != mapitags.PT_ERROR:
+                logging.debug('%sEID: %s Name: %-25s Type: %2d Has Sub: %5s '
+                              'Depth: %2d Count: %d', depth,
+                              base64.b64encode(eid), dn, ft, sf, d, cc)
+                if sf:
+                    self.enumerate_folders(folder_eid = eid,
+                                           depth=(depth+'  '))
+            else:
+                logging.error('H, error in enumeraate! :-)')
+        
     def get_inbox (self, msgstore):
         inbox_id, c = msgstore.GetReceiveFolder("IPM.Note", 0)
         inbox       = msgstore.OpenEntry(inbox_id, None, MOD_FLAG)
@@ -237,6 +275,7 @@ class MessageStore:
         """Return a tuple (entry_id, display_name, folder_obj) corresponding
         to specific tag."""
         hr, props = inbox.GetProps((tag), 0)
+
         (tag0, eid)  = props[0]
 
         # check for errors
@@ -247,43 +286,58 @@ class MessageStore:
 
         return (eid, name, f)
 
-    def _populate_folders (self):
+    def _populate_folders (self, fid=None, depth="  "):
+        """Recurse through the entire folder hierarchy of the message store and
+        collect the folders that we are interested in and populate the current
+        MessageStore's folders object."""
+
         msgstore = self.get_obj()
-        inbox    = self.get_inbox(msgstore)
+        folder   = msgstore.OpenEntry(fid, None, MOD_FLAG)
 
-        logging.debug('Building Folder list for Message Store: %s...',
-                      self.name)
+        htable = folder.GetHierarchyTable((mapi.CONVENIENT_DEPTH |
+                                           mapi.MAPI_UNICODE))
 
-        try:
-            (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_CONTACT_ENTRYID,
-                                                 inbox)
-            cf = OLContactsFolder(self.ol, eid, name, f, self)
-            self.add_to_folders(cf)
-        except TypeError, e:
-            logging.debug('No Contacts Folder for store: %s. (Ex: %s)',
-                          self.name, e)
+        htable.SetColumns((mapitags.PR_ENTRYID, mapitags.PR_DISPLAY_NAME,
+                           mapitags.PR_FOLDER_TYPE, mapitags.PR_SUBFOLDERS,
+                           mapitags.PR_CONTENT_COUNT, mapitags.PR_DEPTH), 0)
 
-        try:
-            (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_NOTE_ENTRYID,
-                                                 inbox)
-            nf = OLNotesFolder(self.ol, eid, name, f, self)
-            self.add_to_folders(nf)
-        except TypeError, e:
-            logging.debug('No Notes Folder for store: %s. (Ex: %s)',
-                          self.name, e)
+        hr  = htable.SeekRow(mapi.BOOKMARK_BEGINNING, 0)
+        cnt = 0
+        while True:
+            rows = htable.QueryRows(1, 0)
+            if len(rows) != 1:
+                break
 
-        try:
-            (eid, name, f) = self.get_folder_obj(Folder.PR_IPM_TASK_ENTRYID,
-                                                 inbox)
-            tf = OLTasksFolder(self.ol, eid, name, f, self)
-            self.add_to_folders(tf)
-        except TypeError, e:
-            logging.debug('No Tasks Folder for store: %s. (Ex: %s)',
-                         self.name, e)
+            ((eidt, eid), (dnt, dn), (ftt, ft), (sft, sf), (cct, cc),
+             (dt, d)) = rows[0]
+            cnt += 1
 
-        ## FIXME: We will have to do the above jig and dance for these
-        ## Calendars at some point.
-        ## folder types as well.
+            if mapitags.PROP_TYPE(eidt) != mapitags.PT_ERROR:
+                if ft == mapi.FOLDER_GENERIC:
+                    ftype, f = OLFolder.get_folder_type(msgstore, eid)
+
+                    logging.debug('%sName: %-20s Type: %s',
+                                  depth, dn, 
+                                  string.capitalize(Folder.type_names[ftype]))
+
+                    if ftype == Folder.CONTACT_t:
+                        ff = OLContactsFolder(self.ol, eid, dn, f, self)
+                    elif ftype == Folder.TASK_t:
+                        ff = OLTasksFolder(self.ol, eid, dn, f, self)
+                    elif ftype == Folder.NOTE_t:
+                        ff = OLNotesFolder(self.ol, eid, dn, f, self)
+                    elif ftype == Folder.APPT_t:
+                        ff = None
+                        logging.error('Appointments not supported. Ignoring.')
+                    else:
+                        ff = None
+
+                    if ff:
+                        self.add_to_folders(ff)
+                if sf:
+                    self._populate_folders(fid=eid, depth=(depth+'  '))
+            else:
+                logging.error('Hm, Error... cnt: %2d', cnt)
 
     def get_ol_item (self, entryid):
         return self.get_obj().OpenEntry(entryid, None, MOD_FLAG)
