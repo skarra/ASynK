@@ -229,9 +229,15 @@ class MessageStore:
 
     
     ## Unused for now...
-    def enumerate_folders (self, folder_eid=None, depth='  '):
+    def enumerate_all_folders (self, folder_eid=None, depth='  '):
         """Walk through the entire folder hierarchy of the message store and
-        print one line per folder with some critical information."""
+        print one line per folder with some critical information. 
+
+        This is a recursive function. If you want to start enumerating at the
+        root folder of the current message store, invoke this routine without
+        any arguments. The defaults will ensure the root folder if fetched and
+        folders will be recursively enumerated.
+        """
 
         msgstore = self.get_obj()
         folder   = msgstore.OpenEntry(folder_eid, None, MOD_FLAG)
@@ -259,11 +265,29 @@ class MessageStore:
                               'Depth: %2d Count: %d', depth,
                               base64.b64encode(eid), dn, ft, sf, d, cc)
                 if sf:
-                    self.enumerate_folders(folder_eid = eid,
-                                           depth=(depth+'  '))
+                    self.enumerate_all_folders(folder_eid = eid,
+                                              depth=(depth+'  '))
             else:
                 logging.error('H, error in enumeraate! :-)')
         
+    def enumerate_ipm_folders (self):
+        """Walk through all the folders in the IPM subtree of the message
+        store and print one line per folder with some critical information.
+        For more information on what a IPM Subtree is, look here:
+        http://msdn.microsoft.com/en-us/library/cc815825.aspx """
+
+        msgstore = self.get_obj()
+        hr, ps   = msgstore.GetProps((mapitags.PR_IPM_SUBTREE_ENTRYID))
+        if winerror.FAILED(hr):
+            logging.error('Could not get subtree entryid for store: %s. '
+                          'Error: 0x%x', self.get_name(),
+                          winerror.HRESULT_CODE(hr))
+            return
+        tag, ipm_eid = ps[0]
+
+        folder   = msgstore.OpenEntry(ipm_eid, None, MOD_FLAG)
+        self.enumerate_all_folders(ipm_eid)
+
     def get_inbox (self, msgstore):
         inbox_id, c = msgstore.GetReceiveFolder("IPM.Note", 0)
         inbox       = msgstore.OpenEntry(inbox_id, None, MOD_FLAG)
