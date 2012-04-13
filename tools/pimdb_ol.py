@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Apr 13 15:38:48 IST 2012
+## Last Modified : Fri Apr 13 17:38:13 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -149,9 +149,13 @@ class MessageStore:
         self.def_folder   = {'contacts'  : None, 'tasks'     : None,
                              'notes'     : None, 'appts' : None,}
 
-        # This should really be done 'lazily' but let's go with the flow for
-        # now... FIXME
+        self.set_del_items_eid()
+
+        logging.info('Looking for PIM folders in message store: %s...',
+                     self.get_name())
         self._populate_folders()
+        logging.info('Looking for PIM folders in message store: %s...done',
+                     self.get_name())
 
 #        self.tasks_folders[0].print_key_stats()
 
@@ -170,6 +174,16 @@ class MessageStore:
     def set_name (self, name):
         self.name = name
         return name
+
+    def set_del_items_eid (self):
+        store = self.get_obj()
+        hr, ps = store.GetProps((mapitags.PR_IPM_WASTEBASKET_ENTRYID))
+        tav, val = ps[0]
+        
+        self.del_items_eid = val
+
+    def get_del_items_eid (self):
+        return self.del_items_eid
 
     def get_root_folder_obj (self):
         """Return the root folder object of the current messages store."""
@@ -321,6 +335,15 @@ class MessageStore:
         MessageStore's folders object."""
 
         msgstore = self.get_obj()
+        if not fid:
+            hr, ps   = msgstore.GetProps((mapitags.PR_IPM_SUBTREE_ENTRYID))
+            if winerror.FAILED(hr):
+                logging.error('Could not get subtree entryid for store: %s. '
+                              'Error: 0x%x', self.get_name(),
+                              winerror.HRESULT_CODE(hr))
+                return
+            tag, fid = ps[0]
+
         folder   = msgstore.OpenEntry(fid, None, MOD_FLAG)
 
         htable = folder.GetHierarchyTable((mapi.CONVENIENT_DEPTH |
@@ -342,12 +365,12 @@ class MessageStore:
             cnt += 1
 
             if mapitags.PROP_TYPE(eidt) != mapitags.PT_ERROR:
+                logging.debug('%sEID: %s Name: %-25s Type: %2d Has Sub: %5s '
+                              'Depth: %2d Count: %d', depth,
+                              base64.b64encode(eid), dn, ft, sf, d, cc)
+
                 if ft == mapi.FOLDER_GENERIC:
                     ftype, f = OLFolder.get_folder_type(msgstore, eid)
-
-                    logging.debug('%sName: %-20s Type: %s',
-                                  depth, dn, 
-                                  string.capitalize(Folder.type_names[ftype]))
 
                     if ftype == Folder.CONTACT_t:
                         ff = OLContactsFolder(self.ol, eid, dn, f, self)
@@ -357,13 +380,13 @@ class MessageStore:
                         ff = OLNotesFolder(self.ol, eid, dn, f, self)
                     elif ftype == Folder.APPT_t:
                         ff = None
-                        logging.error('Appointments not supported. Ignoring.')
+                        logging.info('Appointments not supported. Ignoring.')
                     else:
                         ff = None
 
                     if ff:
                         self.add_to_folders(ff)
-                if sf:
+                if sf and eid != self.get_del_items_eid():
                     self._populate_folders(fid=eid, depth=(depth+'  '))
             else:
                 logging.error('Hm, Error... cnt: %2d', cnt)
@@ -398,7 +421,7 @@ class OLPIMDB(PIMDB):
 
     def __del__ (self):
         logging.debug('Destroying mapi session...')
-        self.session.Logoff(0, 0, 0)
+        self.get_olsession().Logoff(0, 0, 0)
 
     ##
     ## First implementation of the abstract methods of PIMDB.
