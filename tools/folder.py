@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 10 11:17:29 IST 2012
+## Last Modified : Thu Apr 12 16:35:14 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -25,12 +25,14 @@ class Folder:
     NOTE_t      = PR_IPM_NOTE_ENTRYID        = 0x36D30102
     TASK_t      = PR_IPM_TASK_ENTRYID        = 0x36D40102
     APPT_t      = PR_IPM_APPOINTMENT_ENTRYID = 0x36D00102
+    UKNOWN_t    = 0x0
 
     valid_types = [CONTACT_t, NOTE_t, TASK_t, APPT_t]
     type_names  = { CONTACT_t : 'contacts',
                     NOTE_t    : 'notes',
                     TASK_t    : 'tasks',
                     APPT_t    : 'appts',
+                    UKNOWN_t  : 'other',
                     }
 
     def __init__ (self, db):
