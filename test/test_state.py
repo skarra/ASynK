@@ -1,5 +1,5 @@
 
-import os, os.path, shutil, sys, traceback
+import os, os.path, shutil, sys, traceback, unittest
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
@@ -7,116 +7,135 @@ DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'tools')]
 sys.path = EXTRA_PATHS + sys.path
 
-from   state import Config, GoutConfigError
+from   state import Config, AsynkConfigError
+
+conf_fn    = '../config.json'
+state_src  = '../state.init.json'
+state_dest = './state.test.json'
+
+shutil.copyfile(state_src, state_dest)
+config = Config(confn=conf_fn, staten=state_dest)
 
 def main (argv=None):
-    if not argv:
-        argv = sys.argv
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestStateFunctions)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+class TestStateFunctions(unittest.TestCase):
 
     ## This module is for quick testing of the Config read/write
     ## functionality. We will make a quick copy of the main example config
     ## file into the current directory and start mucking with it.
 
-    src  = '../app_state.json.example'
-    dest = './app_state_test.json'
-    shutil.copyfile(src, dest)
+    def setUp (self):
+        self.config = config
 
-    config = Config(dest)
+    ##
+    ## First the tests for accessors for data in config.json - all of these
+    ## are essentially read tests.
+    ##
 
-    tcnt = 0
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    print 'Label Separator: ', config.get_label_separator()
-    print 'olsync_guid: ', config.get_olsync_guid()
+    def test_get_conf_file_version (self):
+        val = self.config.get_conf_file_version()
+        self.assertTrue(val == 2)
 
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    print 'File Version: ', config.get_file_version()
-    print 'Setting File Version to 5'
-    config.set_file_version(5)
-    print 'File Version: ', config.get_file_version()    
+    def test_read_label_prefix (self):
+        val = self.config.get_label_prefix()
+        self.assertTrue(val == 'asynk')
 
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    print 'Label Prefix: ', config.get_label_prefix()
-    print 'Setting Label Prefix to "Buffoon"'
-    config.set_label_prefix('Buffoon')
-    print 'Label Prefix: ', config.get_label_prefix()
+    def test_read_label_separator (self):
+        val = self.config.get_label_separator()
+        self.assertTrue(val == ':')
 
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    val = config.get_olsync_gid()
-    print 'olsync_gid(all): ', val
-    val = config.get_olsync_gid('gc')
-    print 'olsync_gid(gc): ', val
-    val = config.get_olsync_gid('bb')
-    print 'olsync_gid(bb): ', val
+    ## Hard to compare entire dictionaries, so will stick to comparing a
+    ## random field inside the ditionary. The rest should be alright.
+    def test_read_db_config_ol (self):
+        val = self.config.get_db_config('ol')
+        self.assertTrue(val['sync_fields'][0] == 'PR_ENTRYID')
 
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    print 'bb:gc last_sync_start: ', config.get_last_sync_start('bb', 'gc')
-    print 'Resetting time to current time'
-    config.set_last_sync_start('bb', 'gc', config.get_curr_time())
-    print 'bb:gc last_sync_start: ', config.get_last_sync_start('bb', 'gc')
+    def test_read_db_config_bb (self):
+        val = self.config.get_db_config('bb')
+        self.assertTrue(val['notes_map']['fileas'] == 'fileas')
 
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    print 'bb:gc last_sync_stop: ', config.get_last_sync_stop('bb', 'gc')
-    print 'Resetting time to current time'
-    config.set_last_sync_stop('bb', 'gc', config.get_curr_time())
-    print 'bb:gc last_sync_stop: ', config.get_last_sync_stop('bb', 'gc')
+    def test_read_profile_defaults (self):
+        val = self.config.get_profile_defaults()
+        self.assertTrue(val['db1'] == None)
+        self.assertTrue(val['db2'] == None)
+        self.assertTrue(val['fold1'] == None)
+        self.assertTrue(val['fold2'] == None)
+        self.assertTrue(val['last_sync_start'] == "1980-01-01T00:00:00.00+00:00")
+        self.assertTrue(val['last_sync_stop'] == "1980-01-01T00:00:00.00+00:00")
+        self.assertTrue(val['sync_dir'] == 'SYNC2WAY')
 
-    try:
-        tcnt += 1
-        print '\n### Test No. %2d ###\n' % tcnt
-        print 'Testing Invalid PIMDB config access. Should throw an exception.'
-        print 'bb:abcd last_sync_start: ', config.get_last_sync_start('bb', 'abcd')
-        print 'No Exception. WTF. Total Fail.'
-    except GoutConfigError, e:
-        print 'Hurrah. ', traceback.format_exc()
+    def test_read_ol_guid (self):
+        val = self.config.get_ol_guid()
+        self.assertTrue(val == '{a1271100-ac2e-11e0-bc8b-0025644a821c}')
 
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    print 'gc:ol sync_dir: ', config.get_sync_dir('gc', 'ol')
-    print 'gc:ol sync_dir setting to SYNC1WAY'
-    config.set_sync_dir('gc', 'ol', 'SYNC1WAY')
-    print 'gc:ol sync_dir: ', config.get_sync_dir('gc', 'ol')
+    def test_read_ol_gid_base (self):
+        val = self.config.get_ol_gid_base('gc')
+        self.assertTrue(val == 0x9001)
 
-    try:
-        tcnt += 1
-        print '\n### Test No. %2d ###\n' % tcnt
-        print 'Try  Invalid value for sync_dir. Should throw Exception'
-        print 'gc:ol sync_dir: ', config.get_sync_dir('gc', 'ol')
-        print 'gc:ol sync_dir setting to GOOFY'
-        config.set_sync_dir('gc', 'ol', 'GOOFY')
-        print 'No Exception. WTF. Total Fail'
-    except GoutConfigError, e:
-        print 'Hurrah. ', traceback.format_exc()
+    ##
+    ## Now onto the state.json accessors
+    ##
 
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    print 'bb:ol conflict resolve: ', config.get_conflict_resolve('bb', 'ol')
-    print 'bb:ol conflict_resolve to bb'
-    config.set_conflict_resolve('bb', 'ol', 'bb')
-    print 'bb:ol sync_dir: ', config.get_conflict_resolve('bb', 'ol')
+    def test_read_state_file_version (self):
+        val = self.config.get_state_file_version()
+        self.assertTrue(val == 2)
 
-    try:
-        tcnt += 1
-        print '\n### Test No. %2d ###\n' % tcnt
-        print 'Try  Invalid value for conflict_resolve. Should throw Exception'
-        print 'bb:ol conflict resolve: ', config.get_conflict_resolve('bb', 'ol')
-        print 'bb:ol conflict_resolve to GUPPY'
-        config.set_conflict_resolve('bb', 'ol', 'GUPPY')
-        print 'No Exception. WTF. Total Fail'
-    except GoutConfigError, e:
-        print 'Hurrah. ', traceback.format_exc()
+    def test_write_state_file_version (self):
+        self.config.set_state_file_version(5)
+        val = self.config.get_state_file_version()
+        self.assertTrue(val == 5)
+
+    def test_read_sync_start (self):
+        val = self.config.get_last_sync_start('sample')
+        self.assertTrue(val == "1980-01-01T00:00:00.00+00:00")
+
+    def test_write_sync_start (self):
+        t =  self.config.get_curr_time()
+        self.config.set_last_sync_start('sample', t)
+        val = self.config.get_last_sync_start('sample')
+        self.assertTrue(val == t)
         
-    tcnt += 1
-    print '\n### Test No. %2d ###\n' % tcnt
-    print 'ol db_config: ', config.get_db_config('ol')
-    print 'ol setting ol["sync_fields"] db_config to []'
-    config.set_db_config('ol', {'sync_fields' : []})
-    print 'ol db_config: ', config.get_db_config('ol')
+    def test_read_sync_stop (self):
+        val = self.config.get_last_sync_stop('sample')
+        self.assertTrue(val =="1980-01-01T00:00:00.00+00:00")
+
+    def test_write_sync_stop (self):
+        t =  self.config.get_curr_time()
+        self.config.set_last_sync_stop('sample', t)
+        val = self.config.get_last_sync_stop('sample')
+        self.assertTrue(val == t)
+
+    def test_invalid_profile_read (self):
+        with self.assertRaises(AsynkConfigError):
+            val = self.config.get_last_sync_start('goofy')
+
+    def test_read_sync_dir (self):
+        val = self.config.get_sync_dir('sample')
+        self.assertTrue(val == "SYNC2WAY")
+
+    def test_write_sync_dir (self):
+        self.config.set_sync_dir('sample', 'SYNC1WAY')
+        val = self.config.get_sync_dir('sample')
+        self.assertTrue(val == "SYNC1WAY")
+
+    def test_write_invalid_sync_dir (self):
+        with self.assertRaises(AsynkConfigError):
+            self.config.set_sync_dir('sample', 'GOOFY')
+
+    def test_read_cr (self):
+        val = self.config.get_conflict_resolve('sample')
+        self.assertTrue(val == 'gc')
+
+    def test_write_cr (self):
+        self.config.set_conflict_resolve('sample', 'bb')
+        val = self.config.get_conflict_resolve('sample')
+        self.assertTrue(val == 'bb')
+
+    def test_write_invalid_cr (self):
+        with self.assertRaises(AsynkConfigError):
+            self.config.set_conflict_resolve('sample', 'GUPPY')
 
 
 if __name__ == '__main__':
