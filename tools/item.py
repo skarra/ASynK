@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 10 13:31:52 IST 2012
+## Last Modified : Wed Apr 18 14:15:12 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -221,13 +221,26 @@ class Item:
     def get_phones_map (self):
         return self.get_db().get_phones_map()
 
-    def get_sync_tags (self, destid=None):
-        """Return the sync tag corresponding to specified DBID: destid. If
-        destid is None, the full dictionary of sync tags is returned to the
-        uesr."""
+    def get_sync_tags (self, label=None):
+        """Return the sync tag corresponding to specified DBID: label. If
+        label is None, the full dictionary of sync tags is returned to the
+        uesr. label can also be a regular expression, in which case all sync
+        tags matching the regular expression are returned as an array of (tag,
+        value) tuples"""
 
         tags = self._get_prop('sync_tags')
-        return tags[destid] if destid else tags
+        try:
+            return tags[label] if label else tags
+        except KeyError, e:
+            pass
+
+        ## label could be a regular expression.
+        ret = []
+        for key, val in tags:
+            if re.search(label, key):
+                ret.append((key, val))
+
+        return ret
 
     def set_sync_tags (self, val, save=False):
         """While this is not anticipated to be used much, this routine gives
