@@ -22,6 +22,9 @@
 	    'db1' : 'gc',
 	    'db2' : 'ol',
 
+            'fid1' : 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/3b83f70e88fa08bd',
+            'fid2' : 'Soemthing something',
+
 	    'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
 	    'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
 
