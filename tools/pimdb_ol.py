@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Apr 13 17:57:06 IST 2012
+## Last Modified : Wed Apr 18 14:19:42 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -153,6 +153,7 @@ class MessageStore:
 
         logging.info('Looking for PIM folders in message store: %s...',
                      self.get_name())
+
         self._populate_folders()
         logging.info('Looking for PIM folders in message store: %s...done',
                      self.get_name())
@@ -526,7 +527,76 @@ class OLPIMDB(PIMDB):
     def del_folder (self, itemid):
         """Get rid of the specified folder."""
 
-        raise NotImplementedError
+        logging.info('Operation del-folder is not implemented for Outlook '
+                     'as the underlying MAPI library we use does not implement '
+                     'the required MAPI routines. Sorry, dude.')
+        return
+
+        logging.info('Folder %s will only be emptied. It will not be deleted '
+                     'completely as I don''t know how to do that.', itemid)
+
+        eid = base64.b64decode(itemid)
+
+        msgstores = self.get_msgstores()
+        for msgstore in msgstores.get_stores():
+            store = msgstore.get_obj()
+            logging.debug('\tStore %s: Trying to open', msgstore.get_name())
+            try:
+                folder = store.OpenEntry(eid, None, MOD_FLAG)
+                logging.debug('\tStore %s: Success!', msgstore.get_name())
+            except Exception, e:
+                logging.debug('\tStore %s: Not found. Error: %s',
+                              msgstore.get_name(), str(e))
+                continue
+
+            try:
+                hr = folder.EmptyFolder(0, 0, 0)
+                if winerror.FAILED(hr):
+                    logging.error('EmptyFolder failed with code: 0x%x',
+                                  winerror.HRESULT_CODE(hr))
+                else:
+                    logging.info('Successfully emptied folder: %s',
+                                 itemid)
+            except Exception, e:
+                logging.error('Folder %s could not be emptied. Error: %s',
+                              itemid, str(e))
+
+            break
+
+        ## FIXME: The following commented out code may be required as and when
+        ## pywin32 implements a DeleteFolder() operation. Just keep this
+        ## around as comments till an unspecified later time.
+
+        # peid = None
+        # msgstores = self.get_msgstores()
+        # for msgstore in msgstores.get_stores():
+        #     store = msgstore.get_obj()
+        #     logging.debug('\tStore %s: Trying to open', msgstore.get_name())
+        #     try:
+        #         folder = store.OpenEntry(eid, None, MOD_FLAG)
+        #         logging.debug('\tStore %s: Success!', msgstore.get_name())
+        #         hr, ps = folder.GetProps((mapitags.PR_PARENT_ENTRYID))
+        #         tag, peid = ps[0]
+        #         break
+        #     except Exception, e:
+        #         logging.debug('\tStore %s: Not found. Error: %s',
+        #                       msgstore.get_name(), str(e))
+        # if peid:
+        #     try:
+        #         folder = store.OpenEntry(peid, None, MOD_FLAG)
+        #     except Exception, e:
+        #         logging.error("OLPIMDB:del_folder(): could not open parent")
+        #         return
+
+        #     hr = folder.EmptyFolder(eid, 0, None)
+        #     if winerror.FAILED(hr):
+        #         logging.error('DeleteFolder failed with code: 0x%x',
+        #                       winerror.HRESULT_CODE(hr))
+        #     else:
+        #         logging.info('Successfully emptied folder: %s', itemid)
+        # else:
+        #     logging.debug('Oops, could not trace the sucker. Not emptied')
+            
 
     def set_folders (self):
         """See the documentation in class PIMDB"""
