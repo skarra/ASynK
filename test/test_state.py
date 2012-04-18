@@ -1,5 +1,5 @@
 
-import os, os.path, shutil, sys, traceback, unittest
+import logging, os, os.path, shutil, sys, traceback, unittest
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
@@ -129,14 +129,40 @@ class TestStateFunctions(unittest.TestCase):
         self.assertTrue(val == 'gc')
 
     def test_write_cr (self):
-        self.config.set_conflict_resolve('sample', 'bb')
+        self.config.set_conflict_resolve('sample', 'ol')
         val = self.config.get_conflict_resolve('sample')
-        self.assertTrue(val == 'bb')
+        self.assertTrue(val == 'ol')
 
     def test_write_invalid_cr (self):
         with self.assertRaises(AsynkConfigError):
             self.config.set_conflict_resolve('sample', 'GUPPY')
 
+    def test_get_gid_next_gc (self):
+        val = self.config.get_ol_next_gid('gc')
+        self.assertTrue(val == 0x9002)
+
+    def test_get_gid_next_bb (self):
+        val = self.config.get_ol_next_gid('bb')
+        self.assertTrue(val == 0x8001)
+
+    def test_make_sync_label (self):
+        val = self.config.make_sync_label('goofy', 'gc')
+        self.assertTrue(val == 'asynk:goofy:gc')
+
+        val = self.config.make_sync_label('goofy', 'gcol')
+        self.assertTrue(val == 'asynk:goofy:gcol')    
+
+    def test_parse_sync_label (self):
+        val = 'asynk:goofy:gc'
+        p, i = self.config.parse_sync_label(val)
+        self.assertEqual(p, 'goofy')
+        self.assertEqual(i, 'gc')
+
+        val = 'asynk:goofy0123:gc123'
+        p, i = self.config.parse_sync_label(val)
+        self.assertEqual(p, 'goofy0123')
+        self.assertEqual(i, 'gc123')
 
 if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.DEBUG)
     main()  
