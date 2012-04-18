@@ -1,13 +1,13 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Fri Apr 13 14:59:20 IST 2012
+## Last Modified : Wed Apr 18 13:48:14 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under GPLv3
 ## 
 
-import argparse, logging, os, string, sys, traceback
+import argparse, logging, os, re, string, sys, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -32,6 +32,7 @@ from   gdata.client     import BadAuthentication
 from   folder           import Folder
 from   pimdb_gc         import GCPIMDB
 from   pimdb_bb         import BBPIMDB
+from   folder_bb        import BBContactsFolder
 
 ## Some Global Variables to get started
 asynk_ver = '0.01'
@@ -42,13 +43,16 @@ class AsynkParserError(Exception):
 class AsynkError(Exception):
     pass
 
+class AsynkInternalError(Exception):
+    pass
+
 def main ():
     parser  = setup_parser()
     uinps = parser.parse_args()
     try:
         asynk = Asynk(uinps)
     except AsynkParserError, e:
-        logging.critical('Error in Uesr input: %s', e)
+        logging.critical('Error in User input: %s', e)
         quit()
 
     asynk.dispatch()
@@ -60,15 +64,19 @@ def setup_parser ():
                    'if a sync is performed.')
 
     p.add_argument('--op', action='store',
-                   choices = ('list-folders',
-                              'create-folder',
-                              'del-folder',
-                              'list-items',
-                              'print-item',
-                              'del-item',
-                              'sync',
-                              'startweb',
-                              'clear-sync-artifacts',),
+                   choices=('list-folders',
+                            'create-folder',
+                            'show-folder',
+                            'del-folder',
+                            'list-profiles',
+                            'create-profile',
+                            'show-profile',
+                            'del-profile',
+                            'print-item',
+                            'del-item',
+                            'sync',
+                            'startweb',
+                            'clear-sync-artifacts',),
                     default='startweb',
                     help='Specific management operation to be performed.')
 
@@ -82,19 +90,34 @@ def setup_parser ():
     p.add_argument('--remote-db', action='store', choices=('bb', 'gc', 'ol'),
                     help=('Specifies which remote db''s sync data to be ' +
                           'cleared with clear-sync-artifacts'))
+    p.add_argument('--profile-name', action='store',
+                   help=('For profile related operations, this option is '
+                         'used to specify which one is needed'))
     p.add_argument('--store-id', action='store',
                     help=('Specifies ID of Outlook Message store. Useful with '
                           'certain operations like --create-folder'))
     p.add_argument('--folder-name', action='store', 
                      help='For folder operations specify the name of the '
                      'folder to operate on.')
-    p.add_argument('--folder-id', action='store',
-                     help='For folder operations specify the ID of the '
-                     'folder to operate on. Only one of folder-id and '
-                     'should be specified')
+    p.add_argument('--folder-id', action='store', nargs='+',
+                     help='For operations that need folder ids, this option '
+                     'specifies them. More than one can be specified separated '
+                     'by spaces')
     p.add_argument('--item-id', action='store',
                      help='For Item operations specify the ID of the '
                      'Item to operate on.')
+
+    p.add_argument('--direction', action='store', default='2way',
+                   choices=('1way' '2way'),
+                   help='Specifies whether a sync has to be unidirectional '
+                   'or bidirectional. Defaults to bidiretioanl sync, i.e. '
+                   '"2way"')
+
+    p.add_argument('--conflict-resolve', action='store',
+                   help='Specifies how to deal with conflicts in case of '
+                   'a bidirectional sync and an item is modified in both '
+                   'places. value should be one of the two dbids that are '
+                   'already specified.')
 
     # A Group for BBDB stuff
     gg = p.add_argument_group('Google Authentication')
@@ -110,7 +133,7 @@ def setup_parser ():
 
     # A Group for BBDB stuff
     gb = p.add_argument_group('BBDB Paramters')
-    gb.add_argument('--file', action='store', 
+    gb.add_argument('--bbdb-file', action='store', 
                     default=os.path.expanduser('~/.bbdb'),
                    help='BBDB File is --db=bb is used.')
 
@@ -138,10 +161,27 @@ class Asynk:
         self.reset_fields()
         self.validate_and_snarf_uinps(uinps)
 
-        self.set_config(Config('./app_state.json'))
+        self.set_config(Config('./config.json', './state.json'))
 
-        login_func = 'login_%s' % self.get_db1()
-        self.set_db(self.get_db1(), getattr(self, login_func)())
+    def _login (self):
+        """This routine is typically invoked after the operation handler
+        performs parameter checking. We do not want to invoke this in the
+        constructor itself becuase it causes delay, and unnecessary database
+        or network access even in the case there are errors on the command
+        line."""
+
+        if 'gc' in [self.get_db1(), self.get_db2()]:
+            while not self.get_gcuser():
+                self.set_gcuser(raw_input('Please enter your username: '))
+                
+            while not self.get_gcpw():
+                self.set_gcpw(raw_input('Password: '))
+                if not self.get_gcpw():
+                    print 'Password cannot be blank'
+
+        if self.get_db1():
+            login_func = 'login_%s' % self.get_db1()
+            self.set_db(self.get_db1(), getattr(self, login_func)())
 
         if self.get_db2():
             login_func = 'login_%s' % self.get_db2()
@@ -166,6 +206,9 @@ class Asynk:
         # mutual exclusion and so forth. In addition to this, every command
         # will do some parsing and validation itself.
 
+        op  = 'op_' + string.replace(uinps.op, '-', '_')
+        self.set_op(op)
+
         # Let's start with the db flags
         if uinps.db:
             if len(uinps.db) > 2:
@@ -173,18 +216,24 @@ class Asynk:
     
             self.set_db1(uinps.db[0])
             self.set_db2(uinps.db[1] if len(uinps.db) > 1 else None)
-
-        op  = string.replace(uinps.op, '-', '_')
-        self.set_op(op)
+        else:
+            # Only one operation does not need a db. Check for this and move
+            # on.
+            if not ((self.get_op() in ['op_startweb', 'op_sync']) or 
+                    (re.search('_profile', self.get_op()))):
+                raise AsynkParserError('--db needed for this operation.')
 
         # The validation that followsi s only relevant for command line
         # usage.
 
-        if self.get_op() == 'startweb':
+        if self.get_op() == 'op_startweb':
             return
 
-        self.set_bbdb_file(uinps.file)
+        self.set_bbdb_file(uinps.bbdb_file)
         self.set_dry_run(uinps.dry_run)
+
+        self.set_remote_db(uinps.remote_db)
+        self.set_profile_name(uinps.profile_name)
 
         if uinps.folder_name and uinps.folder_id:
             raise AsynkParserError('Only one of --folder-name or --folder-id '
@@ -192,27 +241,31 @@ class Asynk:
 
         self.set_store_id(uinps.store_id)
         self.set_folder_name(uinps.folder_name)
-        self.set_folder_id(uinps.folder_id)
-        self.set_item_id(uinps.item_id)
 
+        if uinps.folder_id:
+            temp = {}
+            if len(uinps.folder_id) >= 1:
+                temp.update({self.get_db1() : uinps.folder_id[0]})
+
+            if len(uinps.folder_id) >= 2:
+                temp.update({self.get_db2() : uinps.folder_id[1]})
+
+            self.set_folder_ids(temp)
+        else:
+            self.set_folder_ids(None)
+
+        self.set_sync_dir(uinps.direction)
+        self.set_conflict_resolve(uinps.conflict_resolve)
+        self.set_item_id(uinps.item_id)
         self.set_gcuser(uinps.user)
         self.set_gcpw(uinps.pwd)
-
-        if 'gc' in [self.get_db1(), self.get_db2()]:
-            while not self.get_gcuser():
-                self.set_gcuser(raw_input('Please enter your username: '))
-                
-            while not self.get_gcpw():
-                self.set_gcpw(raw_input('Password: '))
-                if not self.get_gcpw():
-                    print 'Password cannot be blank'
-
         self.set_port(uinps.port)
 
     def dispatch (self):
         res = getattr(self, self.get_op())()
 
-    def list_folders (self):
+    def op_list_folders (self):
+        self._login()
         for db in [self.get_db1(), self.get_db2()]:
             if not db:
                 continue
@@ -220,7 +273,7 @@ class Asynk:
             self.get_db(db).list_folders()
             logging.info('Listing all folders in PIMDB %s...done', db)
 
-    def create_folder (self):
+    def op_create_folder (self):
         ## Let's start with some sanity checking of arguments
 
         # We need to have a --folder-name flag specified
@@ -234,35 +287,154 @@ class Asynk:
             raise AsynkParserError('Please specify only 1 db with --db '
                                    'where new folder is to be created')
 
-        if not self.get_db1():
-            raise AsynkParserError('Please specify the PIMDB where new folder '
-                                   'is to be created, with --db option')
-
         storeid = self.get_store_id()
 
+        self._login()
+
         db = self.get_db(self.get_db1())
-        db.new_folder(fname, Folder.CONTACT_t, storeid)
-            
+        fid = db.new_folder(fname, Folder.CONTACT_t, storeid)
+        if fid:
+            logging.info('Successfully created folder. ID: %s',
+                         fid)
 
-    def del_folder (self):
-        logging.debug('%s; Not Implemented', 'del_folder')
+    def op_show_folder (self):
+        logging.debug('%s: Not Implemented', 'show_folder')
 
-    def list_items (self):
-        logging.debug('%s: Not Implemented', 'list_items')
+    def op_del_folder (self):
+        # There should only be one DB specified
+        if self.get_db2():
+            raise AsynkParserError('Please specify only 1 db with --db '
+                                   'where new folder is to be created')
 
-    def print_items (self):
+        dbid = self.get_db1()
+        fid  = self.get_folder_id(dbid)
+
+        if not fid and not ('bb' == dbid):
+            raise AsynkParserError('--del-folder needs a --folder-id option')
+
+        db = self.get_db(dbid)
+        db.del_folder(fid)
+
+    def op_list_profiles (self):
+        self.get_config().list_profiles()
+
+    def op_create_profile (self):
+        conf = self.get_config()
+
+        ## Do some checking to ensure the user provided all the inputs we need
+        ## to process a create-profile operation
+        db1 = self.get_db1()
+        db2 = self.get_db2()
+                           
+        if None in [db1, db2]:
+            raise AsynkParserError('--create-folder needs two PIMDB IDs to be '
+                                   'specified.')
+        
+        fid1 = self.get_folder_id(db1)
+        fid2 = self.get_folder_id(db2)
+
+        if None in [fid1, fid2]:
+            raise AsynkParserError('--create-folder needs two Folders IDs to be '
+                                   'specified with --folder-id.')
+
+        # FIXME: Perhaps we should validate if the folder ids provided are
+        # available in the respective PIMDBs, and raise an error if
+        # not. Later.
+
+        pname = self.get_profile_name()
+        if not pname:
+            raise AsynkParserError('--create-folder needs a profile name to '
+                                   'be specified')
+        if conf.profile_exists(pname):
+            raise AsynkParserError('There already exists a profile with name '
+                                   '%s. Kindly retry with a different name'
+                                   % pname)
+
+        cr = self.get_conflict_resolve()
+        if (not cr):
+           cr = db1
+        else:
+           if (not cr in [db1, db2]):
+               raise AsynkParserError('--conflict-resolve should be one of '
+                                      'the two dbids specified ealrier.')
+
+        sync_dir = self.get_sync_dir()
+        if sync_dir == '1way':
+            sync_dir = 'SYNC1WAY'
+        else:
+            sync_dir = 'SYNC2WAY'
+
+        if 'ol' in [db1, db2]:
+            olgid = conf.get_ol_next_gid(db1 if 'ol' == db2 else db2)
+        else:
+            olgid = None            
+
+        profile = conf.get_profile_defaults()
+        profile.update({'db1'              : db1,
+                        'db2'              : db2,
+                        'fold1'            : fid1,
+                        'fold2'            : fid2,
+                        'olgid'            : olgid,
+                        'sync_dir'         : sync_dir,
+                        'conflict_resolve' : cr,
+                        })
+
+        conf.add_profile(pname, profile)
+
+    def op_show_profile (self):
+        ## For now there is no need for something separate from list_profiles
+        ## above(). This will eventually show sync statistics, what has
+        ## changed in each folder, and so on.
+        logging.debug('%s: Not Implemented', 'show_profile')
+
+    def op_del_profile (self):
+        logging.debug('%s: Not Implemented', 'del_profile')
+
+    def op_print_items (self):
         logging.debug('%s: Not Implemented', 'print_items')
 
-    def del_item (self):
+    def op_del_item (self):
         logging.debug('%s: Not Implemented', 'del_item')
 
-    def sync (self):
-        logging.debug('%s: Not Implemented', 'sync')
+    def op_sync (self):
+        ## As always start with some input validation. For the sync operation,
+        ## we need an explicit profile name, or the default_profile should
+        ## be set in state.json
 
-    def startweb (self):
+        conf = self.get_config()
+
+        pname = self.get_profile_name()
+        if not pname:
+            def_pname = conf.get_default_profile()
+            if conf.profile_exists(def_pname):
+                pname = def_pname
+            else:
+                ## Hm, the default profile disappeared from under us... No
+                ## worries, just reset to null and move on..
+                conf.set_default_profile(None)
+                raise AsynkParserError('Could not find default profile to '
+                                       'run sync on. Please provide one '
+                                       'explicitly with --profile-name '
+                                       'option')
+
+        self.set_db1(conf.get_profile_db1(pname))
+        self.set_db2(conf.get_profile_db2(pname))
+        self._login()
+
+        sync = Sync(conf, pname, self.get_db())
+        if self.is_dry_run():
+            sync._prep_lists()
+        else:
+            logging.info('Full sync is not yet implemented. '
+                         'Try a --dry-run instead.')
+            return
+
+        conf.set_default_profile(pname)
+
+    def op_startweb (self):
         logging.debug('%s: Not Implemented', 'startweb')
 
-    def clear_sync_artifacts (self):
+    def op_clear_sync_artifacts (self):
         logging.debug('%s: Not Implemented', 'clear_sync_artifacts')
 
     ##
@@ -282,7 +454,10 @@ class Asynk:
         else:
             self.dbs.update({dbid : val})
 
-    def get_db (self, dbid):
+    def get_db (self, dbid=None):
+        if not dbid:
+            return self.dbs
+
         if dbid in self.dbs:
             return self.dbs[dbid]
 
@@ -322,11 +497,20 @@ class Asynk:
     def set_folder_name (self, val):
         return self._set_att('folder_name', val)
 
-    def get_folder_id (self):
-        return self._get_att('folder_id')
-
-    def set_folder_id (self, val):
+    def set_folder_ids (self, val):
+        """val should be a dictionary of dbid : folderid pairs."""
         return self._set_att('folder_id', val)
+
+    def get_folder_id (self, dbid):
+        if dbid == 'bb':
+            return BBContactsFolder.get_default_folder_id()
+        else:
+            try:
+                return self._get_att('folder_id')[dbid]
+            except TypeError, e:
+                return None
+            except KeyError, e:
+                return None
 
     def get_item_id (self):
         return self._get_att('item_id')
@@ -339,6 +523,24 @@ class Asynk:
 
     def set_remote_db (self, val):
         return self._set_att('remote_db', val)
+
+    def get_profile_name (self):
+        return self._get_att('profile_name')
+
+    def set_profile_name (self, val):
+        return self._set_att('profile_name', val)
+
+    def get_sync_dir (self):
+        return self._get_att('sync_dir')
+
+    def set_sync_dir (self, val):
+        return self._set_att('sync_dir', val)
+
+    def get_conflict_resolve (self):
+        return self._get_att('conflict_resolve')
+
+    def set_conflict_resolve (self, val):
+        return self._set_att('conflict_resolve', val)
 
     def get_store_id (self):
         return self._get_att('store_id')

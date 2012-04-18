@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Tue Apr 10 13:02:12 IST 2012
+## Last Modified : Wed Apr 18 14:08:35 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -36,29 +36,44 @@ import gdata.contacts.data, gdata.contacts.client
 class Sync:
     BATCH_SIZE = 100
 
-    def __init__ (self, config, f1, f2, dirn=None):
+    def __init__ (self, config, profile, pimdbs, dirn=None):
+        """dirn is one of the syn directions, and can be used to override the
+        default sync direction stored in the profile. It is then used as the
+        default sync direction for future runs.
+
+        pimdbs is a dictionary of PIMDB intances indexed by their dbids. We
+        should really be loggingin here if pimdbs is None... Hm"""
+
         self.atts = {}
 
         self.set_config(config)
+        self.set_pname(profile)
+        self.set_pimdbs(pimdbs)
 
-        db1 = f1.get_db()
-        db2 = f2.get_db()
+        fid1 = config.get_fid1(profile)
+        fid2 = config.get_fid2(profile)
 
-        self.set_f1(f1)
-        self.set_f2(f2)
-        self.set_db1(db1)
-        self.set_db2(db2)
-        self.set_db1id(db1.get_dbid())
-        self.set_db2id(db2.get_dbid())
+        logging.debug('pimdbs : %s', pimdbs)
+        logging.debug('pname : %s', profile)
+        logging.debug('fid1  : %s', fid1)
+        logging.debug('fid2  : %s', fid2)
+        logging.debug('db1id : %s', self.get_db1id())
+
+        db1 = self.get_db(self.get_db1id())
+        db2 = self.get_db(self.get_db2id())
+
+        logging.debug('db    : %s', db1)
+
+        self.set_f1(db1.find_folder(fid1)[0])
+        self.set_f2(db2.find_folder(fid2)[0])
 
         db1.prep_for_sync(self.get_db2id())
         db2.prep_for_sync(self.get_db1id())
 
-        if not dirn:
-            dirn = self.get_config().get_sync_dir(self.get_db1id(),
-                                                  self.get_db2id())
-
-        self.set_dir(dirn)
+        if dirn:
+            self.set_dir(dirn)
+        else:
+            dirn = self.get_dir()
 
     ##
     ## First some internal helper routines
@@ -77,47 +92,48 @@ class Sync:
     def set_config (self, config):
         return self._set_att('config', config)
 
+    def get_pname (self):
+        return self._get_att('pname')
+
+    def set_pname (self, pname):
+        return self._set_att('pname', pname)
+
+    def get_db (self, dbid):
+        return self._get_att('pimdbs')[dbid]
+
+    def set_pimdbs (self, val):
+        return self._set_att('pimdbs', val)
+
     def get_f1 (self):
         return self._get_att('f1')
 
-    def set_f1 (self, f1):
-        return self._set_att('f1', f1)
+    def set_f1 (self, f):
+        return self._set_att('f1', f)
 
     def get_f2 (self):
         return self._get_att('f2')
 
-    def set_f2 (self, f2):
-        return self._set_att('f2', f2)
+    def set_f2 (self, f):
+        return self._set_att('f2', f)
 
     def get_db1 (self):
         return self._get_att('db1')
 
-    def set_db1 (self, db1):
-        return self._set_att('db1', db1)
-
     def get_db2 (self):
-        return self._get_att('db2')
-
-    def set_db2 (self, db2):
-        return self._set_att('db2', db2)
+        dbid = self.get_db2id()
+        return self.get_db(dbid)
 
     def get_db1id (self):
-        return self._get_att('db1id')
-
-    def set_db1id (self, db1id):
-        return self._set_att('db1id', db1id)
+        return self.get_config().get_profile_db1(self.get_pname())
 
     def get_db2id (self):
-        return self._get_att('db2id')
-
-    def set_db2id (self, db2id):
-        return self._set_att('db2id', db2id)
+        return self.get_config().get_profile_db2(self.get_pname())
 
     def get_dir (self):
-        return self._get_att('dir')
+        return self.get_config().get_sync_dir(self.get_pname())
 
     def set_dir (self, dir):
-        return self._set_att('dir', dir)
+        return self.get_config().set_sync_dir(self.get_pname(), dir)
 
     def reset_state (self):
         """Reset counters and other state information before starting."""
@@ -127,8 +143,9 @@ class Sync:
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
-        f1sl = SyncLists(f1)
-        f2sl = SyncLists(f2)
+        pname = self.get_pname()
+        f1sl  = SyncLists(f1, pname)
+        f2sl  = SyncLists(f2, pname)
 
         f1.prep_sync_lists(f2.get_dbid(), f1sl)
         f2.prep_sync_lists(f1.get_dbid(), f2sl)
@@ -153,7 +170,7 @@ class Sync:
         # The two db ids need to be specified in sorted order
         db1 = db1id if db1id < db2id else db2id
         db2 = db2id if db1id < db2id else db1id
-        cr = self.get_config().get_conflict_resolve(db1, db2)
+        cr = self.get_config().get_conflict_resolve(pname)
 
         if cr == db2id:
             f1_mod = f1sl.remove_keys(f1_mod, coma)
@@ -173,7 +190,7 @@ class Sync:
 
     def _prep_lists_1_way (self, f1, f2):
         logging.debug('_prep_lists_1_way(): ')
-        f1sl = SyncLists(f1)
+        f1sl = SyncLists(f1, self.get_pname())
         f1.prep_sync_lists(f2.get_dbid(), f1sl)
 
         f1_mod = f1sl.get_mods()
@@ -245,7 +262,7 @@ class SyncLists:
     """Wrapper around lists of items that need to be synched from one place to
     another. Just for convenience."""
 
-    def __init__ (self, src_fold):
+    def __init__ (self, src_fold, pname):
         """fold is the source for the entries."""
         self.fold  = src_fold
         self.db1id = self.fold.get_dbid()
@@ -256,6 +273,11 @@ class SyncLists:
         self.news = []
         self.mods = {}                    # Hash of f1 id -> f2 id
         self.dels = {}
+
+        self.pname = pname
+
+    def get_pname (self):
+        return self.pname
 
     def remove_keys (self, d, k):
         """Remove all the keys specified in the array k from the passed

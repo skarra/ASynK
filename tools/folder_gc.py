@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 10 15:17:43 IST 2012
+## Last Modified : Wed Apr 18 14:00:58 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -91,8 +91,11 @@ class GCContactsFolder(Folder):
     def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         """See the documentation in folder.Folder"""
 
+        pname = sl.get_pname()
+        conf  = self.get_config()
+
         logging.info('Querying Google for status of Contact Entries...')
-        stag = utils.get_sync_label_from_dbid(self.get_config(), destid)
+        stag = conf.make_sync_label(pname, destid)
 
         ## Sort the DBIds so dest1 has the 'lower' ID
         db1 = self.get_db().get_dbid()
@@ -103,7 +106,7 @@ class GCContactsFolder(Folder):
             db2 = destid
 
         if not updated_min:
-            updated_min = self.get_config().get_last_sync_stop(db1, db2)
+            updated_min = conf.get_last_sync_stop(pname)
 
         feed = self._get_group_feed(updated_min=updated_min, showdeleted='false')
 
@@ -174,8 +177,8 @@ class GCContactsFolder(Folder):
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
-        src_sync_tag = utils.get_sync_label_from_dbid(c, src_dbid)
-        dst_sync_tag = utils.get_sync_label_from_dbid(c, my_dbid)
+        src_sync_tag = c.make_sync_label(src_sl.get_pname(), src_dbid)
+        dst_sync_tag = c.make_sync_label(src_sl.get_pname(), my_dbid)
 
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'insert', sync_tag=dst_sync_tag)
@@ -278,8 +281,10 @@ class GCContactsFolder(Folder):
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
-        src_sync_tag = utils.get_sync_label_from_dbid(c, src_dbid)
-        dst_sync_tag = utils.get_sync_label_from_dbid(c, my_dbid)
+        pname   = sync_list.get_pname()
+
+        src_sync_tag = c.make_sync_label(pname, src_dbid)
+        dst_sync_tag = c.make_sync_label(pname, my_dbid)
 
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'update', sync_tag=dst_sync_tag)

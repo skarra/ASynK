@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Tue Apr 17 12:38:36 IST 2012
+## Last Modified : Wed Apr 18 13:05:38 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -14,7 +14,7 @@
 ## and we are continuing to use the same handling framework...
 
 import iso8601, demjson
-import logging, os, time, traceback
+import logging, os, re, time, traceback
 
 import utils
 
@@ -40,13 +40,13 @@ class Config:
             confi = open(confn, "r")
         except IOError, e:
             logging.critical('Error! Could not Open file (%s): %s', confn, e)
-            return
+            raise
 
         try:
             statei = open(staten, "r")
         except IOError, e:
             logging.critical('Error! Could not Open file (%s): %s', staten, e)
-            return
+            raise
 
         stc = confi.read()
         sts = statei.read()
@@ -187,6 +187,18 @@ class Config:
     def set_state_file_version (self, val, sync=True):
         return self._set_prop('state', 'file_version', val, sync)
 
+    def get_default_profile (self):
+        return self._get_prop('state', 'default_profile')
+
+    def set_default_profile (self, val, sync=True):
+        return self._set_prop('state', 'default_profile', val, sync)
+
+    def get_profiles (self):
+        return self._get_prop('state', 'profiles')
+
+    def add_profile (self, pname, val, sync=True):
+        return self._update_prop('state', 'profiles', pname, val, sync)
+
     ##
     ## get-set pairs for application modifiable config/state specific to a
     ## sync profile
@@ -197,6 +209,18 @@ class Config:
 
     def get_profile_db2 (self, profile):
         return self._get_profile_prop(profile, 'db2')
+
+    def get_fid1 (self, profile):
+        return self._get_profile_prop(profile, 'fid1')
+
+    def set_fid1 (self, profile, val, sync=True):
+        return self._set_profile_prop(profile, 'fid1', val, sync)
+
+    def get_fid2 (self, profile):
+        return self._get_profile_prop(profile, 'fid2')
+
+    def set_fid2 (self, profile, val, sync=True):
+        return self._set_profile_prop(profile, 'fid2', val, sync)
 
     def get_last_sync_start (self, profile):
         return self._get_profile_prop(profile, 'last_sync_start')
@@ -243,11 +267,16 @@ class Config:
 
         if not val in [db1id, db2id]:
             raise AsynkConfigError(
-                ('Invalid value for: %s[conflic_resolve]: %s' %
+                ('Invalid value for: %s[conflict_resolve]: %s' %
                  (profile, val)))
 
         return self._set_profile_prop(profile, 'conflict_resolve', val, sync)
 
+    def get_ol_gid (self, profile):
+        return self._get_profile_prop(profile, 'olgid')
+
+    def set_ol_gid (self, profile, val, sync=True):
+        return self._set_profile_prop(profile, 'olgid', val, sync)
 
     ##
     ## Finally the two save routines.
@@ -276,3 +305,95 @@ class Config:
 
         json = demjson.encode(self.state['config'], compactly=False)
         self._save(fn if fn else self.confn, json)
+
+    ##
+    ## Misc Routines
+    ## 
+
+    def _get_gid_lists (self):
+        """Returns all the olgids used in the existing profiles. The returned
+        value is organized as a dictionary, with the destination dbid as the
+        key, and an array of olgids as the value."""
+
+        profiles = self.get_profiles()
+
+        destid = None
+        ret = {}
+        for pname, pval in profiles.iteritems():
+            db1id = self.get_profile_db1(pname)
+            db2id = self.get_profile_db2(pname)
+
+            if db1id == 'ol':
+                destid = db2id
+            elif db2id == 'ol':
+                destid = db1id
+            else:
+                continue
+
+            gid = self.get_ol_gid(pname)
+
+            if destid in ret:
+                ret[destid].append(pname)
+            else:
+                ret.update({destid : [pname]})
+
+        return ret
+                
+    def get_ol_next_gid (self, destid):
+        base     = self.get_ol_gid_base(destid)
+        try:
+            gid_list = self._get_gid_lists()[destid]
+        except KeyError, e:
+            gid_list = []
+
+        cnt   = len(gid_list)
+        gid_c = base + cnt
+        i     = 0
+
+        while gid_c in gid_list:
+            gid_c += 1
+            i +=1
+            if i > 5000:
+                logging.info('state:get_ol_next_gid: more than 5000 iters!')
+
+        return gid_c
+
+    def make_sync_label (self, profile, dbid):
+        """A sync label that is used in GC and BB to store the remote ID of a
+        synched item."""
+
+        pre = self.get_label_prefix()
+        sep = self.get_label_separator()
+
+        return (pre + sep + profile + sep + dbid)
+    
+    def parse_sync_label (self, label):
+        """Parse the given sync label, which is of the form asynk:profile:ol
+        and return a (profile, dbid) tuple."""
+
+        pre = self.get_label_prefix()
+        sep = self.get_label_separator()
+        reg =  (pre + sep + '([a-z0-9]+)' + sep + '([a-z0-9]+)$')
+        res = re.match(reg, label)
+        if res:
+            return (res.group(1), res.group(2))
+        else:
+            return None
+
+    def list_profiles (self):
+        for key, val in self.get_profiles().iteritems():
+            olgid = val['olgid'] if val['olgid'] else 0
+
+            logging.info('')
+            logging.info('Profile Name  : %s',     key)
+            logging.info('  dbs         : %s, %s', val['db1'], val['db2'])
+            logging.info('  Folder 1 ID : %s',     val['fid1'])
+            logging.info('  Folder 2 ID : %s',     val['fid2'])
+            logging.info('  sync_start  : %s',     val['last_sync_start'])
+            logging.info('  sync_stop   : %s',     val['last_sync_stop'])
+            logging.info('  sync_dir    : %s',     val['sync_dir'])
+            logging.info('  confl_res   : %s',     val['conflict_resolve'])
+            logging.info('  olgid       : 0x%x',   olgid)
+
+    def profile_exists (self, pname):
+        return pname in self.get_profiles()

@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Apr 13 14:56:36 IST 2012
+## Last Modified : Wed Apr 18 14:04:09 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -86,9 +86,10 @@ class OLFolder(Folder):
         i   = 0
         old = 0
 
-        synct_str = self.get_config().get_last_sync_start(dest1, dest2)
+        pname = sl.get_pname()
+        synct_str = self.get_config().get_last_sync_start(pname)
         if not synct_sto:
-            synct_sto = self.get_config().get_last_sync_stop(dest1, dest2)
+            synct_sto = self.get_config().get_last_sync_stop(pname)
         synct     = iso8601.parse(synct_sto)
         logging.debug('Last Start iso str : %s', synct_str)
         logging.debug('Last Stop  iso str : %s', synct_sto)
@@ -145,8 +146,10 @@ class OLFolder(Folder):
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
-        src_sync_tag = utils.get_sync_label_from_dbid(c, src_dbid)
-        dst_sync_tag = utils.get_sync_label_from_dbid(c, my_dbid)
+        pname   = sync_list.get_pname()
+
+        src_sync_tag = c.make_sync_label(pname, src_dbid)
+        dst_sync_tag = c.make_sync_label(pname, my_dbid)
 
         for item in items:
             olc = OLContact(self, con=item)
@@ -164,7 +167,8 @@ class OLFolder(Folder):
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        src_tag = utils.get_sync_label_from_dbid(self.get_config(), src_dbid)
+        pname   = sync_list.get_pname()
+        src_tag = self.get_config().make_sync_label(pname, src_dbid)
 
         store = self.get_msgstore().get_obj()
         for item in items:

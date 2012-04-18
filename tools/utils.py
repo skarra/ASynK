@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Sun Apr 08 22:22:00 IST 2012
+## Last Modified : Tue Apr 17 15:23:27 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -31,24 +31,6 @@ def unchompq (s):
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
 	return type('Enum', (), enums)
-
-
-def get_sync_label_from_dbid (config, dbid):
-    ret =  (config.get_label_prefix() +
-            config.get_label_separator() +
-            dbid + config.get_label_separator() + 'id')
-
-    return ret
-
-def get_dbid_from_sync_label (config, label):
-    pre = config.get_label_prefix()
-    sep = config.get_label_separator()
-    reg =  (pre + sep + '([a-z0-9]+)' + sep + 'id')
-    res = re.match(reg, label)
-    if res:
-        return res.group(1)
-    else:
-        return None
 
 def get_link_rel (links, rel):
     """From a Google data entry links array, fetch the link with the

@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 10 12:28:52 IST 2012
+## Last Modified : Tue Apr 17 18:00:25 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -33,9 +33,9 @@ class GCContact(Contact):
 
         if con:
             try:
-                label = utils.get_sync_label_from_dbid(self.get_config(),
-                                                       self.get_dbid())
-                itemid = con.get_sync_tags(label)
+                label = self.get_config().make_sync_label('([a-z0-9]+',
+                                                          self.get_dbid())
+                tag, itemid = con.get_sync_tags(label)[0]              
                 self.set_itemid(itemid)
             except Exception, e:
                 pass
