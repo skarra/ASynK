@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Tue Apr 10 13:18:29 IST 2012
+## Last Modified : Wed Apr 18 06:05:42 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -28,16 +28,17 @@ def main (argv=None):
     else:
         bbfn = '/Users/sriramkarra/.bbdb.t'
 
-    tests = TestBBContact(config_fn='../app_state.json',
+    tests = TestBBContact(config_fn='../config.json',
+                          state_fn='../state.json',
                           bbfn=bbfn)
     tests.print_contacts(cnt=1)
     # tests.write_to_file()
 
 class TestBBContact:
-    def __init__ (self, config_fn, bbfn):
+    def __init__ (self, config_fn, state_fn, bbfn):
         logging.debug('Getting started... Reading Config File...')
 
-        self.config = Config(config_fn)
+        self.config = Config(config_fn, state_fn)
         self.bb     = BBPIMDB(self.config, bbfn)
         self.deff   = self.bb.get_def_folder()
 
