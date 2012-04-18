@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Wed Apr 11 17:11:42 IST 2012
+## Last Modified : Wed Apr 18 13:57:08 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -15,12 +15,14 @@ import utils
 class BBDBFileFormatError(Exception):
     pass
 
-class BBContactsFolder(Folder):
-    
+class BBContactsFolder(Folder):    
+    default_folder_id = 'default'
+
     def __init__ (self, db, fn):
         Folder.__init__(self, db)
         
         self.set_clean()
+        self.set_itemid(self.get_default_folder_id())
         self.set_name(fn)
 
         self.contacts = {}
@@ -38,7 +40,8 @@ class BBContactsFolder(Folder):
         return 1000
 
     def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
-        stag = utils.get_sync_label_from_dbid(self.get_config(), destid)
+        pname = sl.get_pname()
+        stag = self.get_config().make_sync_label(pname, destid)
 
         ## Sort the DBIds so dest1 has the 'lower' ID
         db1 = self.get_dbid()
@@ -52,7 +55,7 @@ class BBContactsFolder(Folder):
             ## Note that we only perform a string operation for comparing
             ## times. This rides on a big assumption that both the timestamps
             ## are in UTC
-            updated_min = self.get_config().get_last_sync_stop(db1, db2)
+            updated_min = self.get_config().get_last_sync_stop(pname)
             updated_min = string.replace(updated_min, r'+', ' ')
             updated_min = string.replace(updated_min, r'T', ' ')
 
@@ -250,3 +253,11 @@ class BBContactsFolder(Folder):
 
         logging.debug('Printed %d contacts from folder %s', i,
                       self.get_name())
+
+    ##
+    ## Some class methods
+    ##
+
+    @classmethod
+    def get_default_folder_id (self):
+        return self.default_folder_id

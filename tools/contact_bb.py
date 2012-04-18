@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Tue Apr 10 13:26:39 IST 2012
+## Last Modified : Tue Apr 17 18:00:10 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -33,9 +33,9 @@ class BBContact(Contact):
 
         if con:
             try:
-                label = utils.get_sync_label_from_dbid(self.get_config(),
-                                                       self.get_dbid())
-                itemid = con.get_sync_tags(label)
+                label = self.get_config().make_sync_label('([a-z0-9]+',
+                                                          self.get_dbid())
+                tag, itemid = con.get_sync_tags(label)[0]              
                 self.set_itemid(itemid)
             except Exception, e:
                 pass
