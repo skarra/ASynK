@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Apr 18 14:15:12 IST 2012
+## Last Modified : Wed Apr 18 19:27:51 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -10,6 +10,8 @@
 ## and Note can / will be derived from this base class and will reside in
 ## their own files.
 ##
+
+import logging, re
 
 from abc     import ABCMeta, abstractmethod
 from pimdb   import PIMDB, GoutInvalidPropValueError
@@ -260,9 +262,13 @@ class Item:
         if save:
             self.save()
 
-    def del_sync_tags (self, dbids):
-        for dbid in dbids:
-            self._del_prop('sync_tags', dbid)
+    def del_sync_tags (self, label_re):
+        dels = []
+        for tag, val in self.get_sync_tags().iteritems():
+            if re.search(label_re, tag):
+                dels.append(tag)
+
+        [self._del_prop('sync_tags', t) for t in dels]
 
     def __str__ (self):
         ret = ''

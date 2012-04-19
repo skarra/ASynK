@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Tue Apr 17 18:00:49 IST 2012
+## Last Modified : Wed Apr 18 19:17:54 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -87,15 +87,26 @@ class OLContact(Contact):
         fields.append(olcf.get_proptags().valu('ASYNK_PR_EMAIL_2'))
         fields.append(olcf.get_proptags().valu('ASYNK_PR_EMAIL_3'))
         fields.append(olcf.get_proptags().valu('ASYNK_PR_IM_1'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_GCID'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_BBID'))
         fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_DUE_DATE'))
         fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_STATE'))
         fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_RECUR'))
         fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_COMPLETE'))
         fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_DATE_COMPLETED'))
 
+        ## FIXME
+        self._append_sync_proptags(fields)
+
         self.set_sync_fields(fields)
+
+    def _append_sync_proptags (self, fields):
+        olcf = self.get_folder()
+        pts  = olcf.get_proptags()
+        sts  = pts.sync_tags
+
+        logging.debug('OL Sync Tags: %s', sts)
+        
+        for tag, value in sts.iteritems():
+            fields.append(olcf.get_proptags().valu(tag))
 
     ## This method is already defined in item.py, but we need to override it
     ## here to actually save just the property back to Outlook

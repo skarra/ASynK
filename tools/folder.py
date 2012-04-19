@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Apr 13 14:57:13 IST 2012
+## Last Modified : Wed Apr 18 16:48:51 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -136,16 +136,14 @@ class Folder:
         raise NotImplementedError
 
     @abstractmethod
-    def bulk_clear_sync_flags (self, dbids):
-        """destid should be an array of PIMDB ids.
+    def bulk_clear_sync_flags (self, label_re=None):
+        """This routine will walk through the folder and delete any local
+        storage information that tracks the sync state. For e.g. this includes
+        the clearing custom flags / properties for contact entries that
+        contain the remote IDs in other databases
 
-        This routine will walk through the folder and delete any local storage
-        information that tracks the sync state. For e.g. this includes the
-        clearing custom flags / properties for contact entries that contain
-        the remote IDs in other databases
-
-        dbids is an array of two letter PIMDB identifiers are used in the sync
-        flags.
+        label_re is the regular expression that describes the tag containg the
+        remote sync ID. If it is None, the exact behaviour is user defined.
         """
 
         raise NotImplementedError
