@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Wed Apr 18 13:05:38 IST 2012
+## Last Modified : Wed Apr 18 19:20:42 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -165,6 +165,12 @@ class Config:
     def get_profile_defaults (self):
         return self._get_prop('config', 'profile_defaults')
 
+    def get_profile_name_re (self):
+        return self._get_prop('config', 'profile_name_re')
+
+    def get_dbid_re (self):
+        return self._get_prop('config', 'dbid_re')
+
     def get_ol_guid (self):
         return self.get_db_config('ol')['guid']
 
@@ -195,6 +201,9 @@ class Config:
 
     def get_profiles (self):
         return self._get_prop('state', 'profiles')
+
+    def set_profiles (self, val, sync=True):
+        return self._set_prop('state', 'profiles', val, sync)
 
     def add_profile (self, pname, val, sync=True):
         return self._update_prop('state', 'profiles', pname, val, sync)
@@ -397,3 +406,7 @@ class Config:
 
     def profile_exists (self, pname):
         return pname in self.get_profiles()
+
+    def get_db_profiles (self, i):
+        ps = self.get_profiles()
+        return dict([(k,v) for k, v in ps.items() if i in [v['db1'], v['db2']]])

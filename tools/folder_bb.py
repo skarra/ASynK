@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Wed Apr 18 13:57:08 IST 2012
+## Last Modified : Thu Apr 19 16:31:28 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -134,12 +134,28 @@ class BBContactsFolder(Folder):
         logging.debug('bb:wst: Dirty flag: %s', self.is_dirty())
         self.save_file()
 
-    def bulk_clear_sync_flags (self, dbids):
-        for i, c in self.get_contacts().iteritems():
-            c.del_sync_tags(dbids)
+    def bulk_clear_sync_flags (self, label_re=None):
+        if not label_re:
+            label_re = 'asynk:[a-z][a-z]:id'
 
-        self.set_dirty()
-        self.save_file()
+        ret = True
+        for i, c in self.get_contacts().iteritems():
+            try:
+                c.del_sync_tags(label_re)
+            except Exception, e:
+                logging.error('Caught exception (%s) while clearing flag: %s',
+                              str(e), label_re)
+                ret = False
+    
+        try:
+            self.set_dirty()
+            self.save_file()
+        except Exception, e:
+            logging.error('Caught exception (%s) while saving BBDB folder',
+                          str(e))
+            ret = False
+
+        return ret
 
     def __str__ (self):
         ret = 'Contacts'

@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Tue Apr 17 12:37:27 IST 2012
+// Last Modified : Wed Apr 18 15:29:23 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -22,6 +22,11 @@
     // etc. that are created on Google, field names in BBDB etc.
     'label_prefix'    : 'asynk',
     'label_separator' : ':',
+
+    // Regular expressions that define what a sync profile name, and a
+    // db ID specifier can be
+    'profile_name_re' : '([0-9a-zA-Z]+)',
+    'dbid_re'         : '([a-z][a-z]+)',
 
     // When a profile is created it is populated with the following
     // default values.

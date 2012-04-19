@@ -1,13 +1,13 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Apr 18 14:04:09 IST 2012
+## Last Modified : Thu Apr 19 16:40:32 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ##
 
-import sys, os, logging, time, traceback
+import logging, os, re, sys, time, traceback
 import iso8601, base64
 import utils
 
@@ -20,8 +20,10 @@ if __name__ == "__main__":
 
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
-from   win32com.mapi  import mapi, mapitags, mapiutil
+from   win32com.mapi  import mapi, mapiutil
+from   win32com.mapi  import mapitags as mt
 from   contact_ol     import OLContact
+import winerror
 
 class OLFolder(Folder):
     """An Outlook folder directly corresponds to a MAPI Folder entity. This
@@ -52,7 +54,7 @@ class OLFolder(Folder):
         self.set_fobj(fobj)
         self.set_msgstore(msgstore)
 
-        self.set_proptags(PropTags(self.get_fobj(), self.get_config()))
+        self.set_proptags(PropTags(self, self.get_config()))
         self.reset_def_cols()
 
     ##
@@ -64,6 +66,9 @@ class OLFolder(Folder):
 
     def prep_sync_lists (self, destid, sl, synct_sto=None, cnt=0):
         """See the documentation in folder.Folder"""
+
+        pname = sl.get_pname()
+        stag  = self.get_config().make_sync_label(pname, destid)
 
         logging.info('Querying MAPI for status of Contact Entries')
 
@@ -78,10 +83,12 @@ class OLFolder(Folder):
         ctable = self.get_contents()
         ## FIXME: This needs to be fixed. The ID will be different based on
         ## the actual remote database, of course.
-        ctable.SetColumns((self.get_proptags().valu('ASYNK_PR_GCID'),
-                           mapitags.PR_ENTRYID,
-                           mapitags.PR_LAST_MODIFICATION_TIME),
-                          0)
+        stp = self.get_proptags().sync_tags[stag]
+
+        print 'tag: ', stp
+
+        cols = (mt.PR_ENTRYID, mt.PR_LAST_MODIFICATION_TIME, stp)
+        ctable.SetColumns(cols, 0)
 
         i   = 0
         old = 0
@@ -103,16 +110,16 @@ class OLFolder(Folder):
             if len(rows) != 1:
                 break
 
-            (gid_tag, gid), (entryid_tag, entryid), (tt, modt) = rows[0]
+            (entryid_tag, entryid), (tt, modt), (gid_tag, gid) = rows[0]
             b64_entryid = base64.b64encode(entryid)
 
             sl.add_entry(b64_entryid, gid)
 
-            if mapitags.PROP_TYPE(gid_tag) == mapitags.PT_ERROR:
+            if mt.PROP_TYPE(gid_tag) == mt.PT_ERROR:
                 # Was not synced for whatever reason.
                 sl.add_new(b64_entryid)
             else:
-                if mapitags.PROP_TYPE(tt) == mapitags.PT_ERROR:
+                if mt.PROP_TYPE(tt) == mt.PT_ERROR:
                     print 'Somethin wrong. no time stamp. i=', i
                 else:
                     if utils.utc_time_to_local_ts(modt) <= synct:
@@ -203,26 +210,21 @@ class OLFolder(Folder):
         for item in items:
             item.save_sync_tags()
 
-    def bulk_clear_sync_flags (self, dbids):
+    def bulk_clear_sync_flags (self, label_re=None):
         """See the documentation in folder.Folder.
 
         Need to explore if there is a faster way than iterating through
         entries after a table lookup.
         """
-        print dbids
+        if not label_re:
+            label_re = 'asynk:[a-z][a-z]:id'
 
-        for dbid in dbids:
-            tag = ''
+        tags = []
+        for name, tag in self.get_proptags().sync_tags.iteritems():
+            if re.search(label_re, name):
+                tags.append(tag)
 
-            if dbid == 'gc':
-                tag = 'ASYNK_PR_GCID'
-            elif dbid == 'bb':
-                tag = 'ASYNK_PR_BBID'
-            else:
-                continue
-
-            print 'Processing tag: ', tag
-            self._clear_tag(tag)
+        return self._clear_tag(tags)
 
     def __str__ (self):
         if self.get_type() == Folder.PR_IPM_CONTACT_ENTRYID:
@@ -243,10 +245,12 @@ class OLFolder(Folder):
     ## Note: For Outlook related methods, itemid and entryid are aliases.
 
     def get_entryid (self):
-        return self.get_itemid()
+        return self._get_prop('entryid')
 
     def set_entryid (self, entryid):
-        return self.set_itemid(entryid)
+        self._set_prop('entryid', entryid)
+        self.set_itemid(base64.b64encode(entryid))
+        return entryid
 
     def get_proptags (self):
         return self.proptags
@@ -255,8 +259,9 @@ class OLFolder(Folder):
         self.proptags = p
 
     def reset_def_cols (self):
+        sync_tag_props = self.get_proptags().sync_tags.values()
         self.def_cols  = (self.get_contents().QueryColumns(0) +
-                          (self.get_proptags().valu('ASYNK_PR_GCID'),))
+                          tuple(sync_tag_props))
 
     def get_def_cols (self):
         return self.def_cols
@@ -291,13 +296,18 @@ class OLFolder(Folder):
             hr = cf.DeleteMessages(eids, 0, None, 0)
             cf.SaveChanges(mapi.KEEP_OPEN_READWRITE)
 
-    def _clear_tag (self, tag):
+    def _clear_tag (self, tags, dryrun=False):
+        """Clear any property whose property tag is the provided array."""
+
         logging.info('Querying MAPI for all data needed to clear flag')
         ctable = self.get_contents()
-        ctable.SetColumns((self.get_proptags().valu(tag), mapitags.PR_ENTRYID), 0)
+    
+        cols = tuple([mt.PR_ENTRYID, mt.PR_DISPLAY_NAME]) + tuple(tags)
+        ctable.SetColumns(cols, 0)
         logging.info('Data obtained from MAPI. Clearing one at a time')
 
-        cnt = 0
+        cnt = set()
+        errs = set()
         i   = 0
         store = self.get_msgstore().get_obj()
         hr = ctable.SeekRow(mapi.BOOKMARK_BEGINNING, 0)
@@ -308,18 +318,32 @@ class OLFolder(Folder):
             if len(rows) != 1:
                 break
 
-            (gid_tag, gid), (entryid_tag, entryid) = rows[0]
+            (entryid_tag, entryid), (name_tag, name) = rows[0][:2]
 
             i += 1
-            if mapitags.PROP_TYPE(gid_tag) != mapitags.PT_ERROR:
-                entry = store.OpenEntry(entryid, None, mapi.MAPI_BEST_ACCESS)
-                hr, ps = entry.DeleteProps([gid_tag])
-                entry.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+            for j in range(2, len(rows[0])):
+                (gid_tag, gid) = rows[0][j]
 
-                cnt += 1
+                if mt.PROP_TYPE(gid_tag) != mt.PT_ERROR:
+                    if not dryrun:
+                        entry = store.OpenEntry(entryid, None,
+                                                mapi.MAPI_BEST_ACCESS)
+                        hr, ps = entry.DeleteProps([gid_tag])
+                        if winerror.FAILED(hr):
+                            logging.debug('Could not delete sync tag for: %s '
+                                          '(%s), due to: %s', name,
+                                          base64.b64encode(entryid),
+                                          winerror.HRESULT_CODE(hr))
+                            errs.add(entryid)
+                        else:
+                            logging.debug('ps for %s: %s', name, ps)
+                            entry.SaveChanges(0)
+                            cnt.add(entryid)
 
-        logging.info('Num entries cleared: %d. i = %d', cnt, i)
-        return cnt
+        logging.info('Entries cleared: %d. Errors: %d; i: %d', len(cnt),
+                     len(errs), i)
+
+        return (len(errs) == 0)
 
     @classmethod
     def get_folder_type (self, store, eid):
@@ -330,8 +354,8 @@ class OLFolder(Folder):
         let's amuse ourselves a bit."""
 
         f = store.OpenEntry(eid, None, 0)
-        hr, props = f.GetProps([mapitags.PR_CONTAINER_CLASS,
-                                mapitags.PR_DISPLAY_NAME], mapi.MAPI_UNICODE)
+        hr, props = f.GetProps([mt.PR_CONTAINER_CLASS,
+                                mt.PR_DISPLAY_NAME], mapi.MAPI_UNICODE)
         (ttag, tval), (ntag, nval) = props
 
         try:
@@ -388,12 +412,12 @@ class OLTasksFolder(OLFolder):
             props = dict(rows[0])
 
             try:
-                entryid = props[mapitags.PR_ENTRYID]
+                entryid = props[mt.PR_ENTRYID]
             except AttributeError, e:
                 entryid = 'Not Available'
 
             try:
-                subject = props[mapitags.PR_SUBJECT_W]
+                subject = props[mt.PR_SUBJECT_W]
             except AttributeError, e:
                 subject = 'Not Available'
 
@@ -449,10 +473,10 @@ class OLAppointmentsFolder(OLFolder):
 
 class PropTags:
     """This Singleton class represents a set of all the possible mapi property
-    tags. In general the mapitags module has pretty usable constants
+    tags. In general the mt module has pretty usable constants
     defined. However MAPI compllicates things with 'Named Properties' - which
     are not static, but have to be generated at runtime (not sure what all
-    parameters change it...). This class includes all the mapitags properties
+    parameters change it...). This class includes all the mt properties
     as well as a set of hand selected named properties that are relevant for
     us here."""
 
@@ -466,18 +490,22 @@ class PropTags:
         # We use the def_cf to lookup named properties. I suspect this will
         # have to be changed when we start supporting multiple profiles and
         # folders...
-        self.def_cf = def_cf
+        self.def_olcf = def_cf
+        self.def_cf = def_cf.get_fobj()
         self.config = config
 
-        # Load up all available properties from mapitags module
+        self.sync_tags = {}
+        self.load_proptags()
 
-        for name, value in mapitags.__dict__.iteritems():
+    def load_proptags (self):
+        # Load up all available properties from mt module
+        for name, value in mt.__dict__.iteritems():
             if name[:3] == 'PR_':
                 # Store both the full ID (including type) and just the ID.
                 # This is so PR_FOO_A and PR_FOO_W are still
                 # differentiated. Note that in the following call, the value
                 # hash will only contain the full ID.
-                self.put(name=name, value=mapitags.PROP_ID(value))
+                self.put(name=name, value=mt.PROP_ID(value))
                 self.put(name=name, value=value)
 
         # Now Add a bunch of named properties that we are specifically
@@ -491,15 +519,33 @@ class PropTags:
 
         self.put(name='ASYNK_PR_IM_1', value=self.get_im_prop_tag(1))
 
-        self.put(name='ASYNK_PR_GCID', value=self.get_gid_prop_tag('gc'))
-        self.put(name='ASYNK_PR_BBID', value=self.get_gid_prop_tag('bb'))
-
         self.put('ASYNK_PR_TASK_DUE_DATE', self.get_task_due_date_tag())
         self.put('ASYNK_PR_TASK_STATE',    self.get_task_state_tag())
         self.put('ASYNK_PR_TASK_RECUR',    self.get_task_recur_tag())
         self.put('ASYNK_PR_TASK_COMPLETE', self.get_task_complete_tag())
         self.put('ASYNK_PR_TASK_DATE_COMPLETED',
                  self.get_task_date_completed_tag())
+
+        self.load_sync_proptags()
+
+    def load_sync_proptags (self):
+        conf  = self.config
+        mydid = self.def_olcf.get_db().get_dbid()
+        olps  = conf.get_db_profiles(mydid)
+
+        for pname, prof in olps.iteritems():
+            db1id = conf.get_profile_db1(pname)
+            db2id = conf.get_profile_db2(pname)
+
+            stag = conf.make_sync_label(pname,
+                                        db1id if db2id == mydid else db2id)
+            prop_tag_valu = self.get_gid_prop_tag(pname)
+
+            self.put(name=stag, value=prop_tag_valu)
+            self.sync_tags.update({stag : prop_tag_valu})
+
+        # self.put(name='ASYNK_PR_GCID', value=self.get_gid_prop_tag('gc'))
+        # self.put(name='ASYNK_PR_BBID', value=self.get_gid_prop_tag('bb'))
 
     def valu (self, name):
         return self.name_hash[name]
@@ -535,15 +581,15 @@ class PropTags:
                 return self.valu('ASYNK_PR_EMAIL_1')
             except KeyError, e:
                 prop_name = [(self.PSETID_Address_GUID, 0x8084)]
-                prop_type = mapitags.PT_UNICODE
+                prop_type = mt.PT_UNICODE
                 prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
                 return (prop_type | prop_ids[0])
 
         prev_tag      = self.get_email_prop_tag(n-1)
-        prev_tag_id   = mapitags.PROP_ID(prev_tag)
-        prev_tag_type = mapitags.PROP_TYPE(prev_tag)
+        prev_tag_id   = mt.PROP_ID(prev_tag)
+        prev_tag_type = mt.PROP_TYPE(prev_tag)
 
-        return mapitags.PROP_TAG(prev_tag_type, prev_tag_id+1)
+        return mt.PROP_TAG(prev_tag_type, prev_tag_id+1)
 
     def get_im_prop_tag (self, n):
         """I am no expert at this stuff but I found 4 InstantMessaging
@@ -567,59 +613,59 @@ class PropTags:
                 return self.valu('ASYNK_PR_IM_1')
             except KeyError, e:
                 prop_name = [(self.PSETID_Address_GUID, plid)]
-                prop_type = mapitags.PT_UNICODE
+                prop_type = mt.PT_UNICODE
                 prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
                 return (prop_type | prop_ids[0])
 
         if n > 1:
             return None
 
-    def get_gid_prop_tag (self, dbid):
-        gid = self.config.get_olsync_gid(dbid)
-        prop_name = [(self.config.get_olsync_guid(), gid)]
-        prop_type = mapitags.PT_UNICODE
+    def get_gid_prop_tag (self, pname):
+        gid = self.config.get_ol_gid(pname)
+        prop_name = [(self.config.get_ol_guid(), gid)]
+        prop_type = mt.PT_UNICODE
         prop_ids  = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_file_as_prop_tag (self):
         prop_name = [(self.PSETID_Address_GUID, 0x8005)]
-        prop_type = mapitags.PT_UNICODE
+        prop_type = mt.PT_UNICODE
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_due_date_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x8105)]
-        prop_type = mapitags.PT_SYSTIME
+        prop_type = mt.PT_SYSTIME
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_date_completed_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x810f)]
-        prop_type = mapitags.PT_SYSTIME
+        prop_type = mt.PT_SYSTIME
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_state_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x8113)]
-        prop_type = mapitags.PT_LONG
+        prop_type = mt.PT_LONG
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_complete_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x811c)]
-        prop_type = mapitags.PT_BOOLEAN
+        prop_type = mt.PT_BOOLEAN
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
     def get_task_recur_tag (self):
         prop_name = [(self.PSETID_Task_GUID, 0x8126)]
-        prop_type = mapitags.PT_BOOLEAN
+        prop_type = mt.PT_BOOLEAN
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])

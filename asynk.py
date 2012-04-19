@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed Apr 18 13:48:14 IST 2012
+## Last Modified : Thu Apr 19 16:40:44 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -343,7 +343,7 @@ class Asynk:
 
         pname = self.get_profile_name()
         if not pname:
-            raise AsynkParserError('--create-folder needs a profile name to '
+            raise AsynkParserError('--create-profile needs a profile name to '
                                    'be specified')
         if conf.profile_exists(pname):
             raise AsynkParserError('There already exists a profile with name '
@@ -388,7 +388,51 @@ class Asynk:
         logging.debug('%s: Not Implemented', 'show_profile')
 
     def op_del_profile (self):
-        logging.debug('%s: Not Implemented', 'del_profile')
+        """This deletes the sync profile from the system, and clears up the
+        sync state on both folders in the profile. Optionally, you can also
+        delete the folders as well. If you do not wish to clear the sync state
+        or delete the folders, but only want to remove the profile itself from
+        the state.json, the easiest way is to edit that file by hand and be
+        done with it."""
+
+        conf     = self.get_config()
+        pname    = self._load_profile(login=False)
+        profiles = conf.get_profiles()
+
+        if not pname in profiles:
+            logging.info('Profile %s not in system. Nothing to do.')
+            return
+
+        self._login()
+
+        dbid_re  = conf.get_dbid_re()
+        prefix   = conf.get_label_prefix()
+        sep      = conf.get_label_separator()
+
+        label_re = '%s%s%s%s%s' % (prefix, sep, pname, sep, dbid_re)
+
+        ## First remove the tags for the profile from both folders
+        db1    = self.get_db(self.get_db1())
+        f1, t  = db1.find_folder(conf.get_fid1(pname))
+        hr = f1.bulk_clear_sync_flags(label_re=label_re)
+
+        db2 = self.get_db(self.get_db2())
+        f2, t  = db2.find_folder(conf.get_fid2(pname))
+        hr = hr and f2.bulk_clear_sync_flags(label_re=label_re)
+        
+        ## Finally delete the profile from state.json and save the
+        ## file. Perhaps we could check for sucess of the clear operations
+        ## before we do this... Makes sense to implement. FIXME
+
+        if hr:
+            del profiles[pname]
+            conf.set_profiles(profiles)
+            logging.info('Successfully deleted the profiel %s from your '
+                         'Asynk configuration.', pname)
+        else:
+            logging.info('Due to errors in clearing sync tags, profile '
+                         '%s is not being deleted from your '
+                         'Asynk configuration.', pname)
 
     def op_print_items (self):
         logging.debug('%s: Not Implemented', 'print_items')
@@ -401,25 +445,8 @@ class Asynk:
         ## we need an explicit profile name, or the default_profile should
         ## be set in state.json
 
-        conf = self.get_config()
-
-        pname = self.get_profile_name()
-        if not pname:
-            def_pname = conf.get_default_profile()
-            if conf.profile_exists(def_pname):
-                pname = def_pname
-            else:
-                ## Hm, the default profile disappeared from under us... No
-                ## worries, just reset to null and move on..
-                conf.set_default_profile(None)
-                raise AsynkParserError('Could not find default profile to '
-                                       'run sync on. Please provide one '
-                                       'explicitly with --profile-name '
-                                       'option')
-
-        self.set_db1(conf.get_profile_db1(pname))
-        self.set_db2(conf.get_profile_db2(pname))
-        self._login()
+        conf  = self.get_config()
+        pname = self._load_profile()
 
         sync = Sync(conf, pname, self.get_db())
         if self.is_dry_run():
@@ -588,6 +615,38 @@ class Asynk:
 
     def login_ol (self):
         return OLPIMDB(self.get_config())
+
+    def _get_validated_pname (self):
+        conf  = self.get_config()
+        pname = self.get_profile_name()
+
+        if not pname:
+            def_pname = conf.get_default_profile()
+            if conf.profile_exists(def_pname):
+                pname = def_pname
+            else:
+                ## Hm, the default profile disappeared from under us... No
+                ## worries, just reset to null and move on..
+                conf.set_default_profile(None)
+                raise AsynkParserError('Could not find default profile to '
+                                       'operate on. Please provide one '
+                                       'explicitly with --profile-name '
+                                       'option')
+
+        return pname
+
+    def _load_profile (self, login=True):
+        pname = self._get_validated_pname()
+        conf  = self.get_config()
+
+        self.set_db1(conf.get_profile_db1(pname))
+        self.set_db2(conf.get_profile_db2(pname))
+
+        if login:
+            self._login()
+
+        return pname
+
 
 if __name__ == "__main__":
     main()

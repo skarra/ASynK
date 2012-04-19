@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Apr 18 14:00:58 IST 2012
+## Last Modified : Thu Apr 19 16:26:14 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -80,6 +80,8 @@ class GCContactsFolder(Folder):
         self.set_gcentry(gcentry)
         self.set_type(Folder.CONTACT_t)
         self.set_gdc(db.get_gdc())
+
+        self.contacts = {}
 
     ##
     ## Implementation of the abstract methods inherited from Folder
@@ -243,7 +245,7 @@ class GCContactsFolder(Folder):
                               stats.get_size())
 
                 rf  = self.get_db().exec_batch(f)
-                ces = stats.process_batch_response(rf)
+                success, ces = stats.process_batch_response(rf)
                 [ret.append(x) for x in ces]
 
                 f = self.get_db().new_feed()
@@ -257,7 +259,7 @@ class GCContactsFolder(Folder):
                           stats.get_size())
             
             rf  = self.get_db().exec_batch(f)
-            ces = stats.process_batch_response(rf)
+            success, ces = stats.process_batch_response(rf)
             [ret.append(x) for x in ces]
 
         return ret
@@ -274,17 +276,17 @@ class GCContactsFolder(Folder):
         # etag. (b) Modify the same entry with the local updates and send it
         # back
 
-        gcids = [item.get_sync_tags('asynk:gc:id') for item in items]
-        logging.debug('Refreshing etags for modified entries...')
-        ces   = self._fetch_gc_entries(gcids)
-        etags = [ce.etag for ce in ces]
-
         my_dbid = self.get_dbid()
         c       = self.get_config()
         pname   = sync_list.get_pname()
 
         src_sync_tag = c.make_sync_label(pname, src_dbid)
         dst_sync_tag = c.make_sync_label(pname, my_dbid)
+
+        gcids = [item.get_sync_tags(dst_sync_tag) for item in items]
+        logging.debug('Refreshing etags for modified entries...')
+        ces   = self._fetch_gc_entries(gcids)
+        etags = [ce.etag for ce in ces]
 
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'update', sync_tag=dst_sync_tag)
@@ -368,16 +370,74 @@ class GCContactsFolder(Folder):
             rf = self.get_db().exec_batch(f)
             stats.process_batch_response(rf)                
 
-    def bulk_clear_sync_flags (self, dbids):
+    def bulk_clear_sync_flags (self, label_re=None):
         """See the documentation in folder.Folder"""
 
-        ## FIXME: Need to revisit this method once we get to the sync
-        ## stage. The following code actually gets rid of the entire
-        ## group. This routine should only clear the sync flags from the
-        ## individual entries like in the Outlook case where the property tags
-        ## are removed, making them look like unsynched entries
+        if not label_re:
+            label_re = 'asynk:[a-z][a-z]:id'
 
-        self.del_all_entries()
+        logging.info('Fetching contact entries from Google for folder %s...',
+                     self.get_name())
+
+        feed = self._get_group_feed()
+        if not feed.entry:
+            return
+
+        logging.info('Clearing sync state information...')
+
+        ces  = feed.entry
+        mods = []
+        for i, ce in enumerate(ces):
+            udp = []
+            mod = False
+            for ep in  ce.user_defined_field:
+                if re.search(label_re, ep.key):
+                    logging.info('  Iter %2d Tag %s match for item %s', 
+                                 i, ep.key, ce.etag)
+                    mod = True
+                else:
+                    ## Anything else, just put it back
+                    udp.append(ep)
+
+            ce.user_defined_field = udp
+            if mod:
+                mods.append(ce)
+
+        logging.info('Uploading modifications to Google...')
+
+        f     = self.get_db().new_feed()
+        stats = BatchState(1, f, 'clear',)
+
+        ret = True
+
+        for cnt, ce in enumerate(mods):
+            stats.add_con(ce.id.text, new=ce)
+            f.add_update(entry=ce, batch_id_string=ce.id.text)
+            stats.incr_cnt()
+
+            if stats.get_cnt() % self.get_batch_size() == 0:
+                # Feeds have to be less than 1MB. We can push this some
+                # more. FIXME.
+                logging.debug('Uploading clear batch # %02d to Google. ' +
+                              'Count: %3d. Size: %6.2fK', stats.get_bnum(),
+                              stats.get_cnt(), stats.get_size())
+                rf = self.get_db().exec_batch(f)
+                hr, ces = stats.process_batch_response(rf)
+                ret = ret and hr
+
+                f = self.get_db().new_feed()
+                stats = BatchState(stats.get_bnum()+1, f, 'clear')
+
+        # Upload any leftovers
+        if stats.get_cnt() > 0:
+            logging.debug('Uploading clear batch # %02d to Google. ' +
+                          'Count: %3d. Size: %6.2fK', stats.get_bnum(),
+                          stats.get_cnt(), stats.get_size())
+            rf = self.get_db().exec_batch(f)
+            hr, ces = stats.process_batch_response(rf)
+            ret = ret and hr
+
+        return ret
        
     def __str__ (self):
         ret = 'Contacts'
@@ -388,6 +448,24 @@ class GCContactsFolder(Folder):
     ##
     ## Internal and helper routines
     ##
+
+    def is_dirty (self):
+        return self._get_prop('dirty')
+
+    def is_clean (self):
+        return not self.is_dirty()
+
+    def set_clean (self):
+        return self._set_prop('dirty', False)
+
+    def set_dirty (self):
+        return self._set_prop('dirty', True)
+
+    def add_contact (self, gcc):
+        self.contacts.update({gcc.get_itemid() : gcc})
+
+    def get_contacts (self):
+        return self.contacts    
 
     def get_gdc (self):
         return self._get_prop('gdc')
@@ -412,6 +490,9 @@ class GCContactsFolder(Folder):
         
         feed = self.get_gdc().GetContacts(q=query)
         return feed
+
+    def _refetch_contacts (self):
+        pass
 
     def del_all_entries (self):
         """Delete all contacts in specified group. """
@@ -455,7 +536,7 @@ class BatchState:
     def get_bnum (self):
         return self.num
 
-    def add_con (self, olid_b64, new, orig):
+    def add_con (self, olid_b64, new, orig=None):
         self.cons[olid_b64] = new
         self.origs[olid_b64] = orig
 
@@ -477,10 +558,15 @@ class BatchState:
     
         This routine will walk through the batch response entries, and
         make note in the outlook database for succesful sync, or handle
-        errors appropriately."""
+        errors appropriately.
+
+        Returns a tuple (success, cons) where success is a boolean to know if
+        all the entries had successful operation, and an array of contact
+        items from the batch operation"""
     
         op   = self.get_operation()
         cons = []
+        success = True
     
         for entry in resp.entry:
             bid    = entry.batch_id.text if entry.batch_id else None
@@ -488,6 +574,7 @@ class BatchState:
                 # There is something seriously wrong with this request.
                 logging.error('Unknown fatal error in response. Full resp: %s',
                               entry)
+                success = False
                 continue
     
             code   = int(entry.batch_status.code)
@@ -499,6 +586,8 @@ class BatchState:
                 err_str = '' if err is None else ('Code: %s' % err)
                 err_str = 'Reason: %s. %s' % (reason, err_str)
     
+                success = False
+
                 if op == 'insert' or op == 'update':
                     try:
                         name = self.get_con(bid).name
@@ -523,7 +612,7 @@ class BatchState:
                     # We could build and return array for all cases, but
                     # why waste memory...
                     cons.append(con)
-                else:
+                elif op in ['insert', 'update']:
                     con  = self.get_con(bid)
                     orig = self.get_orig(bid)
                     gcid = utils.get_link_rel(entry.link, 'edit')
@@ -540,4 +629,4 @@ class BatchState:
                         logging.info('Successfully %s gmail entry for %30s (%s)',
                                      t, con.get_name(), orig.get_itemid())
     
-        return cons
+        return success, cons
