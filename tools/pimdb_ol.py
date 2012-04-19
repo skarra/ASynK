@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Apr 18 14:19:42 IST 2012
+## Last Modified : Thu Apr 19 17:12:11 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -530,7 +530,7 @@ class OLPIMDB(PIMDB):
         logging.info('Operation del-folder is not implemented for Outlook '
                      'as the underlying MAPI library we use does not implement '
                      'the required MAPI routines. Sorry, dude.')
-        return
+        # return
 
         logging.info('Folder %s will only be emptied. It will not be deleted '
                      'completely as I don''t know how to do that.', itemid)
@@ -550,17 +550,11 @@ class OLPIMDB(PIMDB):
                 continue
 
             try:
-                hr = folder.EmptyFolder(0, 0, 0)
-                if winerror.FAILED(hr):
-                    logging.error('EmptyFolder failed with code: 0x%x',
-                                  winerror.HRESULT_CODE(hr))
-                else:
-                    logging.info('Successfully emptied folder: %s',
-                                 itemid)
+                folder.EmptyFolder(0, None, 0)
+                logging.info('Successfully emptied folder: %s', itemid)
             except Exception, e:
-                logging.error('Folder %s could not be emptied. Error: %s',
-                              itemid, str(e))
-
+                logging.error('Folder %s could not be emptied. Error: %s %s',
+                              itemid, str(e), traceback.format_exc())
             break
 
         ## FIXME: The following commented out code may be required as and when
