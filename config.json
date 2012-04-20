@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Wed Apr 18 15:29:23 IST 2012
+// Last Modified : Fri Apr 20 12:37:40 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -34,8 +34,8 @@
 	'db1' : null,
 	'db2' : null,
 
-	'fold1' : null,
-	'fold2' : null,
+	'fid1' : null,
+	'fid2' : null,
 
 	'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
 	'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",

@@ -378,8 +378,8 @@ class Asynk:
         profile = conf.get_profile_defaults()
         profile.update({'db1'              : db1,
                         'db2'              : db2,
-                        'fold1'            : fid1,
-                        'fold2'            : fid2,
+                        'fid1'             : fid1,
+                        'fid2'             : fid2,
                         'olgid'            : olgid,
                         'sync_dir'         : sync_dir,
                         'conflict_resolve' : cr,
