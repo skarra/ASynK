@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Tue Apr 17 18:00:10 IST 2012
+## Last Modified : Fri Apr 20 18:37:03 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -412,8 +412,11 @@ class BBContact(Contact):
             return 'nil'
 
         comp = copy.deepcopy(self.get_custom('company'))
-        comp.insert(0, unchompq(comp1))
-        return ('(' + ' '.join(comp) + ')')
+        if comp:
+            comp.insert(0, unchompq(comp1))
+            return ('(' + ' '.join(comp) + ')')
+        else:
+            return 'nil'
 
     def _get_emails_as_string (self):
         ems = [unchompq(e) for e in self.get_email_home()]
@@ -449,7 +452,7 @@ class BBContact(Contact):
         for l, a in self.get_postal().iteritems():
             ret += '[' + unchompq(l) + ' '
 
-            if a['street']:
+            if 'street' in a and a['street']:
                 strts = a['street'].split('\n')
                 ret += '(' + ' '.join([unchompq(x) for x in strts]) + ')'
             else:

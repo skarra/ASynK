@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 17 18:00:25 IST 2012
+## Last Modified : Fri Apr 20 18:29:52 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -196,36 +196,44 @@ class GCContact(Contact):
                     if email.primary:
                         self.set_email_prim(email.address)
 
+    rel_map = {gdata.data.WORK_REL : 'Work',
+               gdata.data.HOME_REL : 'Home',
+               gdata.data.OTHER_REL : 'Other',}
+
     def _snarf_postal_from_gce (self, ce):
         if ce.structured_postal_address:
             if len(ce.structured_postal_address) > 0:
                 for addr in ce.structured_postal_address:
-                    label = addr.label.text
+                    if addr.label:
+                        label = addr.label
+                    else:
+                        label = self.rel_map[addr.rel]
+
                     ad = {}
 
                     fa = addr.formatted_address
                     if fa:
-                        fa.update({'formatted_address' : fa.text})
+                        ad.update({'formatted_address' : fa.text})
 
                     st = addr.street
                     if st:
-                        fa.update({'streets' : st.text})
+                        ad.update({'streets' : st.text})
 
                     ci = addr.city
                     if ci:
-                        fa.update({'city' : ci.text})
+                        ad.update({'city' : ci.text})
 
                     st = addr.region
                     if st:
-                        fa.update({'state' : stp.text})
+                        ad.update({'state' : st.text})
 
                     co = addr.country
                     if co:
-                        fa.update({'country' : co.text})
+                        ad.update({'country' : co.text})
 
                     zi = addr.postcode
                     if zi:
-                        fa.update({'zip' : zi.text})
+                        ad.update({'zip' : zi.text})
 
                     self.add_postal(label, ad)
 
