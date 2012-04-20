@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu Apr 19 16:26:14 IST 2012
+## Last Modified : Fri Apr 20 17:09:02 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -110,6 +110,7 @@ class GCContactsFolder(Folder):
         if not updated_min:
             updated_min = conf.get_last_sync_stop(pname)
 
+        print 'updated min: ', updated_min
         feed = self._get_group_feed(updated_min=updated_min, showdeleted='false')
 
         logging.info('Response recieved from Google. Processing...')
@@ -283,7 +284,8 @@ class GCContactsFolder(Folder):
         src_sync_tag = c.make_sync_label(pname, src_dbid)
         dst_sync_tag = c.make_sync_label(pname, my_dbid)
 
-        gcids = [item.get_sync_tags(dst_sync_tag) for item in items]
+        tags  = [item.get_sync_tags(dst_sync_tag)[0] for item in items]
+        gcids = [val for (tag, val) in tags]
         logging.debug('Refreshing etags for modified entries...')
         ces   = self._fetch_gc_entries(gcids)
         etags = [ce.etag for ce in ces]
@@ -325,9 +327,14 @@ class GCContactsFolder(Folder):
             rf = self.get_db().exec_batch(f)
             stats.process_batch_response(rf)
 
-    def writeback_sync_tags (self, items):
-        ## FIXME: fix the hardcoding below
-        stag  = 'asynk:ol:id'
+    def writeback_sync_tags (self, pname, items):
+        conf  = self.get_config()
+        remid = conf.get_other_dbid(pname, self.get_dbid())
+        stag  = conf.make_sync_label(pname, remid)
+
+        print 'remid : ', remid
+        print 'stag  : ', stag
+
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'Writeback olid', sync_tag=stag)
 
@@ -338,7 +345,12 @@ class GCContactsFolder(Folder):
                               item.get_name(), item.get_itemid())
                 continue
 
-            iid = item.get_sync_tags(stag)
+            tags = item.get_sync_tags(stag)
+            if not tags:
+                logging.debug('Null tags. Item: \n%s', item)
+                raise Exception()
+
+            t, iid = tags[0]
             gce = item.get_gce()
 
             stats.add_con(iid, new=gce, orig=item)
@@ -358,7 +370,7 @@ class GCContactsFolder(Folder):
 
                 f = self.get_db().new_feed()
                 stats = BatchState(stats.get_bnum()+1, f, 'Writeback olid',
-                                   sync_tag=dst_sync_tag)
+                                   sync_tag=stag)
            
         # Upload any leftovers
         if stats.get_cnt() > 0:

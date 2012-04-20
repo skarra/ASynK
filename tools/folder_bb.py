@@ -1,13 +1,13 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Thu Apr 19 16:31:28 IST 2012
+## Last Modified : Fri Apr 20 18:10:53 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ## 
 
-import logging, re, string
+import logging, re, string, traceback
 from   folder     import Folder
 from   contact_bb import BBContact
 import utils
@@ -98,14 +98,14 @@ class BBContactsFolder(Folder):
         return [self.find_item(i) for i in itemids]
 
     def batch_create (self, src_sl, src_dbid, items):
-        """See the documentation in folder.Folder
-
-        src_sl is unused, and we should really nuke the darn thing."""
+        """See the documentation in folder.Folder"""
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
-        src_tag = utils.get_sync_label_from_dbid(c, src_dbid)
-        dst_tag = utils.get_sync_label_from_dbid(c, my_dbid)
+        pname   = src_sl.get_pname()
+
+        src_tag = c.make_sync_label(pname, src_dbid)
+        dst_tag = c.make_sync_label(pname, my_dbid)
 
         if len(items) > 0:
             self.set_dirty()
@@ -116,6 +116,8 @@ class BBContactsFolder(Folder):
             self.add_contact(bbc)
 
             item.update_sync_tags(dst_tag, bbc.get_itemid())
+
+        self.save_file()
 
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder. sync_list is not really
@@ -130,7 +132,7 @@ class BBContactsFolder(Folder):
 
         return self.batch_create(sync_list, src_dbid, items)
 
-    def writeback_sync_tags (self, items):
+    def writeback_sync_tags (self, pname, items):
         logging.debug('bb:wst: Dirty flag: %s', self.is_dirty())
         self.save_file()
 
@@ -145,6 +147,7 @@ class BBContactsFolder(Folder):
             except Exception, e:
                 logging.error('Caught exception (%s) while clearing flag: %s',
                               str(e), label_re)
+                logging.error(traceback.format_exc())
                 ret = False
     
         try:
