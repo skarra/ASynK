@@ -43,11 +43,12 @@ class BBContact(Contact):
         if rec:
             self.set_rec(rec)
             self.init_props_from_rec(rec)
-            if not self.get_itemid():
-                iid = uuid.uuid1()
-                logging.info('bbdbid not found for %s. Assigning %s',
-                             self.get_name(), iid)
-                self.set_itemid(iid)
+
+        if not self.get_itemid():
+            iid = ('%s' % uuid.uuid1())
+            logging.info('bbdbid not found for %-20s. Assigning %s',
+                         self.get_name(), iid)
+            self.set_itemid(iid)
 
     ##
     ## First the inherited abstract methods from the base classes
