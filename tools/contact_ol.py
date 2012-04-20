@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Wed Apr 18 19:17:54 IST 2012
+## Last Modified : Fri Apr 20 18:09:53 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -127,7 +127,7 @@ class OLContact(Contact):
 
         try:
             hr, res = olitem.SetProps(olprops)
-            olitem.SaveChanges(mapi.KEEP_OPEN_READWRITE)
+            olitem.SaveChanges(0)
         except Exception, e:
             logging.critical('Could not save synctags(%s) for %s (reason: %s)',
                              olprops, self.get_name(), e)
