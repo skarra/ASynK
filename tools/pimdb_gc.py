@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Fri Apr 13 15:41:55 IST 2012
+## Last Modified : Fri Apr 20 16:54:45 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -151,7 +151,7 @@ class GCPIMDB(PIMDB):
     def gc_init (self):
         logging.info('Logging into Google...')
 
-        gdc = gdata.contacts.client.ContactsClient(source='Gout-Sync')
+        gdc = gdata.contacts.client.ContactsClient(source='Asynk')
         gdc.ClientLogin(self.get_user(), self.get_pw(), gdc.source)
         self.set_gdc(gdc)
 
