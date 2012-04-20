@@ -318,6 +318,8 @@ class Asynk:
         if not fid and not ('bb' == dbid):
             raise AsynkParserError('--del-folder needs a --folder-id option')
 
+        self._login()
+
         db = self.get_db(dbid)
         db.del_folder(fid)
 
