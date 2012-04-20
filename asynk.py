@@ -113,6 +113,11 @@ def setup_parser ():
                    'or bidirectional. Defaults to bidiretioanl sync, i.e. '
                    '"2way"')
 
+    p.add_argument('--label-regex', action='store',
+                   help='A regular expression for sync artification to be '
+                   'cleared from specified folder. This is to be used '
+                   'independently of any sync profile.')
+
     p.add_argument('--conflict-resolve', action='store',
                    help='Specifies how to deal with conflicts in case of '
                    'a bidirectional sync and an item is modified in both '
@@ -255,6 +260,7 @@ class Asynk:
             self.set_folder_ids(None)
 
         self.set_sync_dir(uinps.direction)
+        self.set_label_re(uinps.label_regex)
         self.set_conflict_resolve(uinps.conflict_resolve)
         self.set_item_id(uinps.item_id)
         self.set_gcuser(uinps.user)
@@ -462,7 +468,19 @@ class Asynk:
         logging.debug('%s: Not Implemented', 'startweb')
 
     def op_clear_sync_artifacts (self):
-        logging.debug('%s: Not Implemented', 'clear_sync_artifacts')
+        db1 = self.get_db1()
+
+        self._login()
+
+        fid = self.get_folder_id(db1)
+        f1, t  = self.get_db(db1).find_folder(fid)
+        if not f1:
+            logging.error('Folder with ID %s not found. Nothing to do',
+                          fid)
+            return
+            
+        lre = self.get_label_re()
+        hr  = f1.bulk_clear_sync_flags(label_re=lre)
 
     ##
     ## Helper and other internal routines.
@@ -562,6 +580,12 @@ class Asynk:
 
     def set_sync_dir (self, val):
         return self._set_att('sync_dir', val)
+
+    def get_label_re (self):
+        return self._get_att('label_re')
+
+    def set_label_re (self, val):
+        return self._set_att('label_re', val)
 
     def get_conflict_resolve (self):
         return self._get_att('conflict_resolve')
