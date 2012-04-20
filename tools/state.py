@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Wed Apr 18 19:20:42 IST 2012
+## Last Modified : Fri Apr 20 18:55:49 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -382,7 +382,10 @@ class Config:
 
         pre = self.get_label_prefix()
         sep = self.get_label_separator()
-        reg =  (pre + sep + '([a-z0-9]+)' + sep + '([a-z0-9]+)$')
+        nre = self.get_profile_name_re()
+        dre = self.get_dbid_re()
+
+        reg =  (pre + sep + nre + sep + dre)
         res = re.match(reg, label)
         if res:
             return (res.group(1), res.group(2))
@@ -409,4 +412,18 @@ class Config:
 
     def get_db_profiles (self, i):
         ps = self.get_profiles()
-        return dict([(k,v) for k, v in ps.items() if i in [v['db1'], v['db2']]])
+        return dict([(k,v) for k, v in ps.items() if i in [v['db1'],
+                                                           v['db2']]])
+
+    def get_other_dbid (self, pname, dbid):
+        """For specified profile, based on the dbid parameter, fetch and
+        return the other dbid. Returns None if dbid is not one of the
+        profiles' dbs"""
+
+        db1 = self.get_profile_db1(pname)
+        db2 = self.get_profile_db2(pname)
+
+        if dbid == db1:
+            return db2
+        elif dbid == db2:
+            return db1
