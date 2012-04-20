@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Wed Apr 18 14:08:35 IST 2012
+## Last Modified : Fri Apr 20 15:32:39 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -64,8 +64,19 @@ class Sync:
 
         logging.debug('db    : %s', db1)
 
-        self.set_f1(db1.find_folder(fid1)[0])
-        self.set_f2(db2.find_folder(fid2)[0])
+        f1 = db1.find_folder(fid1)[0]
+        if f1:
+            self.set_f1(f1)
+        else:
+            logging.error('Could not find folder with ID fid1: %s', fid1)
+            raise Exception()
+
+        f2 = db2.find_folder(fid2)[0]
+        if f2:
+            self.set_f2(f2)
+        else:
+            logging.error('Could not find folder with ID fid2: %s', fid2)
+            raise Exception()
 
         db1.prep_for_sync(self.get_db2id())
         db2.prep_for_sync(self.get_db1id())
@@ -198,7 +209,7 @@ class Sync:
 
         return f1sl, None
 
-    def _prep_lists (self):
+    def prep_lists (self):
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
@@ -212,6 +223,14 @@ class Sync:
             logging.error('_prep_lists(): Huh? Unknown sync dir in config: %s',
                           dirn)
             return None, None
+
+    def sync (self):
+        dirn = self.get_dir()
+        sl1, sl2 = self.prep_lists()
+        
+        sl1.sync_to_folder(self.get_f2())
+        if dirn == 'SYNC2WAY':
+            sl2.sync_to_folder(self.get_f1())
 
     def _del_ol (self):
         pass
@@ -349,7 +368,7 @@ class SyncLists:
 
         items = self.fold.find_items(self.get_news())
         df.batch_create(self, self.db1id, items)
-        self.fold.writeback_sync_tags(items)
+        self.fold.writeback_sync_tags(self.get_pname(), items)
 
     ## FIXME: There appears to be a lot of code repitition between the above
     ## routine and this one. Eplore how to eliminate this stuff...

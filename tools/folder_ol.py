@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu Apr 19 16:40:32 IST 2012
+## Last Modified : Fri Apr 20 18:54:48 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -87,7 +87,8 @@ class OLFolder(Folder):
 
         print 'tag: ', stp
 
-        cols = (mt.PR_ENTRYID, mt.PR_LAST_MODIFICATION_TIME, stp)
+        cols = (mt.PR_ENTRYID, mt.PR_LAST_MODIFICATION_TIME,
+                mt.PR_DISPLAY_NAME, stp)
         ctable.SetColumns(cols, 0)
 
         i   = 0
@@ -110,7 +111,8 @@ class OLFolder(Folder):
             if len(rows) != 1:
                 break
 
-            (entryid_tag, entryid), (tt, modt), (gid_tag, gid) = rows[0]
+            ((entryid_tag, entryid), (tt, modt),
+             (name_tag, name), (gid_tag, gid)) = rows[0]
             b64_entryid = base64.b64encode(entryid)
 
             sl.add_entry(b64_entryid, gid)
@@ -167,7 +169,12 @@ class OLFolder(Folder):
             ## do this. We should test by importing items in bulk into
             ## Outlook and measure performance, and fix this if needed.
 
-            eid = olc.save()
+            try:
+                eid = olc.save()
+            except Exception, e:
+                logging.error('Error saving contact: \n%s', olc)
+                raise
+
             iid = olc.get_itemid()
             item.update_sync_tags(dst_sync_tag, iid)
 
@@ -206,7 +213,7 @@ class OLFolder(Folder):
                 logging.error('%s: Could not set new props set for: %s (%s)',
                               'gc:batch_update()', item.get_name(), e)
 
-    def writeback_sync_tags (self, items):
+    def writeback_sync_tags (self, pname, items):
         for item in items:
             item.save_sync_tags()
 
@@ -353,7 +360,7 @@ class OLFolder(Folder):
         This fellow could really be anywhere in the *.ol.py files, but
         let's amuse ourselves a bit."""
 
-        f = store.OpenEntry(eid, None, 0)
+        f = store.OpenEntry(eid, None, mapi.MAPI_BEST_ACCESS)
         hr, props = f.GetProps([mt.PR_CONTAINER_CLASS,
                                 mt.PR_DISPLAY_NAME], mapi.MAPI_UNICODE)
         (ttag, tval), (ntag, nval) = props

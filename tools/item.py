@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Apr 18 19:27:51 IST 2012
+## Last Modified : Fri Apr 20 16:17:34 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -232,13 +232,14 @@ class Item:
 
         tags = self._get_prop('sync_tags')
         try:
-            return tags[label] if label else tags
+            return [(label, tags[label])] if label else tags
         except KeyError, e:
+            ## Could not make an exact match, now let's attempt a regexp
+            ## match... 
             pass
 
-        ## label could be a regular expression.
         ret = []
-        for key, val in tags:
+        for key, val in tags.iteritems():
             if re.search(label, key):
                 ret.append((key, val))
 
@@ -264,9 +265,10 @@ class Item:
 
     def del_sync_tags (self, label_re):
         dels = []
-        for tag, val in self.get_sync_tags().iteritems():
-            if re.search(label_re, tag):
-                dels.append(tag)
+        logging.debug('Foooo = %s', self.get_sync_tags(label_re))
+        for pair in self.get_sync_tags(label_re):
+            tag, val = pair
+            dels.append(tag)
 
         [self._del_prop('sync_tags', t) for t in dels]
 
