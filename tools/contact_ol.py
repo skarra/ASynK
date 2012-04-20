@@ -103,8 +103,6 @@ class OLContact(Contact):
         pts  = olcf.get_proptags()
         sts  = pts.sync_tags
 
-        logging.debug('OL Sync Tags: %s', sts)
-        
         for tag, value in sts.iteritems():
             fields.append(olcf.get_proptags().valu(tag))
 
@@ -114,7 +112,7 @@ class OLContact(Contact):
         """Update the specified sync tag with given value. If the tag does not
         already exist an entry is created."""
 
-        self._update_att('sync_tags', destid, val)
+        self._update_prop('sync_tags', destid, val)
         if save:
             self.save_sync_tags()
 
@@ -403,7 +401,8 @@ class OLContact(Contact):
 
 
     def _snarf_postal_from_olprops (self, olpd):
-        self.set_postal(self._get_olprop(olpd, mt.PR_POSTAL_ADDRESS))
+        pass
+        #        self.set_postal(self._get_olprop(olpd, mt.PR_POSTAL_ADDRESS))
 
     def _snarf_org_details_from_olprops (self, olpd):
         self.set_company( self._get_olprop(olpd, mt.PR_COMPANY_NAME))
@@ -480,15 +479,12 @@ class OLContact(Contact):
 
     def _snarf_sync_tags_from_olprops (self, olpd):
         conf = self.get_config()
+        sts  = self.get_folder().get_proptags().sync_tags
 
-        for dbid in ['gc', 'bb']:
-            tagn = 'ASYNK_PR_%sID' % (string.upper(dbid))
-            tagv = self.get_proptags().valu(tagn)
-            valu = self._get_olprop(olpd, tagv)
-
+        for name, tag in sts.iteritems():
+            valu = self._get_olprop(olpd, tag)
             if valu:
-                self.update_sync_tags(utils.get_sync_label_from_dbid(conf, dbid),
-                                      valu)
+                self.update_sync_tags(name, valu)
 
     def _snarf_custom_props_from_olprops (self, olpd):
         #        logging.error("_snarf_custom_props_ol(): Not Implemented
@@ -598,9 +594,10 @@ class OLContact(Contact):
                 olprops.append((tag, email))
 
     def _add_postal_to_olprops (self, olprops):
-        postal = self.get_postal()
-        if postal:
-            olprops.append((mt.PR_POSTAL_ADDRESS, postal))
+        pass
+        # postal = self.get_postal()
+        # if postal:
+        #     olprops.append((mt.PR_POSTAL_ADDRESS, postal))
 
     def _add_org_details_to_olprops (self, olprops):
         name = self.get_company()
@@ -701,14 +698,16 @@ class OLContact(Contact):
 
     def _add_sync_tags_to_olprops (self, olprops):
         conf = self.get_config()
-        for key, val in self.get_sync_tags().iteritems():
+
+        for name, val in self.get_sync_tags().iteritems():
             if not val:
                 continue
 
-            dbid = utils.get_dbid_from_sync_label(conf, key)
-            tagn = 'ASYNK_PR_%sID' % (string.upper(dbid))
-            tagv = self.get_proptags().valu(tagn)
+            pname, dbid = conf.parse_sync_label(name)
+            if dbid == self.get_folder().get_dbid():
+                continue
 
+            tagv = self.get_proptags().valu(name)
             if val:
                 olprops.append((tagv, val))
 
