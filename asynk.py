@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu Apr 19 16:40:44 IST 2012
+## Last Modified : Fri Apr 20 16:04:14 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -449,20 +449,22 @@ class Asynk:
         logging.debug('%s: Not Implemented', 'del_item')
 
     def op_sync (self):
-        ## As always start with some input validation. For the sync operation,
-        ## we need an explicit profile name, or the default_profile should
-        ## be set in state.json
-
         conf  = self.get_config()
         pname = self._load_profile()
 
         sync = Sync(conf, pname, self.get_db())
         if self.is_dry_run():
-            sync._prep_lists()
+            sync.prep_lists()
         else:
-            logging.info('Full sync is not yet implemented. '
-                         'Try a --dry-run instead.')
-            return
+            try:
+                startt = conf.get_curr_time()
+                sync.sync()
+                conf.set_last_sync_start(pname, val=startt)
+                conf.set_last_sync_stop(pname)
+            except Exception, e:
+                logging.critical('Exception (%s) while syncing profile %s', 
+                                 str(e), pname)
+                logging.critical(traceback.format_exc())
 
         conf.set_default_profile(pname)
 
