@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Fri Apr 20 16:04:14 IST 2012
+## Last Modified : Mon Apr 23 06:36:54 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -35,7 +35,7 @@ from   pimdb_bb         import BBPIMDB
 from   folder_bb        import BBContactsFolder
 
 ## Some Global Variables to get started
-asynk_ver = '0.01'
+asynk_ver = '0.01+'
 
 class AsynkParserError(Exception):
     pass
