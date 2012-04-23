@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Dec 02 13:46:17 IST 2011
-## Last Modified : Fri Dec 09 17:46:44 IST 2011
+## Last Modified : Mon Mar 12 17:28:20 IST 2012
 ##
 ## Copyright (c) 2011 Sriram Karra <karra.etc@gmail.com>
 ## All Rights Reserved
@@ -23,10 +23,8 @@ sys.path = EXTRA_PATHS + sys.path
 ## Now life can continue as normal
 
 from   tools.state   import Config
-from   ol_wrapper    import Outlook
 from   gc_wrapper    import GC
 from   sync          import Sync
-from   win32com.mapi import mapitags
 from   panels        import Panels
 
 import demjson
@@ -34,11 +32,27 @@ import gdata.contacts.data
 import gdata.contacts.client
 
 class Gout:
-    def __init__ (self):
+    def __init__ (self, argv):
         self.sync   = None
 
         logging.info('Reading app configuration and state...')
         self.config = Config('app_state.json')
+
+        self.collections = ['gmail' 'bbdb']
+        if sys.platform in ['win32' 'cygwin']:
+            try:
+                from  ol_wrapper    import Outlook
+                from  win32com.mapi import mapitags
+                self.collections.add('mapi')
+            except ImportError, e:
+                pass
+
+        logging.debug('Potential collections for synching are: %s',
+                        self.collections)
+
+        if not argv:
+            argv    = sys.argv
+            self.ui = Terminal(self, argv)
 
         self.ui = Panels(self)
 
@@ -135,7 +149,7 @@ class Gout:
 def main (argv = None):
     logging.getLogger().setLevel(logging.DEBUG)
 
-    Gout().run()
+    Gout(argv).run()
 
 
 if __name__ == "__main__":
