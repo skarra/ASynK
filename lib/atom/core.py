@@ -21,6 +21,7 @@
 __author__ = 'j.s@google.com (Jeff Scudder)'
 
 
+import string
 import inspect
 try:
   from xml.etree import cElementTree as ElementTree
@@ -517,6 +518,19 @@ def parse(xml_string, target_class=None, version=1, encoding=None):
       xml_string = xml_string.encode(STRING_ENCODING)
     else:
       xml_string = xml_string.encode(encoding)
+
+  # For some contacts, the google data protocol returns invalid XML. This
+  # issue was originally reported on the python client api google groups, but
+  # it essentially an underlying data api error. More on this error at:
+  # https://code.google.com/p/gdata-python-client/issues/detail?id=538
+  #
+  # This is a fatal error and applications cannot proceed when this error
+  # occurs. The following hack patches the received xml and allows life to
+  # go on. Ofcourse, there is really no confirmation yet from Google on why we
+  # are getting invalid XML for certain contacts in the first place.
+  xml_string = string.replace(xml_string, r'<ns0:cc>', '')
+  xml_string = string.replace(xml_string, r'</ns0:cc>', '')
+
   tree = ElementTree.fromstring(xml_string)
   return _xml_element_from_tree(tree, target_class, version)
 
