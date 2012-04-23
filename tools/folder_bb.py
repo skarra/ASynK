@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Fri Apr 20 18:10:53 IST 2012
+## Last Modified : Mon Apr 23 15:41:29 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -10,7 +10,7 @@
 import logging, re, string, traceback
 from   folder     import Folder
 from   contact_bb import BBContact
-import utils
+import pimdb_bb, utils
 
 class BBDBFileFormatError(Exception):
     pass
@@ -113,6 +113,7 @@ class BBContactsFolder(Folder):
         for item in items:
             bbc = BBContact(self, con=item)
             bbc.update_sync_tags(src_tag, item.get_itemid())
+            bbc.set_updated(pimdb_bb.BBPIMDB.get_bbdb_time())
             self.add_contact(bbc)
 
             item.update_sync_tags(dst_tag, bbc.get_itemid())

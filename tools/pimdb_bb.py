@@ -1,13 +1,13 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Fri Apr 13 15:46:20 IST 2012
+## Last Modified : Mon Apr 23 15:30:46 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ##
 
-import logging, re
+import logging, re, time, datetime
 from   pimdb        import PIMDB
 from   folder       import Folder
 from   folder_bb    import BBContactsFolder
@@ -196,3 +196,39 @@ class BBPIMDB(PIMDB):
         r = '%s%s\w+%s' % (p, s, s)
         self.set_sync_tag_re(r)
         
+    @classmethod
+    def get_bbdb_time (self, t=None):
+       """Convert a datetime.datetime object to a time string formatted in the
+       bbdb-time-stamp-format of version 7 file format. BBDB timestamps are
+       always represented in UTC. So the passed value should either be a naive
+       object having the UTC time, or an aware object with tzinfo set."""
+    
+       # The bbbd ver 7 format uses time stamps in the following format:
+       # "%Y-%m-%d %T %z", for e.g. 2012-04-17 09:49:16 +0000. The following
+       # code converts a specified time instance (seconds since epoch) to the
+       # right format
+    
+       if not t:
+           t = datetime.datetime.utcnow()
+       else:
+           if t.tzinfo:
+               t = t - t.tzinfo.utcoffset(t)
+    
+       return t.strftime('%Y-%m-%d %H:%M:%S +0000', )
+
+    @classmethod
+    def parse_bbdb_time (self, t):
+        """Return a datetime object containing naive UTC timestamp based on
+        the specified BBDB timestamp string."""
+
+       # IMP: Note that we assume the time is in UTC - and ignore what is
+       # actually in the string. This sucks, but this is all I am willing to
+       # do for the m moment. FIXME
+
+        res = re.search(r'(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d).*', t)
+        if res:
+            t = res.group(1)
+        else:
+            return None
+        
+        return datetime.datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
