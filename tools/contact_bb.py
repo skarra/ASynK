@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Fri Apr 20 18:37:03 IST 2012
+## Last Modified : Mon Apr 23 19:33:40 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -14,7 +14,7 @@
 import copy, logging, re, uuid
 from   contact    import Contact
 from   utils      import chompq, unchompq
-import folder_bb, utils
+import pimdb_bb, folder_bb, utils
 
 class BBContact(Contact):
     """This class extends the Contact abstract base class to wrap a BBDB
@@ -31,14 +31,16 @@ class BBContact(Contact):
         ## tags field. if that is present, we should use it to initialize the
         ## itemid field for the current object
 
+        conf = self.get_config()
         if con:
             try:
-                label = self.get_config().make_sync_label('([a-z0-9]+',
-                                                          self.get_dbid())
+                pname_re = conf.get_profile_name_re()
+                label    = conf.make_sync_label(pname_re, self.get_dbid())
                 tag, itemid = con.get_sync_tags(label)[0]              
                 self.set_itemid(itemid)
             except Exception, e:
-                pass
+                logging.debug('Skipping exception %s in BBContact()...',
+                              str(e))
 
         if rec:
             self.set_rec(rec)
@@ -49,6 +51,10 @@ class BBContact(Contact):
             logging.info('bbdbid not found for %-20s. Assigning %s',
                          self.get_name(), iid)
             self.set_itemid(iid)
+
+            # This is a brand new contact, so let's set up the 'created' flag
+            # as well.
+            self.set_created(pimdb_bb.BBPIMDB.get_bbdb_time())
 
     ##
     ## First the inherited abstract methods from the base classes
