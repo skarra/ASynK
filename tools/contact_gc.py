@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Apr 20 18:29:52 IST 2012
+## Last Modified : Mon Apr 23 16:07:00 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -12,7 +12,7 @@
 ## properties, etc.
 ##
 
-import sys, getopt, logging
+import logging, getopt, re, sys
 import atom, gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
 import utils
@@ -257,19 +257,34 @@ class GCContact(Contact):
                 label = ph.label
                 num   = ph.text
 
-                if ph.rel == gdata.data.HOME_REL:
-                    self.add_phone_home((label if label else 'Home', num))
-                elif ph.rel == gdata.data.WORK_REL:
-                    self.add_phone_work((label if label else 'Work', num))
-                elif ph.rel == gdata.data.OTHER_REL:
-                    self.add_phone_other((label if label else 'Other', num))
-                elif ph.rel == gdata.data.MOBILE_REL:
-                    self.add_phone_mob((label if label else 'Mobile', num))
-
-                elif ph.rel == gdata.data.HOME_FAX_REL:
-                    self.add_fax_home((label if label else 'Home', num))
-                elif ph.rel == gdata.data.WORK_FAX_REL:
-                    self.add_fax_work((label if label else 'Work', num))
+                if label:
+                    if re.search('Home', label):
+                        self.add_phone_home((label, num))
+                    elif re.search('(Work)|(Office)', label):
+                        self.add_phone_work((label, num))
+                    elif re.search('(Other)|(Misc)', label):
+                        self.add_phone_other((label, num))
+                    elif re.search('Mobile', label):
+                        self.add_phone_mob((label, num))
+    
+                    elif re.search('Home', label):
+                        self.add_fax_home(('Home', num))
+                    elif re.search('Work', label):
+                        self.add_fax_work(('Work', num))                    
+                else:
+                    if ph.rel == gdata.data.HOME_REL:
+                        self.add_phone_home(('Home', num))
+                    elif ph.rel == gdata.data.WORK_REL:
+                        self.add_phone_work(('Work', num))
+                    elif ph.rel == gdata.data.OTHER_REL:
+                        self.add_phone_other(('Other', num))
+                    elif ph.rel == gdata.data.MOBILE_REL:
+                        self.add_phone_mob(('Mobile', num))
+    
+                    elif ph.rel == gdata.data.HOME_FAX_REL:
+                        self.add_fax_home(('Home', num))
+                    elif ph.rel == gdata.data.WORK_FAX_REL:
+                        self.add_fax_work(('Work', num))
 
                 if ph.primary == 'true':
                     if ph.rel in [gdata.data.HOME_REL, gdata.data.WORK_REL,
