@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Fri Apr 20 18:09:53 IST 2012
+## Last Modified : Tue Apr 24 16:08:40 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -55,14 +55,16 @@ class OLContact(Contact):
         ## field. if that is present, we should use it to initialize the
         ## itemid field for the current object
 
+        conf = self.get_config()
         if con:
             try:
-                label = self.get_config().make_sync_label('([a-z0-9]+',
-                                                          self.get_dbid())
+                pname_re = conf.get_profile_name_re()
+                label    = conf.make_sync_label(pname_re, self.get_dbid())
                 tag, itemid = con.get_sync_tags(label)[0]              
-                self.set_entryid(base64.b64decode(itemid))
+                self.set_itemid(itemid)
             except Exception, e:
-                pass
+                logging.debug('Skipping exception %s in OLContact()...',
+                              str(e))
 
         ## Set up some of the basis object attributes and parent folder/db
         ## properties to make it easier to access them
