@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Mon Apr 23 15:41:29 IST 2012
+## Last Modified : Tue Apr 24 17:49:49 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -22,7 +22,7 @@ class BBContactsFolder(Folder):
         Folder.__init__(self, db)
         
         self.set_clean()
-        self.set_itemid(self.get_default_folder_id())
+        self.set_itemid(fn)
         self.set_name(fn)
 
         self.contacts = {}
@@ -227,14 +227,14 @@ class BBContactsFolder(Folder):
                 raise BBDBFileFormatError(('Need minimum file format ver 7. ' +
                                           '. File version is: %d' ) % ver)
 
-            bbf.readline()
-            # Ignore the user-fields line. What's the point of that anyway...
-
             cnt = 0
             while True:
                 ff = bbf.readline()
                 if ff == '':
                     break
+
+                if re.search('^;', ff):
+                    continue
 
                 c = BBContact(self, rec=ff.rstrip())
                 self.add_contact(c)
@@ -252,9 +252,7 @@ class BBContactsFolder(Folder):
 
         with open(fn, 'w') as bbf:
             bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
-            bbf.write(';;; file-format: 8\n')
-            bbf.write(';;; user-fields: (%s)\n' %
-                      self.get_user_fields_as_string())
+            bbf.write(';;; file-format: 7\n')
 
             for bbdbid, bbc in self.get_contacts().iteritems():
                 con = bbc.init_rec_from_props()
