@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 24 18:47:46 IST 2012
+## Last Modified : Tue Apr 24 20:34:14 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -309,6 +309,8 @@ class GCContactsFolder(Folder):
             gce = gc.get_gce()
             gce.etag = etag
 
+            logging.debug('Sending gce: %s', str(gce))
+
             stats.add_con(bid, new=gc, orig=item)
             f.add_update(entry=gce, batch_id_string=bid)
             stats.incr_cnt()
@@ -344,9 +346,6 @@ class GCContactsFolder(Folder):
         remid = conf.get_other_dbid(pname, self.get_dbid())
         stag  = conf.make_sync_label(pname, remid)
 
-        print 'remid : ', remid
-        print 'stag  : ', stag
-
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'Writeback olid', sync_tag=stag)
 
@@ -364,7 +363,6 @@ class GCContactsFolder(Folder):
 
             t, iid = tags[0]
             gce = item.get_gce(refresh=True)
-            logging.debug('Writing back sync tag for \n%s',str(gce))
 
             stats.add_con(iid, new=gce, orig=item)
             f.add_update(entry=gce, batch_id_string=iid)
@@ -638,13 +636,13 @@ class BatchState:
                     logging.error('Upload to Google failed for: %s: %s',
                                   name, err_str)
                 elif op == 'Writeback olid':
-                    logging.error('Could not complete sync for: %s: %s',
-                                  self.get_con(bid).name, err_str)
+                    logging.error('Could not complete sync for: %s: %s: %s',
+                                  bid, err_str, entry.id)
                 else:
                     ## We could just print a more detailed error for all
                     ## cases. Should do some time FIXME.
-                    logging.error('Sync failed for bid %s: %s',
-                                   bid, err_str)
+                    logging.error('Sync failed for bid %s: %s: %s',
+                                   bid, err_str, entry.id)
             else:
                 if op == 'query':
                     con = entry
