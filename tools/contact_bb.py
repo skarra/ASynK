@@ -352,7 +352,7 @@ class BBContact(Contact):
                 custom.update({key : val})
 
         if len(custom.keys()) > 0:
-            self.add_custom('notes', custom)
+            self.update_custom(custom)
 
     def _is_valid_date (self, date, label):
         res = re.search('\d\d\d\d-(\d\d)-(\d\d)', date)

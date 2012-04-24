@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 10 11:23:32 IST 2012
+## Last Modified : Tue Apr 24 18:35:21 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -363,6 +363,9 @@ class Contact(Item):
 
     def add_custom (self, which, val):
         return self._update_prop('custom', which, val)
+
+    def update_custom (self, d):
+        return self._update_prop('custom', None, None, d)
 
 ## FIXME: This file needs extensive unit testing. There's quite a bit of
 ## pseudo-repititive codet hat has been produced by manual cop-n-paste, which

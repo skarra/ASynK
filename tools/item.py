@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Apr 20 16:17:34 IST 2012
+## Last Modified : Tue Apr 24 18:35:02 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -100,15 +100,22 @@ class Item:
         else:
             self.props[key].append(val)
 
-    def _update_prop (self, prop, which, val):
+    def _update_prop (self, prop, which, val, d=None):
         """If a particular property value is a dictionary, we would like to
         update the dictinary with a new mapping or alter an existing
-        mapping. This method does exactly that."""
+        mapping. This method does exactly that. Alternately we can just pass
+        in a whole dictionary to update."""
 
         if not self.props[prop]:
-            self.props[prop] = {which : val}
+            if d:
+                self.props[prop] = d
+            else:
+                self.props[prop] = {which : val}
         else:
-            self.props[prop].update({which : val})
+            if d:
+                self.props[prop].update(d)
+            else:
+                self.props[prop].update({which : val})
 
     def _del_prop (self, key, which):
         """In case the avalue of the specified attribute is a dictionary, this
