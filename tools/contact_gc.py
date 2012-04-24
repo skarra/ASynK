@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 24 18:37:13 IST 2012
+## Last Modified : Tue Apr 24 20:37:38 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -12,7 +12,7 @@
 ## properties, etc.
 ##
 
-import logging, getopt, re, sys
+import logging, getopt, re, string, sys
 import atom, gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
 import utils
@@ -36,7 +36,12 @@ class GCContact(Contact):
             try:
                 pname_re = conf.get_profile_name_re()
                 label    = conf.make_sync_label(pname_re, self.get_dbid())
-                tag, itemid = con.get_sync_tags(label)[0]              
+                tag, itemid = con.get_sync_tags(label)[0]
+
+                # Workaround for a weird Google API behaviour. Certain
+                # operations only succed with the 'full' projection.
+                itemid = string.replace(itemid, '/base/', '/full/')
+
                 self.set_itemid(itemid)
             except Exception, e:
                 logging.debug('Skipping exception (%s) in GCContact()...'
@@ -143,6 +148,9 @@ class GCContact(Contact):
 
     def _snarf_itemid_from_gce (self, ce):
         if ce.id:
+            # Workaround for a weird Google API behaviour. Certain operations
+            # only succed with the 'full' projection.
+            ce.id.text = string.replace(ce.id.text, '/base/', '/full/')
             self.set_itemid(ce.id.text)
 
         if ce.etag:
