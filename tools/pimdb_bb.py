@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Mon Apr 23 15:30:46 IST 2012
+## Last Modified : Tue Apr 24 12:48:40 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -47,8 +47,7 @@ class BBPIMDB(PIMDB):
 
         with open(fname, 'w') as bbf:
             bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
-            bbf.write(';;; file-format: 8\n')
-            bbf.write(';;; user-fields: \n')
+            bbf.write(';;; file-format: 7\n')
             bbf.close()
 
         logging.info('Successfully Created BBDB file: %s', fname)
