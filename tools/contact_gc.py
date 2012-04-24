@@ -330,9 +330,14 @@ class GCContact(Contact):
                 ce.user_defined_field, keyprefix))
 
     def _snarf_custom_props_from_gce (self, ce):
-        ## FIXME: Need to fix this
-        #        logging.error("_snarf_custom_props(): Not Implemented Yet")
-        pass
+        ## Iterate through the user_defined_propertie and do something with
+        ## them...
+        if ce.user_defined_field:
+            for ep in ce.user_defined_field:
+                if ep.key == 'created':
+                    self.set_created(ep.value)
+                else:
+                    self.add_custom(ep.key, ep.value)
 
     def _is_valid_ph (self, phone, type):
         phone = phone.strip()
@@ -353,6 +358,9 @@ class GCContact(Contact):
         itemid = self.get_itemid()
         if itemid:
             gce.id = atom.data.Id(text=itemid)
+        else:
+            logging.debug('Potential new contact to GC: %s',
+                          self.get_name())
 
         etag = self.get_etag()
         if etag:
@@ -628,11 +636,20 @@ class GCContact(Contact):
             gce.user_defined_field.append(ud)
 
     def _add_custom_props_to_gce (self, gce):
-        ## FIXME: This needs to get implemented on priority. This is where all
-        ## the sync tags and stuff will get stored.
-        #        logging.error("_add_custom_props(): Not Implemented Yet")
-        pass
+        c = self.get_created()
+        if c:
+            ud       = gdata.contacts.data.UserDefinedField()
+            ud.key   = 'created'
+            ud.value = c
+            gce.user_defined_field.append(ud)
 
+        for key, val in self.get_custom().iteritems():
+            if val:
+                ud       = gdata.contacts.data.UserDefinedField()
+                ud.key   = key
+                ud.value = val
+                gce.user_defined_field.append(ud)
+                
     ##
     ## Temporarily placing keeping this stuff here while we start by cleaning
     ## up pimdb_gc.py
