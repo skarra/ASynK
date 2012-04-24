@@ -401,6 +401,7 @@ class Asynk:
                         })
 
         conf.add_profile(pname, profile)
+        logging.info('Successfully added profile: %s', pname)
 
     def op_show_profile (self):
         ## For now there is no need for something separate from list_profiles
@@ -471,9 +472,13 @@ class Asynk:
         else:
             try:
                 startt = conf.get_curr_time()
-                sync.sync()
-                conf.set_last_sync_start(pname, val=startt)
-                conf.set_last_sync_stop(pname)
+                result = sync.sync()
+                if result:
+                    conf.set_last_sync_start(pname, val=startt)
+                    conf.set_last_sync_stop(pname)
+                else:
+                    logging.debug('timestamps not reset for profile %s due to '
+                                  'errors (previously identified).', pname)
             except Exception, e:
                 logging.critical('Exception (%s) while syncing profile %s', 
                                  str(e), pname)
@@ -686,7 +691,7 @@ class Asynk:
         if login:
             self._login()
 
-        return pname
+        return self.set_profile_name(pname)
 
 
 if __name__ == "__main__":
