@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Mon Apr 23 19:33:40 IST 2012
+## Last Modified : Tue Apr 24 18:36:01 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -39,8 +39,9 @@ class BBContact(Contact):
                 tag, itemid = con.get_sync_tags(label)[0]              
                 self.set_itemid(itemid)
             except Exception, e:
-                logging.debug('Skipping exception %s in BBContact()...',
-                              str(e))
+                logging.debug('Skipping exception (%s) in GCContact()...'
+                              'while looking for label: %s', str(e), label)
+
 
         if rec:
             self.set_rec(rec)

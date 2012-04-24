@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 23 16:07:00 IST 2012
+## Last Modified : Tue Apr 24 18:37:13 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -31,14 +31,16 @@ class GCContact(Contact):
         ## field. if that is present, we should use it to initialize the
         ## itemid field for the current object
 
+        conf = self.get_config()
         if con:
             try:
-                label = self.get_config().make_sync_label('([a-z0-9]+',
-                                                          self.get_dbid())
+                pname_re = conf.get_profile_name_re()
+                label    = conf.make_sync_label(pname_re, self.get_dbid())
                 tag, itemid = con.get_sync_tags(label)[0]              
                 self.set_itemid(itemid)
             except Exception, e:
-                pass
+                logging.debug('Skipping exception (%s) in GCContact()...'
+                              'while looking for label: %s', str(e), label)
 
         self.set_gce(gce)
         if gce:
