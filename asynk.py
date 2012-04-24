@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Mon Apr 23 06:36:54 IST 2012
+## Last Modified : Tue Apr 24 17:45:29 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -23,7 +23,6 @@ except ImportError, e:
     ## This could mean one of two things: (a) we are not on Windows, or (b)
     ## some of th relevant supporting stuff is not installed (like
     ## pywin32). these error cases are handled elsewhere, so move on.
-    print 'Skipping ImportError exception (', str(e), ')'
     pass
 
 from   sync             import Sync
@@ -139,7 +138,7 @@ def setup_parser ():
     # A Group for BBDB stuff
     gb = p.add_argument_group('BBDB Paramters')
     gb.add_argument('--bbdb-file', action='store', 
-                    default=os.path.expanduser('~/.bbdb'),
+                    # default=os.path.expanduser('~/.bbdb'),
                    help='BBDB File is --db=bb is used.')
 
     gw = p.add_argument_group('Web Parameters')
@@ -645,9 +644,24 @@ class Asynk:
     def set_config (self, val):
         return self._set_att('config', val)
 
+    ## The login_* routines can assume that _load_profile has been invoked by
+    ## this time.
     def login_bb (self):
+        pname = self.get_profile_name()
+        conf = self.get_config()
+
         bbfn = self.get_bbdb_file()
-        bb   = BBPIMDB(self.get_config(), bbfn)
+        logging.debug('bbfn: %s', bbfn)
+
+        if pname:
+            db1 = conf.get_profile_db1(pname)
+            if db1 == 'bb':
+                bbfn = conf.get_fid1(pname)
+            else:
+                bbfn = conf.get_fid2(pname)
+        logging.debug('bbfn: %s', bbfn)
+
+        bb   = BBPIMDB(conf, bbfn)
         return bb
 
     def login_gc (self):
