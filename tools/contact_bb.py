@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Tue Apr 24 18:36:01 IST 2012
+## Last Modified : Tue Apr 24 20:35:47 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -49,8 +49,8 @@ class BBContact(Contact):
 
         if not self.get_itemid():
             iid = ('%s' % uuid.uuid1())
-            logging.info('bbdbid not found for %-20s. Assigning %s',
-                         self.get_name(), iid)
+            logging.debug('Assigning UUID %s for new contact: %s', iid, 
+                          self.get_name())
             self.set_itemid(iid)
 
             # This is a brand new contact, so let's set up the 'created' flag
