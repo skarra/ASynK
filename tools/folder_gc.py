@@ -81,7 +81,7 @@ class GCContactsFolder(Folder):
         self.set_type(Folder.CONTACT_t)
         self.set_gdc(db.get_gdc())
 
-        self.contacts = {}
+        self.reset_contacts()
 
     ##
     ## Implementation of the abstract methods inherited from Folder
@@ -451,6 +451,20 @@ class GCContactsFolder(Folder):
 
         return ret
        
+    def _refresh_contacts (self):
+        feed = self._get_group_feed()
+        for gce in feed.entry:
+            gc = GCContact(self, gce=gce)
+            self.add_contact(gc)
+
+    def show (self, what='summary'):
+        logging.info(str(self))
+        logging.info('Summary of contained Items:')
+
+        self._refresh_contacts()
+        for itemid, con in self.get_contacts().iteritems():
+            logging.info('  Name: %-25s Itemid: %s', con.get_name(), itemid)
+
     def __str__ (self):
         ret = 'Contacts'
 
@@ -475,6 +489,9 @@ class GCContactsFolder(Folder):
 
     def add_contact (self, gcc):
         self.contacts.update({gcc.get_itemid() : gcc})
+
+    def reset_contacts (self):
+        self.contacts = {}
 
     def get_contacts (self):
         return self.contacts    
@@ -502,9 +519,6 @@ class GCContactsFolder(Folder):
         
         feed = self.get_gdc().GetContacts(q=query)
         return feed
-
-    def _refetch_contacts (self):
-        pass
 
     def del_all_entries (self):
         """Delete all contacts in specified group. """

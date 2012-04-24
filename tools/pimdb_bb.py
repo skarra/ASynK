@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Tue Apr 24 12:48:40 IST 2012
+## Last Modified : Tue Apr 24 17:08:05 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -51,6 +51,9 @@ class BBPIMDB(PIMDB):
             bbf.close()
 
         logging.info('Successfully Created BBDB file: %s', fname)
+
+    def show_folder (self, gid):
+        logging.info('%s: Not Implemented', 'pimd_bb:show_folder()')
 
     def del_folder (self, gid):
         """See the documentation in class PIMDB"""
