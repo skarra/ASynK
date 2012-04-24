@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Tue Apr 24 17:45:29 IST 2012
+## Last Modified : Tue Apr 24 20:32:43 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -697,6 +697,7 @@ class Asynk:
 
     def _load_profile (self, login=True):
         pname = self._get_validated_pname()
+        self.set_profile_name(pname)
         conf  = self.get_config()
 
         self.set_db1(conf.get_profile_db1(pname))
@@ -705,7 +706,7 @@ class Asynk:
         if login:
             self._login()
 
-        return self.set_profile_name(pname)
+        return pname
 
 
 if __name__ == "__main__":
