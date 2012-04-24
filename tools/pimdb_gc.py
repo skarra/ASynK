@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Fri Apr 20 16:54:45 IST 2012
+## Last Modified : Tue Apr 24 17:03:17 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -79,6 +79,19 @@ class GCPIMDB(PIMDB):
         else:
             logging.error('Could not create Group \'%s\'', gn)
             return None
+
+    def show_folder (self, gid):
+        """Print a summary of folder details, including a summary of the
+        included items - a one line per item"""
+
+        f, ftype = self.find_folder(gid)
+
+        if not f:
+            logging.error('Group ID not found in folder list: %s', gid)
+            return False
+
+        f.show()
+        return True
 
     def del_folder (self, gid):
         """Delete the specified folder on the Google server. This will first

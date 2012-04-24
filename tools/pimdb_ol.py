@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu Apr 19 17:12:11 IST 2012
+## Last Modified : Tue Apr 24 17:07:59 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -515,6 +515,9 @@ class OLPIMDB(PIMDB):
 
         tag, val = ps[0]
         return base64.b64encode(val)
+
+    def show_folder (self, gid):
+        logging.info('%s: Not Implemented', 'pimd_ol:show_folder()')
 
     def get_olsession (self):
         """Return a reference to the Outlook MAPI session."""
