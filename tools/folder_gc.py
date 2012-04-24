@@ -1,13 +1,13 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Apr 20 17:09:02 IST 2012
+## Last Modified : Tue Apr 24 18:47:46 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ## 
 
-import logging, os, re, sys, traceback
+import copy, logging, os, re, sys, traceback
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
 from   contact_gc     import GCContact
@@ -110,7 +110,6 @@ class GCContactsFolder(Folder):
         if not updated_min:
             updated_min = conf.get_last_sync_stop(pname)
 
-        print 'updated min: ', updated_min
         feed = self._get_group_feed(updated_min=updated_min, showdeleted='false')
 
         logging.info('Response recieved from Google. Processing...')
@@ -170,7 +169,7 @@ class GCContactsFolder(Folder):
         ## Note that it is more efficient to do a single call to fetch all the
         ## entire and then build GCContact objects, than call find_item
         ## iteratively...
-        ces = self._fetch_gc_entries(itemids)
+        res, ces = self._fetch_gc_entries(itemids)
         ret = [GCContact(self, gce=ce) for ce in ces]
 
         return ret
@@ -186,6 +185,7 @@ class GCContactsFolder(Folder):
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'insert', sync_tag=dst_sync_tag)
 
+        success = True
         for item in items:
             gc  = GCContact(self, con=item)
             bid = item.get_itemid()
@@ -205,7 +205,8 @@ class GCContactsFolder(Folder):
                               stats.get_bnum(), stats.get_cnt(),
                               stats.get_size())
                 rf = self.get_db().exec_batch(f)
-                stats.process_batch_response(rf)
+                succ, cons = stats.process_batch_response(rf)
+                success = success and succ
 
                 f = self.get_db().new_feed()
                 stats = BatchState(stats.get_bnum()+1, f, 'insert',
@@ -217,7 +218,10 @@ class GCContactsFolder(Folder):
                           stats.get_bnum(), stats.get_cnt(),
                           stats.get_size())
             rf = self.get_db().exec_batch(f)
-            stats.process_batch_response(rf)
+            succ, cons = stats.process_batch_response(rf)
+            success = success and succ
+
+        return success
 
     def _fetch_gc_entries (self, gcids):
         """gcids is a list of google contact ids to retrieve contact
@@ -229,6 +233,7 @@ class GCContactsFolder(Folder):
         stats = BatchState(1, f, 'query', sync_tag=None)
 
         ret = []
+        success = True
 
         for gcid in gcids:
             ce = gdata.contacts.data.ContactEntry()
@@ -246,7 +251,8 @@ class GCContactsFolder(Folder):
                               stats.get_size())
 
                 rf  = self.get_db().exec_batch(f)
-                success, ces = stats.process_batch_response(rf)
+                suc, ces = stats.process_batch_response(rf)
+                success = success and suc
                 [ret.append(x) for x in ces]
 
                 f = self.get_db().new_feed()
@@ -260,10 +266,11 @@ class GCContactsFolder(Folder):
                           stats.get_size())
             
             rf  = self.get_db().exec_batch(f)
-            success, ces = stats.process_batch_response(rf)
+            suc, ces = stats.process_batch_response(rf)
+            success = success and suc
             [ret.append(x) for x in ces]
 
-        return ret
+        return success, ret
 
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
@@ -286,10 +293,11 @@ class GCContactsFolder(Folder):
 
         tags  = [item.get_sync_tags(dst_sync_tag)[0] for item in items]
         gcids = [val for (tag, val) in tags]
-        logging.debug('Refreshing etags for modified entries...')
-        ces   = self._fetch_gc_entries(gcids)
-        etags = [ce.etag for ce in ces]
 
+        logging.debug('Refreshing etags for modified entries...')
+
+        success, ces   = self._fetch_gc_entries(gcids)
+        etags = [copy.deepcopy(ce.etag) for ce in ces]
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'update', sync_tag=dst_sync_tag)
 
@@ -313,7 +321,8 @@ class GCContactsFolder(Folder):
                               stats.get_bnum(), stats.get_cnt(),
                               stats.get_size())
                 rf = self.get_db().exec_batch(f)
-                stats.process_batch_response(rf)
+                succ, cons = stats.process_batch_response(rf)
+                success = success and succ
 
                 f = self.get_db().new_feed()
                 stats = BatchState(stats.get_bnum()+1, f, 'update',
@@ -325,7 +334,10 @@ class GCContactsFolder(Folder):
                           stats.get_bnum(), stats.get_cnt(),
                           stats.get_size())
             rf = self.get_db().exec_batch(f)
-            stats.process_batch_response(rf)
+            succ, cons = stats.process_batch_response(rf)
+            success = success and succ
+
+        return success
 
     def writeback_sync_tags (self, pname, items):
         conf  = self.get_config()
@@ -351,7 +363,8 @@ class GCContactsFolder(Folder):
                 raise Exception()
 
             t, iid = tags[0]
-            gce = item.get_gce()
+            gce = item.get_gce(refresh=True)
+            logging.debug('Writing back sync tag for \n%s',str(gce))
 
             stats.add_con(iid, new=gce, orig=item)
             f.add_update(entry=gce, batch_id_string=iid)
@@ -360,7 +373,7 @@ class GCContactsFolder(Folder):
             if stats.get_cnt() % self.get_batch_size() == 0:
                 # Feeds have to be less than 1MB. We can push this some
                 # more. FIXME.
-                logging.info('Uploading Oulook EntryIDs to Google...')
+                logging.info('Uploading Remote ItemIDs to Google...')
                 logging.debug('Batch #%02d. Count: %3d. Size: %6.2fK',
                               stats.get_bnum(), stats.get_cnt(),
                               stats.get_size())
@@ -374,7 +387,7 @@ class GCContactsFolder(Folder):
            
         # Upload any leftovers
         if stats.get_cnt() > 0:
-            logging.info('Uploading Oulook EntryIDs to Google...')
+            logging.info('Uploading Remote ItemIDs to Google...')
             logging.debug('Batch # %02d. Count: %3d. Size: %5.2fK',
                           stats.get_bnum(), stats.get_cnt(),
                           stats.get_size())

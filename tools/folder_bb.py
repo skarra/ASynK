@@ -118,7 +118,13 @@ class BBContactsFolder(Folder):
 
             item.update_sync_tags(dst_tag, bbc.get_itemid())
 
-        self.save_file()
+        try:
+            self.save_file()
+        except Exception, e:
+            logging.error('Could not save BBDB folder: %s', self.get_name())
+            return False
+
+        return True
 
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder. sync_list is not really

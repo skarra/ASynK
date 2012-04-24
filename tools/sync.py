@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Fri Apr 20 15:32:39 IST 2012
+## Last Modified : Tue Apr 24 16:01:52 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -228,9 +228,11 @@ class Sync:
         dirn = self.get_dir()
         sl1, sl2 = self.prep_lists()
         
-        sl1.sync_to_folder(self.get_f2())
+        ret1 = sl1.sync_to_folder(self.get_f2())
         if dirn == 'SYNC2WAY':
-            sl2.sync_to_folder(self.get_f1())
+            ret2 = sl2.sync_to_folder(self.get_f1())
+
+        return ret1 and ret2
 
     def _del_ol (self):
         pass
@@ -386,13 +388,16 @@ class SyncLists:
             return
 
         items = self.fold.find_items(self.get_mods())
-        df.batch_update(self, self.db1id, items)
+        return df.batch_update(self, self.db1id, items)
 
     def send_dels_to_folder (self, df):
         """df is the destination folder."""
         logging.debug('send_dels_to_folder: unimplemented')
+        return True
 
     def sync_to_folder (self, df):
-        self.send_news_to_folder(df)
-        self.send_mods_to_folder(df)
-        self.send_dels_to_folder(df)
+        res1 = self.send_news_to_folder(df)
+        res2 = self.send_mods_to_folder(df)
+        res3 = self.send_dels_to_folder(df)
+
+        return res1 and res2 and res3

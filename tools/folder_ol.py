@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Apr 20 18:54:48 IST 2012
+## Last Modified : Tue Apr 24 15:53:54 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -160,6 +160,7 @@ class OLFolder(Folder):
         src_sync_tag = c.make_sync_label(pname, src_dbid)
         dst_sync_tag = c.make_sync_label(pname, my_dbid)
 
+        success = True
         for item in items:
             olc = OLContact(self, con=item)
             rid = item.get_itemid()
@@ -173,10 +174,13 @@ class OLFolder(Folder):
                 eid = olc.save()
             except Exception, e:
                 logging.error('Error saving contact: \n%s', olc)
-                raise
+                success = False
+                continue
 
             iid = olc.get_itemid()
             item.update_sync_tags(dst_sync_tag, iid)
+
+        return success
 
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
@@ -185,6 +189,7 @@ class OLFolder(Folder):
         src_tag = self.get_config().make_sync_label(pname, src_dbid)
 
         store = self.get_msgstore().get_obj()
+        success = True
         for item in items:
             olc = OLContact(self, con=item)
 
@@ -202,6 +207,8 @@ class OLFolder(Folder):
             except Exception, e:
                 logging.error('%s: Could not clear our MAPI props for: %s',
                               'gc:batch_update()', item.get_name())
+                success = False
+                continue
 
             ## Now shove the new property set in
             try:
@@ -212,6 +219,10 @@ class OLFolder(Folder):
             except Exception, e:
                 logging.error('%s: Could not set new props set for: %s (%s)',
                               'gc:batch_update()', item.get_name(), e)
+                success = False
+                continue
+
+        return success
 
     def writeback_sync_tags (self, pname, items):
         for item in items:
