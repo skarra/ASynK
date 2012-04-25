@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Tue Apr 24 16:01:52 IST 2012
+## Last Modified : Wed Apr 25 19:17:13 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -184,9 +184,9 @@ class Sync:
         cr = self.get_config().get_conflict_resolve(pname)
 
         if cr == db2id:
-            f1_mod = f1sl.remove_keys(f1_mod, coma)
+            f1_mod = f1sl.remove_keys_from_mod(coma)
         elif cr == db1id:
-            f2_mod = f2sl.remove_values(f2_mod, coma)
+            f2_mod = f2sl.remove_values_from_mod(coma)
         else:
             logging.error('Unknown conflict resolution dir: %s', cr)
 
@@ -300,21 +300,25 @@ class SyncLists:
     def get_pname (self):
         return self.pname
 
-    def remove_keys (self, d, k):
+    def remove_keys_from_mod (self, k):
         """Remove all the keys specified in the array k from the passed
         dictionary and return the new dictionary. This routine is typically
         used to manipulate one of the self.dictoinaries."""
 
+        d = self.get_mods()
         d = dict([(x,y) for x,y in d.iteritems() if not x in k])
-        return d
 
-    def remove_values (self, d, v):
+        return self.set_mods(d)
+
+    def remove_values_from_mod (self, v):
         """Remove all the values specified in the array k from the passed
         dictionary and return the new dictionary. This routine is typically
         used to manipulate one of the self.dictoinaries."""
 
+        d = self.get_mods()
         d = dict([(x,y) for x,y in d.iteritems() if not y in v])
-        return d
+
+        return self.set_mods(d)
 
     def add_new (self, fid):
         self.news.append(fid)
@@ -351,6 +355,10 @@ class SyncLists:
 
     def get_mods (self):
         return self.mods
+
+    def set_mods (self, val):
+        self.mods = val
+        return val
 
     def get_dels (self):
         return self.dels
