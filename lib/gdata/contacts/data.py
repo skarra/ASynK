@@ -109,7 +109,7 @@ class Gender(atom.core.XmlElement):
   The element cannot be repeated. 
   """
   
-  _qname = CONTACTS_TEMPLATE % 'directoryServer'
+  _qname = CONTACTS_TEMPLATE % 'gender'
   value = 'value'
 
 
