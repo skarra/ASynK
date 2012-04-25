@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Apr 25 16:12:59 IST 2012
+## Last Modified : Wed Apr 25 19:04:41 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -320,8 +320,6 @@ class GCContactsFolder(Folder):
             gce = gc.get_gce()
             gce.etag = etag
 
-            logging.debug('Sending gce: %s', str(gce))
-
             stats.add_con(bid, new=gc, orig=item)
             f.add_update(entry=gce, batch_id_string=bid)
             stats.incr_cnt()
@@ -360,6 +358,7 @@ class GCContactsFolder(Folder):
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'Writeback olid', sync_tag=stag)
 
+        success = True
         for item in items:
             etag = item.get_etag()
             if not etag:
@@ -388,7 +387,8 @@ class GCContactsFolder(Folder):
                               stats.get_size())
 
                 rf = self.get_db().exec_batch(f)
-                stats.process_batch_response(rf)
+                succ, cons = stats.process_batch_response(rf)
+                success = success and succ
 
                 f = self.get_db().new_feed()
                 stats = BatchState(stats.get_bnum()+1, f, 'Writeback olid',
@@ -402,7 +402,10 @@ class GCContactsFolder(Folder):
                           stats.get_size())
 
             rf = self.get_db().exec_batch(f)
-            stats.process_batch_response(rf)                
+            succ, cons = stats.process_batch_response(rf)
+            success = success and succ
+
+        return success
 
     def bulk_clear_sync_flags (self, label_re=None):
         """See the documentation in folder.Folder"""

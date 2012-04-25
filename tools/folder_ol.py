@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 24 15:53:54 IST 2012
+## Last Modified : Wed Apr 25 19:06:15 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -225,8 +225,11 @@ class OLFolder(Folder):
         return success
 
     def writeback_sync_tags (self, pname, items):
+        success = True
         for item in items:
-            item.save_sync_tags()
+            success = success and item.save_sync_tags()
+
+        return success
 
     def bulk_clear_sync_flags (self, label_re=None):
         """See the documentation in folder.Folder.

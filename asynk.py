@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed Apr 25 14:35:10 IST 2012
+## Last Modified : Wed Apr 25 19:00:19 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -498,8 +498,10 @@ class Asynk:
                 logging.critical('Exception (%s) while syncing profile %s', 
                                  str(e), pname)
                 logging.critical(traceback.format_exc())
+                return False
 
         conf.set_default_profile(pname)
+        return True
 
     def op_startweb (self):
         logging.debug('%s: Not Implemented', 'startweb')
