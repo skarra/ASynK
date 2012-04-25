@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Tue Apr 24 17:08:05 IST 2012
+## Last Modified : Wed Apr 25 14:27:42 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -35,9 +35,11 @@ class BBPIMDB(PIMDB):
     def list_folders (self):
         """See the documentation in class PIMDB"""
 
-        ## BBDB is intended to be a one database system...
-        logging.info('  %2d; Name: %-32s ID: %s', 1, self.get_def_fn(),
-                     None)
+        i = 1
+        for t in Folder.valid_types:
+            for f in self.get_folders(t):
+                logging.info(' %2d: %s', i, str(f))
+                i += 1
 
     def new_folder (self, fname, ftype=None, storeid=None):
         """See the documentation in class PIMDB.
@@ -51,6 +53,9 @@ class BBPIMDB(PIMDB):
             bbf.close()
 
         logging.info('Successfully Created BBDB file: %s', fname)
+        f = BBContactsFolder(self, fname)
+        if f:
+            self.add_contacts_folder(f)
 
     def show_folder (self, gid):
         logging.info('%s: Not Implemented', 'pimd_bb:show_folder()')
@@ -62,6 +67,9 @@ class BBPIMDB(PIMDB):
 
     def set_folders (self):
         """See the documentation in class PIMDB"""
+
+        if not self.get_def_fn():
+            return
 
         f = BBContactsFolder(self, self.get_def_fn())
         if f:
