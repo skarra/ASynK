@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Tue Apr 24 20:32:43 IST 2012
+## Last Modified : Wed Apr 25 14:35:10 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -45,7 +45,7 @@ class AsynkError(Exception):
 class AsynkInternalError(Exception):
     pass
 
-def main ():
+def main (argv=sys.argv):
     parser  = setup_parser()
     uinps = parser.parse_args()
     try:
@@ -155,7 +155,7 @@ def setup_parser ():
     return p
 
 class Asynk:
-    def __init__ (self, uinps):
+    def __init__ (self, uinps, config=None):
         """uinps is a Namespace object as returned from the parse_args()
         routine of argparse module."""
 
@@ -165,14 +165,29 @@ class Asynk:
         self.reset_fields()
         self.validate_and_snarf_uinps(uinps)
 
-        self.set_config(Config('./config.json', './state.json'))
+        if config:
+            self.set_config(config)
+        else:
+            self.set_config(Config('./config.json', './state.json'))
 
-    def _login (self):
+        self.logged_in = False
+
+    def _login (self, force=False):
         """This routine is typically invoked after the operation handler
         performs parameter checking. We do not want to invoke this in the
         constructor itself becuase it causes delay, and unnecessary database
         or network access even in the case there are errors on the command
-        line."""
+        line.
+
+        By default, this routine will not simply return without doing anything
+        if there was already a successful call to this routine
+        earlier and the db() dictionary is set. However if the optional force
+        argument is True, a relogin is attempted and the pimdb objects are
+        refreshed.
+        """
+
+        if self.logged_in and not force:
+            return
 
         if 'gc' in [self.get_db1(), self.get_db2()]:
             while not self.get_gcuser():
@@ -190,6 +205,8 @@ class Asynk:
         if self.get_db2():
             login_func = 'login_%s' % self.get_db2()
             self.set_db(self.get_db2(), getattr(self, login_func)())
+
+        self.logged_in = True
             
     def reset_fields (self):
         self.atts = {}
@@ -268,6 +285,7 @@ class Asynk:
 
     def dispatch (self):
         res = getattr(self, self.get_op())()
+        return res
 
     def op_list_folders (self):
         self._login()
@@ -298,9 +316,7 @@ class Asynk:
 
         db = self.get_db(self.get_db1())
         fid = db.new_folder(fname, Folder.CONTACT_t, storeid)
-        if fid:
-            logging.info('Successfully created folder. ID: %s',
-                         fid)
+        return fid
 
     def op_show_folder (self):
         # There should only be one DB specified
@@ -514,6 +530,14 @@ class Asynk:
     def _get_att (self, att):
         return self.atts[att]
 
+    def __str__ (self):
+        ret = ''
+
+        for prop, val in self.atts.iteritems():
+            ret += '%18s: %s\n' % (prop, val)
+
+        return ret
+
     def set_db (self, dbid=None, val=None):
         if not dbid:
             self.dbs = {}
@@ -651,7 +675,6 @@ class Asynk:
         conf = self.get_config()
 
         bbfn = self.get_bbdb_file()
-        logging.debug('bbfn: %s', bbfn)
 
         if pname:
             db1 = conf.get_profile_db1(pname)
@@ -659,7 +682,6 @@ class Asynk:
                 bbfn = conf.get_fid1(pname)
             else:
                 bbfn = conf.get_fid2(pname)
-        logging.debug('bbfn: %s', bbfn)
 
         bb   = BBPIMDB(conf, bbfn)
         return bb
