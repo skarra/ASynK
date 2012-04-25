@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Fri Apr 20 12:37:40 IST 2012
+// Last Modified : Wed Apr 25 18:13:02 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -31,14 +31,14 @@
     // When a profile is created it is populated with the following
     // default values.
     'profile_defaults' : {
-	'db1' : null,
-	'db2' : null,
+        'db1' : null,
+        'db2' : null,
 
-	'fid1' : null,
-	'fid2' : null,
+        'fid1' : null,
+        'fid2' : null,
 
-	'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
-	'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
+        'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
+        'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
 
         // Default direction in which to perform Sync. Values can
         // be one of ['SYNC1WAY' or 'SYCN2WAY'].
@@ -61,12 +61,12 @@
             //
             // You definitely don't want to change these values.
             'guid'     : '{a1271100-ac2e-11e0-bc8b-0025644a821c}',
-	    
-	    // Every profile gets assigned a different GID, and the
-	    // GIDs are partitioned to make it easy to lookup in the
-	    // database at a later stage if required. I mean, what are
-	    // the chances that someone is going to sync more than
-	    // 0xfff *bbdb* folders to Outlook. Hehe.
+            
+            // Every profile gets assigned a different GID, and the
+            // GIDs are partitioned to make it easy to lookup in the
+            // database at a later stage if required. I mean, what are
+            // the chances that someone is going to sync more than
+            // 0xfff *bbdb* folders to Outlook. Hehe.
             'gid_base' : {'bb' : 0x8001,
                           'gc' : 0x9001,
                          },
@@ -89,17 +89,18 @@
                 'PR_ENTRYID',                'PR_DEPARTMENT_NAME',
                 'PR_GIVEN_NAME',             'PR_SURNAME',
                 'PR_DISPLAY_NAME',           'PR_PRIMARY_TELEPHONE_NUMBER',
-                'PR_DISPLAY_NAME_PREFIX',    'PR_GENERATION',
-                'PR_BODY',                   'PR_MOBILE_TELEPHONE_NUMBER',
-                'PR_POSTAL_ADDRESS',         'PR_HOME_TELEPHONE_NUMBER',
-                'PR_COMPANY_NAME',           'PR_HOME2_TELEPHONE_NUMBER',
-                'PR_TITLE',                  'PR_BUSINESS_TELEPHONE_NUMBER',
-                'PR_BIRTHDAY',               'PR_BUSINESS2_TELEPHONE_NUMBER',
-                'PR_NICKNAME',               'PR_HOME_FAX_NUMBER',
-                'PR_GENDER',                 'PR_BUSINESS_FAX_NUMBER',
-                'PR_PERSONAL_HOME_PAGE',     'PR_PRIMARY_FAX_NUMBER',
-                'PR_BUSINESS_HOME_PAGE',     'PR_WEDDING_ANNIVERSARY',
-                'PR_LAST_MODIFICATION_TIME', 'PR_OTHER_TELEPHONE_NUMBER',
+                'PR_MIDDLE_NAME',            'PR_GENERATION',
+                'PR_DISPLAY_NAME_PREFIX',    'PR_MOBILE_TELEPHONE_NUMBER',
+                'PR_BODY',                   'PR_HOME_TELEPHONE_NUMBER',
+                'PR_POSTAL_ADDRESS',         'PR_HOME2_TELEPHONE_NUMBER',
+                'PR_COMPANY_NAME',           'PR_BUSINESS_TELEPHONE_NUMBER',
+                'PR_TITLE',                  'PR_BUSINESS2_TELEPHONE_NUMBER',
+                'PR_BIRTHDAY',               'PR_HOME_FAX_NUMBER',
+                'PR_NICKNAME',               'PR_BUSINESS_FAX_NUMBER',
+                'PR_GENDER',                 'PR_PRIMARY_FAX_NUMBER',
+                'PR_PERSONAL_HOME_PAGE',     'PR_WEDDING_ANNIVERSARY',
+                'PR_BUSINESS_HOME_PAGE',     'PR_OTHER_TELEPHONE_NUMBER',
+                'PR_LAST_MODIFICATION_TIME', 'PR_CREATION_TIME',
                 //      'PR_COUNTRY',
                 //      'PR_OFFICE_LOCATION',
                 //      'PR_STREET_ADDRESS',
@@ -164,6 +165,7 @@
             // matched against the note field name in BBDB.
             "notes_map" : {
                 'fileas'      : 'fileas',
+                'middle_name' : 'middle-name',
                 'prefix'      : 'prefix',
                 'notes'       : 'notes',
                 'birthday'    : 'birthday',
