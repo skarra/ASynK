@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 24 20:37:38 IST 2012
+## Last Modified : Wed Apr 25 17:24:15 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -41,6 +41,7 @@ class GCContact(Contact):
                 # Workaround for a weird Google API behaviour. Certain
                 # operations only succed with the 'full' projection.
                 itemid = string.replace(itemid, '/base/', '/full/')
+                itemid = string.replace(itemid, 'http://', 'https://')
 
                 self.set_itemid(itemid)
             except Exception, e:
@@ -151,6 +152,7 @@ class GCContact(Contact):
             # Workaround for a weird Google API behaviour. Certain operations
             # only succed with the 'full' projection.
             ce.id.text = string.replace(ce.id.text, '/base/', '/full/')
+            ce.id.text = string.replace(ce.id.text, 'http://', 'https://')
             self.set_itemid(ce.id.text)
 
         if ce.etag:
