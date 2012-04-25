@@ -413,7 +413,7 @@ class GCContact(Contact):
 
         text = self.get_gender()
         if text:
-            gce.gender = gdata.data.Gender(text=text)
+            gce.gender = gdata.contacts.data.Gender(value=text)
 
 
     def _add_notes_to_gce (self, gce):
