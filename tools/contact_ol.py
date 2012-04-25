@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Wed Apr 25 18:15:35 IST 2012
+## Last Modified : Wed Apr 25 19:06:59 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -116,7 +116,9 @@ class OLContact(Contact):
 
         self._update_prop('sync_tags', destid, val)
         if save:
-            self.save_sync_tags()
+            return self.save_sync_tags()
+
+        return True
 
     def save_sync_tags (self):
         olitem = self.get_olitem()
@@ -130,10 +132,12 @@ class OLContact(Contact):
         try:
             hr, res = olitem.SetProps(olprops)
             olitem.SaveChanges(0)
+            return True
         except Exception, e:
             logging.critical('Could not save synctags(%s) for %s (reason: %s)',
                              olprops, self.get_name(), e)
             logging.critical('Will try to continue...')
+            return False
 
     ##
     ## First the inherited abstract methods from the base classes

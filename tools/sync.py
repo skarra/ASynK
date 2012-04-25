@@ -228,6 +228,7 @@ class Sync:
         dirn = self.get_dir()
         sl1, sl2 = self.prep_lists()
         
+        ret2 = True
         ret1 = sl1.sync_to_folder(self.get_f2())
         if dirn == 'SYNC2WAY':
             ret2 = sl2.sync_to_folder(self.get_f1())
@@ -374,11 +375,13 @@ class SyncLists:
             logging.info('%d new entries to be synched.', len(self.get_news()))
         else:
             logging.info('No new entries that need to be synched')
-            return
+            return True
 
         items = self.fold.find_items(self.get_news())
-        df.batch_create(self, self.db1id, items)
-        self.fold.writeback_sync_tags(self.get_pname(), items)
+        res = df.batch_create(self, self.db1id, items)
+        res = res and self.fold.writeback_sync_tags(self.get_pname(), items)
+
+        return res
 
     ## FIXME: There appears to be a lot of code repitition between the above
     ## routine and this one. Eplore how to eliminate this stuff...
@@ -393,10 +396,12 @@ class SyncLists:
                          len(self.get_mods()))
         else:
             logging.info('No modified entries that need to be synched')
-            return
+            return True
 
         items = self.fold.find_items(self.get_mods())
-        return df.batch_update(self, self.db1id, items)
+        res = df.batch_update(self, self.db1id, items)
+
+        return res
 
     def send_dels_to_folder (self, df):
         """df is the destination folder."""

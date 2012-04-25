@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Wed Apr 25 17:02:10 IST 2012
+## Last Modified : Wed Apr 25 19:08:38 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -141,7 +141,12 @@ class BBContactsFolder(Folder):
 
     def writeback_sync_tags (self, pname, items):
         logging.debug('bb:wst: Dirty flag: %s', self.is_dirty())
-        self.save_file()
+        try:
+            self.save_file()
+            return True
+        except Exception, e:
+            logging.error('Could not save BBDB folder: %s', self.get_name())
+            return False
 
     def bulk_clear_sync_flags (self, label_re=None):
         if not label_re:
