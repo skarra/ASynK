@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 24 20:34:14 IST 2012
+## Last Modified : Wed Apr 25 16:12:59 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -156,6 +156,17 @@ class GCContactsFolder(Folder):
         logging.debug('num del bef sync : %5d', skip)
 
         return (sl.get_news(), sl.get_mods(), sl.get_dels())
+
+    def new_item (self, item):
+        """Add the specified item to the folder."""
+
+        if item.__class__.__name__ == 'GCContact':
+            con = item
+        else:
+            con = GCContact(self, con=item)
+
+        eid = con.save()
+        return eid
 
     def find_item (self, itemid):
         gce = self.get_gdc().GetContact(itemid)
