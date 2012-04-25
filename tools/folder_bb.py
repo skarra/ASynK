@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Tue Apr 24 17:49:49 IST 2012
+## Last Modified : Wed Apr 25 17:02:10 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -66,7 +66,7 @@ class BBContactsFolder(Folder):
         for iid, con in self.get_contacts().iteritems():
             i += 1
             if stag in con.get_sync_tags():
-                did = con.get_sync_tags(stag)
+                t, did = con.get_sync_tags(stag)[0]
                 upd = con.get_updated()
                 if not upd:
                     logging.error('Skipping entry %s without updated field.',
