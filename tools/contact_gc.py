@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Apr 25 17:24:15 IST 2012
+## Last Modified : Wed Apr 25 17:47:39 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -160,6 +160,9 @@ class GCContact(Contact):
 
     def _snarf_names_gender_from_gce (self, ce):
         if ce.name:
+            if ce.name.additional_name:
+                self.set_middlename(ce.name.additional_name.text)
+
             if ce.name.family_name:
                 self.set_lastname(ce.name.family_name.text)
 
@@ -392,6 +395,10 @@ class GCContact(Contact):
         text = self.get_lastname()
         if text:
             n.family_name = gdata.data.FamilyName(text=text)
+
+        text = self.get_middlename()
+        if text:
+            n.additional_name = gdata.data.AdditionalName(text=text)
 
         text = self.get_name()
         if text:
