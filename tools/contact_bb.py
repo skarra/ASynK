@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Tue Apr 24 20:35:47 IST 2012
+## Last Modified : Wed Apr 25 18:06:14 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -348,6 +348,8 @@ class BBContact(Contact):
                 self.add_web_home(val)
             elif re.search(noted['web_work_re'], key):
                 self.add_web_work(val)
+            elif re.search(noted['middle_name'], key):
+                self.add_middlename(val)
             else:
                 ## The rest of the stuff go into the 'Custom' field...
                 custom.update({key : val})
@@ -405,10 +407,11 @@ class BBContact(Contact):
         nick = self.get_nickname()
         if not nick:
             return 'nil'
+        nick = unchompq(nick)
 
         aka = copy.deepcopy(self.get_custom('aka'))
         if aka:
-            aka.insert(0, unchompq(nick))
+            aka.insert(0, nick)
             return('(' + ' '.join(aka) + ')')
         else:
             return '(' + nick + ')'
@@ -495,6 +498,7 @@ class BBContact(Contact):
         a = self.get_anniv()
         i = self.get_im()
         n = self.get_notes()
+        m = self.get_middlename()
 
         if p:
             ret += '(%s . %s) ' % (noted['prefix'],  unchompq(p))
@@ -512,6 +516,8 @@ class BBContact(Contact):
             ret += '(%s . %s) ' % (noted['anniv'], unchompq(a))
         if n and len(n) > 0:
             ret += '(%s . %s) ' % (noted['notes'], unchompq(n[0]))
+        if m and m != '':
+            ret ++ '(%s . %s) ' % (noted['middle_name'], unchompq(m))
 
         ret += self._get_sync_tags_as_str()
 

@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Tue Apr 24 16:08:40 IST 2012
+## Last Modified : Wed Apr 25 18:15:35 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -333,6 +333,7 @@ class OLContact(Contact):
         ## it.
 
         self.set_firstname(self._get_olprop(olpd, mt.PR_GIVEN_NAME))
+        self.set_middlename(self._get_olprop(olpd, mt.PR_MIDDLE_NAME))
         self.set_lastname(self._get_olprop(olpd, mt.PR_SURNAME))
         self.set_name(self._get_olprop(olpd, mt.PR_DISPLAY_NAME))
         self.set_prefix(self._get_olprop(olpd, mt.PR_DISPLAY_NAME_PREFIX))
@@ -541,6 +542,10 @@ class OLContact(Contact):
         ln = self.get_lastname()
         if ln:
             olprops.append((mt.PR_SURNAME, ln))
+
+        mn = self.get_middlename()
+        if mn:
+            olprops.append((mt.PR_MIDDLE_NAME, mn))
 
         gn = self.get_firstname()
         if gn:

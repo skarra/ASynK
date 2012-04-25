@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 24 18:35:21 IST 2012
+## Last Modified : Wed Apr 25 18:02:39 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -32,21 +32,21 @@ class Contact(Item):
 
         self.props.update({'firstname'    : None, 'company'      : None,
                            'lastname'     : None, 'postal'       : {},
-                           'name'         : None, 'notes'        : [],
-                           'suffix'       : None, 'phone_home'   : [],
-                           'title'        : None, 'phone_work'   : [],
-                           'gender'       : None, 'phone_mob'    : [],
-                           'nickname'     : None, 'phone_other'  : [],
-                           'birthday'     : None, 'phone_prim'   : None,
-                           'anniv'        : None, 'fax_home'     : [],
-                           'web_home'     : [],   'fax_work'     : [],
-                           'web_work'     : [],   'fax_prim'     : None,
-                           'web_prim'     : None, 'email_home'   : [],
-                           'dept'         : None, 'email_work'   : [],
-                           'fileas'       : None, 'email_other'  : [],
-                           'prefix'       : None, 'email_prim'   : None,
-                           'im'           : {},   'im_prim'      : None,
-                           'custom'       : {},
+                           'middlename'   : None, 'notes'        : [],
+                           'name'         : None, 'phone_home'   : [],
+                           'suffix'       : None, 'phone_work'   : [],
+                           'title'        : None, 'phone_mob'    : [],
+                           'gender'       : None, 'phone_other'  : [],
+                           'nickname'     : None, 'phone_prim'   : None,
+                           'birthday'     : None, 'fax_home'     : [],
+                           'anniv'        : None, 'fax_work'     : [],
+                           'web_home'     : [],   'fax_prim'     : None,
+                           'web_work'     : [],   'email_home'   : [],
+                           'web_prim'     : None, 'email_work'   : [],
+                           'dept'         : None, 'email_other'  : [],
+                           'fileas'       : None, 'email_prim'   : None,
+                           'prefix'       : None, 'im_prim'      : None,
+                           'im'           : {},   'custom'       : {},
                            })
 
         if con:
@@ -87,6 +87,12 @@ class Contact(Item):
     def set_lastname (self, val):
         self._set_prop('lastname', val)
         #        self.update_fullname()
+
+    def get_middlename (self):
+        return self._get_prop('middlename')
+
+    def set_middlename (self, val):
+        self._set_prop('middlename', val)
 
     def update_fullname (self):
         pr = self.get_prefix()
