@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Wed Apr 25 19:17:13 IST 2012
+## Last Modified : Thu Apr 26 18:49:32 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -209,11 +209,10 @@ class Sync:
 
         return f1sl, None
 
-    def prep_lists (self):
+    def prep_lists (self, dirn):
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
-        dirn = self.get_dir()
         logging.debug('Direction: %s', dirn)
         if (dirn == 'SYNC2WAY'):
             return self._prep_lists_2_way(self.get_f1(), self.get_f2())
@@ -224,9 +223,11 @@ class Sync:
                           dirn)
             return None, None
 
-    def sync (self):
-        dirn = self.get_dir()
-        sl1, sl2 = self.prep_lists()
+    def sync (self, dirn=None):
+        if not dirn:
+            dirn = self.get_dir()
+
+        sl1, sl2 = self.prep_lists(dirn)
         
         ret2 = True
         ret1 = sl1.sync_to_folder(self.get_f2())
