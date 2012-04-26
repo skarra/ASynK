@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu Apr 26 18:50:32 IST 2012
+## Last Modified : Thu Apr 26 22:02:49 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -57,7 +57,7 @@ def main (argv=sys.argv):
     asynk.dispatch()
 
 def setup_parser ():
-    p = argparse.ArgumentParser(description='ASynK: PIM Android Sync by Karra')
+    p = argparse.ArgumentParser(description='ASynK: PIM Awesome Sync by Karra')
     p.add_argument('--dry-run', action='store_true',
                    help='Do not sync, but merely show what will happen '
                    'if a sync is performed.')
@@ -107,7 +107,7 @@ def setup_parser ():
                      'Item to operate on.')
 
     p.add_argument('--direction', action='store', default='2way',
-                   choices=('1way' '2way'),
+                   choices=('1way', '2way'),
                    help='Specifies whether a sync has to be unidirectional '
                    'or bidirectional. Defaults to bidiretioanl sync, i.e. '
                    '"2way"')
@@ -419,7 +419,7 @@ class Asynk:
         ## For now there is no need for something separate from list_profiles
         ## above(). This will eventually show sync statistics, what has
         ## changed in each folder, and so on.
-        logging.debug('%s: Not Implemented', 'show_profile')
+        logging.info('%s: Not Implemented', 'show_profile')
 
     def op_del_profile (self):
         """This deletes the sync profile from the system, and clears up the
@@ -469,10 +469,10 @@ class Asynk:
                          'Asynk configuration.', pname)
 
     def op_print_items (self):
-        logging.debug('%s: Not Implemented', 'print_items')
+        logging.info('%s: Not Implemented', 'print_items')
 
     def op_del_item (self):
-        logging.debug('%s: Not Implemented', 'del_item')
+        logging.info('%s: Not Implemented', 'del_item')
 
     def op_sync (self):
         conf  = self.get_config()
@@ -501,7 +501,7 @@ class Asynk:
         return True
 
     def op_startweb (self):
-        logging.debug('%s: Not Implemented', 'startweb')
+        logging.info('%s: Not Implemented', 'startweb')
 
     def op_clear_sync_artifacts (self):
         db1 = self.get_db1()
