@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed Apr 25 19:00:19 IST 2012
+## Last Modified : Thu Apr 26 18:50:32 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -275,7 +275,8 @@ class Asynk:
         else:
             self.set_folder_ids(None)
 
-        self.set_sync_dir(uinps.direction)
+        d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYCN2WAY'
+        self.set_sync_dir(d)
         self.set_label_re(uinps.label_regex)
         self.set_conflict_resolve(uinps.conflict_resolve)
         self.set_item_id(uinps.item_id)
@@ -395,10 +396,6 @@ class Asynk:
                                       'the two dbids specified ealrier.')
 
         sync_dir = self.get_sync_dir()
-        if sync_dir == '1way':
-            sync_dir = 'SYNC1WAY'
-        else:
-            sync_dir = 'SYNC2WAY'
 
         if 'ol' in [db1, db2]:
             olgid = conf.get_ol_next_gid(db1 if 'ol' == db2 else db2)
@@ -483,11 +480,11 @@ class Asynk:
 
         sync = Sync(conf, pname, self.get_db())
         if self.is_dry_run():
-            sync.prep_lists()
+            sync.prep_lists(self.get_sync_dir())
         else:
             try:
                 startt = conf.get_curr_time()
-                result = sync.sync()
+                result = sync.sync(self.get_sync_dir())
                 if result:
                     conf.set_last_sync_start(pname, val=startt)
                     conf.set_last_sync_stop(pname)
