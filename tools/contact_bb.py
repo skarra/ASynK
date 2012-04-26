@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Wed Apr 25 18:06:14 IST 2012
+## Last Modified : Thu Apr 26 18:08:13 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -529,10 +529,15 @@ class BBContact(Contact):
         return '(' + ret + ')'
 
     def _get_sync_tags_as_str (self):
+        conf     = self.get_config()
+        pname_re = conf.get_profile_name_re()
+        label    = conf.make_sync_label(pname_re, self.get_dbid())
+
         ret = ''
         i = 0
         for key, val in self.get_sync_tags().iteritems():
-            if not val:
+            # Skip any sync tag with BBDB IDs as values.
+            if re.search(label, key) or not val:
                 continue
 
             if i > 0:
