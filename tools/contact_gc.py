@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Apr 25 17:47:39 IST 2012
+## Last Modified : Thu Apr 26 18:06:57 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -645,10 +645,18 @@ class GCContact(Contact):
             gce.im.append(im)
 
     def _add_sync_tags_to_gce (self, gce):
+        conf     = self.get_config()
+        pname_re = conf.get_profile_name_re()
+        label    = conf.make_sync_label(pname_re, self.get_dbid())
+
         ## These will be stored as extended properties. Note that if this
         ## routine keeps appending the sync_tags tot he user_defined_fields,
         ## with no regard for whether it already exists or not...
         for key, val in self.get_sync_tags().iteritems():
+            # Skip any sync tag with GCIDs as values.
+            if re.search(label, key):
+                continue
+
             ud       = gdata.contacts.data.UserDefinedField()
             ud.key   = key
             ud.value = val
