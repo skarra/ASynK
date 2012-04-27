@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Apr 26 18:06:57 IST 2012
+## Last Modified : Fri Apr 27 16:54:41 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -12,8 +12,9 @@
 ## properties, etc.
 ##
 
-import logging, getopt, re, string, sys
-import atom, gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
+import logging, getopt, re, string, sys, time
+import atom, iso8601
+import gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
 import utils
 from   contact    import Contact
@@ -50,6 +51,8 @@ class GCContact(Contact):
         self.set_gce(gce)
         if gce:
             self.init_props_from_gce(gce)
+
+        self.in_init(False)
 
     ##
     ## First the inherited abstract methods from the base classes

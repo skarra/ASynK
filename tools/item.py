@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue Apr 24 18:35:02 IST 2012
+## Last Modified : Fri Apr 27 16:50:20 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -55,6 +55,8 @@ class Item:
                       'itemid'     : None,
                       'type'       : None,
                       }
+
+        self.in_init(True)
 
         # Then there are many class attributes that are needed to work with
         # the programatically in the application, like pointers to the parent
@@ -168,6 +170,18 @@ class Item:
 
     ## First the object attributes
 
+    def dirty (self, val=None):
+        if val is None:
+            return self._get_att('dirty')
+
+        return self._set_att('dirty', val)
+
+    def in_init (self, val=None):
+        if val is None:
+            return self._get_att('in_init')
+
+        return self._set_att('in_init', val)
+
     def get_folder (self):
         return self._get_att('folder')
 
@@ -198,24 +212,36 @@ class Item:
         return self.dbid
 
     def set_dbid (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         self.dbid = val
 
     def get_created (self):
         return self._get_prop('created')
 
     def set_created (self, c):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('created', c)
 
     def get_updated (self):
         return self._get_prop('updated')
 
     def set_updated (self, u):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('updated', u)
 
     def get_type (self):
         return self._get_att('type')
 
     def set_type (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         if not val in self.valid_types:
             raise GoutInvalidPropValueError('Invalid type: %s' % val)
 
@@ -258,6 +284,9 @@ class Item:
         wholesale. Potential use cases include clearing all existing values,
         etc."""
 
+        if not self.in_init():
+            self.dirty(True)
+
         self._set_prop('sync_tags', val)
         if save:
             self.save()
@@ -266,13 +295,19 @@ class Item:
         """Update the specified sync tag with given value. If the tag does not
         already exist an entry is created."""
 
+        if not self.in_init():
+            self.dirty(True)
+
         self._update_prop('sync_tags', destid, val)
         if save:
             self.save()
 
     def del_sync_tags (self, label_re):
+        if not self.in_init():
+            self.dirty(True)
+
         dels = []
-        logging.debug('Foooo = %s', self.get_sync_tags(label_re))
+
         for pair in self.get_sync_tags(label_re):
             tag, val = pair
             dels.append(tag)
