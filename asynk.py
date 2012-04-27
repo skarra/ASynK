@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu Apr 26 22:02:49 IST 2012
+## Last Modified : Fri Apr 27 12:23:47 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -275,7 +275,7 @@ class Asynk:
         else:
             self.set_folder_ids(None)
 
-        d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYCN2WAY'
+        d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYNC2WAY'
         self.set_sync_dir(d)
         self.set_label_re(uinps.label_regex)
         self.set_conflict_resolve(uinps.conflict_resolve)
@@ -591,15 +591,12 @@ class Asynk:
         return self._set_att('folder_id', val)
 
     def get_folder_id (self, dbid):
-        if dbid == 'bb':
-            return BBContactsFolder.get_default_folder_id()
-        else:
-            try:
-                return self._get_att('folder_id')[dbid]
-            except TypeError, e:
-                return None
-            except KeyError, e:
-                return None
+        try:
+            return self._get_att('folder_id')[dbid]
+        except TypeError, e:
+            return None
+        except KeyError, e:
+            return None
 
     def get_item_id (self):
         return self._get_att('item_id')
