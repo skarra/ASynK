@@ -1,3 +1,5 @@
+# -*- shell-script -*-
+
 # Lines starting with '#' are considered comments.
 # Ignore any file named foo.txt.
 #foo.txt
@@ -6,6 +8,7 @@
 # except foo.html which is maintained by hand.
 #!foo.html
 # Ignore objects and archives.
+
 *.[oa]
 *~
 *.pyc
@@ -15,3 +18,20 @@
 .DS_Store
 Thumbs.db
 login.auth
+state.json
+
+# Files related to the build system
+aclocal.m4
+autom4te.cache
+*.log
+config.status
+configure
+install-sh
+missing
+Makefile
+Makefile.in
+*.html
+doc/*
+!doc/Makefile.am
+!doc/*.texi
+!doc/*.tex
