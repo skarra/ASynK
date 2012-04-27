@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu Apr 26 18:08:13 IST 2012
+## Last Modified : Fri Apr 27 16:50:51 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -14,7 +14,7 @@
 import copy, logging, re, uuid
 from   contact    import Contact
 from   utils      import chompq, unchompq
-import pimdb_bb, folder_bb, utils
+import demjson, pimdb_bb, folder_bb, utils
 
 class BBContact(Contact):
     """This class extends the Contact abstract base class to wrap a BBDB
@@ -149,19 +149,23 @@ class BBContact(Contact):
             if nick:
                 self.set_nickname(chompq(nick))
 
-            if rest:
-                self.add_custom('aka', rest)
+            if rest and len(rest) > 0:
+                ## Note that 'rest' is an array, and it will not be possible
+                ## to serialize it when sending to Google or saving to Outlook
+                ## etc. So let's just encode it in json format - our goto
+                ## solution for such problems.
+                self.add_custom('aka', demjson.encode(rest))
 
     def _snarf_company_from_parse_res (self, pr):
         cs = pr['company']
 
         if cs and cs != 'nil':
             ## The first company goes into the Company field, the rest we will
-            ## push into the custom field
+            ## push into the custom field (as aa json encoded string)
             str_re = self.get_db().get_str_re()
             cs = re.findall(str_re, cs)
             self.set_company(chompq(cs[0]))
-            self.add_custom('company', cs[1:])
+            self.add_custom('company', demjson.encode(cs[1:]))
 
     def _snarf_emails_from_parse_res (self, pr):
         ems = pr['emails']
@@ -411,6 +415,9 @@ class BBContact(Contact):
 
         aka = copy.deepcopy(self.get_custom('aka'))
         if aka:
+            ## Note that we have inserted AKAs an json encoded array of
+            ## strings.
+            aka = demjson.decode(aka)
             aka.insert(0, nick)
             return('(' + ' '.join(aka) + ')')
         else:
@@ -422,7 +429,8 @@ class BBContact(Contact):
             return 'nil'
 
         comp = copy.deepcopy(self.get_custom('company'))
-        if comp:
+        if comp and len(comp) > 0:
+            comp = demjson.decode(comp)
             comp.insert(0, unchompq(comp1))
             return ('(' + ' '.join(comp) + ')')
         else:
