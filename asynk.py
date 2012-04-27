@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Fri Apr 27 12:23:47 IST 2012
+## Last Modified : Fri Apr 27 17:20:51 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -489,8 +489,8 @@ class Asynk:
                     conf.set_last_sync_start(pname, val=startt)
                     conf.set_last_sync_stop(pname)
                 else:
-                    logging.debug('timestamps not reset for profile %s due to '
-                                  'errors (previously identified).', pname)
+                    logging.info('timestamps not reset for profile %s due to '
+                                 'errors (previously identified).', pname)
             except Exception, e:
                 logging.critical('Exception (%s) while syncing profile %s', 
                                  str(e), pname)

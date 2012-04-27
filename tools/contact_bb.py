@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Fri Apr 27 16:50:51 IST 2012
+## Last Modified : Fri Apr 27 20:26:25 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -527,12 +527,13 @@ class BBContact(Contact):
         if m and m != '':
             ret ++ '(%s . %s) ' % (noted['middle_name'], unchompq(m))
 
-        ret += self._get_sync_tags_as_str()
+        ret += self._get_sync_tags_as_str() + ' '
 
-        cnotes = self.get_custom('notes')
-        if cnotes:
-            for label, note in cnotes.iteritems():
-                ret += '(%s . %s) ' % (label, unchompq(note))
+        for label, note in self.get_custom().iteritems():
+            if label in ['company', 'aka']:
+                continue
+
+            ret += '(%s . %s) ' % (label, unchompq(note))
 
         return '(' + ret + ')'
 

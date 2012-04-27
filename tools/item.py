@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Apr 27 16:50:20 IST 2012
+## Last Modified : Fri Apr 27 17:22:16 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -57,6 +57,7 @@ class Item:
                       }
 
         self.in_init(True)
+        self.dirty(False)
 
         # Then there are many class attributes that are needed to work with
         # the programatically in the application, like pointers to the parent
