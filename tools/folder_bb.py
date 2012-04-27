@@ -1,13 +1,13 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Wed Apr 25 19:08:38 IST 2012
+## Last Modified : Fri Apr 27 17:00:18 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ## 
 
-import logging, re, string, traceback
+import codecs, logging, re, string, traceback
 from   folder     import Folder
 from   contact_bb import BBContact
 import pimdb_bb, utils
@@ -121,7 +121,9 @@ class BBContactsFolder(Folder):
         try:
             self.save_file()
         except Exception, e:
-            logging.error('Could not save BBDB folder: %s', self.get_name())
+            logging.error('bb:bc: Could not save BBDB folder %s (%s)',
+                          self.get_name(), str(e))
+            logging.debug(traceback.format_exc())
             return False
 
         return True
@@ -145,7 +147,9 @@ class BBContactsFolder(Folder):
             self.save_file()
             return True
         except Exception, e:
-            logging.error('Could not save BBDB folder: %s', self.get_name())
+            logging.error('bb:wst: Could not save BBDB folder %s (%s)',
+                          self.get_name(), str(e))
+            logging.debug(traceback.format_exc())
             return False
 
     def bulk_clear_sync_flags (self, label_re=None):
@@ -212,13 +216,13 @@ class BBContactsFolder(Folder):
 
         logging.info('Parsing BBDB file %s...', fn)
 
-        with open(fn) as bbf:
-            bbf.readline()
-            # Ignore first line which is: ;; -*-coding: utf-8-emacs;-*-
-
+        with codecs.open(fn, encoding='utf-8') as bbf:
             ff = bbf.readline()
-            # Processing: ;;; file-format: 8
+            if re.search('coding:', ff):
+                # Ignore first line if it is: ;; -*-coding: utf-8-emacs;-*-
+                ff = bbf.readline()
 
+            # Processing: ;;; file-format: 8
             res = re.search(';;; file-(format|version):\s*(\d+)', ff)
             if not res:
                 bbf.close()
@@ -255,13 +259,13 @@ class BBContactsFolder(Folder):
         logging.info('Saving BBDB Folder %s to file: %s...',
                      self.get_name(), fn)
 
-        with open(fn, 'w') as bbf:
+        with codecs.open(fn, 'w', encoding='utf-8') as bbf:
             bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
             bbf.write(';;; file-format: 7\n')
 
             for bbdbid, bbc in self.get_contacts().iteritems():
                 con = bbc.init_rec_from_props()
-                bbf.write('%s\n' % con)
+                bbf.write('%s\n' % unicode(con))
 
         bbf.close()
         self.set_clean()
@@ -274,7 +278,7 @@ class BBContactsFolder(Folder):
         i = 0
 
         for iid, con in self.get_contacts().iteritems():
-            logging.debug('%s', str(con))
+            logging.debug('%s', unicode(con))
             i += 1
 
             if cnt == i:

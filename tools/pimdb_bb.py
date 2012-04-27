@@ -1,13 +1,13 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Wed Apr 25 14:27:42 IST 2012
+## Last Modified : Fri Apr 27 15:42:27 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ##
 
-import logging, re, time, datetime
+import codecs, datetime, logging, re, time
 from   pimdb        import PIMDB
 from   folder       import Folder
 from   folder_bb    import BBContactsFolder
@@ -47,7 +47,7 @@ class BBPIMDB(PIMDB):
         fname should be a filename in this case.
         """
 
-        with open(fname, 'w') as bbf:
+        with codes.open(fname, 'w', encoding='utf-8') as bbf:
             bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
             bbf.write(';;; file-format: 7\n')
             bbf.close()
