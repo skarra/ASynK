@@ -51,9 +51,7 @@ class BBContact(Contact):
                           self.get_name())
             self.set_itemid(iid)
 
-            # This is a brand new contact, so let's set up the 'created' flag
-            # as well.
-            self.set_created(pimdb_bb.BBPIMDB.get_bbdb_time())
+        self.in_init(False)
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -110,6 +108,9 @@ class BBContact(Contact):
         self._snarf_notes_from_parse_res(d)
 
     def init_rec_from_props (self):
+        if self.dirty():
+            self.set_updated(pimdb_bb.BBPIMDB.get_bbdb_time())
+
         rec = '['
         rec += self._get_names_as_string()   + ' '
         rec += self._get_aka_as_string()     + ' '
@@ -120,6 +121,7 @@ class BBContact(Contact):
         rec += self._get_notes_as_string()
         rec += ' nil]'
 
+        self.dirty(False)
         return rec
 
     def _snarf_names_from_parse_res (self, pr):

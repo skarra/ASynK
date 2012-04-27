@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Apr 25 18:02:39 IST 2012
+## Last Modified : Fri Apr 27 16:37:31 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -78,6 +78,9 @@ class Contact(Item):
         return self._get_prop('firstname')
 
     def set_firstname (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         self._set_prop('firstname', val)
         #        self.update_fullname()
 
@@ -85,6 +88,9 @@ class Contact(Item):
         return self._get_prop('lastname')
 
     def set_lastname (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         self._set_prop('lastname', val)
         #        self.update_fullname()
 
@@ -92,9 +98,15 @@ class Contact(Item):
         return self._get_prop('middlename')
 
     def set_middlename (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         self._set_prop('middlename', val)
 
     def update_fullname (self):
+        if not self.in_init():
+            self.dirty(True)
+
         pr = self.get_prefix()
         fn = self.get_firstname()
         ln = self.get_lastname()
@@ -111,6 +123,9 @@ class Contact(Item):
         return self._get_prop('name')
 
     def set_name (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         self._set_prop('name', val)
         return val
 
@@ -118,84 +133,132 @@ class Contact(Item):
         return self._get_prop('prefix')
 
     def set_prefix (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('prefix', val)
 
     def get_suffix (self):
         return self._get_prop('suffix')
 
     def set_suffix (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('suffix', val)
 
     def get_fileas (self):
         return self._get_prop('fileas')
 
     def set_fileas (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('fileas', val)
 
     def get_gender (self):
         return self._get_prop('gender')
 
     def set_gender (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('gender', val)
 
     def get_nickname (self):
         return self._get_prop('nickname')
 
     def set_nickname (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('nickname', val)
 
     def get_birthday (self):
         return self._get_prop('birthday')
 
     def set_birthday (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('birthday', val)
 
     def get_anniv (self):
         return self._get_prop('anniv')
 
     def set_anniv (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('anniv', val)
 
     def get_web_prim (self):
         return self._get_prop('web_prim')
 
     def set_web_prim (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('web_prim', val)
 
     def get_web_home (self):
         return self._get_prop('web_home')
 
     def set_web_home (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('web_home', val)
 
     def add_web_home (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('web_home', val)
 
     def get_web_work (self):
         return self._get_prop('web_work')
 
     def set_web_work (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('web_work', val)
 
     def add_web_work (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('web_work', val)
 
     def get_company (self):
         return self._get_prop('company')
 
     def set_company (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('company', val)
 
     def get_title (self):
         return self._get_prop('title')
 
     def set_title (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('title', val)
 
     def get_dept (self):
         return self._get_prop('dept')
 
     def set_dept (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         if val:
             return self._set_prop('dept', val)
 
@@ -207,12 +270,18 @@ class Contact(Item):
             return postals
 
     def set_postal (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('postal', val)
 
     def add_postal (self, which, val):
         return self._update_prop('postal', which, val)
 
     def add_postal_detail (self, which, detail, val):
+        if not self.in_init():
+            self.dirty(True)
+
         postal = self.get_postal(which)
         if postal:
             postal.update({detail : val})
@@ -223,21 +292,33 @@ class Contact(Item):
         return self._get_prop('notes')
 
     def set_notes (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('notes', val)
 
     def add_notes (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('notes', val)
 
     def get_email_prim (self):
         return self._get_prop('email_prim')
 
     def set_email_prim (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('email_prim', val)
 
     def get_email_home (self):
         return self._get_prop('email_home')
 
     def set_email_home (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('email_home', val)
 
     def add_email_home (self, val):
@@ -247,18 +328,30 @@ class Contact(Item):
         return self._get_prop('email_work')
 
     def set_email_work (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('email_work', val)
 
     def add_email_work (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('email_work', val)
 
     def get_email_other (self):
         return self._get_prop('email_other')
 
     def set_email_other (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('email_other', val)
 
     def add_email_other (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('email_other', val)
 
     ## Note that all phone values are (label, number-as-string) tuples.
@@ -267,6 +360,9 @@ class Contact(Item):
         return self._get_prop('phone_home')
 
     def set_phone_home (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('phone_home', val)
 
     def add_phone_home (self, val):
@@ -276,27 +372,45 @@ class Contact(Item):
         return self._get_prop('phone_work')
 
     def set_phone_work (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('phone_work', val)
 
     def add_phone_work (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('phone_work', val)
 
     def get_phone_mob (self):
         return self._get_prop('phone_mob')
 
     def set_phone_mob (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('phone_mob', val)
 
     def add_phone_mob (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('phone_mob', val)
 
     def get_phone_other (self):
         return self._get_prop('phone_other')
 
     def set_phone_other (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('phone_other', val)
 
     def add_phone_other (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('phone_other', val)
 
     ## FIXME: Not really sure if this way of handling the primary phone will
@@ -306,24 +420,39 @@ class Contact(Item):
         return self._get_prop('phone_prim')
 
     def set_phone_prim (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('phone_prim', val)
 
     def get_fax_home (self):
         return self._get_prop('fax_home')
 
     def set_fax_home (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('fax_home', val)
 
     def add_fax_home (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('fax_home', val)
 
     def get_fax_work (self):
         return self._get_prop('fax_work')
 
     def set_fax_work (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('fax_work', val)
 
     def add_fax_work (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('fax_work', val)
 
     ## FIXME: Do something about the fax_prim field and how to manage that.
@@ -332,12 +461,18 @@ class Contact(Item):
         return self._get_prop('fax_prim')
 
     def set_fax_prim (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('fax_prim', val)
 
     def get_im_prim (self):
         return self._get_prop('im_prim')
 
     def set_im_prim (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('im_prim', val)
 
     def get_im (self, which=None):
@@ -349,6 +484,9 @@ class Contact(Item):
             return all_ims
 
     def set_im (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('im', val)
 
     def add_im (self, which, val):
@@ -365,12 +503,21 @@ class Contact(Item):
             return custs
 
     def set_custom (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._set_prop('custom', val)
 
     def add_custom (self, which, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._update_prop('custom', which, val)
 
     def update_custom (self, d):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._update_prop('custom', None, None, d)
 
 ## FIXME: This file needs extensive unit testing. There's quite a bit of

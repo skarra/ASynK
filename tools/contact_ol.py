@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Wed Apr 25 19:06:59 IST 2012
+## Last Modified : Fri Apr 27 16:49:43 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -77,6 +77,8 @@ class OLContact(Contact):
             self.init_props_from_olprops(olprops)
         elif eid:
             self.init_props_from_eid(eid)
+
+        self.in_init(False)
 
     def set_synchable_fields_list (self):
         fields = self.get_db().get_db_config()['sync_fields']
