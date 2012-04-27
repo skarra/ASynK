@@ -39,9 +39,7 @@ class BBContact(Contact):
                 tag, itemid = con.get_sync_tags(label)[0]              
                 self.set_itemid(itemid)
             except Exception, e:
-                logging.debug('Skipping exception (%s) in GCContact()...'
-                              'while looking for label: %s', str(e), label)
-
+                logging.debug('Potential new BBContact: %s', con.get_name())
 
         if rec:
             self.set_rec(rec)

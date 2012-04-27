@@ -45,8 +45,7 @@ class GCContact(Contact):
 
                 self.set_itemid(itemid)
             except Exception, e:
-                logging.debug('Skipping exception (%s) in GCContact()...'
-                              'while looking for label: %s', str(e), label)
+                logging.debug('Potential new GCContact: %s', con.get_name())
 
         self.set_gce(gce)
         if gce:
@@ -114,6 +113,12 @@ class GCContact(Contact):
 
         self._snarf_custom_props_from_gce(gce)
 
+        # Google entries do not have a created entry. We should just set it to
+        # the current time, and take it from there.
+        if not self.get_created():
+            self.set_created(iso8601.tostring(time.time()))
+            self.set_updated(iso8601.tostring(time.time()))
+        
     def init_gce_from_props (self):
         gce = gdata.contacts.data.ContactEntry()
 
@@ -374,8 +379,9 @@ class GCContact(Contact):
         if itemid:
             gce.id = atom.data.Id(text=itemid)
         else:
-            logging.debug('Potential new contact to GC: %s',
-                          self.get_name())
+            pass
+            # logging.debug('Potential new contact to GC: %s',
+            #               self.get_name())
 
         etag = self.get_etag()
         if etag:

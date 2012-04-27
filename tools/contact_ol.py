@@ -63,8 +63,7 @@ class OLContact(Contact):
                 tag, itemid = con.get_sync_tags(label)[0]              
                 self.set_itemid(itemid)
             except Exception, e:
-                logging.debug('Skipping exception %s in OLContact()...',
-                              str(e))
+                logging.debug('Potential new OLContact: %s', con.get_name())
 
         ## Set up some of the basis object attributes and parent folder/db
         ## properties to make it easier to access them
