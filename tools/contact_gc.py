@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Apr 27 16:54:41 IST 2012
+## Last Modified : Fri Apr 27 20:23:50 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -355,11 +355,13 @@ class GCContact(Contact):
     def _snarf_custom_props_from_gce (self, ce):
         ## Iterate through the user_defined_propertie and do something with
         ## them...
+        stag_re = (self.get_config().get_label_prefix() +
+                   self.get_config().get_label_separator())
         if ce.user_defined_field:
             for ep in ce.user_defined_field:
                 if ep.key == 'created':
                     self.set_created(ep.value)
-                else:
+                elif not re.search(stag_re, ep.key):
                     self.add_custom(ep.key, ep.value)
 
     def _is_valid_ph (self, phone, type):
