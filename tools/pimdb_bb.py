@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Sun Apr 29 12:27:30 IST 2012
+## Last Modified : Sun Apr 29 13:39:19 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -271,18 +271,16 @@ class MessageStore:
         if not fn:
             fn = self.get_name() + '.out'
 
-        logging.info('Saving BBDB File %s: %s...', self.get_name(), fn)
+        logging.info('Saving BBDB File %s...', fn)
 
         with codecs.open(fn, 'w', encoding='utf-8') as bbf:
             bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
             bbf.write(';;; file-format: 7\n')
 
-            for bbdbid, bbc in self.get_contacts().iteritems():
-                con = bbc.init_rec_from_props()
-                bbf.write('%s\n' % unicode(con))
+            for name, f in self.get_folders().iteritems():
+                f.write_to_file(bbf)
 
         bbf.close()
-        self.set_clean()
 
 class BBPIMDB(PIMDB):
     """Wrapper class over the BBDB, by implementing the PIMDB abstract

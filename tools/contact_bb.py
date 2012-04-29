@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sun Apr 29 12:17:41 IST 2012
+## Last Modified : Sun Apr 29 13:37:06 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -517,6 +517,7 @@ class BBContact(Contact):
         i = self.get_im()
         n = self.get_notes()
         m = self.get_middlename()
+        f = self.get_bbdb_folder()
 
         if p:
             ret += '(%s . %s) ' % (noted['prefix'],  unchompq(p))
@@ -535,7 +536,7 @@ class BBContact(Contact):
         if n and len(n) > 0:
             ret += '(%s . %s) ' % (noted['notes'], unchompq(n[0]))
         if m and m != '':
-            ret ++ '(%s . %s) ' % (noted['middle_name'], unchompq(m))
+            ret += '(%s . %s) ' % (noted['middle_name'], unchompq(m))
 
         ret += self._get_sync_tags_as_str() + ' '
 
@@ -544,6 +545,9 @@ class BBContact(Contact):
                 continue
 
             ret += '(%s . %s) ' % (label, unchompq(note))
+
+        if f and f != '':
+            ret += '(%s . %s) ' % (noted['folder'], unchompq(f))
 
         return '(' + ret + ')'
 

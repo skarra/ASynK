@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sun Apr 29 12:26:43 IST 2012
+## Last Modified : Sun Apr 29 13:11:03 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -32,7 +32,7 @@ class BBContactsFolder(Folder):
 
     def __del__ (self):
         if self.is_dirty():
-            self.save_file()
+            self.get_store().save_file()
 
     ##
     ## Implementation of the abstract methods inherited from Folder
@@ -121,7 +121,7 @@ class BBContactsFolder(Folder):
             item.update_sync_tags(dst_tag, bbc.get_itemid())
 
         try:
-            self.save_file()
+            self.get_store().save_file()
         except Exception, e:
             logging.error('bb:bc: Could not save BBDB folder %s (%s)',
                           self.get_name(), str(e))
@@ -146,7 +146,7 @@ class BBContactsFolder(Folder):
     def writeback_sync_tags (self, pname, items):
         logging.debug('bb:wst: Dirty flag: %s', self.is_dirty())
         try:
-            self.save_file()
+            self.get_store().save_file()
             return True
         except Exception, e:
             logging.error('bb:wst: Could not save BBDB folder %s (%s)',
@@ -170,7 +170,7 @@ class BBContactsFolder(Folder):
     
         try:
             self.set_dirty()
-            self.save_file()
+            self.get_store().save_file()
         except Exception, e:
             logging.error('Caught exception (%s) while saving BBDB folder',
                           str(e))
@@ -183,6 +183,27 @@ class BBContactsFolder(Folder):
 
         return ('%s.\tName: %s;\tGID: %s;\t' % (ret, self.get_name(),
                                                 self.get_itemid()))
+
+    ##
+    ## Non-abstract methods of importance
+    ##
+    
+    def save (self):
+        self.get_store().save_file()
+
+    def write_to_file (self, bbf, keep_open=True):
+        """Write the folder's contacts to the specified file handle. bbf
+        should be an open file handle. If the keep_open flag is False, this
+        will close the file handle after completing its work."""
+
+        for bbdbid, bbc in self.get_contacts().iteritems():
+            con = bbc.init_rec_from_props()
+            bbf.write('%s\n' % unicode(con))
+
+        if not keep_open:
+            bbf.close()
+
+        self.set_clean()
 
     ##
     ## Internal and helper routines
