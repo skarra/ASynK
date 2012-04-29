@@ -58,10 +58,15 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_read_profile_defaults (self):
         val = self.config.get_profile_defaults()
-        self.assertTrue(val['db1'] == None)
-        self.assertTrue(val['db2'] == None)
-        self.assertTrue(val['fold1'] == None)
-        self.assertTrue(val['fold2'] == None)
+
+        self.assertTrue(val['coll_1']['dbid'] == None)
+        self.assertTrue(val['coll_1']['stid'] == None)
+        self.assertTrue(val['coll_1']['foid'] == None)
+
+        self.assertTrue(val['coll_2']['dbid'] == None)
+        self.assertTrue(val['coll_2']['stid'] == None)
+        self.assertTrue(val['coll_2']['foid'] == None)
+
         self.assertTrue(val['last_sync_start'] == "1980-01-01T00:00:00.00+00:00")
         self.assertTrue(val['last_sync_stop'] == "1980-01-01T00:00:00.00+00:00")
         self.assertTrue(val['sync_dir'] == 'SYNC2WAY')
@@ -129,9 +134,9 @@ class TestStateFunctions(unittest.TestCase):
         self.assertTrue(val == 'gc')
 
     def test_write_cr (self):
-        self.config.set_conflict_resolve('sample', 'ol')
+        self.config.set_conflict_resolve('sample', 'bb')
         val = self.config.get_conflict_resolve('sample')
-        self.assertTrue(val == 'ol')
+        self.assertTrue(val == 'bb')
 
     def test_write_invalid_cr (self):
         with self.assertRaises(AsynkConfigError):
@@ -139,7 +144,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_get_gid_next_gc (self):
         val = self.config.get_ol_next_gid('gc')
-        self.assertTrue(val == 0x9002)
+        self.assertTrue(val == 0x9001)
 
     def test_get_gid_next_bb (self):
         val = self.config.get_ol_next_gid('bb')
@@ -158,10 +163,10 @@ class TestStateFunctions(unittest.TestCase):
         self.assertEqual(p, 'goofy')
         self.assertEqual(i, 'gc')
 
-        val = 'asynk:goofy0123:gc123'
+        val = 'asynk:goofy0123:gc'
         p, i = self.config.parse_sync_label(val)
         self.assertEqual(p, 'goofy0123')
-        self.assertEqual(i, 'gc123')
+        self.assertEqual(i, 'gc')
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)

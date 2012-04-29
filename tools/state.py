@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Fri Apr 20 18:55:49 IST 2012
+## Last Modified : Sun Apr 29 22:19:11 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -213,23 +213,35 @@ class Config:
     ## sync profile
     ##
 
+    def get_coll_1 (self, profile):
+        return self._get_profile_prop(profile, 'coll_1')
+
+    def set_coll_1 (self, profile, val):
+        return self._set_profile_prop(profile, 'coll_1', val)
+
+    def get_coll_2 (self, profile):
+        return self._get_profile_prop(profile, 'coll_2')
+
+    def set_coll_2 (self, profile, val):
+        return self._set_profile_prop(profile, 'coll_2', val)
+
     def get_profile_db1 (self, profile):
-        return self._get_profile_prop(profile, 'db1')
+        return self.get_coll_1(profile)['dbid']
 
     def get_profile_db2 (self, profile):
-        return self._get_profile_prop(profile, 'db2')
+        return self.get_coll_2(profile)['dbid']
+
+    def get_stid1 (self, profile):
+        return self.get_coll_1(profile)['stid']
+
+    def get_stid2 (self, profile):
+        return self.get_coll_2(profile)['stid']
 
     def get_fid1 (self, profile):
-        return self._get_profile_prop(profile, 'fid1')
-
-    def set_fid1 (self, profile, val, sync=True):
-        return self._set_profile_prop(profile, 'fid1', val, sync)
+        return self.get_coll_1(profile)['foid']
 
     def get_fid2 (self, profile):
-        return self._get_profile_prop(profile, 'fid2')
-
-    def set_fid2 (self, profile, val, sync=True):
-        return self._set_profile_prop(profile, 'fid2', val, sync)
+        return self.get_coll_2(profile)['foid']
 
     def get_last_sync_start (self, profile):
         return self._get_profile_prop(profile, 'last_sync_start')

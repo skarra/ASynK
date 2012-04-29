@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Sun Apr 29 12:39:46 IST 2012
+// Last Modified : Sun Apr 29 20:57:04 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -31,11 +31,17 @@
     // When a profile is created it is populated with the following
     // default values.
     'profile_defaults' : {
-        'db1' : null,
-        'db2' : null,
+        'coll_1' : {
+	    'dbid' : null,	// Two letter DB specifier like 'bb', 'gc'
+	    'stid' : null,	// Store ID (See documentation)
+	    'foid' : null,	// Folder ID
+	},
 
-        'fid1' : null,
-        'fid2' : null,
+        'coll_2' : {
+	    'dbid' : null,
+	    'stid' : null,
+	    'foid' : null,
+	},
 
         'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
         'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
@@ -44,7 +50,7 @@
         // be one of ['SYNC1WAY' or 'SYCN2WAY'].
         'sync_dir'         : "SYNC2WAY",
 
-        // conflict_resolve will be initialized to the value of db1
+        // conflict_resolve will be initialized to the value of coll_1
         // unless explicitly overridded by the user
     },
 

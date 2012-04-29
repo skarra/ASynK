@@ -19,11 +19,17 @@
 	// sample profile will not be written to the state.json file
 
 	'sample' : {
-	    'db1' : 'gc',
-	    'db2' : 'ol',
+	    "coll_1" : {
+		"dbid" : "gc",
+		"stid" : "karra.etc@gmail.com",
+		"foid" : "http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/2fae451c0fe771d5",
+	    },
 
-            'fid1' : 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/3b83f70e88fa08bd',
-            'fid2' : 'Soemthing something',
+	    "coll_2" : {
+		"dbid" : "bb",
+		"stid" : "/Users/sriramkarra/stuff/code/python/Gout/test/bbdb.utah.ver7",
+		"foid" : "default",
+	    },
 
 	    'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
 	    'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
