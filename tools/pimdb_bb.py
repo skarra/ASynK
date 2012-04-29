@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Sun Apr 29 13:39:19 IST 2012
+## Last Modified : Mon Apr 30 00:24:58 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -68,6 +68,12 @@ class MessageStore:
 
     def add_folder (self, f):
         self.folders.update({f.get_name() : f})
+
+    def remove_folder (self, fold):
+        """Remove a folder from the folder list by name."""
+
+        del self.folders[fold.get_name()]
+        self.save_file()
 
     def set_folders (self, fs):
         """fs has to be a dictionary"""
@@ -305,6 +311,9 @@ class BBPIMDB(PIMDB):
 
         return 'bb'
 
+    def get_msgstore (self, name):
+        return self.msgstores[name]
+
     def get_msgstores (self):
         return self.msgstores
 
@@ -338,29 +347,53 @@ class BBPIMDB(PIMDB):
 
         return ms
 
-    def new_folder (self, fname, ftype=None, storeid=None):
-        """See the documentation in class PIMDB.
+    def new_folder (self):
+        logging.debug('bb:new_folder(): Nothing to do really. Bye.')
 
+    @classmethod
+    def new_store (self, fname, ftype=None):
+        """See the documentation in class PIMDB.
         fname should be a filename in this case.
         """
 
-        with codes.open(fname, 'w', encoding='utf-8') as bbf:
+        ## FIXME: This routine should really be one of the cases in the
+        ## constructor. 
+
+        with codecs.open(fname, 'w', encoding='utf-8') as bbf:
             bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
             bbf.write(';;; file-format: 7\n')
             bbf.close()
 
         logging.info('Successfully Created BBDB file: %s', fname)
-        f = BBContactsFolder(self, fname)
-        if f:
-            self.add_contacts_folder(f)
+
+        # # The following can be uncommented when this stuff is also put into
+        # # the constructor
+
+        # ms = MessageStore(self, fname)
+        # self.add_msgstore(ms)
 
     def show_folder (self, gid):
         logging.info('%s: Not Implemented', 'pimd_bb:show_folder()')
 
-    def del_folder (self, gid):
+    def del_folder (self, gid, store=None):
         """See the documentation in class PIMDB"""
 
-        raise NotImplementedError
+        if not store:
+            logging.error('BBDB:del_folder() needs store to be specified.')
+            return
+
+        if not store in self.get_msgstores():
+            logging.error('BBDB:del_folder() Could not locate store: %s', store)
+            return
+
+        st = self.get_msgstore(store)
+        if not gid in st.get_folders():
+            logging.error('BBDB:del_folder() Could not locate store: %s', store)
+            return
+
+        fold = st.get_folder(gid)
+        st.remove_folder(fold)
+        self.remove_folder(fold)
 
     def set_folders (self):
         """See the documentation in class PIMDB"""
