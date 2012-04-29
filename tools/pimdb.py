@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sun Apr 29 12:27:36 IST 2012
+## Last Modified : Mon Apr 30 00:17:59 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -232,6 +232,13 @@ class PIMDB:
         f.append(fold)
 
         return fold
+
+    def remove_folder (self, fold):
+        """Remove a folder from the folder list by name."""
+
+        ftype = fold.get_type()
+        f = self.get_folders(ftype)
+        f.remove(fold)
 
     def add_contacts_folder (self, f):
         """Append specified folder f to the list of Contacts folder in the

@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Fri Apr 27 17:20:51 IST 2012
+## Last Modified : Mon Apr 30 00:23:47 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -34,7 +34,7 @@ from   pimdb_bb         import BBPIMDB
 from   folder_bb        import BBContactsFolder
 
 ## Some Global Variables to get started
-asynk_ver = '0.01+'
+asynk_ver = '0.1+'
 
 class AsynkParserError(Exception):
     pass
@@ -65,6 +65,7 @@ def setup_parser ():
     p.add_argument('--op', action='store',
                    choices=('list-folders',
                             'create-folder',
+                            'create-store',
                             'show-folder',
                             'del-folder',
                             'list-profiles',
@@ -85,26 +86,19 @@ def setup_parser ():
                          'Some actions need two DB IDs - do it with two --db ' +
                          'flags. When doing so remember that order might be ' + 
                          'important for certain operations.'))
-
-    p.add_argument('--remote-db', action='store', choices=('bb', 'gc', 'ol'),
-                    help=('Specifies which remote db''s sync data to be ' +
-                          'cleared with clear-sync-artifacts'))
-    p.add_argument('--profile-name', action='store',
-                   help=('For profile related operations, this option is '
-                         'used to specify which one is needed'))
-    p.add_argument('--store-id', action='store',
-                    help=('Specifies ID of Outlook Message store. Useful with '
-                          'certain operations like --create-folder'))
-    p.add_argument('--folder-name', action='store', 
-                     help='For folder operations specify the name of the '
-                     'folder to operate on.')
-    p.add_argument('--folder-id', action='store', nargs='+',
+    p.add_argument('--store', action='store', nargs='+',
+                    help=('Specifies store ID(s) to be operated on.'))
+    p.add_argument('--folder', action='store', nargs='+',
                      help='For operations that need folder ids, this option '
                      'specifies them. More than one can be specified separated '
                      'by spaces')
-    p.add_argument('--item-id', action='store',
+    p.add_argument('--item', action='store',
                      help='For Item operations specify the ID of the '
                      'Item to operate on.')
+
+    p.add_argument('--name', action='store',
+                   help=('For profile operations, specifies profile name. '
+                         'For Folder operations, specifies folder name'))
 
     p.add_argument('--direction', action='store', default='2way',
                    choices=('1way', '2way'),
@@ -125,21 +119,11 @@ def setup_parser ():
 
     # A Group for BBDB stuff
     gg = p.add_argument_group('Google Authentication')
-    gg.add_argument('--user', action='store', 
-                   help=('Google username. Relevant only if --db=gc is used. '
-                         'If this option is not specified, user is prompted '
-                         'for username from stdin'))
     gg.add_argument('--pwd', action='store', 
                    help=('Google password. Relevant only if --db=gc is used. '
                          'If this option is not specified, user is prompted '
                          'password from stdin'))
 
-
-    # A Group for BBDB stuff
-    gb = p.add_argument_group('BBDB Paramters')
-    gb.add_argument('--bbdb-file', action='store', 
-                    # default=os.path.expanduser('~/.bbdb'),
-                   help='BBDB File is --db=bb is used.')
 
     gw = p.add_argument_group('Web Parameters')
     gw.add_argument('--port', action='store', type=int,
@@ -190,9 +174,12 @@ class Asynk:
             return
 
         if 'gc' in [self.get_db1(), self.get_db2()]:
-            while not self.get_gcuser():
-                self.set_gcuser(raw_input('Please enter your username: '))
-                
+            gcuser = self.get_store_id('gc')
+            if not gcuser:
+                while not gcuser:
+                    gcuser = raw_input('Please enter your username: ')
+            self.set_gcuser(gcuser)
+
             while not self.get_gcpw():
                 self.set_gcpw(raw_input('Password: '))
                 if not self.get_gcpw():
@@ -250,26 +237,34 @@ class Asynk:
         if self.get_op() == 'op_startweb':
             return
 
-        self.set_bbdb_file(uinps.bbdb_file)
         self.set_dry_run(uinps.dry_run)
+        self.set_name(uinps.name)
 
-        self.set_remote_db(uinps.remote_db)
-        self.set_profile_name(uinps.profile_name)
-
-        if uinps.folder_name and uinps.folder_id:
-            raise AsynkParserError('Only one of --folder-name or --folder-id '
+        if uinps.name and uinps.folder:
+            raise AsynkParserError('Only one of --name or --folder '
                                    'can be specified.')
 
-        self.set_store_id(uinps.store_id)
-        self.set_folder_name(uinps.folder_name)
-
-        if uinps.folder_id:
+        if uinps.store:
             temp = {}
-            if len(uinps.folder_id) >= 1:
-                temp.update({self.get_db1() : uinps.folder_id[0]})
+            if len(uinps.store) >= 1:
+                temp.update({self.get_db1() : uinps.store[0]})
 
-            if len(uinps.folder_id) >= 2:
-                temp.update({self.get_db2() : uinps.folder_id[1]})
+            if len(uinps.store) >= 2:
+                temp.update({self.get_db2() : uinps.store[1]})
+
+            self.set_store_ids(temp)
+        else:
+            self.set_store_ids(None)
+
+        self.set_name(uinps.name)
+
+        if uinps.folder:
+            temp = {}
+            if len(uinps.folder) >= 1:
+                temp.update({self.get_db1() : uinps.folder[0]})
+
+            if len(uinps.folder) >= 2:
+                temp.update({self.get_db2() : uinps.folder[1]})
 
             self.set_folder_ids(temp)
         else:
@@ -279,14 +274,24 @@ class Asynk:
         self.set_sync_dir(d)
         self.set_label_re(uinps.label_regex)
         self.set_conflict_resolve(uinps.conflict_resolve)
-        self.set_item_id(uinps.item_id)
-        self.set_gcuser(uinps.user)
+        self.set_item_id(uinps.item)
         self.set_gcpw(uinps.pwd)
         self.set_port(uinps.port)
 
     def dispatch (self):
         res = getattr(self, self.get_op())()
         return res
+
+    def op_create_store (self):
+        if self.get_db2() != None or not (self.get_db1() in ['bb']):
+            raise AsynkParserError('--create-store only supported for bb now')
+
+        if not self.get_store_id('bb'):
+            raise AsynkParserError('--create-store needs --store option '
+                                   'with value with filename of BBDB file '
+                                   'to be created.')
+
+        BBPIMDB.new_store(self.get_store_id('bb'))
 
     def op_list_folders (self):
         self._login()
@@ -300,18 +305,18 @@ class Asynk:
     def op_create_folder (self):
         ## Let's start with some sanity checking of arguments
 
-        # We need to have a --folder-name flag specified
-        fname = self.get_folder_name()
+        # We need to have a --name flag specified
+        fname = self.get_name()
         if not fname:
             raise AsynkParserError('--create-folder needs a folder name '
-                                   'through --folder-name')
+                                   'through --name')
 
         # There should only be one DB specified
         if self.get_db2():
             raise AsynkParserError('Please specify only 1 db with --db '
                                    'where new folder is to be created')
 
-        storeid = self.get_store_id()
+        storeid = self.get_store_id(self.get_db1())
 
         self._login()
 
@@ -342,6 +347,7 @@ class Asynk:
                                    'where new folder is to be created')
 
         dbid = self.get_db1()
+        store = self.get_store_id(dbid)
         fid  = self.get_folder_id(dbid)
 
         if not fid and not ('bb' == dbid):
@@ -350,7 +356,7 @@ class Asynk:
         self._login()
 
         db = self.get_db(dbid)
-        db.del_folder(fid)
+        db.del_folder(fid, store)
 
     def op_list_profiles (self):
         self.get_config().list_profiles()
@@ -378,7 +384,7 @@ class Asynk:
         # available in the respective PIMDBs, and raise an error if
         # not. Later.
 
-        pname = self.get_profile_name()
+        pname = self.get_name()
         if not pname:
             raise AsynkParserError('--create-profile needs a profile name to '
                                    'be specified')
@@ -568,23 +574,11 @@ class Asynk:
     def set_op (self, val):
         return self._set_att('op', val)
 
-    def get_bbdb_file (self):
-        return self._get_att('bbdb_file')
-
-    def set_bbdb_file (self, val):
-        return self._set_att('bbdb_file', val)
-
     def set_dry_run (self, val):
         self._set_att('dry_run', val)
 
     def is_dry_run (self):
         return self._get_att('dry_run')
-
-    def get_folder_name (self):
-        return self._get_att('folder_name')
-
-    def set_folder_name (self, val):
-        return self._set_att('folder_name', val)
 
     def set_folder_ids (self, val):
         """val should be a dictionary of dbid : folderid pairs."""
@@ -598,23 +592,29 @@ class Asynk:
         except KeyError, e:
             return None
 
+    def set_store_ids (self, val):
+        """val should be a dictionary of dbid : folderid pairs."""
+        return self._set_att('store_id', val)
+
+    def get_store_id (self, dbid):
+        try:
+            return self._get_att('store_id')[dbid]
+        except TypeError, e:
+            return None
+        except KeyError, e:
+            return None
+
     def get_item_id (self):
         return self._get_att('item_id')
 
     def set_item_id (self, val):
         return self._set_att('item_id', val)
 
-    def get_remote_db (self):
-        return self._get_att('remote_db')
+    def get_name (self):
+        return self._get_att('name')
 
-    def set_remote_db (self, val):
-        return self._set_att('remote_db', val)
-
-    def get_profile_name (self):
-        return self._get_att('profile_name')
-
-    def set_profile_name (self, val):
-        return self._set_att('profile_name', val)
+    def set_name (self, val):
+        return self._set_att('name', val)
 
     def get_sync_dir (self):
         return self._get_att('sync_dir')
@@ -633,12 +633,6 @@ class Asynk:
 
     def set_conflict_resolve (self, val):
         return self._set_att('conflict_resolve', val)
-
-    def get_store_id (self):
-        return self._get_att('store_id')
-
-    def set_store_id (self, val):
-        return self._set_att('store_id', val)
 
     def get_gcuser (self):
         return self._get_att('gcuser')
@@ -667,17 +661,22 @@ class Asynk:
     ## The login_* routines can assume that _load_profile has been invoked by
     ## this time.
     def login_bb (self):
-        pname = self.get_profile_name()
+        pname = self.get_name()
         conf = self.get_config()
-
-        bbfn = self.get_bbdb_file()
 
         if pname:
             db1 = conf.get_profile_db1(pname)
             if db1 == 'bb':
-                bbfn = conf.get_fid1(pname)
+                bbfn = conf.get_stid1(pname)
             else:
-                bbfn = conf.get_fid2(pname)
+                bbfn = conf.get_stid2(pname)
+
+        t = self.get_store_id('bb')
+        if t:
+            bbfn = t
+
+        if not bbfn:
+            raise AsynkError('No BBDB Store provided. Unable to initialize.')
 
         bb   = BBPIMDB(conf, bbfn)
         return bb
@@ -696,7 +695,7 @@ class Asynk:
 
     def _get_validated_pname (self):
         conf  = self.get_config()
-        pname = self.get_profile_name()
+        pname = self.get_name()
 
         if not pname:
             def_pname = conf.get_default_profile()
@@ -715,7 +714,7 @@ class Asynk:
 
     def _load_profile (self, login=True):
         pname = self._get_validated_pname()
-        self.set_profile_name(pname)
+        self.set_name(pname)
         conf  = self.get_config()
 
         self.set_db1(conf.get_profile_db1(pname))
