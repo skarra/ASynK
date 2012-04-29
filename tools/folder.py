@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Apr 18 16:48:51 IST 2012
+## Last Modified : Sun Apr 29 12:11:46 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -35,7 +35,7 @@ class Folder:
                     UNKNOWN_t : 'other',
                     }
 
-    def __init__ (self, db):
+    def __init__ (self, db, store=None):
         # Folders have properties that need to persist in the underlying
         # database. We call them 'props'. These are defined and tracked in a
         # single dictionary. Each of the derived classes will, of course, add
@@ -54,6 +54,7 @@ class Folder:
         # like any other object attributes
 
         self.set_db(db)
+        self.set_store(store)
         self.set_config(db.get_config())
 
     @abstractmethod
@@ -206,6 +207,12 @@ class Folder:
 
     def set_db (self, db):
         self.db = db
+
+    def get_store (self):
+        return self.store
+
+    def set_store (self, store):
+        self.store = store
 
     def get_type (self):
         return self._get_prop('type')

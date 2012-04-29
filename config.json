@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Wed Apr 25 18:13:02 IST 2012
+// Last Modified : Sun Apr 29 12:39:46 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -179,6 +179,7 @@
                 'gender'      : 'gender',
                 'created'     : 'creation-date',
                 'updated'     : 'timestamp',
+                'folder'      : 'folder',
             },
 
             // Phone numbers are stored as an array of vectors in BBDB

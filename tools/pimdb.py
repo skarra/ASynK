@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed Apr 11 18:36:40 IST 2012
+## Last Modified : Sun Apr 29 12:27:36 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -45,7 +45,7 @@ class PIMDB:
 
         self.folders      = {'contacts':[],'tasks':[],'notes':[],'appts':[],}
         self.sync_folders = {'contacts':[],'tasks':[],'notes':[],'appts':[],}
-        self.def_folder   = {'contacts'  : None, 'tasks'     : None,
+        self.def_folder   = {'contacts'  : None, 'tasks' : None,
                              'notes'     : None, 'appts' : None,}
 
         ## sync_lists are essentially, data structures used at the itme of
@@ -65,14 +65,6 @@ class PIMDB:
         Outlook, and 'bb' for Emacs BBDB. This id is used, among other things,
         to store the source identification in the remote database, track sync
         status between different databases in the application status, etc."""
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def list_folders (self):
-        """Print details of all folders in the PIMDB. Detail will typically
-        include one line per folder, with its name, and any identifier that
-        can be used for further referencing."""
 
         raise NotImplementedError
 
@@ -192,6 +184,17 @@ class PIMDB:
                               self.get_dbid())
 
         return self._set_att('phones_map', None)
+
+    def list_folders (self):
+        """Print details of all folders in the PIMDB. Detail will typically
+        include one line per folder, with its name, and any identifier that
+        can be used for further referencing."""
+
+        i = 1
+        for t in Folder.valid_types:
+            for f in self.get_folders(t):
+                logging.info(' %2d: %s', i, str(f))
+                i += 1
 
     def get_folders (self, ftype=None):
         """Return all the folders of specified type. ftype should be one of
