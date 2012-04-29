@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Apr 27 17:22:16 IST 2012
+## Last Modified : Sun Apr 29 12:14:58 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -188,6 +188,9 @@ class Item:
 
     def set_folder (self, val):
         return self._set_att('folder', val)
+
+    def get_store (self):
+        return self.get_folder().get_store()
 
     def get_db (self):
         return self._get_att('db')

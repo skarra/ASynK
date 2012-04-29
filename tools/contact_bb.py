@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Fri Apr 27 20:26:25 IST 2012
+## Last Modified : Sun Apr 29 12:17:41 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -84,6 +84,12 @@ class BBContact(Contact):
     ## Now onto the non-abstract methods.
     ##
 
+    def get_bbdb_folder (self):
+        return self._get_prop('bbdb_folder')
+
+    def set_bbdb_folder (self, bbdb_folder):
+        return self._set_prop('bbdb_folder', bbdb_folder)
+
     def get_rec (self):
         return self._get_att('rec')
 
@@ -91,7 +97,7 @@ class BBContact(Contact):
         return self._set_att('rec', rec)
 
     def init_props_from_rec (self, rec):
-        con_re = self.get_db().get_con_re()
+        con_re = self.get_store().get_con_re()
         parse_res = re.search(con_re, rec)
 
         if not parse_res:
@@ -142,7 +148,7 @@ class BBContact(Contact):
     def _snarf_aka_from_parse_res (self, pr):
         aka = pr['aka']
         if aka and aka != 'nil':
-            str_re = self.get_db().get_str_re()
+            str_re = self.get_store().get_str_re()
             aka    = re.findall(str_re, aka)
             nick   = aka[0]
             rest   = aka[1:]
@@ -162,7 +168,7 @@ class BBContact(Contact):
         if cs and cs != 'nil':
             ## The first company goes into the Company field, the rest we will
             ## push into the custom field (as aa json encoded string)
-            str_re = self.get_db().get_str_re()
+            str_re = self.get_store().get_str_re()
             cs = re.findall(str_re, cs)
             self.set_company(chompq(cs[0]))
             self.add_custom('company', demjson.encode(cs[1:]))
@@ -171,7 +177,7 @@ class BBContact(Contact):
         ems = pr['emails']
 
         if ems:
-            str_re = self.get_db().get_str_re()
+            str_re = self.get_store().get_str_re()
             ems = re.findall(str_re, ems)
             ems = [chompq(x) for x in ems]
 
@@ -212,8 +218,8 @@ class BBContact(Contact):
         return (res['home'], res['work'], res['other'])
 
     def _snarf_postal_from_parse_res (self, pr):
-        adr_re = self.get_db().get_adr_re()
-        str_re = self.get_db().get_str_re()
+        adr_re = self.get_store().get_adr_re()
+        str_re = self.get_store().get_str_re()
         addrs  = re.findall(adr_re, pr['addrs'])
 
         for addr in addrs:
@@ -254,7 +260,7 @@ class BBContact(Contact):
                               add)
 
     def _snarf_phones_from_parse_res (self, pr):
-        ph_re = self.get_db().get_ph_re()
+        ph_re = self.get_store().get_ph_re()
         phs   = re.findall(ph_re, pr['phones']) if pr['phones'] else None
 
         if phs:
@@ -307,10 +313,12 @@ class BBContact(Contact):
             logging.error('Error in Config file. No notes_map field for bb')
             return
 
-        stag_re = self.get_db().get_sync_tag_re()
-        note_re = self.get_db().get_note_re()
+        stag_re = self.get_store().get_sync_tag_re()
+        note_re = self.get_store().get_note_re()
         notes = re.findall(note_re, pr['notes'])
         custom = {}
+
+        self.set_bbdb_folder(None)
 
         # logging.debug('bb:snfpr:stag_re: %s', stag_re)
         # keys = [note[0] for note in notes]
@@ -354,6 +362,8 @@ class BBContact(Contact):
                 self.add_web_work(val)
             elif re.search(noted['middle_name'], key):
                 self.add_middlename(val)
+            elif re.search(noted['folder'], key):
+                self.set_bbdb_folder(val)
             else:
                 ## The rest of the stuff go into the 'Custom' field...
                 custom.update({key : val})

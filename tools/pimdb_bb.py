@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Fri Apr 27 15:42:27 IST 2012
+## Last Modified : Sun Apr 29 12:27:30 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -11,95 +11,72 @@ import codecs, datetime, logging, re, time
 from   pimdb        import PIMDB
 from   folder       import Folder
 from   folder_bb    import BBContactsFolder
+from   contact_bb   import BBContact
 
-class BBPIMDB(PIMDB):
-    """Wrapper class over the BBDB, by implementing the PIMDB abstract
-    class."""
+## Note: Each BBDB File is a message store and there are one or more folders
+## in it.
+class MessageStore:
+    """Represents a physical BBDB file, made up of one or more folders,
+    each containing contacts."""
 
-    def __init__ (self, config, def_fn):
-        PIMDB.__init__(self, config)
-
-        self.set_def_fn(def_fn)
+    def __init__ (self, db, name):
+        self.atts = {}
+        self.set_db(db)
+        self.set_name(name)
         self._set_regexes()
-        self.set_folders()
+        self.set_folders({})
+
+        self.populate_folders()
 
     ##
-    ## First implementation of the abstract methods of PIMDB.
+    ## Some get and set routines
     ##
 
-    def get_dbid (self):
-        """See the documentation in class PIMDB"""
+    def _get_att (self, key):
+        return self.atts[key]
 
-        return 'bb'
+    def _set_att (self, key, val):
+        self.atts[key] = val
+        return val
 
-    def list_folders (self):
-        """See the documentation in class PIMDB"""
+    def get_db (self):
+        return self._get_att('db')
 
-        i = 1
-        for t in Folder.valid_types:
-            for f in self.get_folders(t):
-                logging.info(' %2d: %s', i, str(f))
-                i += 1
+    def set_db (self, db):
+        return self._set_att('db', db)
 
-    def new_folder (self, fname, ftype=None, storeid=None):
-        """See the documentation in class PIMDB.
+    def get_config (self):
+        return self.get_db().get_config()
 
-        fname should be a filename in this case.
-        """
+    def get_name (self):
+        return self._get_att('name')
 
-        with codes.open(fname, 'w', encoding='utf-8') as bbf:
-            bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
-            bbf.write(';;; file-format: 7\n')
-            bbf.close()
+    def set_name (self, name):
+        return self._set_att('name', name)
 
-        logging.info('Successfully Created BBDB file: %s', fname)
-        f = BBContactsFolder(self, fname)
-        if f:
-            self.add_contacts_folder(f)
+    def get_store_id (self):
+        return self.get_name()
 
-    def show_folder (self, gid):
-        logging.info('%s: Not Implemented', 'pimd_bb:show_folder()')
+    def get_folders (self):
+        return self.folders
 
-    def del_folder (self, gid):
-        """See the documentation in class PIMDB"""
+    def get_folder (self, name):
+        if name in self.folders:
+            return self.folders[name]
+        else:
+            return None
 
-        raise NotImplementedError
+    def add_folder (self, f):
+        self.folders.update({f.get_name() : f})
 
-    def set_folders (self):
-        """See the documentation in class PIMDB"""
+    def set_folders (self, fs):
+        """fs has to be a dictionary"""
 
-        if not self.get_def_fn():
-            return
-
-        f = BBContactsFolder(self, self.get_def_fn())
-        if f:
-            self.add_contacts_folder(f)
-            self.set_def_folder(Folder.CONTACT_t, f)
-
-    def set_def_folders (self):
-        """See the documentation in class PIMDB"""
-
-        ## We are already doing the needful above...
-        pass
-
-    def set_sync_folders (self):
-        """See the documentation in class PIMDB"""
-
-        raise NotImplementedError
-
-    def prep_for_sync (self, dbid):
-        pass
+        self.folders = fs
 
     ##
-    ## Now the non-abstract methods and internal methods
+    ## The Real Action
     ##
-
-
-    def get_def_fn (self):
-        return self._get_att('def_fn')
-
-    def set_def_fn (self, fn):
-        return self._set_att('def_fn', fn)
 
     def get_con_re (self):
         return self._get_att('con_re')
@@ -142,6 +119,10 @@ class BBPIMDB(PIMDB):
 
     def set_sync_tag_re (self, reg):
         return self._set_att('sync_tag_re', reg)
+
+    @classmethod
+    def get_def_folder_name (self):
+        return 'default'
 
     def _set_regexes (self):
         res = {'string' : r'"[^"\\]*(?:\\.[^"\\]*)*"|nil',
@@ -205,7 +186,210 @@ class BBPIMDB(PIMDB):
         s = c.get_label_separator()
         r = '%s%s\w+%s' % (p, s, s)
         self.set_sync_tag_re(r)
-        
+
+    def set_file_format (self, ver):
+        return self._set_att('file_format', ver)
+
+    def get_file_format (self):
+        return self._get_att('file_format')
+
+    def populate_folders (self, fn=None):
+        """Parse a BBDB file contents, and create folders of contacts."""
+
+        ## BBDB itself is not structured as logical folders. The concept of a
+        ## BBDB folder is overlayed by ASynK. Any contact with a notes field
+        ## with key called 'folder' (or as configured in config.json), is
+        ## assigned to a folder of that name. If an object does not have a
+        ## folder note, it is assgined to the default folder.
+
+        ## This routine parses the BBDB file by reading one line at at time
+        ## from top to bottom. Due to a limitation in how the Contact() and
+        ## Folder() classes interact, we have to pass a valid Folder object to
+        ## the Contact() constructor. So the way we do this is we start by
+        ## assuming the contact is in the default folder. After successful
+        ## parsing, if the folder name is available in the contact, we will
+        ## move it from the dfault folder to that particular folder.
+
+        if not fn:
+            fn = self.get_name()
+
+        logging.info('Parsing BBDB file %s...', fn)
+
+        def_fn = self.get_def_folder_name()
+        def_f = BBContactsFolder(self.get_db(), def_fn, self)
+        self.add_folder(def_f)
+
+        with codecs.open(fn, encoding='utf-8') as bbf:
+            ff = bbf.readline()
+            if re.search('coding:', ff):
+                # Ignore first line if it is: ;; -*-coding: utf-8-emacs;-*-
+                ff = bbf.readline()
+
+            # Processing: ;;; file-format: 8
+            res = re.search(';;; file-(format|version):\s*(\d+)', ff)
+            if not res:
+                bbf.close()
+                raise BBDBFileFormatError('Unrecognizable format line: %s' % ff)
+
+            ver = int(res.group(2))
+            self.set_file_format(ver)
+
+            if ver < 7:
+                bbf.close()
+                raise BBDBFileFormatError(('Need minimum file format ver 7. ' +
+                                          '. File version is: %d' ) % ver)
+
+            cnt = 0
+            while True:
+                ff = bbf.readline()
+                if ff == '':
+                    break
+
+                if re.search('^;', ff):
+                    continue
+
+                c  = BBContact(def_f, rec=ff.rstrip())
+                fn = c.get_bbdb_folder()
+
+                if fn:
+                    f = self.get_folder(fn)
+                    if not f:
+                        f = BBContactsFolder(self.get_db(), fn, self)
+                        self.add_folder(f)
+                    f.add_contact(c)
+                else:
+                    def_f.add_contact(c)
+
+                # self.add_contact(c)
+
+                cnt += 1
+
+        logging.info('Successfully parsed %d entries.', cnt)
+        bbf.close()
+
+    def save_file (self, fn=None):
+        if not fn:
+            fn = self.get_name() + '.out'
+
+        logging.info('Saving BBDB File %s: %s...', self.get_name(), fn)
+
+        with codecs.open(fn, 'w', encoding='utf-8') as bbf:
+            bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
+            bbf.write(';;; file-format: 7\n')
+
+            for bbdbid, bbc in self.get_contacts().iteritems():
+                con = bbc.init_rec_from_props()
+                bbf.write('%s\n' % unicode(con))
+
+        bbf.close()
+        self.set_clean()
+
+class BBPIMDB(PIMDB):
+    """Wrapper class over the BBDB, by implementing the PIMDB abstract
+    class."""
+
+    def __init__ (self, config, def_fn):
+        PIMDB.__init__(self, config)
+
+        self.set_msgstores({})
+
+        def_ms = self.add_msgstore(def_fn)
+        self.set_def_msgstore(def_ms)
+
+        self.set_folders()
+
+    ##
+    ## First implementation of the abstract methods of PIMDB.
+    ##
+
+    def get_dbid (self):
+        """See the documentation in class PIMDB"""
+
+        return 'bb'
+
+    def get_msgstores (self):
+        return self.msgstores
+
+    def set_msgstores (self, ms):
+        self.msgstores = ms
+        return ms
+
+    def get_def_msgstore (self):
+        return self.def_msgstore
+
+    def set_def_msgstore (self, ms):
+        self.def_msgstore = ms
+        return ms
+
+    def add_msgstore (self, ms):
+        """Add another messagestore to the PIMDB. ms can be either a string,
+        or an object of type MessageStore. If it is a string, then the string
+        is interpreted as the fully expanded name of a BBDB file, and it is
+        parsed accordingly. If it is an object already, then it is simply
+        appended to the existing list of stores."""
+
+        if isinstance(ms, MessageStore):
+            self.msgstores.update({ms.get_name(): ms})
+        elif isinstance(ms, basestring):
+            ms = MessageStore(self, ms)
+            self.msgstores.update({ms.get_name() : ms})
+        else:
+            logging.error('Unknown type (%s) in argument to add_msgstore %s',
+                          type(ms), ms)
+            return None
+
+        return ms
+
+    def new_folder (self, fname, ftype=None, storeid=None):
+        """See the documentation in class PIMDB.
+
+        fname should be a filename in this case.
+        """
+
+        with codes.open(fname, 'w', encoding='utf-8') as bbf:
+            bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
+            bbf.write(';;; file-format: 7\n')
+            bbf.close()
+
+        logging.info('Successfully Created BBDB file: %s', fname)
+        f = BBContactsFolder(self, fname)
+        if f:
+            self.add_contacts_folder(f)
+
+    def show_folder (self, gid):
+        logging.info('%s: Not Implemented', 'pimd_bb:show_folder()')
+
+    def del_folder (self, gid):
+        """See the documentation in class PIMDB"""
+
+        raise NotImplementedError
+
+    def set_folders (self):
+        """See the documentation in class PIMDB"""
+
+        for name, store in self.get_msgstores().iteritems():
+            for name, f in store.get_folders().iteritems():
+                self.add_to_folders(f)
+
+    def set_def_folders (self):
+        """See the documentation in class PIMDB"""
+
+        def_store  = self.get_def_msgstore()
+        def_folder = def_store.get_folder(MessageStore.get_def_folder_name())
+        self.set_def_folder(Folder.CONTACT_t, def_folder)
+
+    def set_sync_folders (self):
+        """See the documentation in class PIMDB"""
+
+        raise NotImplementedError
+
+    def prep_for_sync (self, dbid):
+        pass
+      
+    ##
+    ## Now the non-abstract methods and internal methods
+    ##
+
     @classmethod
     def get_bbdb_time (self, t=None):
        """Convert a datetime.datetime object to a time string formatted in the

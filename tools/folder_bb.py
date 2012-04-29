@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Fri Apr 27 17:00:18 IST 2012
+## Last Modified : Sun Apr 29 12:26:43 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -18,15 +18,17 @@ class BBDBFileFormatError(Exception):
 class BBContactsFolder(Folder):    
     default_folder_id = 'default'
 
-    def __init__ (self, db, fn):
-        Folder.__init__(self, db)
+    def __init__ (self, db, fn, store=None):
+        logging.debug('New BBContactsFolder: %s', fn)
+
+        Folder.__init__(self, db, store)
         
         self.set_clean()
+        self.set_type(Folder.CONTACT_t)
         self.set_itemid(fn)
         self.set_name(fn)
 
         self.contacts = {}
-        self.parse_file()
 
     def __del__ (self):
         if self.is_dirty():
@@ -201,78 +203,20 @@ class BBContactsFolder(Folder):
     def add_contact (self, bbc):
         self.contacts.update({bbc.get_itemid() : bbc})
 
+    def del_contact (self, bbc):
+        """Remove the specified from the contact from this folder, and return
+        True. If it does not exist in the folder, returns False."""
+
+        try:
+            del self.contacts[bbc.get_itemid()]
+            return True
+        except KeyError, e:
+            logging.debug('Trying to delete non-existent contact (%s) from '
+                          'Folder: %s', bbc.get_itemid(), self.get_name())
+            return False
+
     def get_contacts (self):
         return self.contacts
-
-    def set_file_format (self, ver):
-        return self._set_prop('file_format', ver)
-
-    def get_file_format (self):
-        return self._get_prop('file_format')
-
-    def parse_file (self, fn=None):
-        if not fn:
-            fn = self.get_name()
-
-        logging.info('Parsing BBDB file %s...', fn)
-
-        with codecs.open(fn, encoding='utf-8') as bbf:
-            ff = bbf.readline()
-            if re.search('coding:', ff):
-                # Ignore first line if it is: ;; -*-coding: utf-8-emacs;-*-
-                ff = bbf.readline()
-
-            # Processing: ;;; file-format: 8
-            res = re.search(';;; file-(format|version):\s*(\d+)', ff)
-            if not res:
-                bbf.close()
-                raise BBDBFileFormatError('Unrecognizable format line: %s' % ff)
-
-            ver = int(res.group(2))
-            self.set_file_format(ver)
-
-            if ver < 7:
-                bbf.close()
-                raise BBDBFileFormatError(('Need minimum file format ver 7. ' +
-                                          '. File version is: %d' ) % ver)
-
-            cnt = 0
-            while True:
-                ff = bbf.readline()
-                if ff == '':
-                    break
-
-                if re.search('^;', ff):
-                    continue
-
-                c = BBContact(self, rec=ff.rstrip())
-                self.add_contact(c)
-                cnt += 1
-
-        logging.info('Successfully parsed %d entries.', cnt)
-        bbf.close()
-
-    def save_file (self, fn=None):
-        if not fn:
-            fn = self.get_name() + '.out'
-
-        logging.info('Saving BBDB Folder %s to file: %s...',
-                     self.get_name(), fn)
-
-        with codecs.open(fn, 'w', encoding='utf-8') as bbf:
-            bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
-            bbf.write(';;; file-format: 7\n')
-
-            for bbdbid, bbc in self.get_contacts().iteritems():
-                con = bbc.init_rec_from_props()
-                bbf.write('%s\n' % unicode(con))
-
-        bbf.close()
-        self.set_clean()
-
-    def get_user_fields_as_string (self):
-        # FIXME: Do something meanginful with this
-        return 'mail-alias'
 
     def print_contacts (self, cnt=0):
         i = 0
@@ -286,11 +230,3 @@ class BBContactsFolder(Folder):
 
         logging.debug('Printed %d contacts from folder %s', i,
                       self.get_name())
-
-    ##
-    ## Some class methods
-    ##
-
-    @classmethod
-    def get_default_folder_id (self):
-        return self.default_folder_id
