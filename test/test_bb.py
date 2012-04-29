@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sun Apr 29 12:30:17 IST 2012
+## Last Modified : Sun Apr 29 13:10:38 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -32,7 +32,7 @@ def main (argv=None):
                           state_fn='../state.json',
                           bbfn=bbfn)
     tests.print_contacts(cnt=0)
-    # tests.write_to_file()
+    tests.write_to_file()
 
 class TestBBContact:
     def __init__ (self, config_fn, state_fn, bbfn):
@@ -47,7 +47,7 @@ class TestBBContact:
         self.deff.print_contacts(cnt=cnt)
 
     def write_to_file (self):
-        self.deff.save_file()
+        self.deff.save()
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
