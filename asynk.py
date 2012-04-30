@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Mon Apr 30 00:23:47 IST 2012
+## Last Modified : Mon Apr 30 07:05:12 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -144,7 +144,11 @@ class Asynk:
         routine of argparse module."""
 
         level = string.upper(uinps.log)
-        logging.getLogger().setLevel(getattr(logging, level))
+        logging.basicConfig(format='[%(asctime)s.%(msecs)d %(levelname)9s] '
+                            '%(message)s',
+                            datefmt='%H:%M:%S',
+                            level=getattr(logging, level))
+        # logging.getLogger().setLevel(getattr(logging, level))
 
         self.reset_fields()
         self.validate_and_snarf_uinps(uinps)
