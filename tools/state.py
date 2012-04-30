@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Sun Apr 29 22:19:11 IST 2012
+## Last Modified : Mon Apr 30 07:12:48 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -409,15 +409,22 @@ class Config:
             olgid = val['olgid'] if val['olgid'] else 0
 
             logging.info('')
-            logging.info('Profile Name  : %s',     key)
-            logging.info('  dbs         : %s, %s', val['db1'], val['db2'])
-            logging.info('  Folder 1 ID : %s',     val['fid1'])
-            logging.info('  Folder 2 ID : %s',     val['fid2'])
-            logging.info('  sync_start  : %s',     val['last_sync_start'])
-            logging.info('  sync_stop   : %s',     val['last_sync_stop'])
-            logging.info('  sync_dir    : %s',     val['sync_dir'])
-            logging.info('  confl_res   : %s',     val['conflict_resolve'])
-            logging.info('  olgid       : 0x%x',   olgid)
+            logging.info('*** Profile   : %s ***',     key)
+            logging.info('  Collection 1: ')
+            logging.info('    DB ID     : %s', val['coll_1']['dbid'])
+            logging.info('    Store ID  : %s', val['coll_1']['stid'])
+            logging.info('    Folder ID : %s', val['coll_1']['foid'])
+
+            logging.info('  Collection 2: ')
+            logging.info('    DB ID     : %s', val['coll_2']['dbid'])
+            logging.info('    Store ID  : %s', val['coll_2']['stid'])
+            logging.info('    Folder ID : %s', val['coll_2']['foid'])
+
+            logging.info('  sync_start  : %s', val['last_sync_start'])
+            logging.info('  sync_stop   : %s', val['last_sync_stop'])
+            logging.info('  sync_dir    : %s', val['sync_dir'])
+            logging.info('  confl_res   : %s', val['conflict_resolve'])
+            logging.info('  olgid       : 0x%x', olgid)
 
     def profile_exists (self, pname):
         return pname in self.get_profiles()
