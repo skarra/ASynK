@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Mon Apr 30 07:05:12 IST 2012
+## Last Modified : Tue May 01 22:40:59 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -258,7 +258,7 @@ class Asynk:
 
             self.set_store_ids(temp)
         else:
-            self.set_store_ids(None)
+            self.set_store_ids({})
 
         self.set_name(uinps.name)
 
@@ -536,6 +536,9 @@ class Asynk:
         self.atts.update({att : val})
         return val
 
+    def _update_att (self, att, key, val):
+        self.atts[att].update({key : val})
+
     def _get_att (self, att):
         return self.atts[att]
 
@@ -599,6 +602,9 @@ class Asynk:
     def set_store_ids (self, val):
         """val should be a dictionary of dbid : folderid pairs."""
         return self._set_att('store_id', val)
+
+    def add_store_id (self, dbid, sid):
+        return self._update_att('store_id', dbid, sid)
 
     def get_store_id (self, dbid):
         try:
@@ -718,11 +724,16 @@ class Asynk:
 
     def _load_profile (self, login=True):
         pname = self._get_validated_pname()
-        self.set_name(pname)
-        conf  = self.get_config()
 
-        self.set_db1(conf.get_profile_db1(pname))
-        self.set_db2(conf.get_profile_db2(pname))
+        if pname:
+            self.set_name(pname)
+            conf  = self.get_config()
+    
+            self.set_db1(conf.get_profile_db1(pname))
+            self.set_db2(conf.get_profile_db2(pname))
+    
+            self.add_store_id(self.get_db1(), conf.get_stid1(pname))
+            self.add_store_id(self.get_db2(), conf.get_stid2(pname))
 
         if login:
             self._login()
