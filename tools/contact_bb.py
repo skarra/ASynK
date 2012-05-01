@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sun Apr 29 13:37:06 IST 2012
+## Last Modified : Tue May 01 22:47:44 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -26,6 +26,8 @@ class BBContact(Contact):
 
         Contact.__init__(self, folder, con)
 
+        self.props.update({'bbdb_folder' : None,})
+
         ## Sometimes we might be creating a contact object from a Google
         ## contact object or other entry which might have the ID in its sync
         ## tags field. if that is present, we should use it to initialize the
@@ -40,6 +42,9 @@ class BBContact(Contact):
                 self.set_itemid(itemid)
             except Exception, e:
                 logging.debug('Potential new BBContact: %s', con.get_name())
+
+            if folder.get_name():
+                self.set_bbdb_folder(folder.get_name())
 
         if rec:
             self.set_rec(rec)
