@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Tue Apr 24 17:03:17 IST 2012
+## Last Modified : Wed May 02 06:09:01 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -93,10 +93,13 @@ class GCPIMDB(PIMDB):
         f.show()
         return True
 
-    def del_folder (self, gid):
+    def del_folder (self, gid, store=None):
         """Delete the specified folder on the Google server. This will first
         delete all the contained contact entires, and then delete the group
-        itself, so no trace remains."""
+        itself, so no trace remains.
+
+        The 'store' paramter is ignored. It is needed for other PIMDBs only.
+        """
 
         f, ftype = self.find_folder(gid)
 
