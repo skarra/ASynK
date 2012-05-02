@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Tue Apr 24 17:07:59 IST 2012
+## Last Modified : Wed May 02 18:43:34 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -31,8 +31,9 @@ class MessageStores:
     that makes available easy retrieval through either name, or the outlook
     entry id.
 
-    There is no direct equivalent in any of the other DB
-    implementations. Hence this is not really 'exported' outside this file.
+    NOTE: Outlook is unique in that the same login/authentication allows us to
+    access multiple physical MessageStores. This is unlike BBDB and Google. So
+    there is no equivalent of this class in the other PIMDB implementations.
     """
 
     def __init__ (self, ol):
@@ -154,6 +155,7 @@ class MessageStore:
         logging.info('Looking for PIM folders in message store: %s...',
                      self.get_name())
 
+        # self.enumerate_all_folders()
         self._populate_folders()
         logging.info('Looking for PIM folders in message store: %s...done',
                      self.get_name())
@@ -203,18 +205,6 @@ class MessageStore:
 
         return eid
 
-    def get_folders (self, ftype=None):
-        """Return all the folders of specified type. ftype should be one of
-        the valid folder types. If none is specifiedfor ftype, then the entire
-        dictionary is returned as is. If ftype is an invalid type, then this
-        routine returns None"""
-        
-        if ftype and not (ftype in Folder.valid_types):
-            return None
-
-        ftypename = Folder.type_names[ftype]
-        return self.folders[ftypename] if ftype else self.folders
-
     def set_folders_of_type (self, ftypestr, val):
         self.folders[ftypestr] = val
 
@@ -234,7 +224,7 @@ class MessageStore:
         the valid folder types. If none is specifiedfor ftype, then the entire
         dictionary is returned as is. If ftype is an invalid type, then this
         routine returns None"""
-        
+
         if ftype and not (ftype in Folder.valid_types):
             return None
 
@@ -252,8 +242,7 @@ class MessageStore:
         return self.def_folder[Folder.type_names[ftype]]
 
     def get_def_contacts_folder (self):
-        return self.get_def_folder(Folder.CONTACT_t)        
-
+        return self.get_def_folder(Folder.CONTACT_t)
     
     ## Unused for now...
     def enumerate_all_folders (self, folder_eid=None, depth='  '):
@@ -448,14 +437,6 @@ class OLPIMDB(PIMDB):
         self.msgstores = ms
         return ms
 
-    def list_folders (self):
-        i = 1
-        for t in Folder.valid_types:
-            for f in self.get_folders(t):
-                logging.info(' %2d: %s', i, str(f))
-                i += 1
-                             
-
     def new_folder (self, fname, ftype, storeid=None):
         """Create a new folder of specified type and return an id. The folder
         will not contain any items. If storeid is None the folder is
@@ -476,6 +457,7 @@ class OLPIMDB(PIMDB):
 
         ipm_eid = store.get_ipm_subtree_eid()
         if not ipm_eid:
+            logging.debug('IPM subtree EID not found. Cannot create folder.')
             return None
 
         try:
@@ -488,7 +470,8 @@ class OLPIMDB(PIMDB):
         cclass = OLFolder.get_cclass_from_ftype(ftype)
         try:
             nf = folder.CreateFolder(mapi.FOLDER_GENERIC, fname, 'Comment',
-                                   None, 0)
+                                     None, 0)
+            folder.SaveChanges(0)
         except Exception, e:
             logging.error('Failed to create new folder %s. CreateFolder '
                           'returned  error code: %s', fname,
@@ -514,7 +497,9 @@ class OLPIMDB(PIMDB):
             return None
 
         tag, val = ps[0]
-        return base64.b64encode(val)
+        val = base64.b64encode(val)
+        logging.info('Successfully created group. ID: %s', val)
+        return val
 
     def show_folder (self, gid):
         logging.info('%s: Not Implemented', 'pimd_ol:show_folder()')

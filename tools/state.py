@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Mon Apr 30 07:12:48 IST 2012
+## Last Modified : Wed May 02 18:15:48 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -430,9 +430,15 @@ class Config:
         return pname in self.get_profiles()
 
     def get_db_profiles (self, i):
+        """Return all the profiles that have the specified DB ID in one of the
+        collections in the profile. The returned value is a dicationary of
+        (pname : value) values - essentially a subset of the state.json file
+        where the specified DB ID plays a part. `i' should be a two letter db
+       id specifier such as bb, gc, ol."""
+
         ps = self.get_profiles()
-        return dict([(k,v) for k, v in ps.items() if i in [v['db1'],
-                                                           v['db2']]])
+        return dict([(k,v) for k, v in ps.items() if i in [v['coll_1']['dbid'],
+                                                           v['coll_2']['dbid']]])
 
     def get_other_dbid (self, pname, dbid):
         """For specified profile, based on the dbid parameter, fetch and
