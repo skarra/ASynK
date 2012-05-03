@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Tue May 01 22:40:59 IST 2012
+## Last Modified : Thu May 03 18:34:10 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -72,8 +72,8 @@ def setup_parser ():
                             'create-profile',
                             'show-profile',
                             'del-profile',
-                            'print-item',
-                            'del-item',
+                            # 'print-item',
+                            # 'del-item',
                             'sync',
                             'startweb',
                             'clear-sync-artifacts',),
@@ -244,10 +244,6 @@ class Asynk:
         self.set_dry_run(uinps.dry_run)
         self.set_name(uinps.name)
 
-        if uinps.name and uinps.folder:
-            raise AsynkParserError('Only one of --name or --folder '
-                                   'can be specified.')
-
         if uinps.store:
             temp = {}
             if len(uinps.store) >= 1:
@@ -377,6 +373,9 @@ class Asynk:
             raise AsynkParserError('--create-folder needs two PIMDB IDs to be '
                                    'specified.')
         
+        sid1 = self.get_store_id(db1)
+        sid2 = self.get_store_id(db2)
+
         fid1 = self.get_folder_id(db1)
         fid2 = self.get_folder_id(db2)
 
@@ -413,14 +412,21 @@ class Asynk:
             olgid = None            
 
         profile = conf.get_profile_defaults()
-        profile.update({'db1'              : db1,
-                        'db2'              : db2,
-                        'fid1'             : fid1,
-                        'fid2'             : fid2,
-                        'olgid'            : olgid,
-                        'sync_dir'         : sync_dir,
-                        'conflict_resolve' : cr,
-                        })
+        profile.update(
+            {'coll_1' : {
+                'dbid' : db1,
+                'stid' : sid1,
+                'foid' : fid1,
+                },
+             'coll_2' :  {
+                'dbid' : db2,
+                'stid' : sid2,
+                'foid' : fid2,
+                },
+             'olgid'            : olgid,
+             'sync_dir'         : sync_dir,
+             'conflict_resolve' : cr,
+             })
 
         conf.add_profile(pname, profile)
         logging.info('Successfully added profile: %s', pname)
