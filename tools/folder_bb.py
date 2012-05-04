@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sun Apr 29 13:11:03 IST 2012
+## Last Modified : Fri May 04 18:19:31 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -239,15 +239,26 @@ class BBContactsFolder(Folder):
     def get_contacts (self):
         return self.contacts
 
-    def print_contacts (self, cnt=0):
+    def print_contacts (self, cnt=0, name=None):
         i = 0
+        j = 0
+
+        print 'name: ', name
 
         for iid, con in self.get_contacts().iteritems():
-            logging.debug('%s', unicode(con))
+            if not name:
+                logging.debug('%s', unicode(con))
+                j += 1
+            else:
+                if (re.search(name, unicode(con.get_firstname()))
+                    or re.search(name, unicode(con.get_name()))
+                    or re.search(name, unicode(con.get_lastname()))):
+                    logging.debug('%s', unicode(con))
+                    j += 1
             i += 1
 
             if cnt == i:
                 break
 
-        logging.debug('Printed %d contacts from folder %s', i,
+        logging.debug('Printed %d contacts from folder %s', j,
                       self.get_name())
