@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Tue May 01 22:47:44 IST 2012
+## Last Modified : Fri May 04 16:35:12 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -26,7 +26,7 @@ class BBContact(Contact):
 
         Contact.__init__(self, folder, con)
 
-        self.props.update({'bbdb_folder' : None,})
+        self.atts.update({'bbdb_folder' : None,})
 
         ## Sometimes we might be creating a contact object from a Google
         ## contact object or other entry which might have the ID in its sync
@@ -90,10 +90,10 @@ class BBContact(Contact):
     ##
 
     def get_bbdb_folder (self):
-        return self._get_prop('bbdb_folder')
+        return self._get_att('bbdb_folder')
 
     def set_bbdb_folder (self, bbdb_folder):
-        return self._set_prop('bbdb_folder', bbdb_folder)
+        return self._set_att('bbdb_folder', bbdb_folder)
 
     def get_rec (self):
         return self._get_att('rec')
@@ -176,7 +176,9 @@ class BBContact(Contact):
             str_re = self.get_store().get_str_re()
             cs = re.findall(str_re, cs)
             self.set_company(chompq(cs[0]))
-            self.add_custom('company', demjson.encode(cs[1:]))
+            rest = cs[1:]
+            if rest and len(rest) > 0:
+                self.add_custom('company', demjson.encode(rest))
 
     def _snarf_emails_from_parse_res (self, pr):
         ems = pr['emails']
@@ -369,6 +371,7 @@ class BBContact(Contact):
                 self.add_middlename(val)
             elif re.search(noted['folder'], key):
                 self.set_bbdb_folder(val)
+                custom.update({key : val})
             else:
                 ## The rest of the stuff go into the 'Custom' field...
                 custom.update({key : val})
@@ -522,7 +525,6 @@ class BBContact(Contact):
         i = self.get_im()
         n = self.get_notes()
         m = self.get_middlename()
-        f = self.get_bbdb_folder()
 
         if p:
             ret += '(%s . %s) ' % (noted['prefix'],  unchompq(p))
@@ -550,9 +552,6 @@ class BBContact(Contact):
                 continue
 
             ret += '(%s . %s) ' % (label, unchompq(note))
-
-        if f and f != '':
-            ret += '(%s . %s) ' % (noted['folder'], unchompq(f))
 
         return '(' + ret + ')'
 
