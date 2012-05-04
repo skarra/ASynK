@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Apr 25 19:06:15 IST 2012
+## Last Modified : Thu May 03 18:58:51 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -84,8 +84,6 @@ class OLFolder(Folder):
         ## FIXME: This needs to be fixed. The ID will be different based on
         ## the actual remote database, of course.
         stp = self.get_proptags().sync_tags[stag]
-
-        print 'tag: ', stp
 
         cols = (mt.PR_ENTRYID, mt.PR_LAST_MODIFICATION_TIME,
                 mt.PR_DISPLAY_NAME, stp)
@@ -174,6 +172,7 @@ class OLFolder(Folder):
                 eid = olc.save()
             except Exception, e:
                 logging.error('Error saving contact: \n%s', olc)
+                logging.debug(traceback.format_exc())
                 success = False
                 continue
 
@@ -357,7 +356,6 @@ class OLFolder(Folder):
                                           winerror.HRESULT_CODE(hr))
                             errs.add(entryid)
                         else:
-                            logging.debug('ps for %s: %s', name, ps)
                             entry.SaveChanges(0)
                             cnt.add(entryid)
 

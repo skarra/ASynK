@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Fri Apr 27 16:49:43 IST 2012
+## Last Modified : Thu May 03 17:15:00 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -10,7 +10,7 @@
 ## item while implementing the base class methods.
 
 import string
-import base64, logging, os, re, sys, traceback, utils
+import base64, logging, os, re, sys, utils
 from   datetime import datetime
 
 from   contact import Contact
@@ -709,14 +709,26 @@ class OLContact(Contact):
             olprops.append((tag, im[0]))
 
     def _add_sync_tags_to_olprops (self, olprops):
-        conf = self.get_config()
+        conf  = self.get_config()
+        mydid = self.get_folder().get_dbid()
+        olps  = conf.get_db_profiles(mydid)
 
         for name, val in self.get_sync_tags().iteritems():
             if not val:
                 continue
 
             pname, dbid = conf.parse_sync_label(name)
-            if dbid == self.get_folder().get_dbid():
+            if dbid == mydid:
+                continue
+            if not pname in olps:
+                ## This is an interesting case of a sync tag that is existing
+                ## betwen two non-OL PIM DBs. i.e. we are dealing with a
+                ## contact that is already being synched between BBDB and
+                ## GC. So we have a sync tag that does not belong to any
+                ## outlook profile, and due to the way we store sync tags in
+                ## Outlook property bag, this one should properly go to the
+                ## default bunch of custom props.
+                self.add_custom(name, val)
                 continue
 
             tagv = self.get_proptags().valu(name)
