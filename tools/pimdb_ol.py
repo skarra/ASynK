@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed May 02 18:43:34 IST 2012
+## Last Modified : Fri May 04 16:56:56 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -618,7 +618,7 @@ class OLPIMDB(PIMDB):
     def get_msgstore (self, eid):
         return self.get_msgstore().get(eid=eid)
 
-    def prep_for_sync (self, dbid):
+    def prep_for_sync (self, dbid, pname, dr):
         pass
 
     ##
