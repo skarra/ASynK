@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Fri May 04 16:35:12 IST 2012
+## Last Modified : Fri May 04 18:16:45 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -191,6 +191,9 @@ class BBContact(Contact):
             domains = self.get_email_domains()
 
             for em in ems:
+                if em == 'nil':
+                    continue
+
                 home, work, other = self._classify_email_addr(em, domains)
 
                 ## Note that the following implementation means if the same
