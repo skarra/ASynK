@@ -1,13 +1,13 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu May 03 18:34:10 IST 2012
+## Last Modified : Fri May 04 17:31:25 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under GPLv3
 ## 
 
-import argparse, logging, os, re, string, sys, traceback
+import argparse, datetime, logging, os, re, string, sys, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -46,15 +46,57 @@ class AsynkInternalError(Exception):
     pass
 
 def main (argv=sys.argv):
+    config =  Config('./config.json', './state.json')
+    setup_logging(config)
+
     parser  = setup_parser()
     uinps = parser.parse_args()
     try:
-        asynk = Asynk(uinps)
+        asynk = Asynk(uinps, config)
     except AsynkParserError, e:
         logging.critical('Error in User input: %s', e)
         quit()
 
     asynk.dispatch()
+
+def setup_logging (config):
+    """Set up the logging setings to the defaults. """
+
+    formatter = logging.Formatter('[%(asctime)s.%(msecs)03d '
+                                  '%(levelname)8s] %(message)s',
+                                  datefmt='%H:%M:%S')
+
+    ## First the console logger - the logging level may be changed later after
+    ## the command line arguments are parsed properly.
+
+    global consoleLogger
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    consoleLogger = logging.StreamHandler()
+    consoleLogger.setLevel(logging.INFO)
+    consoleLogger.setFormatter(formatter)
+    logger.addHandler(consoleLogger)
+
+    ## Now the more detailed debug logs which are written to file in a default
+    ## logs/ directory. The location of the directory is read from the
+    ## configuration file.
+
+    logdir = config.get_log_dir()
+    if not os.path.exists(logdir):
+        logging.info('Creating backup directory at: %s', logdir)
+        os.mkdir(logdir)
+
+    stamp   = string.replace(str(datetime.datetime.now()), ' ', '.')
+    logname = logdir + '/asynk_logs.' + stamp
+    logname = os.path.abspath(logname)
+    logging.info('Debug logging to file: %s', logname)
+
+    fileLogger = logging.FileHandler(logname, 'w')
+    fileLogger.setLevel(logging.DEBUG)
+    fileLogger.setFormatter(formatter)
+    logger.addHandler(fileLogger)
 
 def setup_parser ():
     p = argparse.ArgumentParser(description='ASynK: PIM Awesome Sync by Karra')
@@ -144,11 +186,8 @@ class Asynk:
         routine of argparse module."""
 
         level = string.upper(uinps.log)
-        logging.basicConfig(format='[%(asctime)s.%(msecs)d %(levelname)9s] '
-                            '%(message)s',
-                            datefmt='%H:%M:%S',
-                            level=getattr(logging, level))
-        # logging.getLogger().setLevel(getattr(logging, level))
+        if level and level != 'INFO':
+            consoleLogger.setLevel(getattr(logging, level))
 
         self.reset_fields()
         self.validate_and_snarf_uinps(uinps)
@@ -494,7 +533,7 @@ class Asynk:
         conf  = self.get_config()
         pname = self._load_profile()
 
-        sync = Sync(conf, pname, self.get_db())
+        sync = Sync(conf, pname, self.get_db(), dr=self.is_dry_run())
         if self.is_dry_run():
             sync.prep_lists(self.get_sync_dir())
         else:

@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Wed May 02 06:09:01 IST 2012
+## Last Modified : Fri May 04 16:56:51 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -136,7 +136,7 @@ class GCPIMDB(PIMDB):
 
         raise NotImplementedError
 
-    def prep_for_sync (self, dbid):
+    def prep_for_sync (self, dbid, pname, dr):
         ## FIXME: Should read the group name and id of the sync folder and set
         ## up the sync folder variable, etc.
 

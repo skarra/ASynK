@@ -19,6 +19,8 @@
 Thumbs.db
 login.auth
 state.json
+logs
+backups
 
 # Files related to the build system
 aclocal.m4

@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Wed May 02 18:15:48 IST 2012
+## Last Modified : Thu May 03 19:57:38 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -161,6 +161,12 @@ class Config:
 
     def get_db_config (self, dbid):
         return self._get_prop('config', 'db_config')[dbid]
+
+    def get_backup_dir (self):
+        return self._get_prop('config', 'backup_dir')
+
+    def get_log_dir (self):
+        return self._get_prop('config', 'log_dir')
 
     def get_profile_defaults (self):
         return self._get_prop('config', 'profile_defaults')

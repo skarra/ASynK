@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Thu Apr 26 18:49:32 IST 2012
+## Last Modified : Fri May 04 16:56:45 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -36,7 +36,7 @@ import gdata.contacts.data, gdata.contacts.client
 class Sync:
     BATCH_SIZE = 100
 
-    def __init__ (self, config, profile, pimdbs, dirn=None):
+    def __init__ (self, config, profile, pimdbs, dirn=None, dr=False):
         """dirn is one of the syn directions, and can be used to override the
         default sync direction stored in the profile. It is then used as the
         default sync direction for future runs.
@@ -78,8 +78,8 @@ class Sync:
             logging.error('Could not find folder with ID fid2: %s', fid2)
             raise Exception()
 
-        db1.prep_for_sync(self.get_db2id())
-        db2.prep_for_sync(self.get_db1id())
+        db1.prep_for_sync(self.get_db2id(), profile, dr)
+        db2.prep_for_sync(self.get_db1id(), profile, dr)
 
         if dirn:
             self.set_dir(dirn)

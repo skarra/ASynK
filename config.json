@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Sun Apr 29 20:57:04 IST 2012
+// Last Modified : Thu May 03 19:56:44 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -27,6 +27,14 @@
     // db ID specifier can be
     'profile_name_re' : '([0-9a-zA-Z]+)',
     'dbid_re'         : '([a-z][a-z]+)',
+
+    // If any files have to be backed up automatically, this directory
+    // is used. The value should be a path relative to the root directory
+    'backup_dir'  : './backups',
+
+    // Logs are written to this directory. Value should be a name
+    // relative to the root diretory of the distribution.
+    'log_dir'  : './logs',
 
     // When a profile is created it is populated with the following
     // default values.

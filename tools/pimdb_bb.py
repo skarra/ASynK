@@ -1,13 +1,13 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Mon Apr 30 00:24:58 IST 2012
+## Last Modified : Fri May 04 16:54:39 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under the GPL v3
 ##
 
-import codecs, datetime, logging, re, time
+import codecs, datetime, logging, os, re, shutil, string, time
 from   pimdb        import PIMDB
 from   folder       import Folder
 from   folder_bb    import BBContactsFolder
@@ -414,8 +414,32 @@ class BBPIMDB(PIMDB):
 
         raise NotImplementedError
 
-    def prep_for_sync (self, dbid):
-        pass
+    def prep_for_sync (self, dbid, pname, is_dry_run=False):
+        if is_dry_run:
+            ## No backup for Dry Run
+            logging.info('BBDB database not backed up for dry run')
+            return
+
+        ## Make a backup of the BBDB store into the backup directory
+        conf = self.get_config()
+        db1 = conf.get_profile_db1(pname)
+
+        bdir = conf.get_backup_dir()
+        if not os.path.exists(bdir):
+            logging.info('Creating backup directory at: %s', bdir)
+            os.mkdir(bdir)
+
+        stamp = string.replace(str(datetime.datetime.now()), ' ', '.')
+        logname = bdir + '/bbdb_backup.' + pname + '.' + stamp
+
+        if db1 == dbid:
+            src = conf.get_stid2(pname)
+        else:
+            src = conf.get_stid1(pname)
+
+        logging.info('Backedup BBDB Store (%s) to file: %s',
+                     src, logname)
+        shutil.copy2(src, logname)
       
     ##
     ## Now the non-abstract methods and internal methods
