@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sun Apr 29 13:10:38 IST 2012
+## Last Modified : Fri May 04 18:09:03 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -31,7 +31,7 @@ def main (argv=None):
     tests = TestBBContact(config_fn='../config.json',
                           state_fn='../state.json',
                           bbfn=bbfn)
-    tests.print_contacts(cnt=0)
+    tests.print_contacts(name="Amma")
     tests.write_to_file()
 
 class TestBBContact:
@@ -43,8 +43,8 @@ class TestBBContact:
         ms          = self.bb.get_def_msgstore()
         self.deff   = ms.get_folder(ms.get_def_folder_name())
 
-    def print_contacts (self, cnt):
-        self.deff.print_contacts(cnt=cnt)
+    def print_contacts (self, cnt=0, name=None):
+        self.deff.print_contacts(cnt=cnt, name=name)
 
     def write_to_file (self):
         self.deff.save()
