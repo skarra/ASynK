@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Fri May 04 17:31:25 IST 2012
+## Last Modified : Fri May 04 22:52:28 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -85,10 +85,11 @@ def setup_logging (config):
 
     logdir = config.get_log_dir()
     if not os.path.exists(logdir):
-        logging.info('Creating backup directory at: %s', logdir)
+        logging.info('Creating Logs directory at: %s', logdir)
         os.mkdir(logdir)
 
     stamp   = string.replace(str(datetime.datetime.now()), ' ', '.')
+    stamp   = string.replace(stamp, ':', '-')
     logname = logdir + '/asynk_logs.' + stamp
     logname = os.path.abspath(logname)
     logging.info('Debug logging to file: %s', logname)
