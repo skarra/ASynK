@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Fri May 04 16:54:39 IST 2012
+## Last Modified : Fri May 04 22:53:39 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -430,6 +430,7 @@ class BBPIMDB(PIMDB):
             os.mkdir(bdir)
 
         stamp = string.replace(str(datetime.datetime.now()), ' ', '.')
+        stamp = string.replace(stamp, ':', '-')
         logname = bdir + '/bbdb_backup.' + pname + '.' + stamp
 
         if db1 == dbid:
