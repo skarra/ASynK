@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed Apr 25 19:04:41 IST 2012
+## Last Modified : Sat May 05 06:32:04 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -146,16 +146,12 @@ class GCContactsFolder(Folder):
             else:
                 sl.add_entry(gcid)
 
-        logging.debug('==== GC =====')
-        logging.debug('num processed    : %5d', i+1)
-        logging.debug('num total        : %5d', len(sl.get_entries()))
         logging.debug('num with etags   : %5d', etag_cnt)
-        logging.debug('num new          : %5d', len(sl.get_news()))
-        logging.debug('num mod          : %5d', len(sl.get_mods()))
-        logging.debug('num del          : %5d', len(sl.get_dels()))
         logging.debug('num del bef sync : %5d', skip)
 
-        return (sl.get_news(), sl.get_mods(), sl.get_dels())
+        logging.info('Note: Stats for Google Contacts are only for the '
+                     'changeset since the last synk. In particular the total '
+                     'count is NOT the total number of contacts in your folder!')
 
     def new_item (self, item):
         """Add the specified item to the folder."""

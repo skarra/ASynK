@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Fri May 04 18:19:31 IST 2012
+## Last Modified : Sat May 05 06:26:53 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -61,8 +61,7 @@ class BBContactsFolder(Folder):
             updated_min = string.replace(updated_min, r'+', ' ')
             updated_min = string.replace(updated_min, r'T', ' ')
 
-        i     = 0
-        unmod = 0
+        i = 0
         logging.debug('destid: %s', destid)
 
         for iid, con in self.get_contacts().iteritems():
@@ -77,17 +76,9 @@ class BBContactsFolder(Folder):
                     if upd > updated_min:
                         sl.add_mod(iid, did)
                     else:
-                        unmod += 1
+                        sl.add_unmod(iid)
             else:
                 sl.add_new(iid)
-                
-        logging.debug('==== BB =====')
-        logging.debug('num processed    : %5d', i)
-        logging.debug('num total        : %5d', len(sl.get_entries()))
-        logging.debug('num new          : %5d', len(sl.get_news()))
-        logging.debug('num mod          : %5d', len(sl.get_mods()))
-        logging.debug('num del          : %5d', len(sl.get_dels()))
-        logging.debug('num unmod        : %5d', unmod)
 
     def find_item (self, itemid):
         """See documentation in folder.py"""
