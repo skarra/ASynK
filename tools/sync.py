@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Fri May 04 16:56:45 IST 2012
+## Last Modified : Sat May 05 06:41:25 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -161,6 +161,9 @@ class Sync:
         f1.prep_sync_lists(f2.get_dbid(), f1sl)
         f2.prep_sync_lists(f1.get_dbid(), f2sl)
 
+        f1sl.log_print_stats()
+        f2sl.log_print_stats()
+
         f1_mod = f1sl.get_mods()
         f2_mod = f2sl.get_mods()
 
@@ -172,7 +175,7 @@ class Sync:
         # pairs: essentially an extract of the f1_mod
         coma = [id1 for id1,id2 in f1_mod.iteritems() if id2 in f2_mod.keys()]
 
-        logging.info('Number of entries modified both places (conflicts): %d',
+        logging.info('\nNumber of entries modified both places (conflicts): %d',
                      len(coma) if coma else 0)
 
         db1id = self.get_db1id()
@@ -203,6 +206,7 @@ class Sync:
         logging.debug('_prep_lists_1_way(): ')
         f1sl = SyncLists(f1, self.get_pname())
         f1.prep_sync_lists(f2.get_dbid(), f1sl)
+        f1sl.log_print_stats()
 
         f1_mod = f1sl.get_mods()
         logging.debug('f: %s; size of mod: %d', f1.get_dbid(), len(f1_mod))
@@ -213,7 +217,9 @@ class Sync:
         """Identify the list of contacts that need to be copied from one
         place to the other and set the stage for the actual sync"""
 
-        logging.debug('Direction: %s', dirn)
+        logging.info('Last synk for profile %s was at: %s', self.get_pname(),
+                     self.get_config().get_last_sync_stop(self.get_pname()))
+
         if (dirn == 'SYNC2WAY'):
             return self._prep_lists_2_way(self.get_f1(), self.get_f2())
         elif (dirn == 'SYNC1WAY'):
@@ -296,6 +302,7 @@ class SyncLists:
         self.news = []
         self.mods = {}                    # Hash of f1 id -> f2 id
         self.dels = {}
+        self.unmods = []
 
         self.pname = pname
 
@@ -328,6 +335,9 @@ class SyncLists:
     def add_mod (self, f1id, f2id):
         self.mods.update({f1id : f2id})
 
+    def add_unmod (self, fid):
+        self.unmods.append(fid)
+
     def add_del (self, f1id, f2id):
         self.dels.update({f1id : f2id})
 
@@ -358,6 +368,9 @@ class SyncLists:
     def get_mods (self):
         return self.mods
 
+    def get_unmods (self):
+        return self.unmods
+
     def set_mods (self, val):
         self.mods = val
         return val
@@ -383,6 +396,18 @@ class SyncLists:
         res = res and self.fold.writeback_sync_tags(self.get_pname(), items)
 
         return res
+
+    def log_print_stats (self):
+        total = (len(self.get_news()) + len(self.get_mods()) +
+                 len(self.get_unmods()))
+
+        logging.info('\n==== %s =====', self.db1id)
+        logging.info('   Newly created    : %5d', len(self.get_news()))
+        logging.info('   Modified         : %5d', len(self.get_mods()))
+        logging.info('   Unchanged        : %5d', len(self.get_unmods()))
+        logging.info('                      =====')
+        logging.info('   Total Entries    : %5d', total)
+        logging.info('   Deleted          : %5d', len(self.get_dels()))
 
     ## FIXME: There appears to be a lot of code repitition between the above
     ## routine and this one. Eplore how to eliminate this stuff...

@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu May 03 18:58:51 IST 2012
+## Last Modified : Sat May 05 06:37:23 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -90,7 +90,6 @@ class OLFolder(Folder):
         ctable.SetColumns(cols, 0)
 
         i   = 0
-        old = 0
 
         pname = sl.get_pname()
         synct_str = self.get_config().get_last_sync_start(pname)
@@ -123,22 +122,13 @@ class OLFolder(Folder):
                     print 'Somethin wrong. no time stamp. i=', i
                 else:
                     if utils.utc_time_to_local_ts(modt) <= synct:
-                        old += 1
+                        sl.add_unmod(b64_entryid)
                     else:
                         sl.add_mod(b64_entryid, gid)
 
             i += 1
             if cnt != 0 and i >= cnt:
                 break
-
-        logging.debug('==== OL =====')
-        logging.debug('num processed : %5d', i)
-        logging.debug('num total     : %5d', len(sl.get_entries()))
-        logging.debug('num new       : %5d', len(sl.get_news()))
-        logging.debug('num mod       : %5d', len(sl.get_mods()))
-        logging.debug('num old unmod : %5d', old)
-
-        return (sl.get_news(), sl.get_mods(), sl.get_dels())
 
     def find_item (self, itemid):
         eid = base64.b64decode(itemid)
