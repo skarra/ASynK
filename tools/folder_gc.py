@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sat May 05 06:32:04 IST 2012
+## Last Modified : Wed May 09 13:54:00 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -420,13 +420,15 @@ class GCContactsFolder(Folder):
 
         ces  = feed.entry
         mods = []
+        cnt  = 0
         for i, ce in enumerate(ces):
             udp = []
             mod = False
             for ep in  ce.user_defined_field:
                 if re.search(label_re, ep.key):
-                    logging.info('  Iter %2d Tag %s match for item %s', 
-                                 i, ep.key, ce.etag)
+                    logging.debug('  Iter %2d Tag %s match for item %s', 
+                                  i, ep.key, ce.etag)
+                    cnt += 1
                     mod = True
                 else:
                     ## Anything else, just put it back
@@ -436,7 +438,9 @@ class GCContactsFolder(Folder):
             if mod:
                 mods.append(ce)
 
-        logging.info('Uploading modifications to Google...')
+        logging.info('Found %d contacts with matching sync tag(s). ', cnt)
+        if cnt > 0:
+            logging.info('Sending modification request to Google...')
 
         f     = self.get_db().new_feed()
         stats = BatchState(1, f, 'clear',)
@@ -469,6 +473,9 @@ class GCContactsFolder(Folder):
             rf = self.get_db().exec_batch(f)
             hr, ces = stats.process_batch_response(rf)
             ret = ret and hr
+
+        if cnt > 0:
+            logging.info('Sending modification request to Google...Done')
 
         return ret
        

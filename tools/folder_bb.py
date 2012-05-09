@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sat May 05 06:26:53 IST 2012
+## Last Modified : Wed May 09 13:47:00 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -150,15 +150,20 @@ class BBContactsFolder(Folder):
             label_re = 'asynk:[a-z][a-z]:id'
 
         ret = True
+        cnt = 0
         for i, c in self.get_contacts().iteritems():
             try:
-                c.del_sync_tags(label_re)
+                cnt += 1 if c.del_sync_tags(label_re) else 0
             except Exception, e:
                 logging.error('Caught exception (%s) while clearing flag: %s',
                               str(e), label_re)
                 logging.error(traceback.format_exc())
                 ret = False
     
+        logging.info('Found %d contacts with matching sync tag(s). ', cnt)
+        if cnt > 0:
+            logging.info('Saving changes to disk...')
+
         try:
             self.set_dirty()
             self.get_store().save_file()
@@ -166,6 +171,9 @@ class BBContactsFolder(Folder):
             logging.error('Caught exception (%s) while saving BBDB folder',
                           str(e))
             ret = False
+
+        if cnt > 0:
+            logging.info('Saving changes to disk...done')
 
         return ret
 
