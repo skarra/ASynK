@@ -1,6 +1,6 @@
 ##
 ## Created       : Mon Apr 09 14:54:10 IST 2012
-## Last Modified : Mon Apr 09 17:26:08 IST 2012
+## Last Modified : Wed May 09 19:39:13 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -12,7 +12,7 @@ import logging, os, os.path, sys, traceback
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
 DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
-EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'tools')]
+EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
 
