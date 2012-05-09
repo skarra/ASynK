@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Apr 27 20:23:50 IST 2012
+## Last Modified : Wed May 09 14:01:01 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -39,12 +39,7 @@ class GCContact(Contact):
                 label    = conf.make_sync_label(pname_re, self.get_dbid())
                 tag, itemid = con.get_sync_tags(label)[0]
 
-                # Workaround for a weird Google API behaviour. Certain
-                # operations only succed with the 'full' projection.
-                itemid = string.replace(itemid, '/base/', '/full/')
-                itemid = string.replace(itemid, 'http://', 'https://')
-
-                self.set_itemid(itemid)
+                self.set_itemid(self.normalize_gcid(itemid))
             except Exception, e:
                 logging.debug('Potential new GCContact: %s', con.get_name())
 
@@ -53,6 +48,30 @@ class GCContact(Contact):
             self.init_props_from_gce(gce)
 
         self.in_init(False)
+
+    @classmethod
+    def normalize_gcid (self, itemid):
+        """Replace the projection to a normalized 'thin', regardless of
+        whether the original contact had a full or a base. Also make all the
+        contact URIs as https://. Return value is the itemid fixed for these
+        things."""
+
+        # Workaround for a weird Google API behaviour. Certain
+        # operations only succed with the 'full' projection.
+        itemid = string.replace(itemid, '/base/', '/thin/')
+
+        # The full projection also has some issues: the XML blob
+        # returned for some of Google's own extended properties cannot
+        # be processed. Let's see if this works
+        itemid = string.replace(itemid, '/full/', '/thin/')
+
+        # Finally, since we use the entire URL as the contact's key,
+        # we need to normalize the URLs. I am not sure why Google
+        # can't be more consistent at its end... but this is what we
+        # got.
+        itemid = string.replace(itemid, 'http://', 'https://')
+
+        return itemid
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -157,11 +176,7 @@ class GCContact(Contact):
 
     def _snarf_itemid_from_gce (self, ce):
         if ce.id:
-            # Workaround for a weird Google API behaviour. Certain operations
-            # only succed with the 'full' projection.
-            ce.id.text = string.replace(ce.id.text, '/base/', '/full/')
-            ce.id.text = string.replace(ce.id.text, 'http://', 'https://')
-            self.set_itemid(ce.id.text)
+            self.set_itemid(self.normalize_gcid(ce.id.text))
 
         if ce.etag:
             self.set_etag(ce.etag)
@@ -349,8 +364,10 @@ class GCContact(Contact):
         if ce.user_defined_field:
             keyprefix = (self.get_config().get_label_prefix() +
                          self.get_config().get_label_separator())
-            self.set_sync_tags(folder_gc.get_udps_by_key_prefix(
-                ce.user_defined_field, keyprefix))
+            stgs = folder_gc.get_udps_by_key_prefix(
+                ce.user_defined_field, keyprefix)
+
+            self.set_sync_tags(stgs)
 
     def _snarf_custom_props_from_gce (self, ce):
         ## Iterate through the user_defined_propertie and do something with
