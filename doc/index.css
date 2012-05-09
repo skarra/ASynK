@@ -1,0 +1,147 @@
+body {
+    font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
+    margin-top: 20px;
+    font-size: 14px;
+    line-height: 140%;
+    background: url("../ricepaper.png");
+}
+
+h1 {
+    font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
+    margin-top: 20px;
+    font-size: 26px;
+    color: steelgrey;
+}
+
+h2 {
+    font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
+    margin-top: 20px;
+    font-size: 20px;
+    color: #666666; 
+}
+
+h3 {
+    font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
+    margin-top: 20px;
+    font-size: 15px;
+    color: #555555;
+}
+
+.content_table {
+    margin-left: 200px;
+}
+
+.copyright {
+    font-size: 90%;
+    text-align: center;
+}
+
+.toolbar {
+    font-size: 73%;
+    text-align: center;
+}
+
+a {
+    text-decoration: none;
+    color: #bbbbbb;
+}
+
+a:link {
+    color: #555555;
+    }
+
+a:visited {
+    color: #666666;
+}
+
+a:hover {
+    color: blue;
+    }
+
+a:active {
+    color: #D0D0D0;
+    }
+
+#toolNav {
+    text-align:right;
+    border-right: 1px solid #CCCCCC;
+    padding-right: 10px;
+    margin-top: 0px;
+    margin-right: 15px;
+}
+
+#sideNavigation {
+    text-align: right;
+    line-height: 150%;
+}
+
+#HomeglobalNav {	
+    float: left;
+    text-align: left; 
+    padding: 0 30px 0 5px; 
+    line-height: 150%;
+    clear: left;
+}
+
+#HomeglobalNav a:link {
+    color: #666666;
+    text-decoration: none;
+}
+
+#HomeglobalNav a:visited {
+    color: #666666;
+    text-decoration: none;
+}
+
+#HomeglobalNav a:hover {
+    color: #999999;
+    text-decoration: none;
+}
+
+#HomeglobalNav a:active {
+    color: #D0D0D0;
+    text-decoration: none;
+}
+
+#sideNavigation a:link {
+    color: #666666;
+    text-decoration: none;
+}
+
+#sideNavigation a:visited {
+    color: #666666;
+    text-decoration: none;
+}
+#sideNavigation a:hover {
+    color: #999999;
+    text-decoration: none;
+}
+#sideNavigation a:active {
+    color: #D0D0D0;
+    text-decoration: none;
+}
+
+.BodyText {
+    text-align: left;
+    padding-left: 10px;
+}
+.ngabanner {
+    text-align: left;
+}
+.Oldhrule {
+	border-top-width: 1px;
+	border-top-style: solid;
+	border-top-color: #000000;
+	margin: 4px 0px 4px 0px;
+} 
+.hrule { 
+	border-bottom: 1px #CCC dotted;
+	margin-top: 15px;
+	margin-bottom: 15px;
+	overflow: auto; 
+	clear: both;
+}
+
+li { 
+    margin-top: 0.5em; 
+}
