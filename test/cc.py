@@ -162,7 +162,7 @@ def main (argv=None):
     EXTRA_PATHS = [
         DIR_PATH,
         os.path.join(DIR_PATH, 'lib'),
-        os.path.join(DIR_PATH, 'tools'),
+        os.path.join(DIR_PATH, 'asynk'),
     ]
     sys.path = EXTRA_PATHS + sys.path
 
