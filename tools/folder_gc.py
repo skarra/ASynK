@@ -663,6 +663,7 @@ class BatchState:
                     con  = self.get_con(bid)
                     orig = self.get_orig(bid)
                     gcid = utils.get_link_rel(entry.link, 'edit')
+                    gcid = GCContact.normalize_gcid(gcid)
                     orig.update_sync_tags(self.sync_tag, gcid)
                     cons.append(orig)
 
