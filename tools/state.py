@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Thu May 03 19:57:38 IST 2012
+## Last Modified : Sat May 05 07:13:05 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -57,11 +57,12 @@ class Config:
         #     del sts['profiles']['sample']
 
         self.state = { 'state'  : demjson.decode(sts),
-                       'config' : demjson.decode(stc), }        
+                       'config' : demjson.decode(stc), }
 
         confi.close()
         statei.close()
 
+        self.set_app_root(os.path.abspath(''))
         self.sync_through = sync_through
 
     ##
@@ -192,6 +193,12 @@ class Config:
     ##
     ## get-set pairs for sync state parameters in state.json
     ##
+
+    def get_app_root (self):
+        return self._get_prop('state', 'app_root')
+
+    def set_app_root (self, val, sync=False):
+        return self._set_prop('state', 'app_root', val, sync)
 
     def get_state_file_version (self):
         return self._get_prop('state', 'file_version')
