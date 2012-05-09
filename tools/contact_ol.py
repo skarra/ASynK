@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Thu May 03 17:15:00 IST 2012
+## Last Modified : Sat May 05 08:49:32 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -152,7 +152,6 @@ class OLContact(Contact):
         ## not taken care of by this. The situation needs fixing on a fairly
         ## urgent basis.
 
-        logging.info('Saving to Outlook: %-32s ....', self.get_name())
         fobj = self.get_folder().get_fobj()
         msg = fobj.CreateMessage(None, 0)
 
@@ -178,6 +177,8 @@ class OLContact(Contact):
             logging.error('save: EntryID could not be found. Weird')
             return None
         else:
+            logging.debug('Successfully Wrote contact to Outlook : %-32s',
+                          self.get_name())
             return self.set_entryid(val)
 
     ##
@@ -628,7 +629,7 @@ class OLContact(Contact):
         ## FIXME: We have to deal with more than two phone numbers each
         ph  = self.get_phone_home()
         if len(ph) >= 1:
-            label, num = phh[0]
+            label, num = ph[0]
             if num:
                 olprops.append((mt.PR_HOME_TELEPHONE_NUMBER, num))
         if len(ph) >= 2:
