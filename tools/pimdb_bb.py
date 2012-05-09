@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Fri May 04 22:53:39 IST 2012
+## Last Modified : Wed May 09 13:32:40 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -12,6 +12,7 @@ from   pimdb        import PIMDB
 from   folder       import Folder
 from   folder_bb    import BBContactsFolder
 from   contact_bb   import BBContact
+import utils
 
 ## Note: Each BBDB File is a message store and there are one or more folders
 ## in it.
@@ -219,6 +220,7 @@ class MessageStore:
         if not fn:
             fn = self.get_name()
 
+        fn = utils.abs_pathname(self.get_config(), fn)
         logging.info('Parsing BBDB file %s...', fn)
 
         def_fn = self.get_def_folder_name()
@@ -275,8 +277,9 @@ class MessageStore:
 
     def save_file (self, fn=None):
         if not fn:
-            fn = self.get_name() + '.out'
+            fn = self.get_name()
 
+        fn = utils.abs_pathname(self.get_config(), fn)
         logging.info('Saving BBDB File %s...', fn)
 
         with codecs.open(fn, 'w', encoding='utf-8') as bbf:
@@ -422,25 +425,26 @@ class BBPIMDB(PIMDB):
 
         ## Make a backup of the BBDB store into the backup directory
         conf = self.get_config()
-        db1 = conf.get_profile_db1(pname)
+        db1  = conf.get_profile_db1(pname)
+        bdir = utils.abs_pathname(conf, conf.get_backup_dir())
 
-        bdir = conf.get_backup_dir()
         if not os.path.exists(bdir):
             logging.info('Creating backup directory at: %s', bdir)
             os.mkdir(bdir)
 
         stamp = string.replace(str(datetime.datetime.now()), ' ', '.')
         stamp = string.replace(stamp, ':', '-')
-        logname = bdir + '/bbdb_backup.' + pname + '.' + stamp
+        backup_name = os.path.join(bdir, 'bbdb_backup.' + pname + '.' + stamp)
 
         if db1 == dbid:
             src = conf.get_stid2(pname)
         else:
             src = conf.get_stid1(pname)
 
-        logging.info('Backedup BBDB Store (%s) to file: %s',
-                     src, logname)
-        shutil.copy2(src, logname)
+        src = utils.abs_pathname(conf, src)
+
+        logging.info('Backedup BBDB Store (%s) to file: %s', src, backup_name)
+        shutil.copy2(src, backup_name)
       
     ##
     ## Now the non-abstract methods and internal methods

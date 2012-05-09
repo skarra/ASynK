@@ -1,13 +1,24 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Fri Apr 27 15:53:29 IST 2012
+## Last Modified : Sat May 05 07:23:11 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
 ## Licensed under the GPL v3
 ## 
 
-import re
+import os, re
+
+def abs_pathname (config, fname):
+    """If fname is an absolute path then it is returned as is. If it appears
+    to be a relative path, the application root is prepended to the name and
+    an absolute OS-specific path string is returned."""
+
+    app_root = config.get_app_root()
+    if fname[0] != '/' and fname[1] != ':' and fname[2] != '\\':
+        return os.path.join(app_root, fname)
+
+    return fname
 
 def chompq (s):
     """Remove any leading and trailing quotes from the passed string."""
