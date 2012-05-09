@@ -1,13 +1,13 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed May 09 16:34:41 IST 2012
+## Last Modified : Wed May 09 19:33:54 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
 ## Licensed under GPLv3
 ## 
 
-import argparse, datetime, logging, os, re, string, sys, traceback
+import argparse, datetime, logging, os, re, shutil, string, sys, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -46,6 +46,11 @@ class AsynkInternalError(Exception):
     pass
 
 def main (argv=sys.argv):
+    # Copy a default state.json if this is the first time we are running ASynK
+    if not os.path.isfile('./state.json'):
+        print 'Creating default state.json to hold application status'
+        shutil.copy2('./state.init.json', './state.json');
+
     config =  Config('./config.json', './state.json')
     setup_logging(config)
 
