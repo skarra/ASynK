@@ -1,7 +1,5 @@
--*- org -*-
-
 Created       : Wed Aug 24 22:41:42 IST 2011
-Last Modified : Wed May 09 15:03:21 IST 2012
+Last Modified : Wed May 09 17:09:56 IST 2012
 
 * v0.2
 
@@ -11,8 +9,13 @@ Last Modified : Wed May 09 15:03:21 IST 2012
   written in Python. ASynK was earlier known as Gout. High level features
   include:
 
-  - Allows bidirectional sync of Contact across any pair of sources from:
-    Google Contacts, Microsoft Outlook, and Emacs BBDB
+  - ASynK allows bidirectional sync of Contact across any pair of sources
+    from: Google Contacts, Microsoft Outlook, and Emacs BBDB - what we call
+    PIM DBs (for Personal Information Management Databases)
+
+  - ASynK is the only two-way synchronization software for BBDB known to be in
+    existence today. So if you are keen to keep BBDB content synchronized with
+    a mobile device or Outlook, look no further.
 
   - ASynK works on Windows, MacOS X, and Linux
 

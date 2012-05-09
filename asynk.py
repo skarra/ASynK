@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Fri May 04 22:52:28 IST 2012
+## Last Modified : Wed May 09 16:34:41 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -113,12 +113,12 @@ def setup_parser ():
                             'del-folder',
                             'list-profiles',
                             'create-profile',
-                            'show-profile',
+                            # 'show-profile',
                             'del-profile',
                             # 'print-item',
                             # 'del-item',
                             'sync',
-                            'startweb',
+                            # 'startweb',
                             'clear-sync-artifacts',),
                     default='startweb',
                     help='Specific management operation to be performed.')
@@ -168,9 +168,9 @@ def setup_parser ():
                          'password from stdin'))
 
 
-    gw = p.add_argument_group('Web Parameters')
-    gw.add_argument('--port', action='store', type=int,
-                    help=('Port number on which to start web server.'))
+    # gw = p.add_argument_group('Web Parameters')
+    # gw.add_argument('--port', action='store', type=int,
+    #                 help=('Port number on which to start web server.'))
 
     p.add_argument('--log', action='store',
                    choices=('debug', 'info', 'error', 'critical'),
@@ -316,7 +316,7 @@ class Asynk:
         self.set_conflict_resolve(uinps.conflict_resolve)
         self.set_item_id(uinps.item)
         self.set_gcpw(uinps.pwd)
-        self.set_port(uinps.port)
+        # self.set_port(uinps.port)
 
     def dispatch (self):
         res = getattr(self, self.get_op())()
@@ -557,7 +557,7 @@ class Asynk:
         return True
 
     def op_startweb (self):
-        logging.info('%s: Not Implemented', 'startweb')
+        logging.info('Try `python asynk.py -h` for options')
 
     def op_clear_sync_artifacts (self):
         db1 = self.get_db1()
