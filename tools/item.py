@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sun Apr 29 12:14:58 IST 2012
+## Last Modified : Wed May 09 13:47:47 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -307,6 +307,12 @@ class Item:
             self.save()
 
     def del_sync_tags (self, label_re):
+        """Remove the sync_tag from the current item if the label matches
+        specified regular expression: label_re.
+
+        This method returns True if any property was actually removed, and
+        False if label_re did not match any sync_tag."""
+
         if not self.in_init():
             self.dirty(True)
 
@@ -316,7 +322,9 @@ class Item:
             tag, val = pair
             dels.append(tag)
 
-        [self._del_prop('sync_tags', t) for t in dels]
+        arr = [self._del_prop('sync_tags', t) for t in dels]
+
+        return len(arr) > 0
 
     def __str__ (self):
         ret = ''
