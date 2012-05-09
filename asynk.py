@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed May 09 19:33:54 IST 2012
+## Last Modified : Wed May 09 19:38:28 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -14,7 +14,7 @@ import argparse, datetime, logging, os, re, shutil, string, sys, traceback
 
 DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('Gout')))
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'),
-               os.path.join(DIR_PATH, 'tools'),]
+               os.path.join(DIR_PATH, 'asynk'),]
 sys.path = EXTRA_PATHS + sys.path
 
 try:
