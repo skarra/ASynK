@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Sat May 05 08:49:32 IST 2012
+## Last Modified : Thu May 10 18:14:32 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -260,7 +260,20 @@ class OLContact(Contact):
         returns an array of property tuples"""
 
         oli = self.get_olitem()
-        hr, props = oli.GetProps(self.get_folder().get_def_cols(), 0)
+
+        # prop_list = oli.GetPropList(mapi.MAPI_UNICODE)
+        # hr, props = oli.GetProps(prop_list, 0)
+        # hr, props = oli.GetProps(self.get_folder().get_def_cols(), 0)
+
+        # The idea here is to get the full property list, and then filter down
+        # to the ones we are really interested in. It was getting a bit
+        # confusing, as the available property list was getting filtered
+        # somewhere upstream, and we were not even seeing basic stuff like
+        # PR_BODY and PR_GIVEN_NAME. The following approach works for now,
+        # i.e. just set the properties we are keen on.
+
+        hr, props = oli.GetProps(self.get_sync_fields(), 0)
+        # hr, props = oli.GetProps(None, 0)
 
         if (winerror.FAILED(hr)):
             logging.error('get_olprops_from_mapi: Unable to GetProps. Code: %x',
@@ -776,3 +789,28 @@ class OLContact(Contact):
                 logging.error('Field %s not found', field)
 
         return ar
+
+    def test_fields_in_props (self, itemid=None):
+        """Check if the the properties returned by a default search
+        include all the fields that the user has requested for through
+        the fields.json file. This is intended to be used for
+        development and debugging purposes."""
+
+        if not itemid:
+            itemid = self.get_itemid()
+
+        props  = dict(self.get_olprops_from_mapi()) # later to try get_olprops_from_mapi
+        fields = self.get_sync_fields()
+        pt     = self.get_folder().get_proptags()
+
+        logging.debug('Type of props        : %s', type(props))
+        logging.debug('Num props in props   : %d', len(props))
+        logging.debug('Num fields in fields : %d', len(fields))
+
+        for field in fields:
+            if not field in props.keys():
+                logging.debug('Property %35s (0x%x) not in Props.',
+                             pt.name(field), field)
+            else:
+                logging.debug('Property %35s (0x%x)     in Props.',
+                              pt.name(field), field)

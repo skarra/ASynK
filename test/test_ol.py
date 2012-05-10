@@ -1,6 +1,6 @@
 ##
 ## Created       : Mon Apr 09 14:54:10 IST 2012
-## Last Modified : Thu May 10 14:05:23 IST 2012
+## Last Modified : Thu May 10 16:36:20 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -31,8 +31,11 @@ def main (argv=None):
     # print '---'
     # tests.print_contact("AAAAADWE5+lnNclLmn8GpZUD04dE12MA")
 
-    tests.test_read_custom_props("AAAAADWE5+lnNclLmn8GpZUD04fE1mMA")
+    # tests.test_read_custom_props("AAAAADWE5+lnNclLmn8GpZUD04fE1mMA")
 
+    # tests.test_fields_in_props("AAAAADWE5+lnNclLmn8GpZUD04fE1mMA")
+
+    tests.test_fields_in_props("AAAAADWE5+lnNclLmn8GpZUD04ek1mMA")
     # tests.test_read_emails('AAAAADWE5+lnNclLmn8GpZUD04fE7C0A')
     # tests.test_new_contact()
     # tests.test_sync_status()
@@ -58,6 +61,38 @@ class TestOLContact:
         c.set_gender('Male')
         c.set_notes('This is a second test contact')
         c.save()
+
+    def test_fields_in_props (self, itemid):
+        """Check if the the properties returned by a default search
+        include all the fields that the user has requested for through
+        the fields.json file. This is intended to be used for
+        development and debugging purposes."""
+
+        if not itemid:
+            itemid = self.get_itemid()
+
+        con = OLContact(self.deff, eid=base64.b64decode(itemid))
+
+        print 'Con: \n', con
+
+        props  = dict(con.get_olprops_from_mapi()) # later to try get_olprops_from_mapi
+        fields = con.get_sync_fields()
+        pt     = self.deff.get_proptags()
+
+        logging.debug('Type of props        : %s', type(props))
+        logging.debug('Num props in props   : %d', len(props))
+        logging.debug('Num fields in fields : %d', len(fields))
+
+        for tag in props:
+            props[tag]= True
+
+        for field in fields:
+            if not field in props.keys():
+                logging.debug('Property %35s (0x%x) not in Props.',
+                             pt.name(field), field)
+            else:
+                logging.debug('Property %35s (0x%x)     in Props.',
+                              pt.name(field), field)
 
     def test_read_custom_props (self, itemid):
         eid = base64.b64decode(itemid)
