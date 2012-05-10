@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed May 09 14:01:01 IST 2012
+## Last Modified : Thu May 10 14:38:39 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -58,12 +58,12 @@ class GCContact(Contact):
 
         # Workaround for a weird Google API behaviour. Certain
         # operations only succed with the 'full' projection.
-        itemid = string.replace(itemid, '/base/', '/thin/')
+        itemid = string.replace(itemid, '/base/', '/full/')
 
-        # The full projection also has some issues: the XML blob
-        # returned for some of Google's own extended properties cannot
-        # be processed. Let's see if this works
-        itemid = string.replace(itemid, '/full/', '/thin/')
+        # The /thin/ projection has a problem with updating etags and for
+        # modifications... Not sure I really understand this projection
+        # stuff.
+        itemid = string.replace(itemid, '/thin/', '/full/')
 
         # Finally, since we use the entire URL as the contact's key,
         # we need to normalize the URLs. I am not sure why Google

@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed May 09 13:54:00 IST 2012
+## Last Modified : Thu May 10 14:45:48 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -123,6 +123,7 @@ class GCContactsFolder(Folder):
 
         for i, entry in enumerate(feed.entry):
             gcid = utils.get_link_rel(entry.link, 'edit')
+            gcid = GCContact.normalize_gcid(gcid)
             olid = get_udp_by_key(entry.user_defined_field, stag)
             etag = entry.etag
             epd  = entry.deleted
@@ -243,6 +244,7 @@ class GCContactsFolder(Folder):
         success = True
 
         for gcid in gcids:
+            gcid = GCContact.normalize_gcid(gcid)
             ce = gdata.contacts.data.ContactEntry()
             ce.id = atom.data.Id(text=gcid)
             stats.add_con(gcid, ce, orig=None)
