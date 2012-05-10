@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu May 10 14:31:01 IST 2012
+## Last Modified : Thu May 10 17:23:57 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -119,7 +119,7 @@ class OLFolder(Folder):
                 sl.add_new(b64_entryid)
             else:
                 if mt.PROP_TYPE(tt) == mt.PT_ERROR:
-                    print 'Somethin wrong. no time stamp. i=', i
+                    logging.debug('Impossible! Entry has no timestamp. i = %d', i)
                 else:
                     if utils.utc_time_to_local_ts(modt) <= synct:
                         sl.add_unmod(b64_entryid)
@@ -129,6 +129,8 @@ class OLFolder(Folder):
             i += 1
             if cnt != 0 and i >= cnt:
                 break
+
+        ctable.SetColumns(self.get_def_cols(), 0)
 
     def find_item (self, itemid):
         eid = base64.b64decode(itemid)
@@ -282,7 +284,7 @@ class OLFolder(Folder):
 
         sync_tag_props = self.get_proptags().sync_tags.values()
         custom_props   = [self.get_proptags().valu('ASYNK_PR_CUSTOM_PROPS')]
-        self.def_cols  = (self.get_contents().QueryColumns(0) +
+        self.def_cols  = (self.get_contents().QueryColumns(mapi.TBL_ALL_COLUMNS) +
                           tuple(sync_tag_props) +
                           tuple(custom_props))
 
@@ -365,6 +367,7 @@ class OLFolder(Folder):
         logging.info('Entries cleared: %d. Errors: %d; i: %d', len(cnt),
                      len(errs), i)
 
+        ctable.SetColumns(self.get_def_cols(), 0)
         return (len(errs) == 0)
 
     @classmethod
