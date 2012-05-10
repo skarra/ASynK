@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri Apr 27 16:37:31 IST 2012
+## Last Modified : Thu May 10 13:29:32 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -70,8 +70,6 @@ class Contact(Item):
             set_method = 'set_%s' % prop
 
             val = copy.deepcopy(getattr(con, get_method)())
-            # logging.debug('setting value (%s) using method: %s',
-            #               val, set_method)
             getattr(self, set_method)(val)
 
     def get_firstname (self):

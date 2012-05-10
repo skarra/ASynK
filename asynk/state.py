@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Sat May 05 07:13:05 IST 2012
+## Last Modified : Thu May 10 08:08:41 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -189,6 +189,9 @@ class Config:
             return gid
 
         return gid[which]
+
+    def get_ol_cus_pid (self):
+        return self.get_db_config('ol')['cus_pid']
 
     ##
     ## get-set pairs for sync state parameters in state.json

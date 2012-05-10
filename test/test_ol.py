@@ -1,6 +1,6 @@
 ##
 ## Created       : Mon Apr 09 14:54:10 IST 2012
-## Last Modified : Wed May 09 19:39:13 IST 2012
+## Last Modified : Thu May 10 14:05:23 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -17,6 +17,8 @@ sys.path = EXTRA_PATHS + sys.path
 
 
 import base64
+from   win32com.mapi  import mapi, mapiutil
+from   win32com.mapi  import mapitags as mt
 from   sync       import SyncLists
 from   state      import Config
 from   pimdb_ol   import OLPIMDB
@@ -25,7 +27,11 @@ from   contact_ol import OLContact
 def main (argv=None):
     tests = TestOLContact()
     
-    tests.print_contact('AAAAADWE5+lnNclLmn8GpZUD04fE7C0A')
+    # tests.print_contact("AAAAADWE5+lnNclLmn8GpZUD04fE1mMA")
+    # print '---'
+    # tests.print_contact("AAAAADWE5+lnNclLmn8GpZUD04dE12MA")
+
+    tests.test_read_custom_props("AAAAADWE5+lnNclLmn8GpZUD04fE1mMA")
 
     # tests.test_read_emails('AAAAADWE5+lnNclLmn8GpZUD04fE7C0A')
     # tests.test_new_contact()
@@ -35,7 +41,7 @@ class TestOLContact:
     def __init__ (self):
         logging.debug('Getting started... Reading Config File...')
 
-        self.config = Config('../app_state.json')
+        self.config = Config('../config.json', '../state.json')
         self.ol     = OLPIMDB(self.config)
         self.deff   = self.ol.get_def_folder()
 
@@ -52,6 +58,22 @@ class TestOLContact:
         c.set_gender('Male')
         c.set_notes('This is a second test contact')
         c.save()
+
+    def test_read_custom_props (self, itemid):
+        eid = base64.b64decode(itemid)
+        olcf = self.deff
+        
+        prop_tag = olcf.get_proptags().get_custom_prop_tag()
+        store    = olcf.get_msgstore()
+        item     = store.get_obj().OpenEntry(eid, None, mapi.MAPI_BEST_ACCESS)
+
+        hr, props = item.GetProps([prop_tag], mapi.MAPI_UNICODE)
+        (tag, val) = props[0]
+        if mt.PROP_TYPE(tag) == mt.PT_ERROR:
+            print 'Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
+                                                                (tag % (2**64)))
+        else:
+            print 'Hurrah! Custom found: ', val
 
     def test_read_emails (self, itemid):
         eid = base64.b64decode(itemid)

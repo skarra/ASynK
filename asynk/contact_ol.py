@@ -16,7 +16,7 @@ from   datetime import datetime
 from   contact import Contact
 from   win32com.mapi import mapitags as mt
 from   win32com.mapi import mapi
-import winerror, win32api
+import demjson, winerror, win32api
 
 def yyyy_mm_dd_to_pytime (date_str):
     dt = datetime.strptime(date_str, '%Y-%m-%d')
@@ -96,7 +96,7 @@ class OLContact(Contact):
         fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_COMPLETE'))
         fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_DATE_COMPLETED'))
 
-        ## FIXME
+        fields.append(olcf.get_proptags().valu('ASYNK_PR_CUSTOM_PROPS'))
         self._append_sync_proptags(fields)
 
         self.set_sync_fields(fields)
@@ -496,9 +496,21 @@ class OLContact(Contact):
                 self.update_sync_tags(name, valu)
 
     def _snarf_custom_props_from_olprops (self, olpd):
-        #        logging.error("_snarf_custom_props_ol(): Not Implemented
-        #        Yet")
-        pass
+        tag = self.get_proptags().valu('ASYNK_PR_CUSTOM_PROPS')
+        val = self._get_olprop(olpd, tag)
+        if not val:
+            logging.debug('con_ol:scpfo: No custom props found: %s',
+                          self.get_name())
+            return
+        
+        d = demjson.decode(val)
+
+        ## val is a json encoded property set, some of which are purely to
+        ## track OL state. Process them separately, and then update the custom
+        ## prop dictionary. FIXME: For now we are assuming the entire custom
+        ## field are bona fide custom property.
+
+        self.update_custom(d)
 
     def _get_olprop (self, olprops, key):
         if not (key in olprops.keys()):
@@ -637,6 +649,8 @@ class OLContact(Contact):
                 label, num = ph[1]
             olprops.append((mt.PR_HOME2_TELEPHONE_NUMBER, num))
         if len(ph) >= 3:
+            ## FIXME: Additional phone numbers should be put into the custom
+            ## property for later use.
             logging.error('Not so silently ignoring %d Home numbers for %s',
                           len(ph)-2, self.get_name())
 
@@ -732,13 +746,22 @@ class OLContact(Contact):
                 self.add_custom(name, val)
                 continue
 
-            tagv = self.get_proptags().valu(name)
+            tag = self.get_proptags().valu(name)
             if val:
-                olprops.append((tagv, val))
+                olprops.append((tag, val))
 
     def _add_custom_props_to_olprops (self, olprops):
-        #        logging.error("_add_custom_props_ol(): Not Implemented Yet")
-        pass
+        ## JSON encode the entire custom property dictionary and shove it into
+        ## properties array.
+
+        tag = self.get_proptags().valu('ASYNK_PR_CUSTOM_PROPS')
+        val = self.get_custom()
+        if val:
+            logging.debug('Name: %-25s, Custom: %s', self.get_name(), val)
+            olprops.append((tag, demjson.encode(val)))
+        else:
+            logging.debug('con_ol:acpto: No custom props for %s while'
+                          ' saving to OL...', self.get_name())
 
     def _process_sync_fields (self, fields):
         """Convert the string representation of the mapi property tags to

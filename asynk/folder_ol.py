@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sat May 05 08:46:30 IST 2012
+## Last Modified : Thu May 10 14:31:01 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -163,7 +163,8 @@ class OLFolder(Folder):
                 logging.info('Successfully created outlook entry for %30s (%s)',
                              olc.get_name(), olc.get_itemid())
             except Exception, e:
-                logging.error('Error saving contact: \n%s', olc.get_name())
+                logging.error('Could not save contact (%s) due to: %s',
+                              olc.get_name(), str(e))
                 logging.debug('Contact Entry: %s', olc)
                 logging.debug(traceback.format_exc())
                 success = False
@@ -272,9 +273,18 @@ class OLFolder(Folder):
         self.proptags = p
 
     def reset_def_cols (self):
+        """All property read operations on the Outlook Item database, are
+        given a set of columns, or properties, to fetch. A def_cols list is
+        maintained for general iteration. Apart from the regular list of
+        columns that are returned, we would like to also fetch the user
+        defined property tags so they will be processed like any other
+        property. """
+
         sync_tag_props = self.get_proptags().sync_tags.values()
+        custom_props   = [self.get_proptags().valu('ASYNK_PR_CUSTOM_PROPS')]
         self.def_cols  = (self.get_contents().QueryColumns(0) +
-                          tuple(sync_tag_props))
+                          tuple(sync_tag_props) +
+                          tuple(custom_props))
 
     def get_def_cols (self):
         return self.def_cols
@@ -538,6 +548,8 @@ class PropTags:
         self.put('ASYNK_PR_TASK_DATE_COMPLETED',
                  self.get_task_date_completed_tag())
 
+        self.put('ASYNK_PR_CUSTOM_PROPS', self.get_custom_prop_tag())
+
         self.load_sync_proptags()
 
     def load_sync_proptags (self):
@@ -637,6 +649,14 @@ class PropTags:
         prop_name = [(self.config.get_ol_guid(), gid)]
         prop_type = mt.PT_UNICODE
         prop_ids  = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+
+        return (prop_type | prop_ids[0])
+
+    def get_custom_prop_tag (self):
+        conf = self.config
+        prop_name = [(conf.get_ol_guid(), conf.get_ol_cus_pid())]
+        prop_type = mt.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
         return (prop_type | prop_ids[0])
 
