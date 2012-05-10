@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed May 09 19:38:28 IST 2012
+## Last Modified : Thu May 10 12:48:27 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -570,6 +570,9 @@ class Asynk:
         self._login()
 
         fid = self.get_folder_id(db1)
+        if db1 == 'bb' and fid == None:
+            fid = 'default'
+
         f1, t  = self.get_db(db1).find_folder(fid)
         if not f1:
             logging.error('Folder with ID %s not found. Nothing to do',
