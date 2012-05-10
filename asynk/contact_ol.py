@@ -472,6 +472,11 @@ class OLContact(Contact):
             self.add_fax_work(('Work', ph))             
 
     def _snarf_dates_from_olprops (self, olpd):
+        d = self._get_olprop(olpd, mt.PR_CREATION_TIME)
+        if d:
+            date = pytime_to_yyyy_mm_dd(d)
+            self.set_created(date)
+        
         d = self._get_olprop(olpd, mt.PR_BIRTHDAY)
         if d:
             date = pytime_to_yyyy_mm_dd(d)
@@ -710,6 +715,11 @@ class OLContact(Contact):
             olprops.append((mt.PR_PRIMARY_FAX_NUMBER, fax_prim))
 
     def _add_dates_to_olprops (self, olprops):
+        cd = self.get_created()
+        if cd:
+            cd = yyyy_mm_dd_to_pytime(cd)
+            olprops.append((mt.PR_CREATION_TIME, cd))
+
         bday = self.get_birthday()
         if bday:
             bday = yyyy_mm_dd_to_pytime(bday)
