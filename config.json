@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Thu May 03 19:56:44 IST 2012
+// Last Modified : Thu May 10 13:11:48 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -84,6 +84,16 @@
             'gid_base' : {'bb' : 0x8001,
                           'gc' : 0x9001,
                          },
+
+	    // BBDB and Google allow a generic user defined property
+	    // list. Outlook allows this, but no easy framework,
+	    // certainly no easy way to be able to view these user
+	    // defined properties on the UI. As the user cannot see
+	    // them in Outlook anyway, we will minimize our pain and
+	    // just define a single custom propery, whose value will
+	    // be a fully json encoded string, which can be read and
+	    // written with easy and will keep us sane.
+	    'cus_pid'  : 0x6501,
 
             // MS Outlook contact entries contain a lot of crap. The
             // same information appears multiple times against
