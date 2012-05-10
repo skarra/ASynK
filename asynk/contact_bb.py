@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Fri May 04 18:16:45 IST 2012
+## Last Modified : Thu May 10 15:27:23 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -403,12 +403,14 @@ class BBContact(Contact):
         n = self.get_firstname()
         l = self.get_lastname()
 
-        if (not l) and (not n):
+        if bool(l) != bool(n):
+            # A Logical xor to check if one and only one of the two strings is
+            # valid. Inspired by: http://stackoverflow.com/a/433161/987738
             n = self.get_name()
             if n:
-                ret = '"%s" nil' % n
+                ret = '"%s" nil ' % n
             else:
-                ret = 'nil nil'
+                ret = 'nil nil '
         else:
             if n:
                 ret += unchompq(n) + ' '
