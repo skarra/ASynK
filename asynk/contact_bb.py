@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu May 10 15:27:23 IST 2012
+## Last Modified : Thu May 10 18:07:34 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -11,7 +11,7 @@
 ## Big Brother Data Base
 ##
 
-import copy, logging, re, uuid
+import copy, logging, re, string, uuid
 from   contact    import Contact
 from   utils      import chompq, unchompq
 import demjson, pimdb_bb, folder_bb, utils
@@ -545,8 +545,12 @@ class BBContact(Contact):
             ret += '(%s . %s) ' % (noted['birthday'], unchompq(b))
         if a:
             ret += '(%s . %s) ' % (noted['anniv'], unchompq(a))
-        if n and len(n) > 0:
-            ret += '(%s . %s) ' % (noted['notes'], unchompq(n[0]))
+        if n and len(n) > 0 and n[0]:
+            ## BBDB cannot handle actual line breaks. We need to quote
+            ## them. And convert the dos line endings while we are at it...
+            no = string.replace(n[0], '\r\n', '\\n')
+            no = string.replace(no, '\n', '\\n')
+            ret += '(%s . %s) ' % (noted['notes'], unchompq(no))
         if m and m != '':
             ret += '(%s . %s) ' % (noted['middle_name'], unchompq(m))
 
