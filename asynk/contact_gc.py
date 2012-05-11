@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu May 10 14:38:39 IST 2012
+## Last Modified : Fri May 11 16:31:01 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -239,6 +239,8 @@ class GCContact(Contact):
                gdata.data.OTHER_REL : 'Other',}
 
     def _snarf_postal_from_gce (self, ce):
+        self.set_postal_prim_label(None)
+
         if ce.structured_postal_address:
             if len(ce.structured_postal_address) > 0:
                 for addr in ce.structured_postal_address:
@@ -247,15 +249,23 @@ class GCContact(Contact):
                     else:
                         label = self.rel_map[addr.rel]
 
-                    ad = {}
+                    if addr.primary == 'true':
+                        ## What happens if more than one is marked as primary? Hm.
+                        self.set_postal_prim_label(label)
 
+                    ad = {'street'  : None,
+                          'city'    : None,
+                          'state'   : None,
+                          'country' : None,
+                          'zip'     : None,}
+                    
                     fa = addr.formatted_address
                     if fa:
                         ad.update({'formatted_address' : fa.text})
 
                     st = addr.street
                     if st:
-                        ad.update({'streets' : st.text})
+                        ad.update({'street' : st.text})
 
                     ci = addr.city
                     if ci:
@@ -520,11 +530,12 @@ class GCContact(Contact):
         ## addresses as Google itself provides some amount of support. The
         ## address handling in general is a mess...
 
-        postals = self.get_postal()
-        for label, postal in postals.iteritems():
+        postals = self.get_postal(as_array=True)
+        for label, postal in postals:
             if postal:
+                prim = 'true' if self.is_postal_prim(label) else 'false'
                 add  = gdata.data.StructuredPostalAddress(
-                    label=label, primary='true')
+                    label=label, primary=prim)
 
                 if postal['street']:
                     strt = gdata.data.Street(text=postal['street'])
@@ -552,7 +563,7 @@ class GCContact(Contact):
                     fad = gdata.data.FormattedAddress(text=fa)
                     add.formatted_address = fad
 
-                gce.structured_postal_address = [add]
+                gce.structured_postal_address.append(add)
 
     def _add_org_details_to_gce (self, gce):
         """Insert the contact's company, department and other such

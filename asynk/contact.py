@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu May 10 13:29:32 IST 2012
+## Last Modified : Fri May 11 17:19:13 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -16,7 +16,7 @@ from abc     import ABCMeta, abstractmethod
 from pimdb   import PIMDB
 from item    import Item
 
-import copy, logging
+import copy, logging, re
 
 class Contact(Item):
     __metaclass__ = ABCMeta
@@ -260,31 +260,125 @@ class Contact(Item):
         if val:
             return self._set_prop('dept', val)
 
-    def get_postal (self, which=None):
-        postals = self._get_prop('postal')
-        if which:
-            return postals[which]
-        else:
-            return postals
+    ## The postal property has the structure. It is uesful to keep this in
+    ## mind when operating it. The set operations will only take a label, and
+    ## will slot them into the right place based on the postal_map
+    ## configuration variable. Following things to be noted:
+    ##
+    ## - labels need not be unique even within a category.
+    ## 
+    ## - the primary flag is set on the basis of label, therefore it is
+    ##   sometimes not possibel to correctly identify the address element that
+    ##   is primary... such is life.
+    ##
+    ## postal : {
+    ##     "home" : [
+    ##         ("label_1", {
+    ##           "street"  : "street name",
+    ##           "city"    : "city name",
+    ##           "country' : "country name",
+    ##           ## and so on
+    ##           }),
+    ##
+    ##         ("label_2",  {
+    ##             ....
+    ##         }),
+    ##     ]},
+    ## 
+    ##     "work" : [
+    ##         ("label_1", {
+    ##             ....
+    ##           }),
+    ##
+    ##         ("label_2", {
+    ##             ....
+    ##         }),
+    ##      ]},
+    ##
+    ##     "other" : [
+    ##         ("label_1", {
+    ##             ....
+    ##           }),
+    ##
+    ##         ("label_2", {
+    ##             ....
+    ##         }),
+    ##      ]},
+    ## }
+    
+    def get_postal (self, type=None, as_array=False):
+        """Return the full list of the specified type (home, work, other,
+        etc.). If type is None, return the whole damn thing).
 
-    def set_postal (self, val):
+        if type is None, then the return value can be either a flattened
+        out array of tuples, or a categorized dictionary depending of the
+        as_array flag, which defaults to False"""
+
+        postals = self._get_prop('postal')
+        if not type:
+            if not as_array:
+                return postals
+            ret = []
+            for cat, ary in postals.iteritems():
+                ret += ary
+
+            ## Now, we need to ensure the primary address is the first element
+            ## in the array. So we're not quite done yet.
+            index = -1
+            for  i, (label, val) in enumerate(ret):
+                if self.is_postal_prim(label):
+                    index = i
+                    prim  = (label, val)
+                    break
+
+            if index != -1:
+                ret.pop(index)
+                ret.insert(0, prim)          
+                
+            return ret
+
+        return postals[type]
+
+    def set_postal (self, val, type=None):
+        """val should be a dictionary of label : address mappings. Note that
+        address itself is a dictionary. Oh, lord, this is getting too funny."""
+
         if not self.in_init():
             self.dirty(True)
 
-        return self._set_prop('postal', val)
+        if type:
+            return self._update_prop('postal', type, val)
+        else:
+            return self._set_prop('postal', val)
 
     def add_postal (self, which, val):
-        return self._update_prop('postal', which, val)
+        postal_map = self.get_postal_map()
 
-    def add_postal_detail (self, which, detail, val):
-        if not self.in_init():
-            self.dirty(True)
+        type = 'home'
+        if postal_map and len(postal_map) > 0:
+            for cat, reg in postal_map.iteritems():
+                if re.search(reg, which):
+                    type = cat
+                    break
 
-        postal = self.get_postal(which)
-        if postal:
-            postal.update({detail : val})
-        else:
-            self.set_postal(which, {detail : val})
+        try:
+            addrs = self.get_postal(type)
+            addrs.append((which, val))
+        except KeyError, e:
+            self.set_postal([(which, val)], type)
+            
+
+    def set_postal_prim_label (self, label):
+        return self._set_prop('postal_prim_label', label)
+
+    def get_postal_prim_label (self):
+        return self._get_prop('postal_prim_label')
+
+    def is_postal_prim (self, label):
+        """Returns True if the provided label corresponds to the primary
+        address entry, and False otherwise."""
+
+        return self.get_postal_prim_label() == label
 
     def get_notes (self):
         return self._get_prop('notes')

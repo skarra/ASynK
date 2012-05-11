@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon Apr 30 00:17:59 IST 2012
+## Last Modified : Fri May 11 13:51:42 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -55,6 +55,7 @@ class PIMDB:
 
         self.set_db_config()
         self.set_email_domains()
+        self.set_postal_map()
         self.set_notes_map()
         self.set_phones_map()
 
@@ -154,6 +155,19 @@ class PIMDB:
                               self.get_dbid())
 
         return self._set_att('email_domains', None)
+
+    def get_postal_map (self):
+        return self._get_att('postal_map')
+
+    def set_postal_map (self):
+        dbc = self.get_db_config()
+        if dbc:
+            try:
+                ed = dbc['postal_map']
+                return self._set_att('postal_map', ed)
+            except KeyError, e:
+                logging.debug('PIMDB %s does not have postal_map',
+                              self.get_dbid())                
 
     def get_notes_map (self):
         return self._get_att('notes_map')
