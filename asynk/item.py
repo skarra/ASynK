@@ -1,6 +1,6 @@
 ##
 ## Created	     : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed May 09 13:47:47 IST 2012
+## Last Modified : Fri May 11 09:07:21 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -253,6 +253,9 @@ class Item:
 
     def get_email_domains (self):
         return self.get_db().get_email_domains()
+
+    def get_postal_map (self):
+        return self.get_db().get_postal_map()
 
     def get_notes_map (self):
         return self.get_db().get_notes_map()

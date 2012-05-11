@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu May 10 18:07:34 IST 2012
+## Last Modified : Fri May 11 17:18:59 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -232,13 +232,17 @@ class BBContact(Contact):
         str_re = self.get_store().get_str_re()
         addrs  = re.findall(adr_re, pr['addrs'])
 
-        for addr in addrs:
+        for i, addr in enumerate(addrs):
             label, val = addr[:2]
             add = '[' + label + ' ' + val + ']'
             res = re.search(adr_re, add)
 
             if res:
-                addict = {}
+                addict = {'street'  : None,
+                          'city'    : None,
+                          'state'   : None,
+                          'country' : None,
+                          'zip'     : None,}
                 fields = res.groupdict()
 
                 streets = fields['streets']
@@ -265,6 +269,8 @@ class BBContact(Contact):
                     addict.update({'zip' : chompq(pin)})
 
                 self.add_postal(chompq(label), addict)
+                if i == 0:
+                    self.set_postal_prim_label(label)
             else:
                 logging.error('bb:snarf_postal(): Huh? No match for add %s.',
                               add)
@@ -490,7 +496,7 @@ class BBContact(Contact):
 
     def _get_postal_as_string (self):
         ret = ''
-        for l, a in self.get_postal().iteritems():
+        for l, a in self.get_postal(as_array=True):
             ret += '[' + unchompq(l) + ' '
 
             if 'street' in a and a['street']:

@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Thu May 10 13:11:48 IST 2012
+// Last Modified : Fri May 11 09:05:35 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -155,7 +155,6 @@
                 "work" : [],
                 "other" : [],
             }, // db_config['email_domans']
-
         }, // db_config['ol']
 
         'bb': {
@@ -166,6 +165,20 @@
                 "work"  : [],
                 "other" : [],
             }, // db_config['email_domains']
+
+	    // Postal addresses can have custom labels, which make it
+	    // difficult to categorize them as Home, Business, etc. In
+	    // the dictionary below, you can configure how your labels
+	    // need to be bucketed. The key in the dictionary is the
+	    // class, and the value is a list of regular expressions
+	    // to match against the key. Noe as with email_domains
+	    // above the behaviour is undefined if a reg exp matches
+	    // more than one category.
+            "postal_map" : {
+                "home"  : 'Home', // Home could be *anywhere* in the label
+                "work"  : 'Work', // Note these are regular expressions
+                "other" : 'Other',
+            }, // db_config['postal_map']
 
             // The "native" fields supported by BBDB are fairly
             // limited, There is no standard way to represent
@@ -226,6 +239,12 @@
         }, // db_config['bb']
 
         'gc' : {
+	    // See above for 'bb'
+            "postal_map" : {
+                "home"  : 'Home', // Home could be *anywhere* in the label
+                "work"  : 'Work', // Note these are regular expressions
+                "other" : 'Other',
+            }, // db_config['postal_map']
         },
 
     }, // 'db_config'
