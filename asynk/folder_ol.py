@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu May 10 17:23:57 IST 2012
+## Last Modified : Sat May 12 06:59:05 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -197,11 +197,13 @@ class OLFolder(Folder):
 
             ## Wipe out the sucker
             try:
-                def_cols = self.get_def_cols()
+                def_cols = oli.GetPropList(mapi.MAPI_UNICODE)
+                print def_cols
                 hr, ps = oli.DeleteProps(def_cols)
             except Exception, e:
-                logging.error('%s: Could not clear our MAPI props for: %s',
-                              'gc:batch_update()', item.get_name())
+                logging.error('%s: Could not clear our MAPI props for: %s (%s)',
+                              'gc:batch_update()', item.get_name(), e)
+                logging.debug(traceback.format_exc())
                 success = False
                 continue
 

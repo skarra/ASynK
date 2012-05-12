@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri May 11 17:19:13 IST 2012
+## Last Modified : Sat May 12 08:57:46 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -47,6 +47,7 @@ class Contact(Item):
                            'fileas'       : None, 'email_prim'   : None,
                            'prefix'       : None, 'im_prim'      : None,
                            'im'           : {},   'custom'       : {},
+                           'postal_prim_label' : None,
                            })
 
         if con:
@@ -312,7 +313,9 @@ class Contact(Item):
 
         if type is None, then the return value can be either a flattened
         out array of tuples, or a categorized dictionary depending of the
-        as_array flag, which defaults to False"""
+        as_array flag, which defaults to False
+
+        If there is no postals of specified type, then None is returned."""
 
         postals = self._get_prop('postal')
         if not type:
@@ -337,7 +340,7 @@ class Contact(Item):
                 
             return ret
 
-        return postals[type]
+        return postals[type] if type in postals else None
 
     def set_postal (self, val, type=None):
         """val should be a dictionary of label : address mappings. Note that
@@ -361,12 +364,13 @@ class Contact(Item):
                     type = cat
                     break
 
-        try:
-            addrs = self.get_postal(type)
+        addrs = self.get_postal(type)
+        if addrs:
             addrs.append((which, val))
-        except KeyError, e:
+            if not self.in_init():
+                self.dirty(True)
+        else:
             self.set_postal([(which, val)], type)
-            
 
     def set_postal_prim_label (self, label):
         return self._set_prop('postal_prim_label', label)
@@ -611,6 +615,19 @@ class Contact(Item):
             self.dirty(True)
 
         return self._update_prop('custom', None, None, d)
+
+    def del_custom (self, which):
+        """Delete a custom property and return True if property actually
+        exists. Returns False if property is not in custom list of contact"""
+
+        if not self.in_init():
+            self.dirty(True)
+
+        if which in self._get_prop('custom'):
+            del self._get_prop('custom')[which]
+            return True
+
+        return False
 
 ## FIXME: This file needs extensive unit testing. There's quite a bit of
 ## pseudo-repititive codet hat has been produced by manual cop-n-paste, which

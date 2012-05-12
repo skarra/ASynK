@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Thu May 10 18:14:32 IST 2012
+## Last Modified : Sat May 12 08:58:36 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -10,13 +10,13 @@
 ## item while implementing the base class methods.
 
 import string
-import base64, logging, os, re, sys, utils
+import base64, logging, os, re, sys, traceback, utils
 from   datetime import datetime
 
 from   contact import Contact
 from   win32com.mapi import mapitags as mt
 from   win32com.mapi import mapi
-import demjson, winerror, win32api
+import demjson, winerror, win32api, pywintypes
 
 def yyyy_mm_dd_to_pytime (date_str):
     dt = datetime.strptime(date_str, '%Y-%m-%d')
@@ -61,7 +61,7 @@ class OLContact(Contact):
                 pname_re = conf.get_profile_name_re()
                 label    = conf.make_sync_label(pname_re, self.get_dbid())
                 tag, itemid = con.get_sync_tags(label)[0]              
-                self.set_itemid(itemid)
+                self.set_entryid(base64.b64decode(itemid))
             except Exception, e:
                 logging.debug('Potential new OLContact: %s', con.get_name())
 
@@ -288,6 +288,10 @@ class OLContact(Contact):
     def init_props_from_olprops (self, olprops):
         olpd = self._make_olprop_dict(olprops, self.get_sync_fields())
 
+        ## Load up the custom properites first up, plenty of state and stuff
+        ## is stored in the custom property json
+        self._snarf_custom_props_from_olprops(olpd)
+
         self._snarf_itemid_from_olprops(olpd)
         self._snarf_names_gender_from_olprops(olpd)
         self._snarf_notes_from_olprops(olpd)
@@ -299,8 +303,6 @@ class OLContact(Contact):
         self._snarf_websites_from_olprops(olpd)
         self._snarf_ims_from_olprops(olpd)
         self._snarf_sync_tags_from_olprops(olpd)
-
-        self._snarf_custom_props_from_olprops(olpd)
 
     def init_props_from_eid (self, eid):
         self.set_entryid(eid)
@@ -422,9 +424,115 @@ class OLContact(Contact):
         return (res['home'], res['work'], res['other'])
 
 
+    ## Outlook does not have a concept of labelled addresses. There is one
+    ## address each for home, work, and other. Othere databases support any
+    ## number of addresses and with labels. We have to jump through some hoops
+    ## to ensure we do not lose information when we go back and forth. This is
+    ## what we do:
+    ##
+    ## - we store the first home, work, and other addresses in the contact to
+    ##   the right outlook fields.
+    ##
+    ## - The rest of the addresses are stored away in a postals custom
+    ##   property whose structure is documented in more detail in contact.py
+    ## 
+    ## - In addition, the labels for the "main" addresses are stored in the
+    ##   addrs custom property using the labels: "_home_addr_label",
+    ##   "_work_addr_label", and "_other_addr_label". When this contact is
+    ##   synched to other databases, we fetch this property and populate as
+    ##   required.
+
+    def _read_addr (self, olpd, addrs, lab, tag_st, tag_city, tag_state,
+                    tag_country, tag_zip):
+        try:
+            label = addrs[lab]
+        except KeyError, e:
+            logging.debug('OL Contact %s does not have %s',
+                          self.get_name(), lab)
+            label = 'Home'        
+
+        if label:
+            ad = {'street'  : None,
+                  'city'    : None,
+                  'state'   : None,
+                  'country' : None,
+                  'zip'     : None,}
+
+            street = self._get_olprop(olpd, tag_st)
+            city   = self._get_olprop(olpd, tag_city)
+            state  = self._get_olprop(olpd, tag_state)
+            countr = self._get_olprop(olpd, tag_country)
+            pin    = self._get_olprop(olpd, tag_zip)
+
+            ad.update({'street'  : street})
+            ad.update({'city'    : city})
+            ad.update({'state'   : state})
+            ad.update({'country' : countr})
+            ad.update({'zip'     : pin})
+
+            if street or city or state or countr or pin:
+                self.add_postal(label, ad)
+
+            if lab in addrs:
+                del addrs[lab]
+
+    addr_map = {
+        'work' : {
+            'street'  : mt.PR_STREET_ADDRESS_W,
+            'city'    : mt.PR_LOCALITY_W,
+            'state'   : mt.PR_STATE_OR_PROVINCE_W,
+            'country' : mt.PR_COUNTRY_W,
+            'zip'     : mt.PR_POSTAL_CODE
+            },
+
+        'home' : {
+            'street'  : mt.PR_HOME_ADDRESS_STREET_W,
+            'city'    : mt.PR_HOME_ADDRESS_CITY_W,
+            'state'   : mt.PR_HOME_ADDRESS_STATE_OR_PROVINCE_W,
+            'country' : mt.PR_HOME_ADDRESS_COUNTRY_W,
+            'zip'     : mt.PR_HOME_ADDRESS_POSTAL_CODE_W,
+            },
+
+        'other' : {
+            'street'  : mt.PR_OTHER_ADDRESS_STREET_W,
+            'city'    : mt.PR_OTHER_ADDRESS_CITY_W,
+            'state'   : mt.PR_OTHER_ADDRESS_STATE_OR_PROVINCE_W,
+            'country' : mt.PR_OTHER_ADDRESS_COUNTRY_W,
+            'zip'     : mt.PR_OTHER_ADDRESS_POSTAL_CODE_W,
+            },
+        }
+
     def _snarf_postal_from_olprops (self, olpd):
-        pass
-        #        self.set_postal(self._get_olprop(olpd, mt.PR_POSTAL_ADDRESS))
+        ## Recall that only one address will be in the property dictionary,
+        ## the rest are in the custom property and will be updated later -
+        ## when the custom property is read and parsed
+
+        addrs = self.get_custom('addrs')
+        try:
+            prim_label = addrs['_prim_addr_label']
+        except KeyError, e:
+            logging.debug('OL Contact %s does not have _prim_addr_label',
+                          self.get_name())
+            prim_label = 'Home'
+
+        ## First deal with all the directly available addresses
+
+        for cat in ['home', 'work', 'other']:
+            self._read_addr(olpd, addrs, ('_%s_addr_label' % cat),
+                            self.addr_map[cat]['street'],
+                            self.addr_map[cat]['city'],
+                            self.addr_map[cat]['state'],
+                            self.addr_map[cat]['country'],
+                            self.addr_map[cat]['zip'])
+
+            ## Now deal with the remaining addresses
+            if not cat in addrs:
+                continue
+
+            for label, addr in addrs[cat].iteritems():
+                self.add_postal(label, addr)
+
+        self.del_custom('addrs')            
 
     def _snarf_org_details_from_olprops (self, olpd):
         self.set_company( self._get_olprop(olpd, mt.PR_COMPANY_NAME))
@@ -432,6 +540,14 @@ class OLContact(Contact):
         self.set_dept(    self._get_olprop(olpd, mt.PR_DEPARTMENT_NAME))
 
     def _snarf_phones_and_faxes_from_olprops (self, olpd):
+        ## Outlook does not have a concept of custom labels for different
+        ## phone fields, or address fields, etc. The way we handle this is to
+        ## store any custom labeling (that a contact brought with it from
+        ## elsewhere) in specific custom fields. Such labels will be pickedup
+        ## and processed in the method that handles custom properties, and we
+        ## will rewrite the labels if required at that point. Here we use some
+        ## generic labels that are used by Outlook by default.
+
         ph = self._get_olprop(olpd, mt.PR_PRIMARY_TELEPHONE_NUMBER)
         if ph:
             self.set_phone_prim(ph)
@@ -637,10 +753,31 @@ class OLContact(Contact):
                 olprops.append((tag, email))
 
     def _add_postal_to_olprops (self, olprops):
-        pass
-        # postal = self.get_postal()
-        # if postal:
-        #     olprops.append((mt.PR_POSTAL_ADDRESS, postal))
+        cust = {}
+
+        for cat in ['home', 'work', 'other']:
+            #            cust.update({cat : {}})
+            postals = self.get_postal(type=cat)
+            if postals and len(postals) > 0:
+                label, addr = postals[0]
+                cust.update({('_%s_addr_label' % cat) : label})
+
+                ## The first address gets written out directly into the
+                ## relevant Outlook fields
+
+                olprops.append((self.addr_map[cat]['street'],  addr['street']))
+                olprops.append((self.addr_map[cat]['city'],    addr['city']))
+                olprops.append((self.addr_map[cat]['state'],   addr['state']))
+                olprops.append((self.addr_map[cat]['country'], addr['country']))
+                olprops.append((self.addr_map[cat]['zip'],     addr['zip']))
+                
+                ## The rest will go into the custom property dictionary which
+                ## will get picked up when custom props are written out
+
+                for label, addr in postals[1:]:
+                    cust[cat].update({label : addr})
+
+        self.add_custom('addrs', cust)
 
     def _add_org_details_to_olprops (self, olprops):
         name = self.get_company()

@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri May 11 13:51:42 IST 2012
+## Last Modified : Sat May 12 08:26:57 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -167,7 +167,9 @@ class PIMDB:
                 return self._set_att('postal_map', ed)
             except KeyError, e:
                 logging.debug('PIMDB %s does not have postal_map',
-                              self.get_dbid())                
+                              self.get_dbid())
+
+        return self._set_att('postal_map', None)
 
     def get_notes_map (self):
         return self._get_att('notes_map')
