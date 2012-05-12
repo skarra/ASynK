@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Fri May 11 09:05:35 IST 2012
+// Last Modified : Sat May 12 08:07:56 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -40,16 +40,16 @@
     // default values.
     'profile_defaults' : {
         'coll_1' : {
-	    'dbid' : null,	// Two letter DB specifier like 'bb', 'gc'
-	    'stid' : null,	// Store ID (See documentation)
-	    'foid' : null,	// Folder ID
-	},
+            'dbid' : null,      // Two letter DB specifier like 'bb', 'gc'
+            'stid' : null,      // Store ID (See documentation)
+            'foid' : null,      // Folder ID
+        },
 
         'coll_2' : {
-	    'dbid' : null,
-	    'stid' : null,
-	    'foid' : null,
-	},
+            'dbid' : null,
+            'stid' : null,
+            'foid' : null,
+        },
 
         'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
         'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
@@ -85,15 +85,15 @@
                           'gc' : 0x9001,
                          },
 
-	    // BBDB and Google allow a generic user defined property
-	    // list. Outlook allows this, but no easy framework,
-	    // certainly no easy way to be able to view these user
-	    // defined properties on the UI. As the user cannot see
-	    // them in Outlook anyway, we will minimize our pain and
-	    // just define a single custom propery, whose value will
-	    // be a fully json encoded string, which can be read and
-	    // written with easy and will keep us sane.
-	    'cus_pid'  : 0x6501,
+            // BBDB and Google allow a generic user defined property
+            // list. Outlook allows this, but no easy framework,
+            // certainly no easy way to be able to view these user
+            // defined properties on the UI. As the user cannot see
+            // them in Outlook anyway, we will minimize our pain and
+            // just define a single custom propery, whose value will
+            // be a fully json encoded string, which can be read and
+            // written with easy and will keep us sane.
+            'cus_pid'  : 0x6501,
 
             // MS Outlook contact entries contain a lot of crap. The
             // same information appears multiple times against
@@ -125,11 +125,24 @@
                 'PR_PERSONAL_HOME_PAGE',     'PR_WEDDING_ANNIVERSARY',
                 'PR_BUSINESS_HOME_PAGE',     'PR_OTHER_TELEPHONE_NUMBER',
                 'PR_LAST_MODIFICATION_TIME', 'PR_CREATION_TIME',
-                //      'PR_COUNTRY',
-                //      'PR_OFFICE_LOCATION',
-                //      'PR_STREET_ADDRESS',
-                //      'PR_EMAIL_ADDRESS',
-                //      'PR_EMAIL_ADDRESS_A',
+
+                'PR_COUNTRY_W',              'PR_STATE_OR_PROVINCE_W', 
+                'PR_LOCALITY_W',             'PR_STREET_ADDRESS_W',
+                'PR_POSTAL_CODE_W',          'PR_POST_OFFICE_BOX_W',
+
+		'PR_HOME_ADDRESS_POST_OFFICE_BOX_W',
+		'PR_HOME_ADDRESS_STREET_W',
+                'PR_HOME_ADDRESS_CITY_W',
+		'PR_HOME_ADDRESS_STATE_OR_PROVINCE_W',
+                'PR_HOME_ADDRESS_COUNTRY_W',    
+                'PR_HOME_ADDRESS_POSTAL_CODE_W',
+
+		'PR_OTHER_ADDRESS_POST_OFFICE_BOX_W',
+		'PR_OTHER_ADDRESS_STREET_W',
+                'PR_OTHER_ADDRESS_CITY_W',
+		'PR_OTHER_ADDRESS_STATE_OR_PROVINCE_W',
+                'PR_OTHER_ADDRESS_COUNTRY_W',    
+                'PR_OTHER_ADDRESS_POSTAL_CODE_W',
             ],
 
             // Outlook does not have support for labelled email
@@ -166,19 +179,19 @@
                 "other" : [],
             }, // db_config['email_domains']
 
-	    // Postal addresses can have custom labels, which make it
-	    // difficult to categorize them as Home, Business, etc. In
-	    // the dictionary below, you can configure how your labels
-	    // need to be bucketed. The key in the dictionary is the
-	    // class, and the value is a list of regular expressions
-	    // to match against the key. Noe as with email_domains
-	    // above the behaviour is undefined if a reg exp matches
-	    // more than one category.
+            // Postal addresses can have custom labels, which make it
+            // difficult to categorize them as Home, Business, etc. In
+            // the dictionary below, you can configure how your labels
+            // need to be bucketed. The key in the dictionary is the
+            // class, and the value is a list of regular expressions
+            // to match against the key. Noe as with email_domains
+            // above the behaviour is undefined if a reg exp matches
+            // more than one category.
             "postal_map" : {
                 "home"  : 'Home', // Home could be *anywhere* in the label
                 "work"  : 'Work', // Note these are regular expressions
-                "other" : 'Other',
-            }, // db_config['postal_map']
+                "other" : 'Price',
+            }, // db_config['bb']['postal_map']
 
             // The "native" fields supported by BBDB are fairly
             // limited, There is no standard way to represent
@@ -239,7 +252,7 @@
         }, // db_config['bb']
 
         'gc' : {
-	    // See above for 'bb'
+            // See above for 'bb'
             "postal_map" : {
                 "home"  : 'Home', // Home could be *anywhere* in the label
                 "work"  : 'Work', // Note these are regular expressions
