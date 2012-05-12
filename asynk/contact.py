@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sat May 12 08:57:46 IST 2012
+## Last Modified : Sat May 12 09:15:44 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -16,7 +16,7 @@ from abc     import ABCMeta, abstractmethod
 from pimdb   import PIMDB
 from item    import Item
 
-import copy, logging, re
+import copy, logging, re, string
 
 class Contact(Item):
     __metaclass__ = ABCMeta
@@ -80,8 +80,7 @@ class Contact(Item):
         if not self.in_init():
             self.dirty(True)
 
-        self._set_prop('firstname', val)
-        #        self.update_fullname()
+        self._set_prop('firstname', string.strip(val) if val else None)
 
     def get_lastname (self):
         return self._get_prop('lastname')
@@ -90,8 +89,7 @@ class Contact(Item):
         if not self.in_init():
             self.dirty(True)
 
-        self._set_prop('lastname', val)
-        #        self.update_fullname()
+        self._set_prop('lastname', string.strip(val) if val else None)
 
     def get_middlename (self):
         return self._get_prop('middlename')
