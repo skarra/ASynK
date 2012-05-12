@@ -1,0 +1,5 @@
+Created       : Sat May 12 11:15:38 IST 2012
+Last Modified : Sat May 12 11:17:00 IST 2012
+
+This directory contains the source code that powers the main public website for ASynK: http://karra-asynk.appspot.com/, which is hosted by Google App Engine
+
