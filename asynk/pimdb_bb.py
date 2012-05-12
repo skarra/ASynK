@@ -1,10 +1,22 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Wed May 09 13:32:40 IST 2012
+## Last Modified : Sat May 12 10:41:34 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
-## Licensed under the GPL v3
+## This file is part of ASynK
+##
+## ASynK is free software: you can redistribute it and/or modify it under
+## the terms of the GNU Affero General Public License as published by the
+## Free Software Foundation, version 3 of the License
+##
+## ASynK is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+## FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
+## License for more details.
+##
+## You should have a copy of the license in the doc/ directory of ASynK.  If
+## not, see <http://www.gnu.org/licenses/>.
 ##
 
 import codecs, datetime, logging, os, re, shutil, string, time

@@ -93,7 +93,8 @@ notes, etc.), but currently only Contact synchronization for Google Contacts,
 BBDB and Outlook supported
 
 @item
-It is free software, and released under the GNU GPL version 3
+It is free software, and released under the GNU AGPL (Affero GPL)
+version 3
 
 @end enumerate
 
@@ -576,8 +577,8 @@ only two way sync solution for BBDB today.
 @cindex Other Sync Programs
 
 @node Copying, GNU FDL, FAQ, Top
-@appendix GNU GPL
-@include gpl.texi
+@appendix GNU AGPL
+@include agpl-3.0.texi
 
 @node GNU FDL, The Index, Copying, Top
 @appendix GNU FDL
