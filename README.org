@@ -1,5 +1,5 @@
 Created       : Wed Aug 24 22:41:42 IST 2011
-Last Modified : Wed May 09 17:09:56 IST 2012
+Last Modified : Sat May 12 10:47:04 IST 2012
 
 * v0.2
 
@@ -28,7 +28,7 @@ Last Modified : Wed May 09 17:09:56 IST 2012
     (i.e. tasks, notes, etc.), but currently only Contact synchronization for
     Google Contacts, BBDB and Outlook supported
 
-  - It is free software, and released under the GNU GPL version 3
+  - It is free software, and released under the GNU AGPL version 3
 
 ** Getting It
 

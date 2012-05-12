@@ -1,10 +1,24 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Fri May 11 16:31:01 IST 2012
+## Last Modified : Sat May 12 10:39:55 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
-## Licensed under the GPL v3
+## This file is part of ASynK
+##
+## ASynK is free software: you can redistribute it and/or modify it under
+## the terms of the GNU Affero General Public License as published by the
+## Free Software Foundation, version 3 of the License
+##
+## ASynK is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+## FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
+## License for more details.
+##
+## You should have a copy of the license in the doc/ directory of ASynK.  If
+## not, see <http://www.gnu.org/licenses/>.
+##
+## ####
 ##
 ## This file defines a wrapper class around a Google Contact entry, by
 ## extending the Contact abstract base Contact class. Using this class one can
