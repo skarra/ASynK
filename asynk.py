@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu May 10 12:48:27 IST 2012
+## Last Modified : Sat May 12 07:56:41 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -179,7 +179,9 @@ def setup_parser ():
 
     p.add_argument('--log', action='store',
                    choices=('debug', 'info', 'error', 'critical'),
-                   default='info', help='Specify level of logging.')
+                   default='info', help='Specify level of console '
+                   'logging. Note that DEBUG level logs are always written to '
+                   'a log file for tracking purposes')
 
     p.add_argument('--version', action='version',
                    version='%(prog)s v' + ('%s' % asynk_ver))
