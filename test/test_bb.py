@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Wed May 09 19:39:07 IST 2012
+## Last Modified : Thu May 10 18:16:28 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -32,7 +32,7 @@ def main (argv=None):
                           state_fn='../state.json',
                           bbfn=bbfn)
     tests.print_contacts(name="Amma")
-    tests.write_to_file()
+    # tests.write_to_file()
 
 class TestBBContact:
     def __init__ (self, config_fn, state_fn, bbfn):
