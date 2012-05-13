@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Sat May 12 10:42:16 IST 2012
+## Last Modified : Sun May 13 00:53:06 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -189,7 +189,7 @@ class Sync:
         # pairs: essentially an extract of the f1_mod
         coma = [id1 for id1,id2 in f1_mod.iteritems() if id2 in f2_mod.keys()]
 
-        logging.info('\nNumber of entries modified both places (conflicts): %d',
+        logging.info('Number of entries modified both places (conflicts): %d',
                      len(coma) if coma else 0)
 
         db1id = self.get_db1id()
@@ -207,12 +207,12 @@ class Sync:
         else:
             logging.error('Unknown conflict resolution dir: %s', cr)
 
-        logging.debug('conflict resolve direction : %s. db1id: %s, db2id: %s',
+        logging.info('conflict resolve direction : %s. db1id: %s, db2id: %s',
                       cr, db1id, db2id)
-        logging.debug('After conflict resolution, size of f1_mod : %5d',
-                      len(f1_mod))
-        logging.debug('After conflict resolution, size of f2_mod : %5d',
-                      len(f2_mod))
+        logging.info('After conflict resolution, size of %s mod : %5d',
+                     db1id, len(f1_mod))
+        logging.info('After conflict resolution, size of %s mod : %5d',
+                     db2id, len(f2_mod))
 
         return f1sl, f2sl
 
@@ -415,7 +415,7 @@ class SyncLists:
         total = (len(self.get_news()) + len(self.get_mods()) +
                  len(self.get_unmods()))
 
-        logging.info('\n==== %s =====', self.db1id)
+        logging.info('==== %s =====', self.db1id)
         logging.info('   New              : %5d', len(self.get_news()))
         logging.info('   Modified         : %5d', len(self.get_mods()))
         logging.info('   Unchanged        : %5d', len(self.get_unmods()))
