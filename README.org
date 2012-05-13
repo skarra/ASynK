@@ -1,9 +1,7 @@
 Created       : Wed Aug 24 22:41:42 IST 2011
-Last Modified : Sat May 12 10:47:04 IST 2012
+Last Modified : Sun May 13 13:51:23 IST 2012
 
-* v0.2
-
-** Introduction
+* Introduction
 
   ASynK - Awesome Sync (by Karra), is a flexible PIM synchronization platform
   written in Python. ASynK was earlier known as Gout. High level features
@@ -30,7 +28,7 @@ Last Modified : Sat May 12 10:47:04 IST 2012
 
   - It is free software, and released under the GNU AGPL version 3
 
-** Getting It
+* Getting It
 
    The official website for ASynK is at: http://karra-asynk.appspot.com You
    will find links to latest download, complete documentaiton, and other
@@ -41,95 +39,4 @@ Last Modified : Sat May 12 10:47:04 IST 2012
    https://github.com/skarra/Gout) Visit the site to grab the bleeding edge
    development version, or to register an issue you have identified.
 
-* v0.1 README
 
-The rest of the document is the contents of README when v0.1 was released in
-November 2011. Will retain here for a bit, for historic interest.
-
-** Introduction
-
-   There are not many open source tools available to sync Google Contacts and
-   Tasks to Outlook. PIM features and good integration with Outlook have been
-   working out of the box for years with Nokia feature phones and
-   Blackberries. However pure Android does not have any decent solutions for
-   this problem.
-
-   Gout is a google - outlook two way sync solution. For now we have support
-   for Contacts sync. We will eventually support Tasks as well. The basic idea
-   is to enable flexible two way sync from Outlook to Gmail, and let Google do
-   the remainder of the job of synching to your Android phone.
-
-** Why something new, why not try X?
-
-   Google has two tools for outlook "integration" - (a) a one way migration
-   tool, and a (b) two way sync solution for Google Apps for Enterprise
-   users. The second option does not work for me. The first option has severe
-   limitations:
-
-      - For starters, it is a one way migration tool, and does not work for
-       	someone who wants to maintain her Outlook contacts database as the
-       	primary store. 
-
-      - The migration tool is unbearably slow and is impossible to use on large
-       	contact lists on a regular basis.
-
-      - The tool will load all the contacts into your 'My Contacts' Group. If
-       	your Gmail contact list is polluted with a number of email-only
-       	contacts, this will not be a very pleasant experience.
-
-
-   EX email addresses: If your outlook contacts database has email addresses in
-   EX format, then most solutions out there will fail to do it for you. This
-   includes even one time migration solutions such as exporting to CSV and
-   importing into gmail and 2 way sync solutions that otherwise have been
-   reported to work well - like TouchDown for Outlook PST
-
-  There is a GPLed program written in C# called GoContactSync
-  (http://sourceforge.net/projects/gocontactsync) that claims to do two way
-  sync. But I have not given it a try as I do not know C# and had no interest
-  in learning it now.
-
-** Project Status
-
-   The project is under active development and is to be treated as
-   pre-alpha. It is only recommended for developers who don't mind pulling from
-   github and running a few python scripts by hand on Windows.
-
-** Installation Notes:
-
-** From Source
-
-   - Get the source using Git from github:
-
-     git clone git://github.com/skarra/Gout.git
- 
-   - Install the dependencies
-
-     - Python 2.7 http://www.python.org/download/releases/
-     - Pywin32 for Python 2.7 (http://sourceforge.net/projects/pywin32/files/pywin32)
-     - wxPython for Python 2.7 (http://www.wxpython.org/download.php)
-
-   Once all the packages are installed you can execute the main.py script
-   without any arguments to start the application.
-
-** From one of the packaged bundles
-
-   - Get a pre-packaged stable version from
-     https://github.com/skarra/Gout/downloads
-
-
-   - Unzip and execute the main.exe file in the unzipped directory
-
-** Dependencies
-   
-   The package downloads are intended to be self contained windows
-   executables. You should not need to download anything else, including
-   Python.
-
-   If you are started from the sources, you should have the dependencies listed
-   in the Installation Notes above.
-
-   In addition, if you are interested in building a windows executable bundle
-   then you will need:
-    
-    - pyinstaller 1.5.1 (http://files.zibricky.org/pyinst/pyinstaller-1.5.1.zip)
