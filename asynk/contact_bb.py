@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sun May 13 21:58:09 IST 2012
+## Last Modified : Sun May 13 22:50:19 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -334,6 +334,21 @@ class BBContact(Contact):
         else:
             self.add_phone_other(num)
 
+    def _add_im (self, label_re, label, value):
+        res = re.search(label_re, label)
+        if res:
+            try:
+                tag = res.group(1)
+            except IndexError, e:
+                tag = res.group(0)
+        else:
+            tag = label
+
+        if len(self.get_im()) == 0:
+            self.set_im_prim(tag)
+
+        self.add_im(tag, value)
+
     def _snarf_notes_from_parse_res (self, pr):
         """Parse the BBDB Notes entry; this contains most of the good
         stuff... including sync tags and stuff."""
@@ -374,8 +389,8 @@ class BBContact(Contact):
                 self.set_title(val)
             elif key == noted['dept']:
                 self.set_dept(val)
-            elif key == noted['ims']:
-                logging.info('IMs not supported in this version.')
+            elif re.search(noted['ims'], key):
+                self._add_im(noted['ims'], key, val)
             elif key == noted['notes']:
                 self.add_notes(val)
             elif key == noted['birthday']:
@@ -531,6 +546,25 @@ class BBContact(Contact):
         else:
             return '(' + ret + ')'
 
+    def _get_ims_as_string (self, ims=None):
+        if not ims:
+            ims = self.get_im()
+
+        # This is a trcky bit. If the IM label was a regular expression, then
+        # we need to generate the correctly formatted IM notes field... Hm.
+
+        im_label_re  = self.get_notes_map()['ims']
+        if re.search(r'(.*)', im_label_re):
+            im_label_fmt = string.replace(im_label_re, '(.*)', '%s')
+        else:
+            im_label_fmt = '%s'
+
+        ret = ''
+        for label, value in ims.iteritems():
+            ret += ' ('+ (im_label_fmt % label) + ' . ' + unchompq(value) + ')'
+
+        return ret
+
     def _get_notes_as_string (self):
         noted = self.get_notes_map()
         if not noted:
@@ -559,8 +593,8 @@ class BBContact(Contact):
             ret += '(%s . %s) ' % (noted['title'],   unchompq(t))
         if d:
             ret += '(%s . %s) ' % (noted['dept'],    unchompq(d))
-        if i:
-            logging.info('IMs not supported in this version')
+        if i and len(i) > 0:
+            ret += self._get_ims_as_string(i)
         if b:
             ret += '(%s . %s) ' % (noted['birthday'], unchompq(b))
         if a:

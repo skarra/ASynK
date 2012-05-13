@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Sat May 12 10:45:29 IST 2012
+// Last Modified : Sun May 13 22:04:21 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -237,7 +237,7 @@
                 'itemid'      : 'bbdb-id',
                 'web_home_re' : 'Web.*Home',  // Regexp
                 'web_work_re' : 'Web.*Work',  // Regexp
-                'ims'         : 'messenger',
+                'ims'         : 'im-(.*)',    // Regexp brackets are important.
                 'dept'        : 'department',
                 'title'       : 'title',
                 'gender'      : 'gender',
@@ -261,8 +261,7 @@
                 'fax_work'    : 'Fax.*Work',     // Regexp
                 'fax_other'   : 'Fax.*Other',    // Regexp
                 'phone_other' : '.*',            // Default Regexp
-            }, 
-
+            },
         }, // db_config['bb']
 
         'gc' : {

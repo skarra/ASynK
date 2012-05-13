@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sun May 13 13:11:26 IST 2012
+## Last Modified : Sun May 13 23:11:42 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -172,6 +172,8 @@ class GCContact(Contact):
         self._add_sync_tags_to_gce(gce)
 
         self._add_custom_props_to_gce(gce)
+
+        print gce.im[0]
 
         return self.set_gce(gce)
 
@@ -373,6 +375,21 @@ class GCContact(Contact):
                 elif site.rel == 'work':
                     self.add_web_work(site.href)
 
+    im_proto_label_map = {
+        'http://schemas.google.com/g/2005#AIM'         : 'AOL',
+        'http://schemas.google.com/g/2005#MSN'         : 'MSN',
+        'http://schemas.google.com/g/2005#YAHOO'       : 'Yahoo',
+        'http://schemas.google.com/g/2005#SKYPE'       : 'Skype',
+        'http://schemas.google.com/g/2005#QQ'          :  'QQ',
+        'http://schemas.google.com/g/2005#GOOGLE_TALK' : 'GTalk',
+        'http://schemas.google.com/g/2005#ICQ'         : 'ICQ',
+        'http://schemas.google.com/g/2005#JABBER'      : 'Jabber',
+    }
+
+    im_label_proto_map = {}
+    for key, val in im_proto_label_map.iteritems():
+        im_label_proto_map.update({val : key})
+
     def _snarf_ims_from_gce (self, ce):
         ## FIXME: The Google IMs list implementation is rather complex. There
         ## can be labels, rels, and protocols. They all appear
@@ -380,9 +397,25 @@ class GCContact(Contact):
         ## investigated. But this is a good start
         if ce.im:
             for im in ce.im:
-                self.add_im(im.label, im.address)
-                if im.primary:
-                    self.set_im_prim(im.address)
+                label = 'Default'         # this should never go 'on the wire'
+
+                if im.protocol:
+                    label = self.im_proto_label_map[im.protocol]
+                elif im.label:
+                    label = im.label
+                else:
+                    ## No protocol, and no label. We need to do some general
+                    ## stuff here...
+                    rel_re = 'http://schemas.google.com/g/2005#(.*)'
+                    res = re.search(rel_re, im.rel)
+                    if res:
+                        label = res.group(1)
+                    else:
+                        label = 'Other'   # Hm, alright. I give up
+                    
+                self.add_im(label, im.address)
+                if im.primary == 'true':
+                    self.set_im_prim(label)
 
     def _snarf_sync_tags_from_gce (self, ce):
         if ce.user_defined_field:
@@ -688,8 +721,17 @@ class GCContact(Contact):
     def _add_ims_to_gce (self, gce):
         im_prim = self.get_im_prim()
         for label, addr in self.get_im().iteritems():
-            prim = 'true' if im_prim == addr else 'false'
-            im = gdata.data.Im(label=label, address=addr, primary=prim)
+            prim = 'true' if im_prim == label else 'false'
+
+            proto = None
+            rel   = None
+            if label in self.im_label_proto_map:
+                proto = self.im_label_proto_map[label]
+                label = None
+                rel   = 'http://schemas.google.com/g/2005#other'
+
+            im = gdata.data.Im(label=label, protocol=proto, rel=rel,
+                               address=addr, primary=prim)
             gce.im.append(im)
 
     def _add_sync_tags_to_gce (self, gce):
