@@ -3,6 +3,7 @@
 * {
     margin: 0;
     padding: 0;
+    font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
 }
 
 html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre,
@@ -539,11 +540,11 @@ footer p {
   font-weight: bold;
 }
 
-a {
+a, .announce_download {
     text-decoration: none;
 }
 
-a:link {
+a:link, .announce_download {
     color: #888888;
 }
 
@@ -551,8 +552,10 @@ a:visited {
     color: #bbbbbb;
 }
 
-a:hover {
+a:hover, .announce_download:hover {
     color: blue;
+    cursor: pointer;
+    cursor: hand;
 }
 
 li { 
@@ -562,4 +565,8 @@ li {
 p { 
     margin-top: 0.9em;
     margin-bottom: 0.9em; 
+}
+
+.announce_title {
+    color: green;
 }
