@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sat May 12 10:39:40 IST 2012
+## Last Modified : Sun May 13 21:58:09 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -477,7 +477,7 @@ class BBContact(Contact):
             comp.insert(0, unchompq(comp1))
             return ('(' + ' '.join(comp) + ')')
         else:
-            return 'nil'
+            return ('(' + unchompq(comp1) + ')')
 
     def _get_emails_as_string (self):
         ems = [unchompq(e) for e in self.get_email_home()]
