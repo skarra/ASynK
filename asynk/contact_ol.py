@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Sat May 12 10:40:05 IST 2012
+## Last Modified : Sun May 13 13:16:06 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -159,12 +159,16 @@ class OLContact(Contact):
     ##
 
     def save (self):
-        """Saves the current contact to Outlook so it is persistent. Returns
-        the itemid for the saved entry. Returns None in case of an error"""
+        """Saves the current (new) contact to Outlook so it is
+        persistent. Returns the itemid for the saved entry. Returns None in
+        case of an error"""
 
         ## FIXME: This only takes care of new insertions. In-place updates are
-        ## not taken care of by this. The situation needs fixing on a fairly
-        ## urgent basis.
+        ## not taken care of by this. As of this time (May 2012) this method
+        ## is only invoked for new contact creations. Updates are handld
+        ## differently - see folder_ol:batch_update(), so this is not a bug,
+        ## just that it would be good to have a single method deal with both
+        ## cases.
 
         fobj = self.get_folder().get_fobj()
         msg = fobj.CreateMessage(None, 0)
@@ -363,10 +367,6 @@ class OLContact(Contact):
         self.set_entryid(self.get_itemid())
 
     def _snarf_names_gender_from_olprops (self, olpd):
-        ## FIXME: I suppose there must be some way MAPI uses the firstname and
-        ## lastname etc instead of just the full display name. Learn to handle
-        ## it.
-
         self.set_firstname(self._get_olprop(olpd, mt.PR_GIVEN_NAME))
         self.set_middlename(self._get_olprop(olpd, mt.PR_MIDDLE_NAME))
         self.set_lastname(self._get_olprop(olpd, mt.PR_SURNAME))
@@ -807,7 +807,6 @@ class OLContact(Contact):
             olprops.append((mt.PR_DEPARTMENT_NAME, dept))
 
     def _add_phones_and_faxes_to_olprops (self, olprops):
-        ## FIXME: We have to deal with more than two phone numbers each
         ph  = self.get_phone_home()
         if len(ph) >= 1:
             label, num = ph[0]
