@@ -1,6 +1,8 @@
 body {
     font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
     margin-top: 20px;
+    padding-right: 20px;
+    margin-right: 20px;
     font-size: 14px;
     line-height: 140%;
     background: url('/images/ricepaper.png?881083570');   
@@ -70,3 +72,10 @@ a:active {
 li { 
     margin-top: 0.5em; 
 }
+
+kbd, pre.verbatim {
+    font-size: 80%;
+    font-family: courier;
+    color: blue;
+}
+
