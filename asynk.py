@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Sat May 12 20:29:34 IST 2012
+## Last Modified : Sun May 13 08:44:08 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -65,6 +65,8 @@ def main (argv=sys.argv):
     config =  Config('./config.json', './state.json')
     setup_logging(config)
 
+    logging.debug('Command line: "%s"', ' '.join(sys.argv))
+
     parser  = setup_parser()
     uinps = parser.parse_args()
     try:
@@ -106,15 +108,14 @@ def setup_logging (config):
 
     stamp   = string.replace(str(datetime.datetime.now()), ' ', '.')
     stamp   = string.replace(stamp, ':', '-')
-    logname = logdir + '/asynk_logs.' + stamp
-    logname = os.path.abspath(logname)
+    logname = os.path.abspath(os.path.join(logdir, 'asynk_logs.' + stamp))
     logging.info('Debug logging to file: %s', logname)
 
     fileLogger = logging.FileHandler(logname, 'w')
     fileLogger.setLevel(logging.DEBUG)
     fileLogger.setFormatter(formatter)
     logger.addHandler(fileLogger)
-
+    
 def setup_parser ():
     p = argparse.ArgumentParser(description='ASynK: PIM Awesome Sync by Karra')
     p.add_argument('--dry-run', action='store_true',
