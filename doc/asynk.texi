@@ -77,11 +77,12 @@ PIM DBs (for Personal Information Management Databases)
 
 @item
 ASynK is the only two-way synchronization software for BBDB known to be in
-existence today. So if you are keen to keep BBDB content synchronized with a
+existence today. So if you are keen to keep your BBDB content synchronized with a
 mobile device or Outlook, look no further.
 
 @item
-ASynK works on Windows, MacOS X, and Linux
+ASynK works on Windows, MacOS X, and Linux. Outlook synchronization
+only works on Windows.
 
 @item
 Synchronization is granular to the level of 'Folders', i.e. you can
