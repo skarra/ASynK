@@ -379,17 +379,43 @@ header #sections li {
     background: #d6d6d6;
 }
 
-.footer {
-    font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
+#container {
+  clear: both;
+  min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  margin-bottom: -40px;
+}
+
+#container #main_footer {
+  height: 40px;
+}
+
+footer {
     clear: both;
-    font-size: 90%;
-    text-align: center;
-    width: 90%;
     position: relative;
-    margin-top: -50px; /* negative value of footer height */
-    height: 50px;
-    margin: 0 auto;
-    float: center:
+    height: 40px;
+    text-align: center;
+    font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
+    font-size: 90%;
+    color: #888888;
+
+    background: url('/images/paper.jpg?884184256');
+    -moz-box-shadow: -5px -1px 5px rgba(0, 0, 0, 0.4);
+    -webkit-box-shadow: -5px -1px 5px rgba(0, 0, 0, 0.4);
+    -o-box-shadow: -5px -1px 5px rgba(0, 0, 0, 0.4);
+    box-shadow: -5px -1px 5px rgba(0, 0, 0, 0.4);
+}
+
+footer p {
+  padding: 3px;
+  margin: 0;
+}
+
+.bp footer p {
+  border-top: 1px solid #afafaf;
+  padding: 10px 20px;
+  margin: 0;
 }
 
 #nav a { 
