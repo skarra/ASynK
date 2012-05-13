@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Sun May 13 08:44:08 IST 2012
+## Last Modified : Sun May 13 13:08:46 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -529,10 +529,6 @@ class Asynk:
         f2, t  = db2.find_folder(conf.get_fid2(pname))
         hr = hr and f2.bulk_clear_sync_flags(label_re=label_re)
         
-        ## Finally delete the profile from state.json and save the
-        ## file. Perhaps we could check for sucess of the clear operations
-        ## before we do this... Makes sense to implement. FIXME
-
         if hr:
             del profiles[pname]
             conf.set_profiles(profiles)

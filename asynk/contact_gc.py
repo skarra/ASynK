@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sat May 12 10:39:55 IST 2012
+## Last Modified : Sun May 13 13:11:26 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -538,11 +538,6 @@ class GCContact(Contact):
     def _add_postal_to_gce (self, gce):
         """Insert the address fields from current contact object into the
         ContactEntry object."""
-
-        ## FIXME: We should really handle all sorts of addresses not just HOME
-        ## addresses, and also deal with the structured nature of these
-        ## addresses as Google itself provides some amount of support. The
-        ## address handling in general is a mess...
 
         postals = self.get_postal(as_array=True)
         for label, postal in postals:
