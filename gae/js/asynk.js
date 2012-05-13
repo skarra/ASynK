@@ -1,6 +1,6 @@
 // 
 // Created       : Sat May 05 13:15:20 IST 2012
-// Last Modified : Sat May 12 17:54:57 IST 2012
+// Last Modified : Sun May 13 14:09:30 IST 2012
 //
 // Copyright (C) 2012, Sriram Karra <karra.etc@gmail.com>
 // All Rights Reserved
@@ -21,6 +21,11 @@ function addFormHandlers () {
 	$("#home_text").css({display : "block"});
     })
 
+    $("#announce").mouseenter(function () {
+	hideAllSheetDivs()
+	$("#announce_text").css({display : "block"})
+    })
+
     $("#downloads").mouseenter(function () {
 	hideAllSheetDivs()
 	$("#downloads_text").css({display : "block"})
@@ -34,6 +39,10 @@ function addFormHandlers () {
     $("#about").mouseenter(function () {
 	hideAllSheetDivs()
 	$("#about_text").css({display : "block"})
+    })
+
+    $(".announce_download").click(function () {
+	$("#downloads").mouseenter();
     })
 }
 
