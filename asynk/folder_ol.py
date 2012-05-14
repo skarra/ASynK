@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sat May 12 10:40:52 IST 2012
+## Last Modified : Mon May 14 07:15:33 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -128,6 +128,8 @@ class OLFolder(Folder):
 
             if mt.PROP_TYPE(gid_tag) == mt.PT_ERROR:
                 # Was not synced for whatever reason.
+                logging.debug('New      Outlook Contact: %20s %s', 
+                              name, b64_entryid)
                 sl.add_new(b64_entryid)
             else:
                 if mt.PROP_TYPE(tt) == mt.PT_ERROR:
@@ -136,6 +138,8 @@ class OLFolder(Folder):
                     if utils.utc_time_to_local_ts(modt) <= synct:
                         sl.add_unmod(b64_entryid)
                     else:
+                        logging.debug('Modified Outlook Contact: %20s %s', 
+                                      name, b64_entryid)
                         sl.add_mod(b64_entryid, gid)
 
             i += 1

@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sat May 12 10:40:30 IST 2012
+## Last Modified : Mon May 14 00:52:01 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -85,10 +85,14 @@ class BBContactsFolder(Folder):
                                   iid)
                 else:
                     if upd > updated_min:
+                        logging.debug('Modified BBDB Contact: %20s %s', 
+                                      con.get_name(), iid)
                         sl.add_mod(iid, did)
                     else:
                         sl.add_unmod(iid)
             else:
+                logging.debug('New      BBDB Contact: %20s %s', 
+                              con.get_name(), iid)
                 sl.add_new(iid)
 
     def find_item (self, itemid):
