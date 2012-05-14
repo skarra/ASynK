@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sat May 12 10:40:41 IST 2012
+## Last Modified : Mon May 14 00:46:15 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -139,6 +139,13 @@ class GCContactsFolder(Folder):
             olid = get_udp_by_key(entry.user_defined_field, stag)
             etag = entry.etag
             epd  = entry.deleted
+            name = None
+            if entry.name.full_name:
+                name = entry.name.full_name.text
+            elif entry.name.family_name:
+                name = entry.name.family_name.text
+            elif entry.name.given_name:
+                name = entry.name.given_name.text
 
             if epd:
                 if olid:
@@ -149,8 +156,12 @@ class GCContactsFolder(Folder):
                     continue
             else:
                 if olid:
+                    logging.debug('Modified Google Contact: %20s %s', 
+                                  name, gcid)
                     sl.add_mod(gcid, olid)
                 else:
+                    logging.debug('New      Google Contact: %20s %s', 
+                                  name, gcid)
                     sl.add_new(gcid)
 
             if etag:
