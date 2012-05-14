@@ -1,7 +1,13 @@
 Created       : Wed Aug 24 22:41:42 IST 2011
-Last Modified : Sun May 13 13:51:23 IST 2012
+Last Modified : Mon May 14 14:30:45 IST 2012
 
-* Introduction
+This is only a short introduction and some key points of interest. For more
+details on how to use ASynK please refer to the included documentation, or the
+official website for ASynK is at: http://karra-asynk.appspot.com You will find
+links to latest download, complete documentaiton, and other information on
+that website.
+
+* About
 
   ASynK - Awesome Sync (by Karra), is a flexible PIM synchronization platform
   written in Python. ASynK was earlier known as Gout. High level features
@@ -28,15 +34,26 @@ Last Modified : Sun May 13 13:51:23 IST 2012
 
   - It is free software, and released under the GNU AGPL version 3
 
-* Getting It
+* Installation
 
-   The official website for ASynK is at: http://karra-asynk.appspot.com You
-   will find links to latest download, complete documentaiton, and other
-   information on that website.
+** Dependencies
 
-   The source code for ASynK is hosted on Github at:
-   https://github.com/skarra/AsynK (earlier hosted at:
-   https://github.com/skarra/Gout) Visit the site to grab the bleeding edge
-   development version, or to register an issue you have identified.
+   - You need Python (tested with 2.7, try earlier versions at your
+     descretion)
 
+   - If you wish to sync to Outlook you can do that only on Windows. Further
+     you will need MS Outlook installed, along with a third party python
+     library called Pywin32 from Mark Hammond
 
+   - Detailed documentation is avaialble in various formats on the project
+     page and in the pre-packaged bundles. The source repository has the
+     documentattion source in Texinfo format. If you wish to convert the .texi
+     file to other formats you need a bunch of tools, including autoconf (>
+     2.64), automake (> 1.11), and texi tools like texi2dvi, texi2html,
+     etc. If you think it is too much, it probably is. Most people should not
+     need this.
+
+** Usage
+
+   Refer to the documentation. You could also start with 'python asynk.py -h'
+   from the root directory of the downloaded source tree.
