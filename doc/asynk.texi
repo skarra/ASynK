@@ -132,10 +132,11 @@ instructions given in the @ref{Using ASynK, Using ASynK}, section below.
 @url{http://www.python.org/download/releases/}
 
 @item
-@strong{autoconf} suite of tools are needed if you want to build the
+Optionally, recent versions of @strong{autoconf} suite of tools (> 2.64 of
+autconfig and > 1.11 of automake) are needed if you want to build the
 documentatation from the source texi files. It is not required if you only
 want to execute the ASynK program. The latest documentation is available on
-the project website on appspot.com
+the project website on appspot.com.
 @end enumerate
 
 @subsection Windows / Outlook Specific Dependencies
@@ -999,6 +1000,58 @@ More to come here
 @chapter FAQ
 
 Here are some Frequently Ask-able Questions, along with answers.
+
+@section Installation & Build
+
+@subsection Get the error @kbd{error: possibly undefined macro: AM_INIT_AUTOMAKE} running autoconf
+Firstly, you only need to do autconf if you want to rebuild the
+documentation - which you could get on the main website at
+@url{http://karra-asynk.appspot.com}
+
+If you really want to build the docs, make sure you have the latest versions
+of autoconf. Check the versions you have by looking at the ouptut of the
+following commands:
+
+@verbatim
+   $ autoconf --version # should be greater than 2.64
+   $ automake --version # should be greater than 1.11
+@end verbatim
+
+If you do not have the minimum versions specified above, you should upgrade to
+recent versions using your system package manager
+
+@subsection I get an error @kbd{'configure: error: cannot find install-sh, install.sh, or shtool in "." "./.." "./../.."}
+
+You have ignored errors in previous steps of the build process, which
+originally stem from old version of autotools. Refer to the question above.
+
+@subsection I am on MacOS X and how can I upgrde autoconf; homebrew does not cut it
+
+The autotools formulae in homebrew are 'keg-only', meaning once you install
+them using 'brew install automake', it is installed to the Cellar directory
+(such as /usr/local/Cellar/automake/1.11.3/) but is not sym-linked to
+/usr/local/ like a normal installation. This is to prevent unwanted
+dependencies between the system version of these tools and the brew versions.
+
+The following has been known to work on MacOS X:
+
+@enumerate
+@item
+Install the brew versions of autoconf and automake (brew install automake &&
+brew install autoconf)
+
+@item
+$ mkdir -p /usr/local/upgraded/bin
+
+@item
+make sym links to all programs installed by brew in Step 1 in /usr/local/upgraded/bin/
+   
+@item
+edit /etc/paths and put /usr/local/upgraded/bin/ at the top of the file in line 1.
+
+@item
+Now go back to using autoconf
+@end enumerate
 
 @section What's Changed between v0.1 and v0.2?
 It's almost a total rewrite. Here are main changes:
