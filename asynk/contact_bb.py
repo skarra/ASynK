@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sun May 13 22:50:19 IST 2012
+## Last Modified : Mon May 14 07:06:23 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -399,10 +399,10 @@ class BBContact(Contact):
                 val = string.replace(val, '\\n', '\n')
                 self.add_notes(val)
             elif key == noted['birthday']:
-                if self._is_valid_date(val):
+                if self._is_valid_date(val, noted['birthday']):
                     self.set_birthday(val)
             elif key == noted['anniv']:
-                if self._is_valid_date(val):
+                if self._is_valid_date(val, noted['anniv']):
                     self.set_anniv(val)
             elif re.search(stag_re, key):
                 self.update_sync_tags(key.rstrip(), val)
@@ -411,7 +411,7 @@ class BBContact(Contact):
             elif re.search(noted['web_work_re'], key):
                 self.add_web_work(val)
             elif re.search(noted['middle_name'], key):
-                self.add_middlename(val)
+                self.set_middlename(val)
             elif re.search(noted['folder'], key):
                 self.set_bbdb_folder(val)
                 custom.update({key : val})
