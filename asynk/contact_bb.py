@@ -394,6 +394,9 @@ class BBContact(Contact):
             elif re.search(noted['ims'], key):
                 self._add_im(noted['ims'], key, val)
             elif key == noted['notes']:
+                ## Undo any replacements we might have done earlier
+                val = string.replace(val, r'\"', '"')
+                val = string.replace(val, '\\n', '\n')
                 self.add_notes(val)
             elif key == noted['birthday']:
                 if self._is_valid_date(val):
@@ -602,9 +605,11 @@ class BBContact(Contact):
         if a:
             ret += '(%s . %s) ' % (noted['anniv'], unchompq(a))
         if n and len(n) > 0 and n[0]:
-            ## BBDB cannot handle actual line breaks. We need to quote
-            ## them. And convert the dos line endings while we are at it...
-            no = string.replace(n[0], '\r\n', '\\n')
+            ## BBDB cannot handle actual line breaks and double quotes. We
+            ## need to quote them. And convert the dos line endings while we
+            ## are at it...
+            no = string.replace(n[0], '"', r'\"')
+            no = string.replace(no, '\r\n', '\\n')
             no = string.replace(no, '\n', '\\n')
             ret += '(%s . %s) ' % (noted['notes'], unchompq(no))
         if m and m != '':
