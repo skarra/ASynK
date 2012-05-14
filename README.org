@@ -1,5 +1,5 @@
 Created       : Wed Aug 24 22:41:42 IST 2011
-Last Modified : Mon May 14 14:30:45 IST 2012
+Last Modified : Mon May 14 22:31:36 IST 2012
 
 This is only a short introduction and some key points of interest. For more
 details on how to use ASynK please refer to the included documentation, or the
@@ -45,13 +45,24 @@ that website.
      you will need MS Outlook installed, along with a third party python
      library called Pywin32 from Mark Hammond
 
-   - Detailed documentation is avaialble in various formats on the project
-     page and in the pre-packaged bundles. The source repository has the
-     documentattion source in Texinfo format. If you wish to convert the .texi
-     file to other formats you need a bunch of tools, including autoconf (>
-     2.64), automake (> 1.11), and texi tools like texi2dvi, texi2html,
-     etc. If you think it is too much, it probably is. Most people should not
-     need this.
+** Building Documentation
+
+   There is no build or installation required to use the main program. You can
+   go the section on Usage below.
+
+   If you wish to build the documentation from source, you will have to
+   execute the following commands in order from the root directory, i.e where
+   you have the configure.ac file
+
+   $ autoreconf
+   $ automake --add-missing
+   $ ./configure
+   $ make 
+
+   You may have to install additional programs like makeinfo and other TeX
+   related programs. 
+   
+   You will need autoconf (>2.64), automake (> 1.11) for the above to work.
 
 ** Usage
 

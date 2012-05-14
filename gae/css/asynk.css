@@ -545,11 +545,11 @@ a, .announce_download {
 }
 
 a:link, .announce_download {
-    color: #888888;
+    color: #777777;
 }
 
 a:visited {
-    color: #bbbbbb;
+    color: #aaaaaa;
 }
 
 a:hover, .announce_download:hover {
