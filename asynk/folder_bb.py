@@ -115,12 +115,16 @@ class BBContactsFolder(Folder):
             self.set_dirty()
 
         for item in items:
-            bbc = BBContact(self, con=item)
-            bbc.update_sync_tags(src_tag, item.get_itemid())
-            bbc.set_updated(pimdb_bb.BBPIMDB.get_bbdb_time())
-            self.add_contact(bbc)
+            try:
+                bbc = BBContact(self, con=item)
+                bbc.update_sync_tags(src_tag, item.get_itemid())
+                bbc.set_updated(pimdb_bb.BBPIMDB.get_bbdb_time())
+                self.add_contact(bbc)
 
-            item.update_sync_tags(dst_tag, bbc.get_itemid())
+                item.update_sync_tags(dst_tag, bbc.get_itemid())
+            except BBDBParseError, e:
+                logging.error('Could not instantiate BBDBContact object: %s',
+                              str(e))
 
         try:
             self.get_store().save_file()

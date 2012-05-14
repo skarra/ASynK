@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Sat May 12 10:41:34 IST 2012
+## Last Modified : Mon May 14 00:00:44 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -23,7 +23,7 @@ import codecs, datetime, logging, os, re, shutil, string, time
 from   pimdb        import PIMDB
 from   folder       import Folder
 from   folder_bb    import BBContactsFolder
-from   contact_bb   import BBContact
+from   contact_bb   import BBContact, BBDBParseError
 import utils
 
 ## Note: Each BBDB File is a message store and there are one or more folders
@@ -268,7 +268,13 @@ class MessageStore:
                 if re.search('^;', ff):
                     continue
 
-                c  = BBContact(def_f, rec=ff.rstrip())
+                try:
+                    c  = BBContact(def_f, rec=ff.rstrip())
+                except BBDBParseError, e:
+                    logging.error('Could not instantiate BBDBContact object: %s',
+                                  str(e))
+                    continue
+
                 fn = c.get_bbdb_folder()
 
                 if fn:
