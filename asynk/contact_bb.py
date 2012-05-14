@@ -30,6 +30,9 @@ from   contact    import Contact
 from   utils      import chompq, unchompq
 import demjson, pimdb_bb, folder_bb, utils
 
+class BBDBParseError(Exception):
+    pass
+
 class BBContact(Contact):
     """This class extends the Contact abstract base class to wrap a BBDB
     Contact"""
@@ -120,8 +123,7 @@ class BBContact(Contact):
         parse_res = re.search(con_re, rec)
 
         if not parse_res:
-            logging.critical('Could not Parse BBDB contact entry: %s', rec)
-            return
+            raise BBDBParseError('Could not Parse BBDB contact entry: %s' %rec)
 
         d = parse_res.groupdict()
         self._snarf_names_from_parse_res(d)
