@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sun May 13 23:11:42 IST 2012
+## Last Modified : Mon May 14 00:53:02 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -172,8 +172,6 @@ class GCContact(Contact):
         self._add_sync_tags_to_gce(gce)
 
         self._add_custom_props_to_gce(gce)
-
-        print gce.im[0]
 
         return self.set_gce(gce)
 
@@ -796,129 +794,3 @@ class GCContact(Contact):
     #     ce.user_defined_field.append(ud)
 
     #     return ce
-
-def main ():
-    tests = TestGCContact()
-    #tests.test_sync_status()
-    #tests.test_del_item('http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/1fabc8309273c15')
-    # tests.test_del_item('http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/1fabc8309273c15')
-
-class TestGCContact:
-    def __init__ (self):
-        from   pimdb_gc   import GCPIMDB
-        from   state      import Config
-
-        config = Config('../app_state.json')
-        # The following is the 'Gout' group on karra.etc@gmail.com
-        self.gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/41baff770f898d85'
-
-        # Parse command line options
-        try:
-            opts, args = getopt.getopt(sys.argv[1:], '', ['user=', 'pw='])
-        except getopt.error, msg:
-            print 'python gc_wrapper.py --user [username] --pw [password]'
-            sys.exit(2)
-
-        user = ''
-        pw = ''
-        # Process options
-        for option, arg in opts:
-            if option == '--user':
-                user = arg
-            elif option == '--pw':
-                pw = arg
-
-        while not user:
-            user = raw_input('Please enter your username: ')
-
-        while not pw:
-            pw = raw_input('Password: ')
-            if not pw:
-                print 'Password cannot be blank'
-
-        try:
-            self.pimdb = GCPIMDB(config, user, pw)
-        except gdata.client.BadAuthentication:
-            print 'Invalid credentials. WTF.'
-            raise
-
-    def find_group (self, gid):
-        #    sample.print_groups()
-        self.gout, ftype = self.pimdb.find_folder(gid)
-        if self.gout:
-            print 'Found the sucker. Name is: ', self.gout.get_name()
-            return self.gout
-        else:
-            print 'D''oh. Folder not found.'
-            return
-
-    def test_find_item (self, gcid):
-        f = self.find_group(self.gid)
-        gce = f.get_gdc().GetContact(gcid)
-        logging.debug('ID  : %s', gcid)
-        logging.debug('Name: %s', gce.name.text if gce.name else None)
-
-    def test_del_item (self, gcid):
-        f = self.find_group(self.gid)
-        gce = f.get_gdc().GetContact(gcid)
-        f.get_gdc().Delete(gce)
-
-    def test_create_contact (self, f=None):
-        if not f:
-            f = self.gout
-
-        c = GCContact(f)
-        c.set_name("ScrewBall Joseph")
-
-        cid = c.save()
-        if cid:
-            print 'Successfully added contact. ID: ', cid
-        else:
-            print 'D''oh. Failed.'
-
-    def get_folder_contacts (self, f, cnt=0):
-        """A thought out version of this routine will eventually go as a
-        method of GCFolder class.."""
-
-        logging.info('Querying Google for status of Contact Entries...')
-
-        updated_min = f.get_config().get_last_sync_stop('gc', 'ol')
-        feed = f._get_group_feed(updated_min=updated_min, showdeleted='false')
-
-        logging.info('Response recieved from Google. Processing...')
-
-        if not feed.entry:
-            logging.info('No entries in feed.')
-            return
-
-        contacts = []
-        for i, entry in enumerate(feed.entry):
-            c = GCContact(f, gce=entry)
-            contacts.append(c)
-
-        return contacts
-
-    def test_fetch_group_entries (self, gid=None):
-        if not gid:
-            gid = self.gid
-
-        f  = self.find_group(gid)
-        cs = self.get_folder_contacts(f)
-        print 'Got %d entries\n' % len(cs)
-        for i, c in enumerate(cs):
-            print 'Contact No %d: ' % i
-            print str(c)
-
-    def test_sync_status (self, gid=None):
-        from   sync       import SyncLists
-
-        if not gid:
-            gid = self.gid
-
-        f = self.find_group(gid)
-        sl = SyncLists(f, 'ol')
-        f.prep_sync_lists('ol', sl)
-
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.DEBUG)
-    main()
