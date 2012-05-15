@@ -1,5 +1,5 @@
 Created       : Wed Aug 24 22:41:42 IST 2011
-Last Modified : Mon May 14 22:31:36 IST 2012
+Last Modified : Tue May 15 09:47:27 IST 2012
 
 This is only a short introduction and some key points of interest. For more
 details on how to use ASynK please refer to the included documentation, or the
@@ -54,10 +54,10 @@ that website.
    execute the following commands in order from the root directory, i.e where
    you have the configure.ac file
 
-   $ autoreconf
-   $ automake --add-missing
-   $ ./configure
-   $ make 
+   - $ autoreconf
+   - $ automake --add-missing
+   - $ ./configure
+   - $ make 
 
    You may have to install additional programs like makeinfo and other TeX
    related programs. 
