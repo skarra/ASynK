@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Mon May 14 00:52:01 IST 2012
+## Last Modified : Tue May 15 11:17:12 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -105,7 +105,7 @@ class BBContactsFolder(Folder):
 
         return [self.find_item(i) for i in itemids]
 
-    def batch_create (self, src_sl, src_dbid, items):
+    def batch_create (self, src_sl, src_dbid, items, op='create'):
         """See the documentation in folder.Folder"""
 
         my_dbid = self.get_dbid()
@@ -126,6 +126,8 @@ class BBContactsFolder(Folder):
                 self.add_contact(bbc)
 
                 item.update_sync_tags(dst_tag, bbc.get_itemid())
+                logging.info('Successfully %sd BBDB entry for %30s (%s)',
+                             op, bbc.get_name(), bbc.get_itemid())
             except BBDBParseError, e:
                 logging.error('Could not instantiate BBDBContact object: %s',
                               str(e))
@@ -151,7 +153,7 @@ class BBContactsFolder(Folder):
         ## helps. Life would be a lot more complicated if we had to do live
         ## updates to the disk
 
-        return self.batch_create(sync_list, src_dbid, items)
+        return self.batch_create(sync_list, src_dbid, items, op='update')
 
     def writeback_sync_tags (self, pname, items):
         logging.debug('bb:wst: Dirty flag: %s', self.is_dirty())
