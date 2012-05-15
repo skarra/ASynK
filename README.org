@@ -45,6 +45,10 @@ that website.
      you will need MS Outlook installed, along with a third party python
      library called Pywin32 from Mark Hammond
 
+   - On Debian (and likely Ubuntu) you will need the following packages:
+        sudo apt-get install python-argparse
+        
+
 ** Building Documentation
 
    There is no build or installation required to use the main program. You can
