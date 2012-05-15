@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Mon May 14 07:06:23 IST 2012
+## Last Modified : Tue May 15 17:12:13 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -308,7 +308,7 @@ class BBContact(Contact):
                         phnum = chompq(resg['unstructured'])
 
                     label = chompq(resg['phlabel'])
-                    self._classify_and_add_phone(label, (label, phnum))
+                    self._classify_and_add_phone(label, phnum)
                 else:
                     logging.debug('Could not parse phone: %s', ph[0])
 
