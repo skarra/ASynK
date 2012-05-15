@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Mon May 14 00:53:02 IST 2012
+## Last Modified : Tue May 15 17:02:24 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -329,9 +329,9 @@ class GCContact(Contact):
                     elif re.search('Mobile', label):
                         self.add_phone_mob((label, num))
     
-                    elif re.search('Home', label):
+                    elif re.search('Home Fax', label):
                         self.add_fax_home(('Home', num))
-                    elif re.search('Work', label):
+                    elif re.search('Work Fax', label):
                         self.add_fax_work(('Work', num))                    
                 else:
                     if ph.rel == gdata.data.HOME_REL:
@@ -667,8 +667,7 @@ class GCContact(Contact):
                 continue
             prim = 'true' if fa == fax_prim else 'false'
             fax  = gdata.data.PhoneNumber(text=fa, primary=prim,
-                                           label=label,
-                                           rel=gdata.data.HOME_FAX_REL)
+                                           label=label)
             gce.phone_number.append(fax)
 
         for label, fa in self.get_fax_work():
@@ -676,8 +675,7 @@ class GCContact(Contact):
                 continue
             prim = 'true' if fa == fax_prim else 'false'
             fax  = gdata.data.PhoneNumber(text=fa, primary=prim,
-                                           label=label,
-                                           rel=gdata.data.WORK_FAX_REL)
+                                           label=label)
             gce.phone_number.append(fax)
 
     def _add_dates_to_gce (self, gce):
