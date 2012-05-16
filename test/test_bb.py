@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sat May 12 10:43:45 IST 2012
+## Last Modified : Tue May 15 17:06:19 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -43,7 +43,12 @@ def main (argv=None):
     tests = TestBBContact(config_fn='../config.json',
                           state_fn='../state.json',
                           bbfn=bbfn)
-    tests.print_contacts(name="Amma")
+    if len(sys.argv) > 2:
+        name = sys.argv[2]
+    else:
+        name = 'Amma'
+
+    tests.print_contacts(name=name)
     # tests.write_to_file()
 
 class TestBBContact:
