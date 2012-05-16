@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Wed May 16 13:47:02 IST 2012
+## Last Modified : Wed May 16 14:04:07 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -218,6 +218,7 @@ class MessageStore:
             ff = bbf.readline()
             if re.search('coding:', ff):
                 # Ignore first line if it is: ;; -*-coding: utf-8-emacs;-*-
+                self.append_preamble(ff)
                 ff = bbf.readline()
 
             # Processing: ;;; file-format: 8
@@ -226,13 +227,16 @@ class MessageStore:
                 bbf.close()
                 raise BBDBFileFormatError('Unrecognizable format line: %s' % ff)
 
+            self.append_preamble(ff)
             ver = res.group(2)
             self.set_file_format(ver)
 
-            if int(ver) < 7:
+            supported = self.get_db().supported_file_formats()
+            if not ver in supported:
                 bbf.close()
-                raise BBDBFileFormatError(('Need minimum file format ver 7. ' +
-                                          '. File version is: %s' ) % ver)
+                raise BBDBFileFormatError(('Cannot process file "%s" '
+                                           '(version %s). Supported versions '
+                                           'are: %s' % (fn, ver, supported)))
 
             ## Now fetch and set up the parsign routines specific to the file
             ## format 
@@ -245,6 +249,7 @@ class MessageStore:
                     break
 
                 if re.search('^;', ff):
+                    self.append_preamble(ff)
                     continue
 
                 try:
@@ -280,8 +285,7 @@ class MessageStore:
         logging.info('Saving BBDB File %s...', fn)
 
         with codecs.open(fn, 'w', encoding='utf-8') as bbf:
-            bbf.write(';; -*-coding: utf-8-emacs;-*-\n')
-            bbf.write(';;; file-format: 7\n')
+            bbf.write(self.get_preamble())
 
             for name, f in self.get_folders().iteritems():
                 f.write_to_file(bbf)
@@ -308,6 +312,9 @@ class BBPIMDB(PIMDB):
     ##
     ## First implementation of the abstract methods of PIMDB.
     ##
+
+    def supported_file_formats (self):
+        return self.get_regexes().keys()
 
     def get_dbid (self):
         """See the documentation in class PIMDB"""
@@ -350,8 +357,11 @@ class BBPIMDB(PIMDB):
 
         return ms
 
-    def get_regexes (self, ver):
-        return self.regexes[ver]
+    def get_regexes (self, ver=None):
+        if ver:
+            return self.regexes[ver]
+        else:
+            return self.regexes
 
     def set_regexes (self, rg):
         self.regexes = rg
