@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sat May 12 10:39:16 IST 2012
+## Last Modified : Wed May 16 23:11:43 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -474,6 +474,9 @@ class Contact(Item):
         return self._set_prop('phone_home', val)
 
     def add_phone_home (self, val):
+        if not self.in_init():
+            self.dirty(True)
+
         return self._append_to_prop('phone_home', val)
 
     def get_phone_work (self):
