@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Tue May 15 17:22:51 IST 2012
+## Last Modified : Wed May 16 18:56:26 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -162,9 +162,14 @@ class BBContact(Contact):
 
         # FIXME: Just what the hell is an 'Affix'? Just use the first one and
         # ditch the rest.
-        affix = pr['affix']
-        if affix and affix != 'nil':
-            self.set_suffix(chompq(affix[0]))
+        try:
+            affix = pr['affix']
+            if affix and affix != 'nil':
+                self.set_suffix(chompq(affix[0]))
+        except KeyError, e:
+            ## FIXME: There should be a better way to handle the format
+            ## differences.... for now we'll put up with the hacks
+            self.set_suffix(None)
 
     def _snarf_aka_from_parse_res (self, pr):
         aka = pr['aka']
@@ -191,8 +196,18 @@ class BBContact(Contact):
             ## push into the custom field (as aa json encoded string)
             str_re = self.get_store().get_str_re()
             cs = re.findall(str_re, cs)
+            
+            ## FIXME: This is an egregious hack. The right way to do this is
+            ## to have field specific parsing routine in the BBPIMDB just like
+            ## we have the regexes there. for now, let's move on with ugly
+            ## hacks. 
+            ver = self.get_store().get_file_format()
+            if ver == '6':
+                cs = chompq(cs[0]).split('; ')
+
             self.set_company(chompq(cs[0]))
             rest = cs[1:]
+
             if rest and len(rest) > 0:
                 self.add_custom('company', demjson.encode(rest))
 
@@ -466,7 +481,9 @@ class BBContact(Contact):
         if a:
             ret += ' ' + unchompq(a)
         else:
-            ret += 'nil'
+            ## FIXME: version hack. needs to be fixed as noted elsewhere
+            if self.get_store().get_file_format() != '6':
+                ret += 'nil'
 
         return ret
 
@@ -492,12 +509,26 @@ class BBContact(Contact):
             return 'nil'
 
         comp = copy.deepcopy(self.get_custom('company'))
-        if comp and len(comp) > 0:
-            comp = demjson.decode(comp)
-            comp.insert(0, unchompq(comp1))
+        ver = self.get_store().get_file_format()
+        ## FIXME: This is an egregious design violation, as noted earlier. We
+        ## should move all such version specific conversions to pimdb_bb.el
+        if ver == '6':
+            if comp and len(comp) > 0:
+                comp = demjson.decode(comp)
+                comp = [chompq(x) for x in comp]
+            else:
+                comp = []
+
+            comp.insert(0, comp1)
+            return unchompq('; '.join(comp))
+        elif ver == '7':
+            if comp and len(comp) > 0:
+                comp = demjson.decode(comp)
+                comp.insert(0, unchompq(comp1))
+            else:
+                comp = [unchompq(comp1)]
+
             return ('(' + ' '.join(comp) + ')')
-        else:
-            return ('(' + unchompq(comp1) + ')')
 
     def _get_emails_as_string (self):
         ems = [unchompq(e) for e in self.get_email_home()]
