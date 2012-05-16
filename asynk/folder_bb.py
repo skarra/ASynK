@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Tue May 15 11:17:12 IST 2012
+## Last Modified : Wed May 16 13:46:42 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -22,9 +22,6 @@ import codecs, logging, re, string, traceback
 from   folder     import Folder
 from   contact_bb import BBContact
 import pimdb_bb, utils
-
-class BBDBFileFormatError(Exception):
-    pass
 
 class BBContactsFolder(Folder):    
     default_folder_id = 'default'
