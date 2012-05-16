@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Wed May 16 14:04:07 IST 2012
+## Last Modified : Wed May 16 15:13:05 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -302,6 +302,7 @@ class BBPIMDB(PIMDB):
         ## For now the only version we support is file format 7. But in the
         ## near future ...
         self.set_regexes({})
+        self._set_regexes_ver6()
         self._set_regexes_ver7()
 
         self.set_msgstores({})
@@ -469,6 +470,64 @@ class BBPIMDB(PIMDB):
     ##
     ## Now the non-abstract methods and internal methods
     ##
+
+    def _set_regexes_ver6 (self):
+        res = {'string' : r'"[^"\\]*(?:\\.[^"\\]*)*"|nil',
+               'ws'     : '\s*'}
+        re_str_ar = 'nil|\(((' + res['string'] + ')' + res['ws'] + ')*\)'
+        res.update({'string_array' : re_str_ar})
+
+        ## Phones
+        re_ph_vec = ('\[\s*((?P<phlabel>' + res['string'] + 
+                     ')\s*(?P<number>(?P<unstructured>'  +
+                     res['string'] + ')|'+
+                     '(?P<structured>\d+\s+\d+\s+\d+\s+\d+)' +
+                     '\s*))\]')
+        re_phs = 'nil|(\(\s*(' + re_ph_vec + '\s*)+)\)'
+        res.update({'ph_vec' : re_phs})
+
+        ## Addresses
+        re_ad_vec = ('\[\s*(?P<adlabel>' + res['string'] + ')\s*(' +
+                     '(?P<streets>' + res['string_array'] + ')\s*' +
+                     '(?P<city>'    + res['string'] + ')\s*' +
+                     '(?P<state>'   + res['string'] + ')\s*' +
+                     '(?P<zip>('    + res['string'] + ')|(' + '\d\d\d\d\d))\s*' +
+                     '(?P<country>' + res['string'] + ')' +
+                     ')\s*\]')
+        re_ads = 'nil|\(\s*(' + re_ad_vec + '\s*)+\)'
+        res.update({'ad_vec' : re_ads})
+
+
+        re_note = ('\((?P<field>[^()]+)\s*\.\s*(?P<value>' +
+                   res['string'] + '|\d+)+\)')
+        re_notes = '\((' + re_note + '\s*)+\)'
+        res.update({'note'  : re_note})
+        res.update({'notes' : re_notes})
+
+        ## A full contact entry
+        re_con = ('\[\s*' +
+                  '(?P<firstname>' + res['string']       + ')\s*' +
+                  '(?P<lastname>'  + res['string']       + ')\s*' +
+                  '(?P<aka>'       + res['string_array'] + ')\s*' +
+                  '(?P<company>'   + res['string']       + ')\s*' +
+                  '(?P<phones>'    + res['ph_vec']       + ')\s*' +
+                  '(?P<addrs>'     + res['ad_vec']       + ')\s*' +
+                  '(?P<emails>'    + res['string_array'] + ')\s*' +
+                  '(?P<notes>'     + res['notes']        + ')\s*' +
+                  '(?P<cache>'     + res['string']       + ')\s*' +
+                  '\s*\]')
+        
+        ver = '6'
+
+        ## Now save some of the regexes for later use...
+        self.add_regexes(ver, {
+            'con_re' : re_con,
+            'str_re' : res['string'],
+            'adr_re' : re_ad_vec,
+            'ph_re'  : re_ph_vec,
+            'note_re' : res['note'],
+            'notes_re' : res['notes'],
+            })
 
     def _set_regexes_ver7 (self):
         res = {'string' : r'"[^"\\]*(?:\\.[^"\\]*)*"|nil',
