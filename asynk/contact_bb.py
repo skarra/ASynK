@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Wed May 16 18:56:26 IST 2012
+## Last Modified : Wed May 16 23:27:39 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -547,7 +547,7 @@ class BBContact(Contact):
         ## Amerial format will be munged into an equivalent string notation
         ## for our convenience
 
-        ph  = self.get_phone_home()
+        ph  = copy.deepcopy(self.get_phone_home())
         ph.extend(self.get_phone_work())
         ph.extend(self.get_phone_mob())
         ph.extend(self.get_phone_other())
