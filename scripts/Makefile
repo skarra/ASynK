@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu May 17 13:02:14 IST 2012
-## Last Modified : Thu May 17 19:42:25 IST 2012
+## Last Modified : Thu May 17 19:51:42 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -89,8 +89,8 @@ endif
 	@echo ==== Creating bundles
 	rm -f /tmp/asynk-${REL}.tar*
 	rm -f /tmp/asynk-${REL}.zip
-	tar -cvf /tmp/asynk-${REL}.tar.gz -z  /tmp/asynk-${REL} > /dev/null 2>&1
-	zip -q -r /tmp/asynk-${REL}.zip /tmp/asynk-${REL}
+	cd /tmp && tar -cvf asynk-${REL}.tar.gz -z  asynk-${REL} > /dev/null 2>&1
+	cd /tmp && zip -q -r asynk-${REL}.zip asynk-${REL}
 
 	@echo
 	@echo "**********************"
