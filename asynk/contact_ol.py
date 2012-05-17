@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Sun May 13 13:16:06 IST 2012
+## Last Modified : Thu May 17 17:25:39 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -30,7 +30,7 @@ from   datetime import datetime
 from   contact import Contact
 from   win32com.mapi import mapitags as mt
 from   win32com.mapi import mapi
-import demjson, winerror, win32api, pywintypes
+import demjson, iso8601, winerror, win32api, pywintypes
 
 def yyyy_mm_dd_to_pytime (date_str):
     dt = datetime.strptime(date_str, '%Y-%m-%d')
@@ -604,8 +604,8 @@ class OLContact(Contact):
     def _snarf_dates_from_olprops (self, olpd):
         d = self._get_olprop(olpd, mt.PR_CREATION_TIME)
         if d:
-            date = pytime_to_yyyy_mm_dd(d)
-            self.set_created(date)
+            date = utils.utc_time_to_local_ts(d)
+            self.set_created(iso8601.tostring(date))
         
         d = self._get_olprop(olpd, mt.PR_BIRTHDAY)
         if d:
@@ -891,7 +891,7 @@ class OLContact(Contact):
     def _add_dates_to_olprops (self, olprops):
         cd = self.get_created()
         if cd:
-            cd = yyyy_mm_dd_to_pytime(cd)
+            cd = iso8601.parse(cd)
             olprops.append((mt.PR_CREATION_TIME, cd))
 
         bday = self.get_birthday()
