@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu May 17 13:02:14 IST 2012
-## Last Modified : Thu May 17 13:02:36 IST 2012
+## Last Modified : Thu May 17 13:05:26 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -52,7 +52,7 @@ intro_sh = ./intro.sh
 
 all: html info docbook text pdf
 
-html: ${texinfos} ${extra_texi} ${intro.html}
+html: ${texinfos} ${extra_texi} ${intro_html}
 	${texi2html} ${texi2html_flags} ${texinfo_main}
 
 ${intro_html}: ${texinfo_intro}
