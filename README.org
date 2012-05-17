@@ -1,5 +1,5 @@
-Created       : Wed Aug 24 22:41:42 IST 2011
-Last Modified : Tue May 15 09:47:27 IST 2012
+- Created       : Wed Aug 24 22:41:42 IST 2011
+- Last Modified : Thu May 17 13:15:27 IST 2012
 
 This is only a short introduction and some key points of interest. For more
 details on how to use ASynK please refer to the included documentation, or the
@@ -13,26 +13,27 @@ that website.
   written in Python. ASynK was earlier known as Gout. High level features
   include:
 
-  - ASynK allows bidirectional sync of Contact across any pair of sources
-    from: Google Contacts, Microsoft Outlook, and Emacs BBDB - what we call
-    PIM DBs (for Personal Information Management Databases)
-
-  - ASynK is the only two-way synchronization software for BBDB known to be in
-    existence today. So if you are keen to keep BBDB content synchronized with
-    a mobile device or Outlook, look no further.
-
-  - ASynK works on Windows, MacOS X, and Linux
-
+  - ASynK allows two-way sync of Contacts across any two support sources -
+    Google Contacts, Microsoft Outlook, and Emacs BBDB.
+  
+  - ASynK is the only two-way synchronization option for BBDB known to be in
+    existence today. So if you are keen to keep your BBDB content synchronized
+    with a mobile device or Outlook, look no further.
+  
+  - ASynK works on Windows, MacOS X, and Linux. Outlook synchronization
+    only works on Windows.
+  
   - Synchronization is granular to the level of 'Folders', i.e. you can
     synchronize one folder of Google Contacts with a Outlook folder (on
     Windows at work, say), and another Google folder in the same account with
     BBDB (On your Mac, say)
-
+  
   - The infrastructure is there to add more database and item types
-    (i.e. tasks, notes, etc.), but currently only Contact synchronization for
+    (i.e. tasks, notes, etc.), but currently only Contacts synchronization for
     Google Contacts, BBDB and Outlook supported
-
-  - It is free software, and released under the GNU AGPL version 3
+    
+  - It is free software, and released under the GNU AGPL (Affero GPL) version
+    3
 
 * Installation
 
@@ -48,25 +49,24 @@ that website.
    - On Debian (and likely Ubuntu) you will need the following packages:
         sudo apt-get install python-argparse
         
-
 ** Building Documentation
 
    There is no build or installation required to use the main program. You can
-   go the section on Usage below.
+   go the section on Usage in the documentation
 
-   If you wish to build the documentation from source, you will have to
-   execute the following commands in order from the root directory, i.e where
-   you have the configure.ac file
+   If you wish to build the documentation from source, you can try one of the
+   following: 
 
-   - $ autoreconf
-   - $ automake --add-missing
-   - $ ./configure
-   - $ make 
+   - $ cd doc
+   - $ make pdf
+   - $ make 			# Builds all the targets
+   - $ make clean
+   - $ make distclean
 
-   You may have to install additional programs like makeinfo and other TeX
-   related programs. 
-   
-   You will need autoconf (>2.64), automake (> 1.11) for the above to work.
+   The supported doc types are: 'pdf', 'html', 'info', 'docbook', and 'text' 
+
+   You may have to install additional programs like makeinfo, texi2html
+   etc. See the "Depdencies" section in the documentation
 
 ** Usage
 

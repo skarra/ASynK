@@ -1,6 +1,6 @@
 ## 
 ## Created       : Sat May 12 11:31:29 IST 2012
-## Last Modified : Sat May 12 11:31:34 IST 2012
+## Last Modified : Thu May 17 11:50:42 IST 2012
 ## 
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -27,13 +27,13 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 class MainPage(webapp.RequestHandler):
     def get(self):
-        home_greeting = self.request.get('result')
-
-        if home_greeting == '':
-            home_greeting = "There will be something here someday"
+        intro = ''
+        path =  os.path.join(os.path.dirname(__file__), 'intro.html')
+        with open(path, 'r') as f:
+            intro = f.read()
 
         template_values = {
-            'home_greeting': home_greeting,
+            'intro_html': intro,
             }
 
         path = os.path.join(os.path.dirname(__file__), 'index.html')
