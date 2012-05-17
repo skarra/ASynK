@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Sun May 13 22:04:21 IST 2012
+// Last Modified : Thu May 17 08:44:43 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -185,6 +185,18 @@
         }, // db_config['ol']
 
         'bb': {
+	    // It is not possible for ASynK (or anyone else, for that
+	    // matter), to identify, in the general case what encoding
+	    // your BBDB is in - AND - to be able to parse it properly
+	    // with the libarries we have at our disposal. As a work
+	    // around, ASynK will try to parse your files with each of
+	    // these in turn till we succeed, or we run out of
+	    // encoings, which ever is earlier. PLEASE NOTE: You
+	    // cannot put any 'known' encoding here, and hope it will
+	    // work. Only those encodings that are available to the
+	    // standard Python codecs library are supported.
+	    text_encodings : ['utf-8', 'latin-1'],
+
             // See above in 'ol'. this is the same stuff.
             "email_domains" : {
                 "home"  : ['hotmail.com', 'gmail.com',

@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Thu May 17 08:25:15 IST 2012
+## Last Modified : Thu May 17 08:44:09 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -299,8 +299,9 @@ class MessageStore:
         def_fn = self.get_def_folder_name()
         def_f = BBContactsFolder(self.get_db(), def_fn, self)
         self.add_folder(def_f)
+        failed = True
 
-        for encoding in ['utf-8', 'latin-1']:
+        for encoding in self.get_db().get_text_encodings():
             self.set_encoding(encoding)
             try:
                 logging.info('Parsing BBDB Store with encoding %s...',
@@ -309,9 +310,11 @@ class MessageStore:
                                                     encoding=encoding)
                 logging.info('Parsing BBDB Store with encoding %s...Success',
                              encoding)
+                failed = False
                 break
             except ASynKBBDBUnicodeError, e:
                 ## Undo all state, and start afresh, pretty much.
+                failed = True
                 self.set_file_format(0)
                 self.set_preamble('')
                 self.set_folders({})
@@ -319,6 +322,11 @@ class MessageStore:
                 self.add_folder(def_f)
                 logging.info('Parsing BBDB Store with encoding %s...Failed',
                              encoding)
+
+        if failed:
+            ## Oops, we failed to parse the file fully even once...
+            raise BBDBFileFormatError('Cannot process file "%s": unable to '
+                                      'ascerain text encoding.' % fn)
 
         logging.info('Successfully parsed %d entries.', cnt)
         bbf.close()
@@ -345,6 +353,10 @@ class BBPIMDB(PIMDB):
     def __init__ (self, config, def_fn):
         PIMDB.__init__(self, config)
 
+        ## Setup some BBDB specific config parameters
+        enc = self.get_db_config()['text_encodings']
+        self.set_text_encodings(enc)
+
         ## For now the only version we support is file format 7. But in the
         ## near future ...
         self.set_regexes({})
@@ -367,6 +379,13 @@ class BBPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         return 'bb'
+
+    def set_text_encodings (self, name):
+        self.text_encodings = name
+        return name
+
+    def get_text_encodings (self):
+        return self.text_encodings
 
     def get_msgstore (self, name):
         return self.msgstores[name]
