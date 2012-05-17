@@ -45,7 +45,7 @@ from   pimdb_bb         import BBPIMDB
 from   folder_bb        import BBContactsFolder
 
 ## Some Global Variables to get started
-asynk_ver = '0.2+'
+asynk_ver = 'v0.2.1'
 
 class AsynkParserError(Exception):
     pass
