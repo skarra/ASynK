@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon May 14 07:15:33 IST 2012
+## Last Modified : Thu May 17 16:31:21 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -214,7 +214,6 @@ class OLFolder(Folder):
             ## Wipe out the sucker
             try:
                 def_cols = oli.GetPropList(mapi.MAPI_UNICODE)
-                print def_cols
                 hr, ps = oli.DeleteProps(def_cols)
             except Exception, e:
                 logging.error('%s: Could not clear our MAPI props for: %s (%s)',

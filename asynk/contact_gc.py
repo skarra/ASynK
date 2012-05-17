@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Tue May 15 17:02:24 IST 2012
+## Last Modified : Thu May 17 17:23:24 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -397,10 +397,16 @@ class GCContact(Contact):
             for im in ce.im:
                 label = 'Default'         # this should never go 'on the wire'
 
+                # The way Google uses protocol and label is a bit confusing...
+                if im.label:
+                    if not im.protocol:
+                        im.protocol = im.label
+
                 if im.protocol:
-                    label = self.im_proto_label_map[im.protocol]
-                elif im.label:
-                    label = im.label
+                    if im.protocol in self.im_proto_label_map:
+                        label = self.im_proto_label_map[im.protocol]
+                    else:
+                        label = im.protocol
                 else:
                     ## No protocol, and no label. We need to do some general
                     ## stuff here...
@@ -717,16 +723,16 @@ class GCContact(Contact):
     def _add_ims_to_gce (self, gce):
         im_prim = self.get_im_prim()
         for label, addr in self.get_im().iteritems():
-            prim = 'true' if im_prim == label else 'false'
-
+            prim  = 'true' if im_prim == label else 'false'
+            rel   = 'http://schemas.google.com/g/2005#other'
             proto = None
-            rel   = None
+
             if label in self.im_label_proto_map:
                 proto = self.im_label_proto_map[label]
-                label = None
-                rel   = 'http://schemas.google.com/g/2005#other'
+            else:
+                proto = label
 
-            im = gdata.data.Im(label=label, protocol=proto, rel=rel,
+            im = gdata.data.Im(protocol=proto, rel=rel,
                                address=addr, primary=prim)
             gce.im.append(im)
 
