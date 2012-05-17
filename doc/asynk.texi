@@ -29,27 +29,27 @@ A copy of the license is included in the section entitled
 @contents
 
 @ifnottex
-@node Top, Introduction, , 
+@node Top, Introduction, (dir), (dir)
 @top ASynK User Manual
 
 @insertcopying
 @end ifnottex
 
 @menu
-* Introduction::               What is ASynK, and why should you be interested.
-* Installation::               Fetching and installing ASynK
-* Concepts::               Things you must know to use ASynK
-* Using ASynK::               How to execute ASynK. Various commands and flags.
+* Introduction::                What is ASynK, and why should you be interested.
+* Installation::                Fetching and installing ASynK
+* Concepts::                    Things you must know to use ASynK
+* Using ASynK::                 How to execute ASynK. Various commands and flags.
 * Customization::               How to configure ASynK to your specific setup
-* Recipes::               Typical user flows
-* Internals::               Some notes on internal details for power users
-* FAQ::               Frequently Asked Questions
+* Recipes::                     Typical user flows
+* Internals::                   Some notes on internal details for power users
+* FAQ::                         Frequently Asked Questions
 
 Appendices
 * Copying::                     The GNU General Public License gives you permission
                          to redistribute GNU Emacs on certain terms;
                          it also explains that there is no warranty.
-* GNU FDL::  The license for this documentation.
+* GNU FDL::                     The license for this documentation.
 * The Index::                   Complete index.
 
 @end menu
@@ -68,45 +68,15 @@ rather learn by looking at examples, head straight to the section titled
 So, where were we? Ah, yes, introducting ASynK. Here are some of the high
 level features of ASynK:
 
-@enumerate
-
-@item
-ASynK allows bidirectional sync of Contact across any pair of sources from:
-Google Contacts, Microsoft Outlook, and Emacs BBDB - what we call
-PIM DBs (for Personal Information Management Databases)
-
-@item
-ASynK is the only two-way synchronization software for BBDB known to be in
-existence today. So if you are keen to keep your BBDB content synchronized with a
-mobile device or Outlook, look no further.
-
-@item
-ASynK works on Windows, MacOS X, and Linux. Outlook synchronization
-only works on Windows.
-
-@item
-Synchronization is granular to the level of 'Folders', i.e. you can
-synchronize one folder of Google Contacts with a Outlook folder (on Windows at
-work, say), and another Google folder in the same account with BBDB (On your
-Mac, say)
-
-@item
-The infrastructure is there to add more database and item types (i.e. tasks,
-notes, etc.), but currently only Contact synchronization for Google Contacts,
-BBDB and Outlook supported
-
-@item
-It is free software, and released under the GNU AGPL (Affero GPL)
-version 3
-
-@end enumerate
+@include intro.texi
 
 @node Installation, Concepts, Introduction, Top
 @chapter Getting ASynK and Installation
 
 The official website for ASynK is at:
-@url{http://karra-asynk.appspot.com}. You will find links to latest download,
-complete documentaiton, and other information on that website.
+@url{http://karra-asynk.appspot.com}. You will find links to latest downloads,
+complete and latest documentaiton, announcements and other information on that
+website.
 
 The source code for ASynK is hosted on Github at:
 @url{https://github.com/skarra/AsynK} (earlier hosted at:
@@ -114,17 +84,16 @@ The source code for ASynK is hosted on Github at:
 development version, or to register an issue you have identified.
 
 @section Pre-packaged Bundle
-The latest release as of this writing is v0.2.0. You can download the latest
-version by visiting the downloads section of the official website at
-@url{http://karra-asynk.appspot.com/downloads/}.
+You can download the latest version by visiting the downloads section of the
+official website at @url{http://karra-asynk.appspot.com/downloads/}.
 
 @section From Source
 You can clone the git repository by using a command such as @kbd{git clone
 git://github.com/skarra/ASynK.git}. Then run @kbd{asynk.py} as per
 instructions given in the @ref{Using ASynK, Using ASynK}, section below.
 
-@section Dependencies
-@subsection General Dependencies 
+@section Dependencies / Notes
+@subsection General Dependencies
 
 @enumerate
 @item
@@ -132,36 +101,172 @@ instructions given in the @ref{Using ASynK, Using ASynK}, section below.
 @url{http://www.python.org/download/releases/}
 
 @item
-Optionally, recent versions of @strong{autoconf} suite of tools (> 2.64 of
-autconfig and > 1.11 of automake) are needed if you want to build the
-documentatation from the source texi files. It is not required if you only
-want to execute the ASynK program. The latest documentation is available on
-the project website on appspot.com.
+If you want to build the documentation yourself you will need some additional
+tools:
+@enumerate
+@item
+@strong{makeinfo}: Is needed to build documentation in Info, docbook and xml
+formats. Version 4.8 is known to work with our sources.
+
+@item
+@strong{texi2html}: Is needed to build documentation in html format. Version 1
+.70 is known to work with our sources.
+
+@item
+@strong{texi2pdf}: Is needed to build the documentation in PDF format. Version
+1.34 is knownto work with our sources.
+@end enumerate
 @end enumerate
 
-@subsection Windows / Outlook Specific Dependencies
-If you want to synchronize to MS Outlook, you will need to install these
-additional packages on Windows:
+@subsection Windows / Outlook Specific Notes
+If you want to synchronize to MS Outlook, you will need:
 
 @enumerate
+@item
+@strong{Microsoft Windows}: Any recent version should do
+
+@item 
+@strong{MS Outlook}: Outlook should be installed. Direct read/write of PST
+files is not possible. Any recent version should work. ASynK has been reported
+to work with Office 2008 and Office 2010
+
 @item
 @strong{Pywin32 for Python 2.7}: It is available for download 
 @url{http://sourceforge.net/projects/pywin32/files/pywin32}
 @end enumerate
 @cindex Windows
 
-@subsection BBDB Specific Dependencies
+@subsection BBDB Specific Notes
 ASynK can parse and write BBDB files without the need for Emacs or
-BBDB. However it is important to keep the following in mind:
+BBDB. However, ensure you are using BBDB at the time ASynK is reading/writing
+the database. Bad things can happen if you are not careful with this. Further,
+not the following:
 
 @enumerate
 @item
-The BBDB file you want to sync should have format version 7 due to an change
-in the format of timestamps stored in BBDB. File format 7 is read and written
-by BBDB v3, which is stable but not officially out of beta. You can download
-BBDB v3 at @url{http://savannah.nongnu.org/projects/bbdb}. But be informed
-that BBDB v3 is a pretty huge rewrite, potentially break your
-customizations, and suck up some time before you can get your bearings back.
+@strong{BBDB V3}: ASynK works best with if you use BBDBV3. V3 is the future of
+BBDB and a significant rewrite of large portions of the code base, but is
+decidedly not backward compatible with most user customization. You can
+download it at @url{http://savannah.nongnu.org/projects/bbdb}.
+
+Importantly for ASynK, the file format used by V3 provides for granular time
+stamps with timezone information and ASynK will just work ``out of the
+box''. There are also other important changes to the structure of the BBDB
+record in file format version 7.
+
+@item
+@strong{Timestamp Customziation}: ASynK expects timestamps to be in UTC -
+i.e. they should all end with the @kbd{+0000}. If you have customized your
+BBDB timestamp format, it can lead to confusing results.
+
+@item
+@strong{BBDB-2.x}: Starting release v0.2.1 ASynK has added limited support for
+BBDB file format version 6 which is the latest version used by the 2.x
+releases of BBDB. This version of BBDB is not actively maintained, but is more
+widely deployed because of its age and availability on XEmacs.
+
+Support is limited in the sense that the native ver 6 file format timestamps
+only store year, month and day. So BBDB will overwrite the granular ASynK
+timestamps with a yyyy-mm-dd timestamp, and your bi-directional sync will not
+quite work as you would like. 
+
+The above limiation can be overcome by applying the following simple
+patch. With this patch in place ASynK will work quite well. There is a
+downside, however - certain time-based search in BBDB may behave differently
+(search newer, search older etc. will behave differently owing to differences
+in timestamp format). But one would like to think the ability to do
+bidirectional sync outweighs this minor irritance.
+
+@verbatim
+commit eb6ba8d342a46d61c45b0ce4c1de7711ff011466
+Author: Sriram Karra <karra.etc@gmail.com>
+Date:   Wed May 16 18:09:50 2012 +0530
+
+    Include UTC time as part of timestamp
+    
+    This is a feature in file format 7 available with BBDB v3. However
+    that is not available with the 2.x series. A detailed timestamp
+    is needed to do a sync with a third party.
+    
+    The ideal way would have been to fully implement the verison 7
+    changes on 2.36. However that involves a lot of changes and is
+    risky - for e.g. introducing a new key name field (affix)
+    will stretch my understanding of BBDB internals. Best to just
+    provide a quick hack for those willing to live with it only to
+    try ASynK or similar sync softwrae.
+    
+    The obvious pitfall is that commands that work on teh timestamp
+    field (like newer or older filters and delete) will start
+    to behave differently because a string comparison is done to
+    check if a date is newer or older.
+    
+       *** You have been warned ***
+
+diff --git a/lisp/bbdb-hooks.el b/lisp/bbdb-hooks.el
+index 01de4f2..b9f0d9d 100644
+--- a/lisp/bbdb-hooks.el
++++ b/lisp/bbdb-hooks.el
+@@ -59,7 +59,7 @@
+ (defvar mh-show-buffer)
+ 
+ 
+-(defvar bbdb-time-internal-format "%Y-%m-%d"
++(defvar bbdb-time-internal-format "%Y-%m-%d %T %z"
+   "The internal date format.")
+ 
+ ;;;###autoload
+@@ -69,7 +69,7 @@ for the given record which contains the time when it was last modified.  If
+ there is such a field there already, it is changed, otherwise it is added."
+   (bbdb-record-putprop record 'timestamp (format-time-string
+                       bbdb-time-internal-format
+-                      (current-time))))
++                      (current-time) t)))
+ 
+ ;;;###autoload
+ (defun bbdb-creation-date-hook (record)
+@@ -78,7 +78,7 @@ which is the current time string."
+   ;; hey buddy, we've known about your antics since the eighties...
+   (bbdb-record-putprop record 'creation-date (format-time-string
+                           bbdb-time-internal-format
+-                          (current-time))))
++                          (current-time) t)))
+ 
+ 
+ ;;; Determining whether to create a record based on the content of the
+diff --git a/lisp/bbdb.el b/lisp/bbdb.el
+index cc12045..dabbf05 100644
+--- a/lisp/bbdb.el
++++ b/lisp/bbdb.el
+@@ -1214,7 +1214,7 @@ from string."
+ 
+ ;;; Address formatting.
+ 
+-(defcustom bbdb-time-display-format "%d %b %Y"
++(defcustom bbdb-time-display-format "%d %b %Y %T %z"
+   "The format for the timestamp to be used in the creation-date and
+ timestamp fields.  See the documentation for `format-time-string'."
+   :group 'bbdb :type 'string)
+@@ -1223,11 +1223,13 @@ timestamp fields.  See the documentation for `format-time-string'."
+   "Convert a date from the BBDB internal format to the format
+ determined by FORMAT (or `bbdb-time-display-format' if FORMAT not
+ present).  Returns a string containing the date in the new format."
+-  (let ((parts (bbdb-split date "-")))
+-    (format-time-string (or format bbdb-time-display-format)
+-                        (encode-time 0 0 0 (string-to-number (caddr parts))
+-                                     (string-to-number (cadr parts))
+-                                     (string-to-number (car parts))))))
++  (format-time-string (or format bbdb-time-display-format)
++		      (condition-case err
++			  (date-to-time date)
++			(error nil
++			       (date-to-time (concat date " 00:00:00
++			       +0000"))))
++		      t))
+ 
+ (defalias 'bbdb-format-record-timestamp 'bbdb-time-convert)
+ (defalias 'bbdb-format-record-creation-date 'bbdb-time-convert)
+
+@end verbatim
 
 @end enumerate
 @cindex BBDB, Dependencies
@@ -247,6 +352,8 @@ AsynK chapter below on how this can be done.
 A BBDB folder's Name and ID are the same, and are taken from the value of the
 notes field as explained above.
 
+@cindex folders
+
 @section ASynK Profile
 ASynK allows you to keep any folder in a pimdb in sync with any folder in one
 of the other pimdbs. The configuration and state of synchronization between a
@@ -294,6 +401,7 @@ to resolve this conflict. This field can be specified at the time of profile
 creation, but defaults to the first dbid specified in the profile. Once
 profile is created, the direction of confict resolution cannot be specified
 for a operation.
+@cindex confliction resolution
 
 @item
 @strong{Sync Direction}: Although ASynK is designed to be a two way sync, you
@@ -303,15 +411,18 @@ one direction. This can be specified at the time of profile creation and also
 be specified for every sync operation. If it is a one way sync, currently the
 flow will be from db1 to db2 (i.e. the first db in the profile to the second
 db). Note: This has to be fixed.
+@cindex sync direction
 @end enumerate
+
+@cindex sync profile
 
 @node Using ASynK, Customization, Concepts, Top
 @chapter Using ASynK
 
-The latest version of ASynK (v0.2.0) only supports a command line user
-interface - even on Windows. Once you have your platform-specific dependencies
+Recent releases of ASynK (v0.2.0+) only support a command line user interface
+- even on Windows. Once you have your platform-specific dependencies
 installed, there is no difference at all in the way ASynK is invoked on any
-platform. 
+platform.
 
 There are plans to develop a browser-based GUI, but work on that has
 not started yet.
@@ -418,9 +529,7 @@ json files.
 @enumerate
 @item
 Location of directory containing logs
-
-@item
-Location of directory containing backup of BBDB stores
+@cindex logging
 
 @item
 The prefix and separator to use for the ASynK sync tags/labels.
@@ -459,14 +568,24 @@ BBDB
 
 @enumerate
 @item
+Location of directory containing backup of BBDB stores
+@cindex Backup BBDB
+
+@item
+@emph{Text Encodings}: The list of text encodings that you want ASynK to try
+while attempting to read your BBDB
+
+@item
 @emph{Email classification by domains}: Same as explained for Outlook
 
 @item
 @emph{Postal address map}: Same as above, except that this is for postal
 addresses.
 
+@item
 @emph{Phones map}: Ditto, for phones
 
+@item
 @emph{Notes map}: BBDB really is really flexible, to the point that very
 basic fields are not standardized. There is no date of birth, middle name, web
 url, gender, and similar fields. However one can always have such data as a
@@ -1000,58 +1119,6 @@ More to come here
 @chapter FAQ
 
 Here are some Frequently Ask-able Questions, along with answers.
-
-@section Installation & Build
-
-@subsection Get the error @kbd{error: possibly undefined macro: AM_INIT_AUTOMAKE} running autoconf
-Firstly, you only need to do autconf if you want to rebuild the
-documentation - which you could get on the main website at
-@url{http://karra-asynk.appspot.com}
-
-If you really want to build the docs, make sure you have the latest versions
-of autoconf. Check the versions you have by looking at the ouptut of the
-following commands:
-
-@verbatim
-   $ autoconf --version # should be greater than 2.64
-   $ automake --version # should be greater than 1.11
-@end verbatim
-
-If you do not have the minimum versions specified above, you should upgrade to
-recent versions using your system package manager
-
-@subsection I get an error @kbd{'configure: error: cannot find install-sh, install.sh, or shtool in "." "./.." "./../.."}
-
-You have ignored errors in previous steps of the build process, which
-originally stem from old version of autotools. Refer to the question above.
-
-@subsection I am on MacOS X and how can I upgrde autoconf; homebrew does not cut it
-
-The autotools formulae in homebrew are 'keg-only', meaning once you install
-them using 'brew install automake', it is installed to the Cellar directory
-(such as /usr/local/Cellar/automake/1.11.3/) but is not sym-linked to
-/usr/local/ like a normal installation. This is to prevent unwanted
-dependencies between the system version of these tools and the brew versions.
-
-The following has been known to work on MacOS X:
-
-@enumerate
-@item
-Install the brew versions of autoconf and automake (brew install automake &&
-brew install autoconf)
-
-@item
-$ mkdir -p /usr/local/upgraded/bin
-
-@item
-make sym links to all programs installed by brew in Step 1 in /usr/local/upgraded/bin/
-   
-@item
-edit /etc/paths and put /usr/local/upgraded/bin/ at the top of the file in line 1.
-
-@item
-Now go back to using autoconf
-@end enumerate
 
 @section What's Changed between v0.1 and v0.2?
 It's almost a total rewrite. Here are main changes:
