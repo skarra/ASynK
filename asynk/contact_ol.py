@@ -626,13 +626,32 @@ class OLContact(Contact):
     #     self.last_mod  = self._get_olprop(olpd, mt.PR_LAST_MODIFICATION_TIME)
 
     def _snarf_ims_from_olprops (self, olpd):
-        """In Outlook IM Addresses are also named properties like Email
-        addresses..."""
+        ims   = self.get_custom('ims')
 
         imtag = self.get_proptags().valu('ASYNK_PR_IM_1')
         imadd = self._get_olprop(olpd, imtag)
-        if imadd:
-            self.add_im('Default', imadd)
+
+        if not imadd:
+            if not len(ims) == 0:
+                logging.debug('ol:sifo: No IM in Outlook but custom ims : %s',
+                              ims)
+            return
+
+        if len(ims) == 0:
+            logging.error('%s is a new OL entry with IM',
+                          self.get_name())
+            ims = {'_im_addr_label' : 'default'}
+
+        for label, addr in ims.iteritems():
+            if label == '_im_addr_label':
+                label = addr
+                addr  = imadd
+                self.set_im_prim(label)
+
+            self.add_im(label, addr)
+
+        if '_im_addr_label' in ims:
+            del ims['_im_addr_label']
 
     def _snarf_sync_tags_from_olprops (self, olpd):
         conf = self.get_config()
@@ -766,11 +785,15 @@ class OLContact(Contact):
             if email:
                 olprops.append((tag, email))
 
+    def _add (self, olprops, tag, val):
+        if val:
+            olprops.append((tag, val))
+
     def _add_postal_to_olprops (self, olprops):
         cust = {}
 
         for cat in ['home', 'work', 'other']:
-            #            cust.update({cat : {}})
+            cust.update({cat : {}})
             postals = self.get_postal(type=cat)
             if postals and len(postals) > 0:
                 label, addr = postals[0]
@@ -779,11 +802,12 @@ class OLContact(Contact):
                 ## The first address gets written out directly into the
                 ## relevant Outlook fields
 
-                olprops.append((self.addr_map[cat]['street'],  addr['street']))
-                olprops.append((self.addr_map[cat]['city'],    addr['city']))
-                olprops.append((self.addr_map[cat]['state'],   addr['state']))
-                olprops.append((self.addr_map[cat]['country'], addr['country']))
-                olprops.append((self.addr_map[cat]['zip'],     addr['zip']))
+                am = self.addr_map
+                self._add(olprops, am[cat]['street'],  addr['street'])
+                self._add(olprops, am[cat]['city'],    addr['city'])
+                self._add(olprops, am[cat]['state'],   addr['state'])
+                self._add(olprops, am[cat]['country'], addr['country'])
+                self._add(olprops, am[cat]['zip'],     addr['zip'])
                 
                 ## The rest will go into the custom property dictionary which
                 ## will get picked up when custom props are written out
@@ -891,10 +915,24 @@ class OLContact(Contact):
             olprops.append((mt.PR_BUSINESS_HOME_PAGE, web[0]))
 
     def _add_ims_to_olprops (self, olprops):
-        im = self.get_im()
-        if im and im[0]:
-            tag = self.get_proptags().valu('ASYNK_PR_IM_1')
-            olprops.append((tag, im[0]))
+        cust = {}
+        im_prim = self.get_im_prim()
+
+        for label, addr in self.get_im().iteritems():
+            if label == im_prim:
+                tag = self.get_proptags().valu('ASYNK_PR_IM_1')
+                if addr:
+                    olprops.append((tag, addr))
+                    cust.update({'_im_addr_label' : label})
+                else:
+                    logging.debug('Weird. Name: %s; label: %s',
+                                  self.get_name(), label)
+            else:
+                ## The remaining IM addresses go into the custom property like
+                ## we have been doing with 
+                cust.update({label : addr})
+
+        self.add_custom('ims', cust)
 
     def _add_sync_tags_to_olprops (self, olprops):
         conf  = self.get_config()
@@ -930,7 +968,6 @@ class OLContact(Contact):
         tag = self.get_proptags().valu('ASYNK_PR_CUSTOM_PROPS')
         val = self.get_custom()
         if val:
-            logging.debug('Name: %-25s, Custom: %s', self.get_name(), val)
             olprops.append((tag, demjson.encode(val)))
         else:
             logging.debug('con_ol:acpto: No custom props for %s while'
