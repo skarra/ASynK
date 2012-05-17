@@ -21,3 +21,12 @@ login.auth
 state.json
 logs
 backups
+
+# Doc related stuff.
+
+*.html
+*.info
+*.pdf
+*.dvi
+asynk.xml
+asynk.txt

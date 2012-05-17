@@ -1,0 +1,29 @@
+@enumerate
+@item
+ASynK allows two-way sync of Contacts across any two support sources - Google
+Contacts, Microsoft Outlook, and Emacs BBDB.
+
+@item
+ASynK is the only two-way synchronization option for BBDB known to be in
+existence today. So if you are keen to keep your BBDB content synchronized
+with a mobile device or Outlook, look no further.
+
+@item
+ASynK works on Windows, MacOS X, and Linux. Outlook synchronization
+only works on Windows.
+
+@item
+Synchronization is granular to the level of 'Folders', i.e. you can
+synchronize one folder of Google Contacts with a Outlook folder (on Windows at
+work, say), and another Google folder in the same account with BBDB (On your
+Mac, say)
+
+@item
+The infrastructure is there to add more database and item types (i.e. tasks,
+notes, etc.), but currently only Contacts synchronization for Google Contacts,
+BBDB and Outlook supported
+
+@item
+It is free software, and released under the GNU AGPL (Affero GPL)
+version 3
+@end enumerate
