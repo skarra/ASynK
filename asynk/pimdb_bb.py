@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Wed May 16 15:13:05 IST 2012
+## Last Modified : Thu May 17 08:25:15 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -27,6 +27,9 @@ from   contact_bb   import BBContact, BBDBParseError
 import utils
 
 class BBDBFileFormatError(Exception):
+    pass
+
+class ASynKBBDBUnicodeError(Exception):
     pass
 
 ## Note: Each BBDB File is a message store and there are one or more folders
@@ -166,6 +169,12 @@ class MessageStore:
         r = '%s%s\w+%s' % (p, s, s)
         self.set_sync_tag_re(r)
 
+    def set_encoding (self, ver):
+        return self._set_att('encoding', ver)
+
+    def get_encoding (self):
+        return self._get_att('encoding')
+
     def set_file_format (self, ver):
         return self._set_att('file_format', ver)
 
@@ -187,37 +196,15 @@ class MessageStore:
         pre += lines
         return self.set_preamble(pre)
 
-    def populate_folders (self, fn=None):
-        """Parse a BBDB file contents, and create folders of contacts."""
-
-        ## BBDB itself is not structured as logical folders. The concept of a
-        ## BBDB folder is overlayed by ASynK. Any contact with a notes field
-        ## with key called 'folder' (or as configured in config.json), is
-        ## assigned to a folder of that name. If an object does not have a
-        ## folder note, it is assgined to the default folder.
-
-        ## This routine parses the BBDB file by reading one line at at time
-        ## from top to bottom. Due to a limitation in how the Contact() and
-        ## Folder() classes interact, we have to pass a valid Folder object to
-        ## the Contact() constructor. So the way we do this is we start by
-        ## assuming the contact is in the default folder. After successful
-        ## parsing, if the folder name is available in the contact, we will
-        ## move it from the dfault folder to that particular folder.
-
-        if not fn:
-            fn = self.get_name()
-
-        fn = utils.abs_pathname(self.get_config(), fn)
-        logging.info('Parsing BBDB file %s...', fn)
-
-        def_fn = self.get_def_folder_name()
-        def_f = BBContactsFolder(self.get_db(), def_fn, self)
-        self.add_folder(def_f)
-
-        with codecs.open(fn, encoding='utf-8') as bbf:
+    def parse_with_encoding (self, def_f, fn, encoding):
+        """Folder object to which the parsed contacts will be added. fn is the
+        name of the BBDB file/message store. encoding is a string representing
+        a text encoding such as utf-8, latin-1, etc."""
+        
+        with codecs.open(fn, encoding=encoding) as bbf:
             ff = bbf.readline()
             if re.search('coding:', ff):
-                # Ignore first line if it is: ;; -*-coding: utf-8-emacs;-*-
+                # Ignore first line if such: ;; -*-coding: utf-8-emacs;-*-
                 self.append_preamble(ff)
                 ff = bbf.readline()
 
@@ -244,7 +231,17 @@ class MessageStore:
 
             cnt = 0
             while True:
-                ff = bbf.readline()
+                try:
+                    ff = bbf.readline()
+                except UnicodeDecodeError, e:
+                    ## We got the encoding wrong. We will have to drop
+                    ## everything we have done, and start all over again.
+                    ## At a later stage, we could optimize by skipping over
+                    ## whatever we have read so far, but then we will need to
+                    ## evalute if the parsed strings will be in the same
+                    ## encoding or not. Tricky and shady business, this.
+                    raise ASynKBBDBUnicodeError('')
+
                 if ff == '':
                     break
 
@@ -274,6 +271,55 @@ class MessageStore:
 
                 cnt += 1
 
+            return bbf, cnt
+
+    def populate_folders (self, fn=None):
+        """Parse a BBDB file contents, and create folders of contacts."""
+
+        ## BBDB itself is not structured as logical folders. The concept of a
+        ## BBDB folder is overlayed by ASynK. Any contact with a notes field
+        ## with key called 'folder' (or as configured in config.json), is
+        ## assigned to a folder of that name. If an object does not have a
+        ## folder note, it is assgined to the default folder.
+
+        ## This routine parses the BBDB file by reading one line at at time
+        ## from top to bottom. Due to a limitation in how the Contact() and
+        ## Folder() classes interact, we have to pass a valid Folder object to
+        ## the Contact() constructor. So the way we do this is we start by
+        ## assuming the contact is in the default folder. After successful
+        ## parsing, if the folder name is available in the contact, we will
+        ## move it from the dfault folder to that particular folder.
+
+        if not fn:
+            fn = self.get_name()
+
+        fn = utils.abs_pathname(self.get_config(), fn)
+        logging.info('Parsing BBDB file %s...', fn)
+
+        def_fn = self.get_def_folder_name()
+        def_f = BBContactsFolder(self.get_db(), def_fn, self)
+        self.add_folder(def_f)
+
+        for encoding in ['utf-8', 'latin-1']:
+            self.set_encoding(encoding)
+            try:
+                logging.info('Parsing BBDB Store with encoding %s...',
+                             encoding)
+                bbf, cnt = self.parse_with_encoding(def_f, fn,
+                                                    encoding=encoding)
+                logging.info('Parsing BBDB Store with encoding %s...Success',
+                             encoding)
+                break
+            except ASynKBBDBUnicodeError, e:
+                ## Undo all state, and start afresh, pretty much.
+                self.set_file_format(0)
+                self.set_preamble('')
+                self.set_folders({})
+                def_f = BBContactsFolder(self.get_db(), def_fn, self)
+                self.add_folder(def_f)
+                logging.info('Parsing BBDB Store with encoding %s...Failed',
+                             encoding)
+
         logging.info('Successfully parsed %d entries.', cnt)
         bbf.close()
 
@@ -284,7 +330,7 @@ class MessageStore:
         fn = utils.abs_pathname(self.get_config(), fn)
         logging.info('Saving BBDB File %s...', fn)
 
-        with codecs.open(fn, 'w', encoding='utf-8') as bbf:
+        with codecs.open(fn, 'w', encoding=self.get_encoding()) as bbf:
             bbf.write(self.get_preamble())
 
             for name, f in self.get_folders().iteritems():
