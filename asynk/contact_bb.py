@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Wed May 16 23:27:39 IST 2012
+## Last Modified : Thu May 24 18:43:12 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -438,15 +438,15 @@ class BBContact(Contact):
             self.update_custom(custom)
 
     def _is_valid_date (self, date, label):
-        res = re.search('\d\d\d\d-(\d\d)-(\d\d)', date)
+        res = re.search('((\d\d\d\d)|-)-(\d\d)-(\d\d)', date)
         if not res:
             logging.error(('%s for %s should be yyyy-mm-dd ' +
                            'format. Actual value: %s'),
                            label, self.get_name(), date)
             return False
-        elif int(res.group(1)) > 12:
+        elif int(res.group(3)) > 12:
             logging.error('Invalid month (%d) in %s for %s',
-                          int(res.group(1)), label, self.get_name())
+                          int(res.group(3)), label, self.get_name())
             return False
         else:
             ## We should really check the date for validity as well, oh, well,
