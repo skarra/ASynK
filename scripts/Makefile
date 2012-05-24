@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu May 17 13:02:14 IST 2012
-## Last Modified : Thu May 17 19:51:42 IST 2012
+## Last Modified : Thu May 17 20:05:55 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -111,4 +111,4 @@ install:
 
 	@echo ==== Comitting change to repository...
 	git add ${src}
-	cd .. && git commit -m 'Bumping up version to ${REL} for release'
+	cd .. && git commit -m 'Bumping up version to ${REL}+ for development'
