@@ -1,6 +1,6 @@
 <!--
 // Created       : Sat May 05 13:15:20 IST 2012
-// Last Modified : Thu May 17 13:45:39 IST 2012
+// Last Modified : Thu May 17 20:48:03 IST 2012
 //
 // Copyright (C) 2012, Sriram Karra <karra.etc@gmail.com>
 // All Rights Reserved
@@ -88,6 +88,39 @@
 	<h2>Announcements</h2>
 
 	<h3>
+	<span class="announce_title">Thu May 17 20:14:28 IST 2012</span>
+	</h3>
+
+	<div class="announce_text">
+	  We have just pushed release v0.2.1 out. Key changes are:
+	  <ol>
+	    <li>BBDB file format 6 is now supported - with an important caveat
+	    - Please refer to the <a
+	     href='javascript:window.open("/doc/asynk/asynk_2.html#SEC8")'>
+	    Dependencies section</a> of the documentation. BBDB file format 6
+	    is used by BBDB versios 2.x bundled with XEmacs.
+
+	    <li>Attempt is made to parse the BBDB file with multiple encodings
+	    - for now utf-8 and latin-1. Additional encodings can be specified
+	    in the config.json config file.
+
+	    <li>Building documentaiton from source is now trivial, and
+	    does not need autotools
+
+	    <li>Instant Messaging fields are now synched across all sources
+
+	    <li>Better error recovery in case of parse error with BBDB store
+
+	    <li>Bugs fixes dealing with fax, notes, and company fields in
+	    BBDB and Google Contacts	    
+	  </ol>
+	  <p>
+	  All in all an exciting release if you are a BBDB user!  Go grab the
+	  latest release from the <span class="announce_download">Downloads
+	  page</span>!
+	</div>
+
+	<h3>
 	<span class="announce_title">Sun May 13 13:54:50 IST 2012</span>
 	</h3>
 
@@ -150,8 +183,10 @@
       <div id="doc_text" class="section" style="display:none">
 	<h2>Documentation</h2>
 	<p> 
-	  The current stable released vesion is v0.2.0. Refer to the FAQ
-	  section to know more about what has changed from v0.1.0 to v0.2.0.
+	  The current stable released vesion is v0.2.1. Refer to the FAQ
+	  section to know more about what has changed from v0.1 to
+	  v0.2. Changes from v0.2.0 to v0.2.1 are mentioned in the
+	  Announcement section.
 	</p>
 
 	<p>Documentation on ASynK is available in the following formats:
@@ -233,7 +268,7 @@
 <p/>
   <div id="footer_content">
     Copyright &copy; 2012 Sriram Karra (karra.etc at gmail dot com)<br/>
-    Last Modified: Thu May 17 12:03:22 IST 2012
+    Last Modified: Thu May 17 20:14:03 IST 2012
 </footer>
 
 </body>
