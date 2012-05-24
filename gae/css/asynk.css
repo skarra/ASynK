@@ -447,7 +447,6 @@ footer p {
 #content {
     float: right;
     width: 80%;
-    overflow: auto;
 }
 
 #sheet {
