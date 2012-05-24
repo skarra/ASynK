@@ -1,6 +1,6 @@
 ## 
 ## Created       : Sat May 12 11:31:29 IST 2012
-## Last Modified : Thu May 17 11:50:42 IST 2012
+## Last Modified : Thu May 17 20:29:31 IST 2012
 ## 
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -29,8 +29,8 @@ class MainPage(webapp.RequestHandler):
     def get(self):
         intro = ''
         path =  os.path.join(os.path.dirname(__file__), 'intro.html')
-        with open(path, 'r') as f:
-            intro = f.read()
+        f = open(path, 'r')
+        intro = f.read()
 
         template_values = {
             'intro_html': intro,
