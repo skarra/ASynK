@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Wed May 30 19:52:41 IST 2012
+## Last Modified : Thu May 31 13:16:28 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -51,7 +51,9 @@ class BBContactsFolder(Folder):
 
     def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         pname = sl.get_pname()
-        stag = self.get_config().make_sync_label(pname, destid)
+        conf  = self.get_config()
+        oldi  = conf.get_itemids(pname)
+        stag  = conf.make_sync_label(pname, destid)
 
         ## Sort the DBIds so dest1 has the 'lower' ID
         db1 = self.get_dbid()
@@ -72,10 +74,12 @@ class BBContactsFolder(Folder):
         i = 0
         logging.debug('destid: %s', destid)
 
+        newi = {}
         for iid, con in self.get_contacts().iteritems():
             i += 1
             if stag in con.get_sync_tags():
                 t, did = con.get_sync_tags(stag)[0]
+                newi.update({iid : did})
                 upd = con.get_updated()
                 if not upd:
                     logging.error('Skipping entry %s without updated field.',
@@ -92,10 +96,27 @@ class BBContactsFolder(Folder):
                               con.get_name(), iid)
                 sl.add_new(iid)
 
-    def get_itemids (self):
+        kss = newi.keys()
+        for x, y in oldi.iteritems():
+            ## FIXME: The following could lead to virtually undebuggable
+            ## problem if same item ID is used across two different sources
+            ## and stores. But what are the chances, eh?
+            
+            if not x in kss and not y in kss:
+                logging.debug('Del      BBDB Contact: %s:%s', x, y)
+                sl.add_del(x, y)
+
+    def get_itemids (self, pname, destid):
         """See documentation in folder.py"""
 
-        return self.get_contacts().keys()
+        ret = {}
+        stag = self.get_config().make_sync_label(pname, destid)
+        for locid, con in self.get_contacts().iteritems():
+            if stag in con.get_sync_tags():
+                t, remid = con.get_sync_tags(stag)[0]
+                re.append({locid : remid})
+
+        return ret
 
     def find_item (self, itemid):
         """See documentation in folder.py"""

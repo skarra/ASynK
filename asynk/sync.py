@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Thu May 31 08:10:51 IST 2012
+## Last Modified : Thu May 31 13:22:27 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -265,14 +265,12 @@ class Sync:
         # could think there are way too many deletes... Hm. We have to build
         # in some defensive manouvers shortly.
 
-        items1 = self.get_f1().get_itemids()
-        items2 = self.get_f2().get_itemids()
-
         conf = self.get_config()
         prof = self.get_pname()
 
-        conf.set_itemids(prof, self.get_db1id(), items1)
-        conf.set_itemids(prof, self.get_db2id(), items2)
+        items1 = self.get_f1().get_itemids(prof, self.get_db2id())
+
+        conf.set_itemids(prof, items1)
 
     def _del_ol (self):
         pass

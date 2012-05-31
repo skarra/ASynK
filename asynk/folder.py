@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu May 31 07:50:31 IST 2012
+## Last Modified : Thu May 31 12:07:44 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -109,8 +109,9 @@ class Folder:
         raise NotImplementedError
 
     @abstractmethod
-    def get_itemids (self):
-        """Return a list of all the IDs of contained items."""
+    def get_itemids (self, pname, destid):
+        """Return a dictionary of all IDs mapped to specified destid in
+        profile pname."""
 
         raise NotImplementedError
 

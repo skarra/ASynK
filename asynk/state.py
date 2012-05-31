@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Thu May 31 08:11:49 IST 2012
+## Last Modified : Thu May 31 13:15:40 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -329,30 +329,14 @@ class Config:
     def set_ol_gid (self, profile, val, sync=True):
         return self._set_profile_prop(profile, 'olgid', val, sync)
 
-    def get_itemids (self, pname, dbid):
-        """Returns an array of itemids from the state.json file corresponding
-        to specified DB and Folder"""
+    def get_itemids (self, pname):
+        """Returns a dictionary of itemid mappsing from coll_1 to coll_2 as of
+        the last successful sync """
 
-        db1id = self.get_profile_db1(pname)
-        if dbid == db1id:
-            coll = self.get_coll_1(pname)
-        else:
-            coll = self.get_coll_2(pname)
+        return self._get_profile_prop(pname, 'items')
 
-        return coll['items']
-
-    def set_itemids (self, pname, dbid, itemids, sync=True):
-        db1id = self.get_profile_db1(pname)
-        if dbid == db1id:
-            coll = self.get_coll_1(pname)
-            setf = self.set_coll_1
-        else:
-            coll = self.get_coll_2(pname)
-            setf = self.set_coll_2
-
-        coll.update({'items' : itemids})
-        setf(pname, coll)
-
+    def set_itemids (self, pname, itemids, sync=True):
+        self._set_profile_prop(pname, 'items', itemids, sync)
         return itemids
 
     ##
