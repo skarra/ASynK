@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu May 31 13:12:43 IST 2012
+## Last Modified : Thu May 31 22:38:21 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -107,8 +107,18 @@ class GCContactsFolder(Folder):
 
         pname = sl.get_pname()
         conf  = self.get_config()
+        pdb1id = conf.get_profile_db1(pname)
         oldi  = conf.get_itemids(pname)
-        newi  = self.get_itemids(pname, self.get_dbid())
+        newi  = self.get_itemids(pname, destid)
+
+        kss = newi.keys()
+        for x, y in oldi.iteritems():
+            if not x in kss and not y in kss:
+                logging.debug('Del      Google Contact: %s:%s', x, y)
+                if pdb1id == self.get_dbid():
+                    sl.add_del(x, y)
+                else:
+                    sl.add_del(y,x)
 
         logging.info('Querying Google for status of Contact Entries...')
         stag = conf.make_sync_label(pname, destid)
@@ -177,12 +187,6 @@ class GCContactsFolder(Folder):
                 etag_cnt += 1
             else:
                 sl.add_entry(gcid)
-
-        kss = newi.keys()
-        for x, y in oldi.iteritems():
-            if not x in kss and not y in kss:
-                logging.debug('Del      Google Contact: %s:%s', x, y)
-                sl.add_del(x, y)
 
         for x in kss:
             if not x in sl.get_news() and not x in sl.get_mods():
@@ -568,6 +572,20 @@ class GCContactsFolder(Folder):
 
     def add_contact (self, gcc):
         self.contacts.update({gcc.get_itemid() : gcc})
+
+    def del_itemids (self, itemids):
+        """Remove the specified from the contact from this folder, and return
+        True. If it does not exist in the folder, returns False."""
+
+        success, cons = self._fetch_gc_entries(itemids)
+        for con in cons:
+            logging.info('Deleting ID: %s; Name: %s...', con.id.text,
+                         con.name.full_name.text if con.name else '')
+            self.get_gdc().Delete(con)
+            try:
+               del self.contacts[con.id.text]
+            except KeyError, e:
+               pass 
 
     def reset_contacts (self):
         self.contacts = {}
