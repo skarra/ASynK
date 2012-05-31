@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Thu May 31 13:22:27 IST 2012
+## Last Modified : Thu May 31 22:41:52 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -214,6 +214,33 @@ class Sync:
         logging.info('After conflict resolution, size of %s mod : %5d',
                      db2id, len(f2_mod))
 
+        ## Now we need to process the deletes as well
+
+        f1_del = f1sl.get_dels()
+        f2_del = f2sl.get_dels()
+
+        coma = [y for x,y in f1_del.iteritems() if y in f2_mod.keys()]
+        f2_mod = f2sl.remove_keys_from_mod(coma)
+
+        coma = [y for x,y in f2_del.iteritems() if y in f1_mod.keys()]
+        f1_mod = f1sl.remove_keys_from_mod(coma)
+
+        logging.debug('After removing dels from mod, size of %s mod : %5d',
+                      db1id, len(f1_mod))
+        logging.debug('After removing dels from mod, size of %s mod : %5d',
+                      db2id, len(f2_mod))
+
+        coma = [y for x,y in f1_del.iteritems() if y in f2_del.keys()]
+        f2_del = f2sl.remove_keys_from_del(coma)
+
+        coma = [y for x,y in f2_del.iteritems() if y in f1_del.keys()]
+        f1_del = f1sl.remove_keys_from_del(coma)
+
+        logging.info('After conflict resolution, size of %s del : %5d',
+                     db1id, len(f1_del))
+        logging.info('After conflict resolution, size of %s del : %5d',
+                     db2id, len(f2_del))
+
         return f1sl, f2sl
 
     def _prep_lists_1_way (self, f1, f2):
@@ -359,6 +386,26 @@ class SyncLists:
 
         return self.set_mods(d)
 
+    def remove_keys_from_del (self, k):
+        """Remove all the keys specified in the array k from the passed
+        dictionary and return the new dictionary. This routine is typically
+        used to manipulate one of the self.dictoinaries."""
+
+        d = self.get_dels()
+        d = dict([(x,y) for x,y in d.iteritems() if not x in k])
+
+        return self.set_dels(d)
+
+    def remove_values_from_del (self, v):
+        """Remove all the values specified in the array k from the passed
+        dictionary and return the new dictionary. This routine is typically
+        used to manipulate one of the self.dictoinaries."""
+
+        d = self.get_dels()
+        d = dict([(x,y) for x,y in d.iteritems() if not y in v])
+
+        return self.set_dels(d)
+
     def add_new (self, fid):
         self.news.append(fid)
 
@@ -407,6 +454,10 @@ class SyncLists:
 
     def get_dels (self):
         return self.dels
+
+    def set_dels (self, val):
+        self.dels = val
+        return val
 
     def send_news_to_folder (self, df):
         """df is the destination folder."""
@@ -461,7 +512,10 @@ class SyncLists:
 
     def send_dels_to_folder (self, df):
         """df is the destination folder."""
-        logging.debug('send_dels_to_folder: unimplemented')
+        logging.debug('send_dels_to_folder...')
+        remids = self.get_dels().values()
+        df.del_itemids(remids)
+
         return True
 
     def sync_to_folder (self, df):

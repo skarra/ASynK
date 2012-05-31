@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Thu May 31 13:16:28 IST 2012
+## Last Modified : Thu May 31 22:23:18 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -52,6 +52,7 @@ class BBContactsFolder(Folder):
     def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         pname = sl.get_pname()
         conf  = self.get_config()
+        pdb1id = conf.get_profile_db1(pname)
         oldi  = conf.get_itemids(pname)
         stag  = conf.make_sync_label(pname, destid)
 
@@ -104,7 +105,10 @@ class BBContactsFolder(Folder):
             
             if not x in kss and not y in kss:
                 logging.debug('Del      BBDB Contact: %s:%s', x, y)
-                sl.add_del(x, y)
+                if pdb1id == self.get_dbid():
+                    sl.add_del(x, y)
+                else:
+                    sl.add_del(y,x)
 
     def get_itemids (self, pname, destid):
         """See documentation in folder.py"""
@@ -267,17 +271,22 @@ class BBContactsFolder(Folder):
     def add_contact (self, bbc):
         self.contacts.update({bbc.get_itemid() : bbc})
 
-    def del_contact (self, bbc):
-        """Remove the specified from the contact from this folder, and return
-        True. If it does not exist in the folder, returns False."""
+    def del_itemids (self, itemids):
+        """Remove the specified from the contacts from this folder. Return
+        value is a pair of (success, [failed entries])."""
 
-        try:
-            del self.contacts[bbc.get_itemid()]
-            return True
-        except KeyError, e:
-            logging.debug('Trying to delete non-existent contact (%s) from '
-                          'Folder: %s', bbc.get_itemid(), self.get_name())
-            return False
+        retv = True
+        retf = []
+        for itemid in itemids:
+            try:
+                del self.contacts[itemid]
+            except KeyError, e:
+                retv = False
+                retf.append(itemid)
+
+        if len(itemids) > 0:
+            self.save()
+        return retv, retf
 
     def get_contacts (self):
         return self.contacts
