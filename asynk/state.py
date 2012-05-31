@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Sat May 12 10:42:08 IST 2012
+## Last Modified : Thu May 31 08:11:49 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -246,14 +246,14 @@ class Config:
     def get_coll_1 (self, profile):
         return self._get_profile_prop(profile, 'coll_1')
 
-    def set_coll_1 (self, profile, val):
-        return self._set_profile_prop(profile, 'coll_1', val)
+    def set_coll_1 (self, profile, val, sync=True):
+        return self._set_profile_prop(profile, 'coll_1', val, sync)
 
     def get_coll_2 (self, profile):
         return self._get_profile_prop(profile, 'coll_2')
 
-    def set_coll_2 (self, profile, val):
-        return self._set_profile_prop(profile, 'coll_2', val)
+    def set_coll_2 (self, profile, val, sync=True):
+        return self._set_profile_prop(profile, 'coll_2', val, sync)
 
     def get_profile_db1 (self, profile):
         return self.get_coll_1(profile)['dbid']
@@ -328,6 +328,32 @@ class Config:
 
     def set_ol_gid (self, profile, val, sync=True):
         return self._set_profile_prop(profile, 'olgid', val, sync)
+
+    def get_itemids (self, pname, dbid):
+        """Returns an array of itemids from the state.json file corresponding
+        to specified DB and Folder"""
+
+        db1id = self.get_profile_db1(pname)
+        if dbid == db1id:
+            coll = self.get_coll_1(pname)
+        else:
+            coll = self.get_coll_2(pname)
+
+        return coll['items']
+
+    def set_itemids (self, pname, dbid, itemids, sync=True):
+        db1id = self.get_profile_db1(pname)
+        if dbid == db1id:
+            coll = self.get_coll_1(pname)
+            setf = self.set_coll_1
+        else:
+            coll = self.get_coll_2(pname)
+            setf = self.set_coll_2
+
+        coll.update({'items' : itemids})
+        setf(pname, coll)
+
+        return itemids
 
     ##
     ## Finally the two save routines.

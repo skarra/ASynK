@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu May 17 16:31:21 IST 2012
+## Last Modified : Wed May 30 19:56:40 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -147,6 +147,23 @@ class OLFolder(Folder):
                 break
 
         ctable.SetColumns(self.get_def_cols(), 0)
+
+    def get_itemids (self):
+        ctable = self.get_contents()
+        cols = (mt.PR_ENTRYID, mt.PR_DISPLAY_NAME)
+        ctable.SetColumns(cols, 0)
+
+        ret = []
+        while True:
+            rows = ctable.QueryRows(1, 0)
+            if len(rows) != 1:
+                break
+
+            ((entryid_tag, entryid), (name_tag, name)) = rows[0]
+            ret.append(base64.b64encode(entryid))
+
+        ctable.SetColumns(self.get_def_cols(), 0)
+        return ret
 
     def find_item (self, itemid):
         eid = base64.b64decode(itemid)

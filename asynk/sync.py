@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Sun May 13 00:53:06 IST 2012
+## Last Modified : Thu May 31 08:10:51 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -255,6 +255,24 @@ class Sync:
             ret2 = sl2.sync_to_folder(self.get_f1())
 
         return ret1 and ret2
+
+    def save_item_lists (self):
+        """Write the existing item list to file, so we can identify deletes
+        between now and a subsequent run."""
+
+        # This is a potentially tricky operation, because if this is
+        # interrupted and only a partial list gets written to disk, the system
+        # could think there are way too many deletes... Hm. We have to build
+        # in some defensive manouvers shortly.
+
+        items1 = self.get_f1().get_itemids()
+        items2 = self.get_f2().get_itemids()
+
+        conf = self.get_config()
+        prof = self.get_pname()
+
+        conf.set_itemids(prof, self.get_db1id(), items1)
+        conf.set_itemids(prof, self.get_db2id(), items2)
 
     def _del_ol (self):
         pass

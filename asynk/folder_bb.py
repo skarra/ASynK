@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Wed May 16 13:46:42 IST 2012
+## Last Modified : Wed May 30 19:52:41 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -91,6 +91,11 @@ class BBContactsFolder(Folder):
                 logging.debug('New      BBDB Contact: %20s %s', 
                               con.get_name(), iid)
                 sl.add_new(iid)
+
+    def get_itemids (self):
+        """See documentation in folder.py"""
+
+        return self.get_contacts().keys()
 
     def find_item (self, itemid):
         """See documentation in folder.py"""

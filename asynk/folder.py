@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sat May 12 10:40:19 IST 2012
+## Last Modified : Thu May 31 07:50:31 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -105,6 +105,12 @@ class Folder:
         processed/synched. If non-zero, only specified number of
         messages/items will be processed
         """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_itemids (self):
+        """Return a list of all the IDs of contained items."""
 
         raise NotImplementedError
 
@@ -252,7 +258,6 @@ class Folder:
 
     def is_appt_folder (self):
         return True if self.type == Folder.PR_IPM_APPOINTMENT_ENTRYID else False
-
 
 ## FIXME: This file needs extensive unit testing. There's quite a bit of
 ## pseudo-repititive codet hat has been produced by manual cop-n-paste, which
