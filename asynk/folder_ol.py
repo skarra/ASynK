@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed May 30 19:56:40 IST 2012
+## Last Modified : Thu May 31 13:13:56 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -80,7 +80,9 @@ class OLFolder(Folder):
         """See the documentation in folder.Folder"""
 
         pname = sl.get_pname()
-        stag  = self.get_config().make_sync_label(pname, destid)
+        conf  = self.get_config()
+        oldi  = conf.get_itemids(pname)
+        stag  = conf.make_sync_label(pname, destid)
 
         logging.info('Querying MAPI for status of Contact Entries')
 
@@ -93,8 +95,6 @@ class OLFolder(Folder):
             dest2 = destid
 
         ctable = self.get_contents()
-        ## FIXME: This needs to be fixed. The ID will be different based on
-        ## the actual remote database, of course.
         stp = self.get_proptags().sync_tags[stag]
 
         cols = (mt.PR_ENTRYID, mt.PR_LAST_MODIFICATION_TIME,
@@ -103,7 +103,6 @@ class OLFolder(Folder):
 
         i   = 0
 
-        pname = sl.get_pname()
         synct_str = self.get_config().get_last_sync_start(pname)
         if not synct_sto:
             synct_sto = self.get_config().get_last_sync_stop(pname)
@@ -114,6 +113,7 @@ class OLFolder(Folder):
 
         logging.info('Data obtained from MAPI. Processing...')
 
+        newi = {}
         while True:
             rows = ctable.QueryRows(1, 0)
             #if this is the last row then stop
@@ -124,7 +124,7 @@ class OLFolder(Folder):
              (name_tag, name), (gid_tag, gid)) = rows[0]
             b64_entryid = base64.b64encode(entryid)
 
-            sl.add_entry(b64_entryid, gid)
+            newi.update({b64_entryid : gid})
 
             if mt.PROP_TYPE(gid_tag) == mt.PT_ERROR:
                 # Was not synced for whatever reason.
@@ -148,9 +148,19 @@ class OLFolder(Folder):
 
         ctable.SetColumns(self.get_def_cols(), 0)
 
-    def get_itemids (self):
+        kss = newi.keys()
+        for x, y in oldi.iteritems():
+            if not x in kss and not y in kss:
+                logging.debug('Deleted Outlook Contact: %s:%s', x, y)
+                sl.add_del(x, y)
+
+    def get_itemids (self, pname, destid):
+        conf  = self.get_config()
+        stag  = conf.make_sync_label(pname, destid)
+        stp   = self.get_proptags().sync_tags[stag]
+
         ctable = self.get_contents()
-        cols = (mt.PR_ENTRYID, mt.PR_DISPLAY_NAME)
+        cols = (mt.PR_ENTRYID, mt.PR_DISPLAY_NAME, stp)
         ctable.SetColumns(cols, 0)
 
         ret = []
@@ -159,10 +169,13 @@ class OLFolder(Folder):
             if len(rows) != 1:
                 break
 
-            ((entryid_tag, entryid), (name_tag, name)) = rows[0]
-            ret.append(base64.b64encode(entryid))
+            ((entryid_tag, entryid), (name_tag, name),
+             (remtag, remid)) = rows[0]
+
+            ret.update({base64.b64encode(entryid) : remid})
 
         ctable.SetColumns(self.get_def_cols(), 0)
+
         return ret
 
     def find_item (self, itemid):

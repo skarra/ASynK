@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Wed May 30 19:59:04 IST 2012
+## Last Modified : Thu May 31 13:12:43 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -107,6 +107,8 @@ class GCContactsFolder(Folder):
 
         pname = sl.get_pname()
         conf  = self.get_config()
+        oldi  = conf.get_itemids(pname)
+        newi  = self.get_itemids(pname, self.get_dbid())
 
         logging.info('Querying Google for status of Contact Entries...')
         stag = conf.make_sync_label(pname, destid)
@@ -122,6 +124,10 @@ class GCContactsFolder(Folder):
         if not updated_min:
             updated_min = conf.get_last_sync_stop(pname)
 
+        # FIXME: We are fetching the group feed a second time. Ideally we
+        # shoul dbe able to everything we want with the feed already fetched
+        # above. This has a performance implication for groups with a large
+        # number of items. Will fix this once functionality is validated.
         feed = self._get_group_feed(updated_min=updated_min, showdeleted='false')
 
         logging.info('Response recieved from Google. Processing...')
@@ -149,7 +155,9 @@ class GCContactsFolder(Folder):
 
             if epd:
                 if olid:
-                    sl.add_del(gcid, olid)
+                    pass
+                    # We will trust our own delete logic...
+                    # sl.add_del(gcid)
                 else:
                     # Deleted before it got synched. Get on with life
                     skip += 1
@@ -170,12 +178,19 @@ class GCContactsFolder(Folder):
             else:
                 sl.add_entry(gcid)
 
+        kss = newi.keys()
+        for x, y in oldi.iteritems():
+            if not x in kss and not y in kss:
+                logging.debug('Del      Google Contact: %s:%s', x, y)
+                sl.add_del(x, y)
+
+        for x in kss:
+            if not x in sl.get_news() and not x in sl.get_mods():
+                sl.add_unmod(x)
+
+        logging.debug('Total Contacts   : %5d', len(newi))
         logging.debug('num with etags   : %5d', etag_cnt)
         logging.debug('num del bef sync : %5d', skip)
-
-        logging.info('Note: Stats for Google Contacts are only for the '
-                     'changeset since the last synk. In particular the total '
-                     'count is NOT the total number of contacts in your folder!')
 
     def new_item (self, item):
         """Add the specified item to the folder."""
@@ -188,9 +203,16 @@ class GCContactsFolder(Folder):
         eid = con.save()
         return eid
 
-    def get_itemids (self):
+    def get_itemids (self, pname, destid):
         self._refresh_contacts()
-        return self.get_contacts().keys()
+        ret = {}
+        stag = self.get_config().make_sync_label(pname, destid)
+        for locid, con in self.get_contacts().iteritems():
+            if stag in con.get_sync_tags():
+                t, remid = con.get_sync_tags(stag)[0]
+                ret.update({locid : remid})
+
+        return ret
 
     def find_item (self, itemid):
         gce = self.get_gdc().GetContact(itemid)
