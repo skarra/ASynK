@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Mon May 14 00:46:15 IST 2012
+## Last Modified : Wed May 30 19:59:04 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -187,6 +187,10 @@ class GCContactsFolder(Folder):
 
         eid = con.save()
         return eid
+
+    def get_itemids (self):
+        self._refresh_contacts()
+        return self.get_contacts().keys()
 
     def find_item (self, itemid):
         gce = self.get_gdc().GetContact(itemid)

@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Sun May 13 19:17:24 IST 2012
+## Last Modified : Thu May 31 08:13:52 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -559,6 +559,9 @@ class Asynk:
                 if result:
                     conf.set_last_sync_start(pname, val=startt)
                     conf.set_last_sync_stop(pname)
+                    logging.info('Updating item inventory...')
+                    sync.save_item_lists()
+                    logging.info('Updating item inventory...done')
                 else:
                     logging.info('timestamps not reset for profile %s due to '
                                  'errors (previously identified).', pname)
