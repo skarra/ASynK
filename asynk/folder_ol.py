@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu May 31 13:13:56 IST 2012
+## Last Modified : Fri Jun 01 11:17:01 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -81,6 +81,7 @@ class OLFolder(Folder):
 
         pname = sl.get_pname()
         conf  = self.get_config()
+        pdb1id = conf.get_profile_db1(pname)
         oldi  = conf.get_itemids(pname)
         stag  = conf.make_sync_label(pname, destid)
 
@@ -152,7 +153,10 @@ class OLFolder(Folder):
         for x, y in oldi.iteritems():
             if not x in kss and not y in kss:
                 logging.debug('Deleted Outlook Contact: %s:%s', x, y)
-                sl.add_del(x, y)
+                if pdb1id == self.get_dbid():
+                    sl.add_del(x, y)
+                else:
+                    sl.add_del(y,x)
 
     def get_itemids (self, pname, destid):
         conf  = self.get_config()
@@ -177,6 +181,25 @@ class OLFolder(Folder):
         ctable.SetColumns(self.get_def_cols(), 0)
 
         return ret
+
+    def del_itemids (self, itemids):
+        """Delete the specified contacts from this folder if they exist. The
+        return value is a pair of (success, [failed entrie]). success is true
+        if and only all items were deleted successfully."""
+
+        fobj = self.get_fobj()
+
+        retv = True
+        retf = []
+        for iid in itemids:
+            logging.info('Deleting ID: %s...', iid)
+            eid = base64.b64decode(iid)
+            hr = fobj.DeleteMessages([eid], 0, None, 0)
+            if winerror.FAILED(hr):
+                retv = False
+                retf.append(base64.b64encode(eid))
+
+        return retv, retf
 
     def find_item (self, itemid):
         eid = base64.b64decode(itemid)
