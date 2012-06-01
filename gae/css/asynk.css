@@ -161,7 +161,7 @@ nav ul, nav li {
 }
 
 small {
-//  font-size: 85%;
+/*  font-size: 85%; */
 }
 
 strong, th {
@@ -293,7 +293,7 @@ body {
     height: 100%;
     font-size: 13px;
     color: #444444;
-//    background: url("/images/ricepaper.png");
+/*    background: url("/images/ricepaper.png"); */
 }
 
 /* Header area */
@@ -330,7 +330,7 @@ header #sections li {
 
 .control {
     font-family: "Trebuchet MS", Trebuchet, Verdana, Arial;
-//    background: url('/images/cardboard.jpg?884184256');
+/*   background: url('/images/cardboard.jpg?884184256'); */
     -moz-transition-property: background-color;
     -webkit-transition-property: background-color;
     -o-transition-property: background-color;
@@ -453,7 +453,6 @@ footer p {
     float: left;
 
     *zoom: 1;
-//    background: beige;
     width: 90%;
     margin-left: auto;
     margin-right: auto;
@@ -486,7 +485,6 @@ footer p {
 #sheet .section {
   *zoom: 1;
   padding: 0 2em;
-//  border-top: 1px solid #e8e8e8;
 }
 
 #sheet .section:after {
