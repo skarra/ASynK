@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Sat May 12 10:42:29 IST 2012
+## Last Modified : Fri Jun 01 17:40:15 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -118,12 +118,28 @@ class LocalTimezone(tzinfo):
 
 localtz = LocalTimezone()
 
-def utc_time_to_local_ts (t):
-    """Convert a time object which is in UTC into a timestamp in local
-    timezone"""
+def utc_time_to_local_ts (t, ret_dt=False):
+    """Convert a Pytime object which is in UTC into a timestamp in local
+    timezone.
 
-    utc_ts  = int(t)
+    If dt is True, then a datetime object is returned, else (this is the
+    default), an integer representing time since the epoch is returned."""
+
     utc_off = localtz.utcoffset(datetime.now())
-    d = datetime.fromtimestamp(utc_ts) + utc_off
+    try:
+        utc_ts  = int(t)
+        dt = datetime.fromtimestamp(utc_ts)
+    except ValueError, e:
+        ## Pytimes earlier than the epoch are a pain in the rear end. 
+        dt = datetime(year=t.year,
+                      month=t.month,
+                      day=t.day,
+                      hour=t.hour,
+                      minute=t.minute,
+                      second=t.second)
 
-    return _time.mktime(d.timetuple())
+    d = dt + utc_off
+    if ret_dt:
+        return d
+    else:
+        return _time.mktime(d.timetuple())

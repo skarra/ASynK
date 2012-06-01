@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Thu May 17 17:25:39 IST 2012
+## Last Modified : Fri Jun 01 17:41:07 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -33,11 +33,22 @@ from   win32com.mapi import mapi
 import demjson, iso8601, winerror, win32api, pywintypes
 
 def yyyy_mm_dd_to_pytime (date_str):
+    ## FIXME: Temporary hack to ensure we have a yyyy-mm-dd format. Google
+    ## allows the year to be skipped. Outlook crates a problem. We bridge the
+    ## gap by inserting '1887' (birth year of Srinivasa Ramanujan)
+    res = re.search('--(\d\d)-(\d\d)', date_str)
+    if res:
+        date_str = '1887-%s-%s' % (res.group(1), res.group(2))
+
     dt = datetime.strptime(date_str, '%Y-%m-%d')
     return pywintypes.Time(dt.timetuple())
 
 def pytime_to_yyyy_mm_dd (pyt):
-    return ('%04d-%02d-%02d' % (pyt.year, pyt.month, pyt.day))
+    if pyt.year == 1887:
+        ## Undo the hack noted above.
+        return ('--%02d-%02d' % (pyt.month, pyt.day))
+    else:
+        return ('%04d-%02d-%02d' % (pyt.year, pyt.month, pyt.day))
 
 class OLContactError(Exception):
     pass
@@ -609,11 +620,13 @@ class OLContact(Contact):
         
         d = self._get_olprop(olpd, mt.PR_BIRTHDAY)
         if d:
+            d = utils.utc_time_to_local_ts(d, ret_dt=True)
             date = pytime_to_yyyy_mm_dd(d)
             self.set_birthday(date)
 
         a = self._get_olprop(olpd, mt.PR_WEDDING_ANNIVERSARY)
         if a:
+            a = utils.utc_time_to_local_ts(a, ret_dt=True)
             date = pytime_to_yyyy_mm_dd(a)
             self.set_anniv(date)
 
