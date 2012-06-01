@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Thu May 31 13:15:40 IST 2012
+## Last Modified : Thu May 31 22:50:54 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -333,7 +333,13 @@ class Config:
         """Returns a dictionary of itemid mappsing from coll_1 to coll_2 as of
         the last successful sync """
 
-        return self._get_profile_prop(pname, 'items')
+        try:
+            return self._get_profile_prop(pname, 'items')
+        except AsynkConfigError, e:
+            ## This path will happen when a user is upgrading from state.json
+            ## version 2 to version 3. We don't really need to do anything
+            ## special, thankfully.
+            return {}
 
     def set_itemids (self, pname, itemids, sync=True):
         self._set_profile_prop(pname, 'items', itemids, sync)
