@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Thu May 31 22:58:42 IST 2012
+## Last Modified : Fri Jun 01 11:17:23 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -518,7 +518,10 @@ class SyncLists:
         logging.info('=====================================================')
 
         remids = self.get_dels().values()
-        df.del_itemids(remids)
+        if len(remids) > 0:
+            df.del_itemids(remids)
+        else:
+            logging.info('No deleted entries that need to be synched.')
 
         return True
 
