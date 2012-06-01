@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Thu May 31 22:23:18 IST 2012
+## Last Modified : Thu May 31 23:00:30 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -279,6 +279,9 @@ class BBContactsFolder(Folder):
         retf = []
         for itemid in itemids:
             try:
+                con = self.contacts[itemid]
+                logging.info('Deleting ID: %s; Name: %s...', itemid,
+                             con.get_name())
                 del self.contacts[itemid]
             except KeyError, e:
                 retv = False
