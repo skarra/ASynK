@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Thu May 31 22:41:52 IST 2012
+## Last Modified : Thu May 31 22:58:42 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -512,7 +512,11 @@ class SyncLists:
 
     def send_dels_to_folder (self, df):
         """df is the destination folder."""
-        logging.debug('send_dels_to_folder...')
+        logging.info('=====================================================')
+        logging.info('   Synching Deleted %s entries to %s',
+                     self.db1id, df.get_dbid())
+        logging.info('=====================================================')
+
         remids = self.get_dels().values()
         df.del_itemids(remids)
 
