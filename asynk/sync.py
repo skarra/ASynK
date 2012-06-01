@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Fri Jun 01 11:17:23 IST 2012
+## Last Modified : Fri Jun 01 18:14:37 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -230,11 +230,17 @@ class Sync:
         logging.debug('After removing dels from mod, size of %s mod : %5d',
                       db2id, len(f2_mod))
 
-        coma = [y for x,y in f1_del.iteritems() if y in f2_del.keys()]
-        f2_del = f2sl.remove_keys_from_del(coma)
+        # Finally remove entries that have been deleted from both places. Why
+        # bother with these suckers?
+        coma = dict([(x,y) for x,y in f1_del.iteritems() if y in f2_del.keys()])
+        f2_del = f2sl.remove_keys_from_del(coma.values())
+        for x in coma.keys():
+            del f1_del[x]
 
-        coma = [y for x,y in f2_del.iteritems() if y in f1_del.keys()]
-        f1_del = f1sl.remove_keys_from_del(coma)
+        coma = dict([(x,y) for x,y in f2_del.iteritems() if y in f1_del.keys()])
+        f1_del = f1sl.remove_keys_from_del(coma.values())
+        for x in coma.keys():
+            del f2_del[x]
 
         logging.info('After conflict resolution, size of %s del : %5d',
                      db1id, len(f1_del))
