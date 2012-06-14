@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Fri Jun 01 18:14:37 IST 2012
+## Last Modified : Thu Jun 14 22:57:40 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -304,51 +304,6 @@ class Sync:
         items1 = self.get_f1().get_itemids(prof, self.get_db2id())
 
         conf.set_itemids(prof, items1)
-
-    def _del_ol (self):
-        pass
-
-    def _del_gc (self):
-        pass
-
-    def _reset_sync (self):
-        """Delete all sync related information on Gmail and in Outlook,
-        delete the old group and all its contacts, and create a fresh
-        group with a new group ID - in sum, make a fresh beginning."""
-
-        self.gc.clear_sync_state()
-        self.olcf.bulk_clear_gcid_flag()
-        self.gc.clear_group(gid=self.config.get_gid(), gentry=None)
-
-        gc_gid = self.gc.create_group(self.config.get_gn())
-        self.config.set_gid(gc_gid)
-
-    def dry_run (self):
-        try:
-            self._prep_lists()
-            ret = self.olcf.all_entries()
-            print 'Folder Name: ', ret['folder']
-            print 'Store  Name: ', ret['store']
-            print 'Entry Count: ', ret['entrycnt']
-        except Exception, e:
-            logging.critical('Internal Error: %s', str(e))
-            logging.critical('Full Traceback follows.\n%s',
-                          traceback.format_exc())
-
-    def run (self):
-        self._prep_lists()
-
-        if (self.dir == state.SYNC_2_WAY or
-            self.dir == state.SYNC_1_WAY_O2G):
-            self._send_new_ol_to_gc()
-            self._send_mod_ol_to_gc()
-            self._del_gc()
-
-        if (self.dir == state.SYNC_2_WAY or
-            self.dir == state.SYNC_1_WAY_G2O):
-            self._get_new_gc_to_ol()
-            self._get_mod_gc_to_ol()
-            self._del_ol()
 
 class SyncLists:
     """Wrapper around lists of items that need to be synched from one place to
