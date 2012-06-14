@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Thu Jun 14 19:26:12 IST 2012
+## Last Modified : Thu Jun 14 19:45:21 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -196,7 +196,12 @@ class Config:
         return self._get_prop('config', 'log_dir')
 
     def get_log_hold_period (self):
-        return self._get_prop('config', 'log_hold_period')
+        try:
+            return self._get_prop('config', 'log_hold_period')
+        except KeyError, e:
+            ## Possibly due to a older version of the config.json. Silently
+            ## return a default value
+            return 7
 
     def get_profile_defaults (self):
         return self._get_prop('config', 'profile_defaults')
