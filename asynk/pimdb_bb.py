@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Thu May 17 08:44:09 IST 2012
+## Last Modified : Thu Jun 14 22:21:23 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -515,8 +515,15 @@ class BBPIMDB(PIMDB):
         bdir = utils.abs_pathname(conf, conf.get_backup_dir())
 
         if not os.path.exists(bdir):
-            logging.info('Creating backup directory at: %s', bdir)
+            logging.info('Creating BBDB backup directory at: %s', bdir)
             os.mkdir(bdir)
+
+        period = conf.get_backup_hold_period()
+        logging.info('Deleting BBDB backup files older than %d days, '
+                     'if any...', period)
+        utils.del_files_older_than(bdir, period)
+        logging.info('Deleting BBDB backup files older than %d days, '
+                     'if any...done', period)    
 
         stamp = string.replace(str(datetime.datetime.now()), ' ', '.')
         stamp = string.replace(stamp, ':', '-')

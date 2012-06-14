@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu Jun 14 19:41:10 IST 2012
+## Last Modified : Thu Jun 14 22:15:40 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -123,6 +123,7 @@ def setup_logging (config):
     utils.del_files_older_than(logdir, period)
     logging.info('Deleting log files older than %d days, if any...done',
                  period)    
+
 def setup_parser ():
     p = argparse.ArgumentParser(description='ASynK: PIM Awesome Sync by Karra')
     p.add_argument('--dry-run', action='store_true',
