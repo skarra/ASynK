@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Fri Jun 01 17:40:15 IST 2012
+## Last Modified : Thu Jun 14 19:40:06 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -19,7 +19,7 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
-import os, re
+import logging, os, re
 
 def abs_pathname (config, fname):
     """If fname is an absolute path then it is returned as is. If it appears
@@ -79,6 +79,19 @@ def get_event_rel (events, rel):
 
 from   datetime import tzinfo, timedelta, datetime
 import time as _time
+
+def del_files_older_than (abs_dir, days):
+    """Delete all files in abs_dir/ that were modified more than 'days' days
+    or earlier."""
+
+    now = _time.time()
+
+    for f in os.listdir(abs_dir):
+        fi = os.path.join(abs_dir, f)
+        if os.stat(fi).st_mtime < now - days * 86400:
+            if os.path.isfile(fi):
+                logging.debug('Deleting File: %s...', f)
+                os.remove(fi)
 
 # A class capturing the platform's idea of local time.
 
