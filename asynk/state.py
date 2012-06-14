@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Thu May 31 22:50:54 IST 2012
+## Last Modified : Thu Jun 14 19:26:12 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -38,6 +38,8 @@ class AsynkConfigError(Exception):
     pass
 
 class Config:
+    confi_curr_ver = 3
+
     def __init__ (self, confn, staten, sync_through=True):
         """If sync_through is True, any change to the configuration is
         immediately written back to the original disk file, otherwise
@@ -75,6 +77,13 @@ class Config:
 
         confi.close()
         statei.close()
+
+        if self.get_conf_file_version() < self.confi_curr_ver:
+            logging.warn('config.json file version is out of date. You may '
+                         'like to upgrade by pulling the latest version of '
+                         'your config.json so you get additional variables '
+                         'to configure. Note that this is optional and your '
+                         'ASynK will continue to work as before.')
 
         self.set_app_root(os.path.abspath(''))
         self.sync_through = sync_through
@@ -180,8 +189,14 @@ class Config:
     def get_backup_dir (self):
         return self._get_prop('config', 'backup_dir')
 
+    def get_backup_hold_period (self):
+        return self._get_prop('config', 'backup_hold_period')
+
     def get_log_dir (self):
         return self._get_prop('config', 'log_dir')
+
+    def get_log_hold_period (self):
+        return self._get_prop('config', 'log_hold_period')
 
     def get_profile_defaults (self):
         return self._get_prop('config', 'profile_defaults')

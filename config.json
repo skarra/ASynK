@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Thu May 17 08:44:43 IST 2012
+// Last Modified : Thu Jun 14 19:40:31 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -30,7 +30,7 @@
     // When file version changes there should be an option to
     // gracefully sense older config formats and migrate the formats
     // to the latest version. Such infra is not yet implemented FIXME.
-    'file_version'    : 2,
+    'file_version'    : 3,
 
     // This prefix is attached to all the Group names, labels
     // etc. that are created on Google, field names in BBDB etc.
@@ -46,9 +46,17 @@
     // is used. The value should be a path relative to the root directory
     'backup_dir'  : './backups',
 
+    // Duration in days for holding backup files. Every run will check
+    // for older files and delete them if any are found
+    'backup_hold_period' : 7,
+
     // Logs are written to this directory. Value should be a name
     // relative to the root diretory of the distribution.
     'log_dir'  : './logs',
+
+    // Duration in days for holding log files. Every run will check
+    // for older files and delete them if any are found
+    'log_hold_period' : 7,
 
     // When a profile is created it is populated with the following
     // default values.

@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu May 31 08:13:52 IST 2012
+## Last Modified : Thu Jun 14 19:41:10 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -43,6 +43,7 @@ from   folder           import Folder
 from   pimdb_gc         import GCPIMDB
 from   pimdb_bb         import BBPIMDB
 from   folder_bb        import BBContactsFolder
+import utils
 
 ## Some Global Variables to get started
 asynk_ver = 'v0.2.1+'
@@ -115,7 +116,13 @@ def setup_logging (config):
     fileLogger.setLevel(logging.DEBUG)
     fileLogger.setFormatter(formatter)
     logger.addHandler(fileLogger)
-    
+
+    ## Delete any old log files as applicable
+    period = config.get_log_hold_period()
+    logging.info('Deleting log files older than %d days, if any...', period)
+    utils.del_files_older_than(logdir, period)
+    logging.info('Deleting log files older than %d days, if any...done',
+                 period)    
 def setup_parser ():
     p = argparse.ArgumentParser(description='ASynK: PIM Awesome Sync by Karra')
     p.add_argument('--dry-run', action='store_true',
@@ -196,7 +203,7 @@ def setup_parser ():
                    'a log file for tracking purposes')
 
     p.add_argument('--version', action='version',
-                   version='%(prog)s v' + ('%s' % asynk_ver))
+                   version='%(prog)s ' + ('%s' % asynk_ver))
 
     return p
 
