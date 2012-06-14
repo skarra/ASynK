@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu Jun 14 22:15:40 IST 2012
+## Last Modified : Thu Jun 14 22:54:39 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -117,7 +117,11 @@ def setup_logging (config):
     fileLogger.setFormatter(formatter)
     logger.addHandler(fileLogger)
 
-    ## Delete any old log files as applicable
+def clear_old_log_files (config):
+    logdir = config.get_log_dir()
+    if not os.path.exists(logdir):
+        return
+
     period = config.get_log_hold_period()
     logging.info('Deleting log files older than %d days, if any...', period)
     utils.del_files_older_than(logdir, period)
@@ -346,6 +350,9 @@ class Asynk:
         # self.set_port(uinps.port)
 
     def dispatch (self):
+        if not self.is_dry_run():
+            clear_old_log_files(self.get_config())
+
         res = getattr(self, self.get_op())()
         return res
 
