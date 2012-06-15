@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu May 31 22:38:21 IST 2012
+## Last Modified : Fri Jun 15 07:18:47 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -144,6 +144,10 @@ class GCContactsFolder(Folder):
 
         if not feed.entry:
             logging.info('No entries in feed.')
+
+            for x in kss:
+                sl.add_unmod(x)
+
             return
 
         skip     = 0
