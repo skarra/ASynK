@@ -46,7 +46,7 @@ from   folder_bb        import BBContactsFolder
 import utils
 
 ## Some Global Variables to get started
-asynk_ver = 'v0.2.2'
+asynk_ver = 'v0.2.2+'
 
 class AsynkParserError(Exception):
     pass
