@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 // Created       : Sat May 05 13:15:20 IST 2012
-// Last Modified : Fri Jun 01 14:53:57 IST 2012
+// Last Modified : Sat Jun 16 19:21:02 IST 2012
 //
 // Copyright (C) 2012, Sriram Karra <karra.etc@gmail.com>
 // All Rights Reserved
@@ -55,6 +55,7 @@
     <a id="announce"  >Announcements</a> <br/>
     <a id="downloads" >Downloads</a>  <br/>
     <a id="doc"       >Documentation</a>  <br/>
+    <a id="support" >Support</a>  <br/>
     <a id="about"     >This & That</a>  <br/>
     <div class="push"></div>
 
@@ -85,6 +86,41 @@
 
       <div id="announce_text" class="section" style="display:none">
 	<h2>Announcements</h2>
+
+	<h3>
+	<span class="announce_title">Fri Jun 15 07:40:54 IST 2012</span>
+	</h3>
+
+	<div class="announce_text">
+	  We have just pushed release v0.2.2 out. Key changes are:
+	  <ol>
+	    <li>Now Item deletions are synched. i.e. if you have a sync
+	    profile set up between Google folder and a Outlook folder, say,
+	    and you delete a contact in Google, the next time you sync that
+	    entry will be deleted from the corresponding Outlook folder as
+	    well.<p/>
+
+	    For this to work correctly, it is recommended that you do a full
+	    sync of all your configured profiles once - note that a dry run is
+	    not sufficient.
+
+	    <li>Log files older than 7 days will be cleared every time asynk
+	    is executed - except if it is a dry run. The duration can be
+	    configured in config.json by changing the 'log_hold_period'
+	    parameter.
+
+	    <li>BBDB Backup files older than 7 days will cleared every time
+	    asynk is executed - except if it is a dry run. The duration can be
+	    configured in config.json by changing the 'backup_hold_period'
+	    parameter.
+
+	    <li>Misc bug fixes
+	  </ol>
+	  <p>
+
+	  Go grab the latest release from the <span
+	  class="announce_download">Downloads page</span>!
+	</div>
 
 	<h3>
 	<span class="announce_title">Thu May 17 20:14:28 IST 2012</span>
@@ -135,15 +171,15 @@
 	  <h3>Download Pre-packaged Bundles</h3>
    	    Bundles are available in the following formats. 
 	  <ul>
-	    <li>The latest stable release: v0.2.1
+	    <li>The latest stable release: v0.2.2
 	    <ul>
 	      <li> <a
-	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.1.tar.gz">
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.2.tar.gz">
 	      Gzipped tar archive</a>
 	      </li>
 
 	      <li> <a
-	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.1.zip">
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.2.zip">
 	      Zip File </a>
 	      </li>
 	    </ul>
@@ -152,6 +188,16 @@
 	  <li>
 	  Earlier releases:
 	    <ul>
+	      <li> <a
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.0.tar.gz">
+	      v0.2.1.tar.gz</a>
+	      </li>
+
+	      <li> <a
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.0.zip">
+	      v0.2.1.zip </a>
+	      </li>
+
 	      <li> <a
 	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.0.tar.gz">
 	      v0.2.0.tar.gz</a>
@@ -217,6 +263,26 @@
 
       </div>
 
+      <div id="support_text" class="section" style="display:none">
+	<h2>Support</h2>
+	<p> 
+	  <h3>Mailing List</h3>
+	  There is a low-volume mailing list hosted by googlegroups where
+	  ASynK users hang out. Release announcements and updates are also
+	  posted to the list. Head
+	  to <a href="https://groups.google.com/d/forum/asynk"> Mailing list
+	  home page</a>
+	  to view archives of old emails as well as subsribe to receive future posts.
+	</p>
+	<p> 
+	  <h3>Twitter Account</h3>
+	  Important announcements such as new releases and updates, etc. are
+	  posted to the twitter
+	  account <a href="https://twitter.com/#!/a_synk"> @a_synk </a> . You
+	  can follow this account on twitter to receive updates in your twitter stream.
+	</p>
+      </div>
+
       <div id="about_text" class="section" style="display:none">
       	<a name="about"><h2>About the Author</h2></a>
 	<p>
@@ -250,7 +316,7 @@
 	    </li>
 	    <li>
 	      <a href="http://twitter.com/#!/jackerhack">Jace, aka Kiran</a>
-	      and <a href="www.hasgeek.com">HasGeek</a> for CSS, and HTML
+	      and <a href="//www.hasgeek.com">HasGeek</a> for CSS, and HTML
 	      inspiration.
 	    </li>
 	  </ul>
@@ -267,7 +333,7 @@
 <p/>
   <div id="footer_content">
     Copyright &copy; 2012 Sriram Karra (karra.etc at gmail dot com)<br/>
-    Last Modified: Thu May 17 20:14:03 IST 2012
+    Last Modified: Sat Jun 16 19:19:53 IST 2012
 </footer>
 
 </body>

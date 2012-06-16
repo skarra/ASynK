@@ -1,6 +1,6 @@
 // 
 // Created       : Sat May 05 13:15:20 IST 2012
-// Last Modified : Sun May 13 14:09:30 IST 2012
+// Last Modified : Sat Jun 16 19:18:58 IST 2012
 //
 // Copyright (C) 2012, Sriram Karra <karra.etc@gmail.com>
 // All Rights Reserved
@@ -24,6 +24,11 @@ function addFormHandlers () {
     $("#announce").mouseenter(function () {
 	hideAllSheetDivs()
 	$("#announce_text").css({display : "block"})
+    })
+
+    $("#support").mouseenter(function () {
+	hideAllSheetDivs()
+	$("#support_text").css({display : "block"})
     })
 
     $("#downloads").mouseenter(function () {
