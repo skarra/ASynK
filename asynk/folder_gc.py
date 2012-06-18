@@ -160,12 +160,13 @@ class GCContactsFolder(Folder):
             etag = entry.etag
             epd  = entry.deleted
             name = None
-            if entry.name.full_name:
-                name = entry.name.full_name.text
-            elif entry.name.family_name:
-                name = entry.name.family_name.text
-            elif entry.name.given_name:
-                name = entry.name.given_name.text
+            if entry.name:
+                if entry.name.full_name:
+                    name = entry.name.full_name.text
+                elif entry.name.family_name:
+                    name = entry.name.family_name.text
+                elif entry.name.given_name:
+                    name = entry.name.given_name.text
 
             if epd:
                 if olid:
