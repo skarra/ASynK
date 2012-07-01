@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Thu Jun 14 22:21:23 IST 2012
+## Last Modified : Sun Jul 01 11:12:48 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -252,8 +252,7 @@ class MessageStore:
                 try:
                     c  = BBContact(def_f, rec=ff.rstrip())
                 except BBDBParseError, e:
-                    logging.error('Could not instantiate BBDBContact object: %s',
-                                  str(e))
+                    logging.error('Could not parse BBDB record: %s', ff)
                     continue
 
                 fn = c.get_bbdb_folder()

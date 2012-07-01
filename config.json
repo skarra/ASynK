@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Thu Jun 14 19:40:31 IST 2012
+// Last Modified : Sun Jul 01 11:11:50 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -203,7 +203,7 @@
 	    // cannot put any 'known' encoding here, and hope it will
 	    // work. Only those encodings that are available to the
 	    // standard Python codecs library are supported.
-	    text_encodings : ['utf-8', 'latin-1'],
+	    text_encodings : ['utf-8', 'latin-1', 'iso-8859-1'],
 
             // See above in 'ol'. this is the same stuff.
             "email_domains" : {
