@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Thu Jun 14 19:40:06 IST 2012
+## Last Modified : Sun Jul 01 14:00:53 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -22,11 +22,15 @@
 import logging, os, re
 
 def abs_pathname (config, fname):
-    """If fname is an absolute path then it is returned as is. If it appears
-    to be a relative path, the application root is prepended to the name and
-    an absolute OS-specific path string is returned."""
+    """If fname is an absolute path then it is returned as is. If it starts
+    with a ~ then expand the path as per Unix conventions and finally if it
+    appears to be a relative path, the application root is prepended to the
+    name and an absolute OS-specific path string is returned."""
 
     app_root = config.get_app_root()
+    if fname[0] == '~':
+        return os.path.expanduser(fname)
+
     if fname[0] != '/' and fname[1] != ':' and fname[2] != '\\':
         return os.path.join(app_root, fname)
 
