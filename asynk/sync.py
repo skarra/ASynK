@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Thu Jun 14 22:57:40 IST 2012
+## Last Modified : Sun Jul 01 12:04:03 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -30,13 +30,6 @@
 # import atom, gdata.contacts.client
 
 import getopt, logging, os, sys, traceback
-
-if __name__ == "__main__":
-    ## Being able to fix the sys.path thusly makes is easy to execute this
-    ## script standalone from IDLE. Hack it is, but what the hell.
-    DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
-    EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib')]
-    sys.path = EXTRA_PATHS + sys.path
 
 import state, utils
 from   state         import Config

@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Thu Jun 14 22:33:59 IST 2012
+## Last Modified : Sun Jul 01 11:51:02 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -235,6 +235,12 @@ class Config:
     ##
     ## get-set pairs for sync state parameters in state.json
     ##
+
+    def get_user_dir (self):
+        return self._get_prop('state', 'asynk_user_dir')
+
+    def set_user_dir (self, val, sync=False):
+        return self._set_prop('state', 'asynk_user_dir', val, sync)
 
     def get_app_root (self):
         return self._get_prop('state', 'app_root')

@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Sun Jul 01 11:11:50 IST 2012
+// Last Modified : Sun Jul 01 12:16:05 IST 2012
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -30,7 +30,7 @@
     // When file version changes there should be an option to
     // gracefully sense older config formats and migrate the formats
     // to the latest version. Such infra is not yet implemented FIXME.
-    'file_version'    : 3,
+    'file_version'    : 4,
 
     // This prefix is attached to all the Group names, labels
     // etc. that are created on Google, field names in BBDB etc.
@@ -43,16 +43,21 @@
     'dbid_re'         : '([a-z][a-z]+)',
 
     // If any files have to be backed up automatically, this directory
-    // is used. The value should be a path relative to the root directory
-    'backup_dir'  : './backups',
+    // is used. The value should be a path relative to to
+    // asynk_user_dir - which is not a config varailble, but defaults
+    // to ~/.asynk or root of asynk or specified from command line
+    // with --user-dir
+    'backup_dir'  : 'backups',
 
     // Duration in days for holding backup files. Every run will check
     // for older files and delete them if any are found
     'backup_hold_period' : 7,
 
     // Logs are written to this directory. Value should be a name
-    // relative to the root diretory of the distribution.
-    'log_dir'  : './logs',
+    // relative to asynk_user_dir - which is not a config varailble,
+    // but defaults to ~/.asynk or root of asynk or specified from
+    // command line with --user-dir
+    'log_dir'  : 'logs',
 
     // Duration in days for holding log files. Every run will check
     // for older files and delete them if any are found

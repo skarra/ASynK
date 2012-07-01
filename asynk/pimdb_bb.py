@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Sun Jul 01 11:12:48 IST 2012
+## Last Modified : Sun Jul 01 12:20:31 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -511,7 +511,7 @@ class BBPIMDB(PIMDB):
         ## Make a backup of the BBDB store into the backup directory
         conf = self.get_config()
         db1  = conf.get_profile_db1(pname)
-        bdir = utils.abs_pathname(conf, conf.get_backup_dir())
+        bdir = os.path.join(conf.get_user_dir(), conf.get_backup_dir())
 
         if not os.path.exists(bdir):
             logging.info('Creating BBDB backup directory at: %s', bdir)
