@@ -1,6 +1,7 @@
+#!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Thu Jun 14 22:54:39 IST 2012
+## Last Modified : Sun Jul 01 12:26:54 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -23,9 +24,10 @@ import argparse, datetime, logging, os, re, shutil, string, sys, traceback
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
 
-DIR_PATH    = os.path.abspath('')
-EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'),
-               os.path.join(DIR_PATH, 'asynk'),]
+CUR_DIR           = os.path.abspath('')
+ASYNK_BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
+               os.path.join(ASYNK_BASE_DIR, 'asynk'),]
 sys.path = EXTRA_PATHS + sys.path
 
 try:
@@ -58,18 +60,46 @@ class AsynkInternalError(Exception):
     pass
 
 def main (argv=sys.argv):
-    # Copy a default state.json if this is the first time we are running ASynK
-    if not os.path.isfile('./state.json'):
-        print 'Creating default state.json to hold application status'
-        shutil.copy2('./state.init.json', './state.json');
-
-    config =  Config('./config.json', './state.json')
-    setup_logging(config)
-
-    logging.debug('Command line: "%s"', ' '.join(sys.argv))
-
     parser  = setup_parser()
     uinps = parser.parse_args()
+
+    # Make the user directory if it does not exist
+    if not os.path.exists(uinps.user_dir):
+        print 'Creating ASynK User directory at: ', uinps.user_dir
+        os.makedirs(uinps.user_dir)
+
+    # If there is no config file, then let's copy something that makes
+    # sense...
+    if not os.path.isfile(os.path.join(uinps.user_dir, 'state.json')):
+        # Let's first see if there is anything in the asynk source root
+        # directory - this would be the case with early users of ASynK when
+        # there was no support for a user-level config dir in ~/.asynk/
+        if os.path.isfile(os.path.join(ASYNK_BASE_DIR, 'state.json')):
+            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'state.json'),
+                         os.path.join(uinps.user_dir, 'state.json'))
+            print 'We have copied your state.json to new user director: ',
+            print uinps.user_dir
+            print 'We have not copied any of your logs and backup directories.'
+        else:
+            ## Looks like this is a pretty "clean" run. So just copy the
+            ## state.init file to get things rolling
+            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'state.init.json'),
+                         os.path.join(uinps.user_dir, 'state.json'))            
+
+    # Now copy the config.json file as well.
+    if not os.path.isfile(os.path.join(uinps.user_dir, 'config.json')):
+            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'config.json'),
+                         os.path.join(uinps.user_dir, 'config.json'))
+
+    state_filen = os.path.join(uinps.user_dir, 'state.json')
+    conf_filen  = os.path.join(uinps.user_dir, 'config.json')
+
+    config =  Config(conf_filen, state_filen)
+    config.set_user_dir(uinps.user_dir)
+
+    setup_logging(config)
+    logging.debug('Command line: "%s"', ' '.join(sys.argv))
+
     try:
         asynk = Asynk(uinps, config)
     except AsynkParserError, e:
@@ -79,7 +109,8 @@ def main (argv=sys.argv):
     asynk.dispatch()
 
 def setup_logging (config):
-    """Set up the logging setings to the defaults. """
+    """Set up the logging setings to the defaults. The log directory is
+    created inside asynk_user_dir, which is assumed to exist already"""
 
     formatter = logging.Formatter('[%(asctime)s.%(msecs)03d '
                                   '%(levelname)8s] %(message)s',
@@ -102,7 +133,7 @@ def setup_logging (config):
     ## logs/ directory. The location of the directory is read from the
     ## configuration file.
 
-    logdir = config.get_log_dir()
+    logdir = os.path.join(config.get_user_dir(), config.get_log_dir())
     if not os.path.exists(logdir):
         logging.info('Creating Logs directory at: %s', logdir)
         os.mkdir(logdir)
@@ -118,7 +149,7 @@ def setup_logging (config):
     logger.addHandler(fileLogger)
 
 def clear_old_log_files (config):
-    logdir = config.get_log_dir()
+    logdir = os.path.join(config.get_user_dir(), config.get_log_dir())
     if not os.path.exists(logdir):
         return
 
@@ -152,6 +183,10 @@ def setup_parser ():
                     default='startweb',
                     help='Specific management operation to be performed.')
 
+    p.add_argument('--user-dir', action='store',
+                   default=os.path.expanduser('~/.asynk'),
+                   help=('Directory to store ASynK config files, logs ' +
+                         'directory, BBDB backups directory, etc.'))
     p.add_argument('--db',  action='store', choices=('bb', 'gc', 'ol'),
                    nargs='+',
                    help=('DB IDs required for most actions. ' +

@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Jun 01 11:17:01 IST 2012
+## Last Modified : Sun Jul 01 12:04:17 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -22,13 +22,6 @@
 import logging, os, re, sys, time, traceback
 import iso8601, base64
 import utils
-
-if __name__ == "__main__":
-    ## Being able to fix the sys.path thusly makes is easy to execute this
-    ## script standalone from IDLE. Hack it is, but what the hell.
-    DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
-    EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib')]
-    sys.path = EXTRA_PATHS + sys.path
 
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
