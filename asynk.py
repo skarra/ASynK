@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Sun Jul 01 12:26:54 IST 2012
+## Last Modified : Mon Jul 02 16:46:55 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -248,7 +248,7 @@ def setup_parser ():
     return p
 
 class Asynk:
-    def __init__ (self, uinps, config=None):
+    def __init__ (self, uinps, config):
         """uinps is a Namespace object as returned from the parse_args()
         routine of argparse module."""
 
@@ -259,11 +259,7 @@ class Asynk:
         self.reset_fields()
         self.validate_and_snarf_uinps(uinps)
 
-        if config:
-            self.set_config(config)
-        else:
-            self.set_config(Config('./config.json', './state.json'))
-
+        self.set_config(config)
         self.logged_in = False
 
     def _login (self, force=False):
