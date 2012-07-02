@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Mon Jul 02 16:46:55 IST 2012
+## Last Modified : Mon Jul 02 22:41:07 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -19,7 +19,8 @@
 ## You should have a copy of the license in the doc/ directory of ASynK.  If
 ## not, see <http://www.gnu.org/licenses/>.
 
-import argparse, datetime, logging, os, re, shutil, string, sys, traceback
+import argparse, datetime, logging, os, platform
+import re, shutil, string, sys, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -284,6 +285,8 @@ class Asynk:
             if not gcuser:
                 while not gcuser:
                     gcuser = raw_input('Please enter your username: ')
+                self.add_store_id('gc', gcuser)
+
             self.set_gcuser(gcuser)
 
             while not self.get_gcpw():
@@ -291,13 +294,34 @@ class Asynk:
                 if not self.get_gcpw():
                     print 'Password cannot be blank'
 
-        if self.get_db1():
-            login_func = 'login_%s' % self.get_db1()
-            self.set_db(self.get_db1(), getattr(self, login_func)())
+        conf = self.get_config()
+        db1id = self.get_db1()
+        db2id = self.get_db2()
+        pname = self.get_name()
 
-        if self.get_db2():
-            login_func = 'login_%s' % self.get_db2()
-            self.set_db(self.get_db2(), getattr(self, login_func)())
+        if db1id:
+            login_func = 'login_%s' % db1id
+            self.set_db(db1id, getattr(self, login_func)())
+
+            if pname and conf.profile_exists(pname):
+                if not conf.get_stid1(pname):
+                    conf.set_stid1(pname, self.get_store_id(db1id))
+
+                if not conf.get_fid1(pname):
+                    deff = self.get_db(db1id).get_def_folder()
+                    conf.set_fid1(pname, deff.get_itemid())
+
+        if db2id:
+            login_func = 'login_%s' % db2id
+            self.set_db(db2id, getattr(self, login_func)())
+
+            if pname and conf.profile_exists(pname):
+                if not conf.get_stid2(pname):
+                    conf.set_stid2(pname, self.get_store_id(db2id))
+
+                if not conf.get_fid2(pname):
+                    deff = self.get_db(db2id).get_def_folder()
+                    conf.set_fid2(pname, deff.get_itemid())
 
         self.logged_in = True
             
@@ -617,7 +641,9 @@ class Asynk:
                 logging.critical(traceback.format_exc())
                 return False
 
-        conf.set_default_profile(pname)
+        if not pname in ['defgcol', 'defgcbb']:
+            conf.set_default_profile(pname)
+
         return True
 
     def op_startweb (self):
@@ -822,7 +848,13 @@ class Asynk:
 
         if not pname:
             def_pname = conf.get_default_profile()
-            if conf.profile_exists(def_pname):
+            if not def_pname:
+                # Use the defgcbb on Unix and defgcol profile on Windows
+                if platform.system() == 'Windows':
+                    pname = 'defgcol'
+                else:
+                    pname = 'defgcbb'
+            elif conf.profile_exists(def_pname):
                 pname = def_pname
             else:
                 ## Hm, the default profile disappeared from under us... No
