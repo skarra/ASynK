@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Sat May 12 10:41:42 IST 2012
+## Last Modified : Mon Jul 02 21:27:51 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -139,11 +139,15 @@ class GCPIMDB(PIMDB):
         for (gid, gn, gcentry) in groups:
             f = GCContactsFolder(self, gid, gn, gcentry)
             self.add_contacts_folder(f)
+            logging.debug('Processing Folder: %s...', gn)
+            if gn == 'System Group: My Contacts':
+                self.set_def_folder(Folder.CONTACT_t, f)
 
     def set_def_folders (self):
         """See the documentation in class PIMDB"""
 
-        raise NotImplementedError
+        ## Already set in the context of the set_folders() method above.
+        pass
 
     def set_sync_folders (self):
         """See the documentation in class PIMDB"""
