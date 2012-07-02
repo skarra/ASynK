@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu May 17 17:23:24 IST 2012
+## Last Modified : Sun Jul 01 23:28:33 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -30,7 +30,7 @@ import logging, getopt, re, string, sys, time
 import atom, iso8601
 import gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
-import utils
+import demjson, utils
 from   contact    import Contact
 import folder_gc
 
@@ -138,6 +138,7 @@ class GCContact(Contact):
         self._snarf_itemid_from_gce(gce)
         self._snarf_names_gender_from_gce(gce)
         self._snarf_notes_from_gce(gce)
+        self._snarf_group_membership_from_gce(gce)
         self._snarf_emails_from_gce(gce)
         self._snarf_postal_from_gce(gce)
         self._snarf_org_details_from_gce(gce)
@@ -227,6 +228,24 @@ class GCContact(Contact):
     def _snarf_notes_from_gce (self, ce):
         if ce.content and ce.content.text:
             self.add_notes(ce.content.text)
+
+    def _snarf_group_membership_from_gce (self, ce):
+        # The group id corresponding to the current folder is ignored, the
+        # rest go into custom properties
+        gids = []
+        if ce.group_membership_info:
+            if len(ce.group_membership_info) > 0:
+                for gid in ce.group_membership_info:
+                    if gid.href == self.get_folder().get_itemid():
+                        continue
+                    gids.append(gid.href)
+
+                # We encode to json, and then escape the double quotes which
+                # will trip up the BBDB parser... Ah, the endless stream of
+                # hacks that keep life interesting...
+                js = demjson.encode(gids)
+                self.add_custom('gids',
+                                js.replace('"', '\\"'))
 
     def _snarf_emails_from_gce (self, ce):
         """Fetch the email entries in the specified ContactEntry object and
@@ -530,16 +549,19 @@ class GCContact(Contact):
         """Append the group IDs that denote group membership to the specified
         ContactEntry object."""
 
-        ## FIXME: Deal explicitly with the multi-group membership issue. As
-        ## things are now, it is a recipe for information loss sooner or
-        ## later. One approach to dealing with the situation is to explicitly
-        ## have a gids flag in the Contact properties which can be suitably
-        ## populated when the contact is created from a ContactEntry
-        ## object. Er, actually that sounds blindingly obvious :-)
-
         gid = self.get_folder().get_itemid()
         gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
         gce.group_membership_info.append(gidm)
+
+        if not self.get_custom('gids'):
+            return
+
+        js = self.get_custom('gids')
+        js = js.replace('\\', '')
+        gids = demjson.decode(js)
+        for gid in gids:
+            gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
+            gce.group_membership_info.append(gidm)
 
     def _add_emails_to_gce (self, gce):
         """Append the email addresses from the current Contact object to the
@@ -763,7 +785,9 @@ class GCContact(Contact):
             gce.user_defined_field.append(ud)
 
         for key, val in self.get_custom().iteritems():
-            if val:
+            # We skip certain keys that have been processed already and
+            # populated into other elements of the contact entry.
+            if val and not key in ['gids']:
                 ud       = gdata.contacts.data.UserDefinedField()
                 ud.key   = key
                 ud.value = val
