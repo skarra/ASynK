@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Sun Jul 01 11:51:02 IST 2012
+## Last Modified : Mon Jul 02 22:46:37 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -295,14 +295,34 @@ class Config:
     def get_stid1 (self, profile):
         return self.get_coll_1(profile)['stid']
 
+    def set_stid1 (self, profile, stid, sync=True):
+        coll1 = self.get_coll_1(profile)
+        coll1.update({'stid' : stid})
+        return self.set_coll_1(profile, coll1, sync)
+
     def get_stid2 (self, profile):
         return self.get_coll_2(profile)['stid']
+
+    def set_stid2 (self, profile, stid, sync=True):
+        coll2 = self.get_coll_2(profile)
+        coll2.update({'stid' : stid})
+        return self.set_coll_2(profile, coll2, sync)
 
     def get_fid1 (self, profile):
         return self.get_coll_1(profile)['foid']
 
+    def set_fid1 (self, profile, fid, sync=True):
+        coll1 = self.get_coll_1(profile)
+        coll1.update({'foid' : fid})
+        return self.set_coll_1(profile, coll1, sync)
+
     def get_fid2 (self, profile):
         return self.get_coll_2(profile)['foid']
+
+    def set_fid2 (self, profile, fid, sync=True):
+        coll2 = self.get_coll_2(profile)
+        coll2.update({'foid' : fid})
+        return self.set_coll_2(profile, coll2, sync)
 
     def get_last_sync_start (self, profile):
         return self._get_profile_prop(profile, 'last_sync_start')
