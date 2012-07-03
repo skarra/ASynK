@@ -1,0 +1,1 @@
+This directory contains unit tests that must pass before anything can be released. At this time the coverage is, er, rather poor. But the idea is this will evolve into a proper regression test suite that every commit / batch of commits should pass before being accepted to the master branch.
