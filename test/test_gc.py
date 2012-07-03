@@ -144,6 +144,45 @@ class TestGCContact:
         sl = SyncLists(f, 'ol')
         f.prep_sync_lists('ol', sl)
 
+    def test_pimdbgc ():
+        config = Config('../app_state.json')
+    
+        # Parse command line options
+        try:
+            opts, args = getopt.getopt(sys.argv[1:], '', ['user=', 'pw='])
+        except getopt.error, msg:
+            print 'python gc_wrapper.py --user [username] --pw [password]'
+            sys.exit(2)
+    
+        user = ''
+        pw = ''
+        # Process options
+        for option, arg in opts:
+            if option == '--user':
+                user = arg
+            elif option == '--pw':
+                pw = arg
+    
+        while not user:
+            user = raw_input('Please enter your username: ')
+    
+        while not pw:
+            pw = raw_input('Password: ')
+            if not pw:
+                print 'Password cannot be blank'
+    
+        try:
+            sample = GCPIMDB(config, user, pw)
+        except gdata.client.BadAuthentication:
+            print 'Invalid credentials. WTF.'
+            return
+    
+        sample.print_groups()
+        gid = sample.new_folder('Hurrah Testing', Folder.CONTACT_t)
+        #gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/50fccc2a8e0100eb'
+        sample.del_folder(gid)
+        sample.print_groups()
+
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
     main()
