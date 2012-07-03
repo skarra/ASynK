@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat May 12 10:44:13 IST 2011
-## Last Modified : Sat May 12 10:44:29 IST 2012
+## Last Modified : Tue Jul 03 08:00:11 IST 2012
 ##
 ## This file is part of ASynK
 ##
@@ -21,7 +21,8 @@ import logging, os, os.path, shutil, sys, traceback, unittest
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
-DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
+DIR_PATH    = os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath('__file__')), '..'))
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
@@ -54,7 +55,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_get_conf_file_version (self):
         val = self.config.get_conf_file_version()
-        self.assertTrue(val == 2)
+        self.assertTrue(val == 4)
 
     def test_read_label_prefix (self):
         val = self.config.get_label_prefix()
@@ -103,7 +104,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_read_state_file_version (self):
         val = self.config.get_state_file_version()
-        self.assertTrue(val == 2)
+        self.assertTrue(val == 4)
 
     def test_write_state_file_version (self):
         self.config.set_state_file_version(5)
@@ -111,23 +112,23 @@ class TestStateFunctions(unittest.TestCase):
         self.assertTrue(val == 5)
 
     def test_read_sync_start (self):
-        val = self.config.get_last_sync_start('sample')
+        val = self.config.get_last_sync_start('defgcol')
         self.assertTrue(val == "1980-01-01T00:00:00.00+00:00")
 
     def test_write_sync_start (self):
         t =  self.config.get_curr_time()
-        self.config.set_last_sync_start('sample', t)
-        val = self.config.get_last_sync_start('sample')
+        self.config.set_last_sync_start('defgcol', t)
+        val = self.config.get_last_sync_start('defgcol')
         self.assertTrue(val == t)
         
     def test_read_sync_stop (self):
-        val = self.config.get_last_sync_stop('sample')
+        val = self.config.get_last_sync_stop('defgcol')
         self.assertTrue(val =="1980-01-01T00:00:00.00+00:00")
 
     def test_write_sync_stop (self):
         t =  self.config.get_curr_time()
-        self.config.set_last_sync_stop('sample', t)
-        val = self.config.get_last_sync_stop('sample')
+        self.config.set_last_sync_stop('defgcol', t)
+        val = self.config.get_last_sync_stop('defgcol')
         self.assertTrue(val == t)
 
     def test_invalid_profile_read (self):
@@ -135,34 +136,34 @@ class TestStateFunctions(unittest.TestCase):
             val = self.config.get_last_sync_start('goofy')
 
     def test_read_sync_dir (self):
-        val = self.config.get_sync_dir('sample')
+        val = self.config.get_sync_dir('defgcol')
         self.assertTrue(val == "SYNC2WAY")
 
     def test_write_sync_dir (self):
-        self.config.set_sync_dir('sample', 'SYNC1WAY')
-        val = self.config.get_sync_dir('sample')
+        self.config.set_sync_dir('defgcol', 'SYNC1WAY')
+        val = self.config.get_sync_dir('defgcol')
         self.assertTrue(val == "SYNC1WAY")
 
     def test_write_invalid_sync_dir (self):
         with self.assertRaises(AsynkConfigError):
-            self.config.set_sync_dir('sample', 'GOOFY')
+            self.config.set_sync_dir('defgcol', 'GOOFY')
 
     def test_read_cr (self):
-        val = self.config.get_conflict_resolve('sample')
+        val = self.config.get_conflict_resolve('defgcol')
         self.assertTrue(val == 'gc')
 
     def test_write_cr (self):
-        self.config.set_conflict_resolve('sample', 'bb')
-        val = self.config.get_conflict_resolve('sample')
+        self.config.set_conflict_resolve('defgcbb', 'bb')
+        val = self.config.get_conflict_resolve('defgcbb')
         self.assertTrue(val == 'bb')
 
     def test_write_invalid_cr (self):
         with self.assertRaises(AsynkConfigError):
-            self.config.set_conflict_resolve('sample', 'GUPPY')
+            self.config.set_conflict_resolve('defgcbb', 'GUPPY')
 
     def test_get_gid_next_gc (self):
         val = self.config.get_ol_next_gid('gc')
-        self.assertTrue(val == 0x9001)
+        self.assertTrue(val == 0x9002)
 
     def test_get_gid_next_bb (self):
         val = self.config.get_ol_next_gid('bb')
