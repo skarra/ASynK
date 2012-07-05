@@ -514,21 +514,27 @@ state is explained in more detail in the @ref{Internals, Internals}, section.
 
 @section @kbd{config.json}
 
-The entire application configuration is stored as a JSON file in the root
-directory of the application. It has copious comments and explanation of its
-various fields, so we will only list the main configuarable parameters here,
-and will just point you to the source to find out more.
+The entire application configuration is stored as a JSON file, the default of
+which is available as config.json in in the root directory of the
+application. It has copious comments and explanation of its various fields, so
+we will only list the main configuarable parameters here, and will just point
+you to the source to find out more.
+
+The first time you run ASynK, a copy of the config file is made to ~/.asynk
+(which is the default per-user asynk config directory), or to a directory
+specified with the @kbd{--user-dir} command line option.
 
 It is important to note at the outset that the only way these parameters can
-be configured is by hand - you need to edit the config.json file and save
-it. The changes will be read and processed in the next run. In future we have
-plans of implementing a html/browser interface, when we will support editing
-these through that same interface so we can finally bid goodby to mucking with
-json files.
+be configured is by hand - you need to edit the ~/.asynk/config.json file. The
+changes will be read and processed in the next run. In future we have plans of
+implementing a html/browser interface, when we will support editing these
+through that same interface so we can finally bid goodby to mucking with json
+files.
 
 @enumerate
 @item
-Location of directory containing logs
+Location of directory containing logs. This should the name of a directory
+relative to the ASynK user directory, which is ~/.asynk/ by default.
 @cindex logging
 
 @item
@@ -568,7 +574,9 @@ BBDB
 
 @enumerate
 @item
-Location of directory containing backup of BBDB stores
+Location of directory containing backup of BBDB stores. This should the name
+of a directory relative to the asynk user directory, which is ~/.asynk/ by
+default. 
 @cindex Backup BBDB
 
 @item
@@ -1107,9 +1115,25 @@ specified folder.
 @section Application and Sync State database: @kbd{state.json}
 
 The profile database, and sync state is stored in a file called
-@kbd{state.json} in the root directory of the application. This file does not
-exist in the distribution, but is created the very first time you run ASynK,
-from a file called @kbd{state.init.json} also in the same location.
+@kbd{state.json}, which is stored in ~/.asynk/ root directory of the
+application. This file does not exist in the distribution, but is created the
+very first time you run ASynK, from a file called @kbd{state.init.json} in the
+root of the ASynK source directory.
+
+@emph{Note for older ASynK users}: Before v0.3.0 ASynK could only be executed
+from the root directory of ASynK source, and the configuration files
+(state.json and config.json) were read and written there itself. Starting with
+v0.3.0 ASynK can be invoked from any directory, and it will start using
+~/.asynk/ to read and write the configuration files.
+
+If you have been using ASynK before v0.3.0 and have a state.json with your
+sync profiles and other configurations in the ASynK source directory, you can
+migrate easily by just running ASynK from its root directory once - ASynK will
+identify that you have some state and config changes, and will copy your
+versions to ~/.asynk/ so they are now available for subsequent runs from
+anywhere. Note, however, tha once copied to ~/.asynk/ only the versions
+present there will be read and written. Any changes you make to files
+elsewhere will not be noticed.
 
 @section Software Architecture
 
