@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu May 24 18:43:12 IST 2012
+## Last Modified : Thu Jul 05 12:53:59 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -241,6 +241,9 @@ class BBContact(Contact):
                     self.add_email_other(em)
                 else:
                     self.add_email_work(em)
+
+                if not self.get_email_prim():
+                    self.set_email_prim(em)
 
     def _classify_email_addr (self, addr, domains):
         """Return a tuple of (home, work, other) booleans classifying if the
@@ -534,6 +537,14 @@ class BBContact(Contact):
         ems = [unchompq(e) for e in self.get_email_home()]
         ems.extend([unchompq(e) for e in self.get_email_work()])
         ems.extend([unchompq(e) for e in self.get_email_other()])
+
+        # The primary email address should be the first in the list.
+        emp = self.get_email_prim()
+        if emp:
+            emp = unchompq(emp)
+            if emp in ems:
+                ems.remove(emp)
+            ems.insert(0, emp)
 
         ret = ' '.join(ems)
 
