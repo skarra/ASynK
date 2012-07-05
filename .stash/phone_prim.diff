@@ -1,0 +1,85 @@
+diff --git a/asynk/contact_bb.py b/asynk/contact_bb.py
+index 173d348..a6816c2 100644
+--- a/asynk/contact_bb.py
++++ b/asynk/contact_bb.py
+@@ -1,6 +1,6 @@
+ ##
+ ## Created       : Fri Apr 06 19:08:32 IST 2012
+-## Last Modified : Thu Jul 05 12:53:59 IST 2012
++## Last Modified : Thu Jul 05 14:20:11 IST 2012
+ ##
+ ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
+ ##
+@@ -327,6 +327,9 @@ class BBContact(Contact):
+ 
+                     label = chompq(resg['phlabel'])
+                     self._classify_and_add_phone(label, (label, phnum))
++
++                    if not self.get_phone_prim():
++                        self.set_phone_prim(phnum)
+                 else:
+                     logging.debug('Could not parse phone: %s', ph[0])
+ 
+@@ -563,7 +566,25 @@ class BBContact(Contact):
+         ph.extend(self.get_phone_mob())
+         ph.extend(self.get_phone_other())
+ 
+-        phs = ['[%s %s]' % (unchompq(l), unchompq(n)) for l,n in ph]
++        u  = unchompq
++        pp = self.get_phone_prim()
++        pl = None
++        phs = []
++
++        for l,n in ph:
++            if n == pp:
++                pl = l
++            else:
++              phs.append('[%s %s]' % (u(l), u(n)))  
++
++        if pp and pl:
++            phs.insert(0, '[%s %s]' % (pl, pp))
++        else:
++            print '  pp: ', pp
++            print '  pl: ', pl
++            print '  phs: ', phs
++
++        # phs = ['[%s %s]' % (u(l), u(n)) for l,n in ph if ph != pp]
+         ret = ' '.join(phs)
+         if ret == '':
+             return 'nil'
+diff --git a/asynk/contact_gc.py b/asynk/contact_gc.py
+index bdf5a05..fe95dba 100644
+--- a/asynk/contact_gc.py
++++ b/asynk/contact_gc.py
+@@ -1,6 +1,6 @@
+ ##
+ ## Created       : Tue Mar 13 14:26:01 IST 2012
+-## Last Modified : Sun Jul 01 23:28:33 IST 2012
++## Last Modified : Thu Jul 05 14:35:32 IST 2012
+ ##
+ ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
+ ##
+@@ -337,6 +337,7 @@ class GCContact(Contact):
+ 
+                 label = ph.label
+                 num   = ph.text
++                print 'ph.primary: ', ph.primary
+ 
+                 if label:
+                     if re.search('Home', label):
+@@ -351,8 +352,14 @@ class GCContact(Contact):
+                     elif re.search('Home Fax', label):
+                         self.add_fax_home(('Home', num))
+                     elif re.search('Work Fax', label):
+-                        self.add_fax_work(('Work', num))                    
++                        self.add_fax_work(('Work', num))
++
++                    if ph.primary == 'true':
++                        print '  **** We fucked up this label: ', label
+                 else:
++                    if ph.primary == 'true':
++                        print '  **** We fucked up this rel: ', ph.rel
++
+                     if ph.rel == gdata.data.HOME_REL:
+                         self.add_phone_home(('Home', num))
+                     elif ph.rel == gdata.data.WORK_REL:
