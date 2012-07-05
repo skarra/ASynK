@@ -1,5 +1,5 @@
 - Created       : Wed Aug 24 22:41:42 IST 2011
-- Last Modified : Thu Jul 05 07:58:01 IST 2012
+- Last Modified : Thu Jul 05 15:22:22 IST 2012
 
 This is only a short introduction and some key points of interest. For more
 details on how to use ASynK please refer to the included documentation, or the
@@ -79,9 +79,10 @@ that website.
    
    $ python asynk.py --op=sync [--dry-run] [--log=debug]
 
-   If you run tha that on Windows, you entire default outlook contacts folder
-   will get synched to My Contacts folder to Goolge Contacts. (You will be
-   prompted for your google username and password). On any other platform your
-   ~/.bbdb will be synced to google.
+   If you run the above command on Windows, the entire default outlook
+   contacts folder will get synched to "My Contacts" on Google Contacts. (You
+   will be prompted for your google username and password). 
 
-   For usage help, try "python asynk.py -h"
+   On any non-windows platform your ~/.bbdb will be synced to google.
+
+   For furhter usage help, try "python asynk.py -h"
