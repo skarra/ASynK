@@ -9,8 +9,8 @@ sys.path = EXTRA_PATHS + sys.path
 def main ():
     tests = TestGCContact()
 
-    tests.test_find_item('https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/5fcb778c8c6fd6e4')
-    tests.test_find_item('https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/4b814c4c8f0c1558')
+    tests.test_print_item('https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/5e6d5ad30b0e2008')
+    # tests.test_find_item('https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/4b814c4c8f0c1558')
     #tests.test_sync_status()
     #tests.test_del_item('http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/1fabc8309273c15')
     # tests.test_del_item('http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/1fabc8309273c15')
@@ -20,7 +20,7 @@ class TestGCContact:
         from   pimdb_gc   import GCPIMDB
         from   state      import Config
 
-        config = Config('../config.json', '../state.json')
+        config = Config('../config.json', './state.test.json')
 
         # The following is the 'Gout' group on karra.etc@gmail.com
         # self.gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/41baff770f898d85'
@@ -66,6 +66,15 @@ class TestGCContact:
             print 'D''oh. Folder not found.'
             return
 
+    def test_print_item (self, gcid):
+        from   contact_gc import GCContact
+        f = self.find_group(self.gid)
+
+        gce = f.get_gdc().GetContact(gcid)
+        g   = GCContact(f, gce=gce)
+
+        print g
+
     def test_find_item (self, gcid):
         f = self.find_group(self.gid)
         gce = f.get_gdc().GetContact(gcid)
@@ -82,6 +91,8 @@ class TestGCContact:
 
         logging.debug('ID  : %s', gcid)
         logging.debug('Name: %s', name)
+
+        return gce
 
     def test_del_item (self, gcid):
         f = self.find_group(self.gid)
