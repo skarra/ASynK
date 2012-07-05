@@ -1,5 +1,5 @@
 - Created       : Wed Aug 24 22:41:42 IST 2011
-- Last Modified : Thu May 17 13:15:27 IST 2012
+- Last Modified : Thu Jul 05 07:58:01 IST 2012
 
 This is only a short introduction and some key points of interest. For more
 details on how to use ASynK please refer to the included documentation, or the
@@ -40,7 +40,7 @@ that website.
 ** Dependencies
 
    - You need Python (tested with 2.7, try earlier versions at your
-     descretion)
+     descretion; may not work with Python 3)
 
    - If you wish to sync to Outlook you can do that only on Windows. Further
      you will need MS Outlook installed, along with a third party python
@@ -70,5 +70,18 @@ that website.
 
 ** Usage
 
-   Refer to the documentation. You could also start with 'python asynk.py -h'
-   from the root directory of the downloaded source tree.
+   The recommended way to use ASynK is to first create your own 'sync profile'
+   which specifies which folders and PIM DBs you want to keep in sync. Refer
+   to the documentation for more details.
+
+   For the really impatient, ASynK comes with two default sync profiles that
+   kick in if no other profile is configured.
+   
+   $ python asynk.py --op=sync [--dry-run] [--log=debug]
+
+   If you run tha that on Windows, you entire default outlook contacts folder
+   will get synched to My Contacts folder to Goolge Contacts. (You will be
+   prompted for your google username and password). On any other platform your
+   ~/.bbdb will be synced to google.
+
+   For usage help, try "python asynk.py -h"
