@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 // Created       : Sat May 05 13:15:20 IST 2012
-// Last Modified : Sat Jun 16 19:21:02 IST 2012
+// Last Modified : Thu Jul 05 15:06:16 IST 2012
 //
 // Copyright (C) 2012, Sriram Karra <karra.etc@gmail.com>
 // All Rights Reserved
@@ -88,6 +88,56 @@
 	<h2>Announcements</h2>
 
 	<h3>
+	<span class="announce_title">Thu Jul 05 15:00:01 IST 2012</span>
+	</h3>
+
+	<div class="announce_text">
+	  We have just pushed release v0.3.0 out. Key changes are:
+	  <ol>
+	    <li>ASynK now ships with two default sync profiles called:
+	    "defgcbb" and "defgcol", so there is out of the box support for
+	    what should be the most common use cases - synching entire ~/.bbdb
+	    or outlook contacts folder with google contacts. (Thanks to John
+	    Wiegley for the idea)
+
+	    <li>ASynK now uses ~/.asynk/ as the directory to store all state
+	    information, logs and backups. Thus you can now have a single
+	    installation of ASynK for all users in your system, and they will
+	    each get .asynk/ directory in their home directories. If you have
+	    any existing sync profiles and state, ASynK will notice this, and
+	    migrate your current sync state to the ~/.asynk/ directory. You
+	    can override the default directory name by passing the --user-dir
+	    command argument to any invocation of ASynK. (Thanks to Ivan
+	    Miljenovic for the idea)
+
+	    <li>ASynK can now be invoked from anywhere; earlier you had to
+	    ensure the present working directory was the root of the asynk
+	    source directory. (Thanks to Ivan Miljenovic for the idea)
+	    <p/>
+	    <b>Important Note</b>: The above two changes together imply that if
+	    you have existing sync state you want migrated, the first run after
+	    your upgrade to v0.3.0 should be from inside ASynK directory for
+	    us to be able to locate your config and state. Subsequent runs can
+	    be done from anywhere and we will pick up your stuff from
+	    ~/.asynk/
+
+	    <li>Bug fix: Google Contacts' multiple group membership
+	    information is now correctly synched back and forth to BBDB and
+	    Outlook.
+
+	    <li>Bug fix: The first email address in the BBDB email list is
+	    treated as the primary address, and marked accordingly in Google
+	    Contacts. Without this the order the email addresses in BBDB could
+	    have appeared random, and changing from one sync to another.
+
+	  </ol>
+	  <p>
+
+	  Go grab the latest release from the <span
+	  class="announce_download">Downloads page</span>!
+	</div>
+
+	<h3>
 	<span class="announce_title">Fri Jun 15 07:40:54 IST 2012</span>
 	</h3>
 
@@ -171,15 +221,15 @@
 	  <h3>Download Pre-packaged Bundles</h3>
    	    Bundles are available in the following formats. 
 	  <ul>
-	    <li>The latest stable release: v0.2.2
+	    <li>The latest stable release: v0.3.0
 	    <ul>
 	      <li> <a
-	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.2.tar.gz">
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.3.0.tar.gz">
 	      Gzipped tar archive</a>
 	      </li>
 
 	      <li> <a
-	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.2.zip">
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.3.0.zip">
 	      Zip File </a>
 	      </li>
 	    </ul>
@@ -188,29 +238,30 @@
 	  <li>
 	  Earlier releases:
 	    <ul>
-	      <li> <a
+	      <li> v0.2.2 <a
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.2.tar.gz">
+	      (.tar.gz)</a> <a
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.2.zip">
+	      (.zip)</a>
+	      </li>
+
+	      <li> v0.2.1 <a
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.1.tar.gz">
+	      (.tar.gz)</a> <a
+	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.1.zip">
+	      (.zip)</a>
+	      </li>
+
+	      <li> v0.2.0 <a
 	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.0.tar.gz">
-	      v0.2.1.tar.gz</a>
-	      </li>
-
-	      <li> <a
+	      (.tar.gz)</a> <a
 	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.0.zip">
-	      v0.2.1.zip </a>
+	      (.zip) </a>
 	      </li>
 
-	      <li> <a
-	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.0.tar.gz">
-	      v0.2.0.tar.gz</a>
-	      </li>
-
-	      <li> <a
-	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.2.0.zip">
-	      v0.2.0.zip </a>
-	      </li>
-
-	      <li> <a
+	      <li> v0.1.0 <a
 	      href="https://github.com/downloads/skarra/ASynK/gout-v0.1.0.zip">
-	      v0.1.0.zip </a>
+	      (.zip) </a>
 	      </li>
 	    </ul>
 	    </li>
@@ -333,7 +384,7 @@
 <p/>
   <div id="footer_content">
     Copyright &copy; 2012 Sriram Karra (karra.etc at gmail dot com)<br/>
-    Last Modified: Sat Jun 16 19:19:53 IST 2012
+    Last Modified: Thu Jul 05 15:06:15 IST 2012
 </footer>
 
 </body>
