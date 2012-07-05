@@ -633,6 +633,26 @@ contains some of the simplest use cases. You can refer to section @ref{Using
 ASynK, Using ASynK}, for detailed documentaiton on each flag, legal and
 illegal options, etc.
 
+@section Basic Usage: using the default sync profiles
+@kbd{$ python asynk.py --op=sync [--dry-run] [--log=debug]}
+
+The most common use case is to sync your ~/.bbdb file with google contacts or
+your default outlook contacts folder iwth google contacts. ASynK comes
+preconfigured to easily do those "out of the box".
+
+When you run the above mentioned command on a windows box a default profile
+called @kbd{defgcol} kicks in and your outlook/google contacts are synched
+up. On any non-windows platform, your ~/.bbdb is attempted to be synched to
+google contacts. You are promoted on the terminal for a username and a
+password. The username is cached by ASynK and you will not be promoted for
+subsequent runs. Your password is never stored, and you will be promoted for
+it every time you run ASynK.
+
+If you want to select your bbdb file, or google contacts group to sync to,  or
+set up additional sync profiles you should read through the following
+sections, or if you are feeling particularly adventurous, edit the file
+~/.asynk/state.json (definitely not recomended for a first time user, though)
+
 @section Explore Folders and Create Synk Profile
 @enumerate
 @item
