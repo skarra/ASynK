@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Thu Jul 12 14:40:53 IST 2012
+## Last Modified : Thu Jul 12 14:19:13 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -18,17 +18,19 @@
 ## You should have a copy of the license in the doc/ directory of ASynK.  If
 ## not, see <http://www.gnu.org/licenses/>.
 ##
-## This file is used for some poking around with the BBDB code of ASynK -
-## stuff like print a contact from a bbdb database, test new changes to pimdb
-## or folder code, etc. Essentially some test routines that are not really
-## unit tests. code often moves from here to the unittest directory (gold/)
-## after a while
+#####
+##
+## This unit test file is used to test BBDB file parsing and processing
+## functionality in ASynK
+##
+## Usage is: python test_bb.py <bbdbfile>
 
-import logging, os, os.path, sys, traceback
+import logging, os, shutil, sys, traceback, unittest
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
-DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
+DIR_PATH    = os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath('__file__')), '../..'))
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
@@ -37,14 +39,38 @@ from pimdb_bb      import BBPIMDB
 from folder_bb     import BBContactsFolder
 from contact_bb    import BBContact
 
+conf_fn    = '../../config.json'
+state_src  = '../../state.init.json'
+state_dest = './state.test.json'
+
+shutil.copyfile(state_src, state_dest)
+config = Config(confn=conf_fn, staten=state_dest)
+
+def usage ():
+    print 'Usage: python test_bb.py <bbdb db file>'
+
 def main (argv=None):
-    print sys.argv
+    global bbfn
+    print 'Command line: ', sys.argv
 
     if len(sys.argv) > 1:
         bbfn = sys.argv[1]
     else:
-        bbfn = '/Users/sriramkarra/.bbdb.t'
+        usage()
+        sys.exit(-1)
 
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestBBDB)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+class TestBBDB(unittest.TestCase):
+    def setUp (self):
+        self.config = config
+        self.bbdbfn = bbfn
+
+    def test_parse (self):
+        self.bb = BBPIMDB(self.config, bbfn)
+
+def rest ():
     tests = TestBBContact(config_fn='../config.json',
                           state_fn='./state.json',
                           bbfn=bbfn)
