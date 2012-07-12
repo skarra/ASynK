@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat May 12 10:44:13 IST 2011
-## Last Modified : Tue Jul 03 08:00:11 IST 2012
+## Last Modified : Thu Jul 12 10:37:39 IST 2012
 ##
 ## This file is part of ASynK
 ##
@@ -22,14 +22,14 @@ import logging, os, os.path, shutil, sys, traceback, unittest
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
 DIR_PATH    = os.path.abspath(os.path.join(
-    os.path.dirname(os.path.abspath('__file__')), '..'))
+    os.path.dirname(os.path.abspath('__file__')), '../..'))
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
 from   state import Config, AsynkConfigError
 
-conf_fn    = '../config.json'
-state_src  = '../state.init.json'
+conf_fn    = '../../config.json'
+state_src  = '../../state.init.json'
 state_dest = './state.test.json'
 
 shutil.copyfile(state_src, state_dest)
