@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu Jul 05 12:53:59 IST 2012
+## Last Modified : Fri Jul 13 00:21:35 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -482,7 +482,7 @@ class BBContact(Contact):
 
         a = self.get_suffix()
         if a:
-            ret += ' ' + unchompq(a)
+            ret += ' (' + unchompq(a) + ') '
         else:
             ## FIXME: version hack. needs to be fixed as noted elsewhere
             if self.get_store().get_file_format() != '6':
