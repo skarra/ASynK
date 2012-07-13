@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Fri Jul 13 00:21:35 IST 2012
+## Last Modified : Fri Jul 13 07:58:04 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -165,6 +165,8 @@ class BBContact(Contact):
         try:
             affix = pr['affix']
             if affix and affix != 'nil':
+                str_re = self.get_store().get_str_re()
+                affix = re.findall(str_re, affix)
                 self.set_suffix(chompq(affix[0]))
         except KeyError, e:
             ## FIXME: There should be a better way to handle the format
