@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sun Jul 01 23:28:33 IST 2012
+## Last Modified : Sat Jul 14 10:25:02 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -515,7 +515,7 @@ class GCContact(Contact):
         if text:
             n.name_suffix = gdata.data.NameSuffix(text=text)
 
-        text = self.get_suffix()
+        text = self.get_prefix()
         if text:
             n.name_prefix = gdata.data.NamePrefix(text=text)
 
