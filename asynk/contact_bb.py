@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Fri Jul 13 07:58:04 IST 2012
+## Last Modified : Sat Jul 14 10:31:34 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -160,18 +160,31 @@ class BBContact(Contact):
         if n and n != 'nil':
             self.set_lastname(chompq(n))
 
-        # FIXME: Just what the hell is an 'Affix'? Just use the first one and
-        # ditch the rest.
         try:
             affix = pr['affix']
             if affix and affix != 'nil':
                 str_re = self.get_store().get_str_re()
                 affix = re.findall(str_re, affix)
                 self.set_suffix(chompq(affix[0]))
+
+                if len(affix) > 1:
+                    aff = demjson.encode(affix[1:])
+                    aff = string.replace(aff, '"', r'\"')
+                    self.add_custom('affix', aff)
         except KeyError, e:
             ## FIXME: There should be a better way to handle the format
             ## differences.... for now we'll put up with the hacks
-            self.set_suffix(None)
+            affix = self.get_custom('affix')
+
+            if affix:
+                affix = demjson.decode(affix)
+                if len(affix) > 0:
+                    self.set_suffix(affix[0])
+                    affix = affix[1:]
+                    if len(affix) > 0:
+                        aff = demjson.encode(affix)
+                        aff = string.replace(aff, '"', r'\"')
+                        self.add_custom('affix', aff)
 
     def _snarf_aka_from_parse_res (self, pr):
         aka = pr['aka']
@@ -376,6 +389,7 @@ class BBContact(Contact):
         stuff... including sync tags and stuff."""
 
         noted = self.get_notes_map()
+
         if not noted:
             logging.error('Error in Config file. No notes_map field for bb')
             return
@@ -432,6 +446,13 @@ class BBContact(Contact):
                 self.add_web_work(val)
             elif re.search(noted['middle_name'], key):
                 self.set_middlename(val)
+            elif re.search('affix', key):
+                val = string.replace(val, r'\"', '"')
+                affix = demjson.decode(val)
+                if len(affix) > 0:
+                    self.set_suffix(affix[0])
+                if len(affix) > 1:
+                    custom.update({key, demjson.encode(affix[1:])})
             elif re.search(noted['folder'], key):
                 self.set_bbdb_folder(val)
                 custom.update({key : val})
@@ -482,13 +503,34 @@ class BBContact(Contact):
             else:
                 ret += 'nil '
 
+        ## Handle the suffix - There is an "Affix" array field in file format
+        ## 7+. So if we are in version 7 we should build up an array using the
+        ## suffix field and any other stuf we stashed away in custom
+        ## field. Othewrise we will just let all the stuff get handled in the
+        ## custom handling routine - even the first suffix.
+
         a = self.get_suffix()
-        if a:
-            ret += ' (' + unchompq(a) + ') '
+
+        ## FIXME: version hack. needs to be fixed as noted elsewhere
+        if a and self.get_store().get_file_format() == '6':            
+            suffix = self.get_custom('affix')
+            suffix = demjson.decode(suffix) if suffix else []
+            suffix.insert(0, a)
+            self.add_custom('affix', demjson.encode(suffix))
+
+            return ret
+
+        if not a:
+            return ret + 'nil'
+
+        suffix = self.get_custom('affix')
+        suffix = demjson.decode(suffix) if suffix else []
+        suffix.insert(0, unchompq(a))
+        
+        if suffix and len(suffix) > 0:
+            ret += '(' + ' '.join(suffix) + ')'
         else:
-            ## FIXME: version hack. needs to be fixed as noted elsewhere
-            if self.get_store().get_file_format() != '6':
-                ret += 'nil'
+            ret += 'nil'
 
         return ret
 
@@ -664,6 +706,8 @@ class BBContact(Contact):
         for label, note in self.get_custom().iteritems():
             if label in ['company', 'aka']:
                 continue
+            if label in ['affix']:
+                note = string.replace(note, '"', r'\"')
 
             ret += '(%s . %s) ' % (label, unchompq(note))
 
