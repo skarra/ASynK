@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Sat Jul 14 10:31:34 IST 2012
+## Last Modified : Tue Jul 17 06:54:36 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -452,7 +452,7 @@ class BBContact(Contact):
                 if len(affix) > 0:
                     self.set_suffix(affix[0])
                 if len(affix) > 1:
-                    custom.update({key, demjson.encode(affix[1:])})
+                    custom.update({key : demjson.encode(affix[1:])})
             elif re.search(noted['folder'], key):
                 self.set_bbdb_folder(val)
                 custom.update({key : val})
