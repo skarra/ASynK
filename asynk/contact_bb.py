@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Tue Jul 17 06:54:36 IST 2012
+## Last Modified : Wed Jul 18 15:06:03 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -168,8 +168,7 @@ class BBContact(Contact):
                 self.set_suffix(chompq(affix[0]))
 
                 if len(affix) > 1:
-                    aff = demjson.encode(affix[1:])
-                    aff = string.replace(aff, '"', r'\"')
+                    aff = demjson.encode([chompq(x) for x in affix[1:]])
                     self.add_custom('affix', aff)
         except KeyError, e:
             ## FIXME: There should be a better way to handle the format
@@ -510,27 +509,22 @@ class BBContact(Contact):
         ## custom handling routine - even the first suffix.
 
         a = self.get_suffix()
+        bbdb_ver = self.get_store().get_file_format()
+        if not a:
+            if bbdb_ver != '6':
+                ret += ' nil'
 
-        ## FIXME: version hack. needs to be fixed as noted elsewhere
-        if a and self.get_store().get_file_format() == '6':            
+        else:
             suffix = self.get_custom('affix')
             suffix = demjson.decode(suffix) if suffix else []
-            suffix.insert(0, a)
-            self.add_custom('affix', demjson.encode(suffix))
 
-            return ret
-
-        if not a:
-            return ret + 'nil'
-
-        suffix = self.get_custom('affix')
-        suffix = demjson.decode(suffix) if suffix else []
-        suffix.insert(0, unchompq(a))
-        
-        if suffix and len(suffix) > 0:
-            ret += '(' + ' '.join(suffix) + ')'
-        else:
-            ret += 'nil'
+            if bbdb_ver == '6':
+                suffix.insert(0, a)
+                self.add_custom('affix', demjson.encode(suffix))
+            else:
+                suffix.insert(0, a)
+                ret += ' (' + ' '.join([unchompq(x) for x in suffix]) + ')'
+                self.del_custom('affix')
 
         return ret
 
