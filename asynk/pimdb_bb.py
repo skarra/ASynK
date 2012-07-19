@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Sun Jul 01 12:20:31 IST 2012
+## Last Modified : Thu Jul 19 12:52:01 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -200,7 +200,7 @@ class MessageStore:
         """Folder object to which the parsed contacts will be added. fn is the
         name of the BBDB file/message store. encoding is a string representing
         a text encoding such as utf-8, latin-1, etc."""
-        
+
         with codecs.open(fn, encoding=encoding) as bbf:
             ff = bbf.readline()
             if re.search('coding:', ff):
@@ -253,14 +253,17 @@ class MessageStore:
                     c  = BBContact(def_f, rec=ff.rstrip())
                 except BBDBParseError, e:
                     logging.error('Could not parse BBDB record: %s', ff)
-                    continue
 
-                fn = c.get_bbdb_folder()
+                    raise BBDBFileFormatError(('Cannot proceed with '
+                                              'processing file "%s" ') %
+                                              fn)
 
-                if fn:
-                    f = self.get_folder(fn)
+                fon = c.get_bbdb_folder()
+
+                if fon:
+                    f = self.get_folder(fon)
                     if not f:
-                        f = BBContactsFolder(self.get_db(), fn, self)
+                        f = BBContactsFolder(self.get_db(), fon, self)
                         self.add_folder(f)
                     f.add_contact(c)
                 else:
