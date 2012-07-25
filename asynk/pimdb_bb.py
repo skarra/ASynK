@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Wed Jul 25 15:28:14 IST 2012
+## Last Modified : Wed Jul 25 16:02:39 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -440,8 +440,24 @@ class BBPIMDB(PIMDB):
     def add_regexes (self, ver, value):
         self.regexes.update({ver : value})
 
-    def new_folder (self):
-        logging.debug('bb:new_folder(): Nothing to do really. Bye.')
+    def new_folder (self, fname, ftype=None, storeid=None):
+        logging.debug('bb:new_folder(): fname: %s; ftype: %s', fname, ftype)
+        if not ftype:
+            ftype = Folder.CONTACT_t
+
+        if ftype != Folder.CONTACT_t:
+            logging.erorr('Only Contact Groups are supported at this time.')
+            return None
+
+        if storeid:
+            ms = self.get_msgstore(storeid)
+        else:
+            ms = self.get_def_msgstore()
+
+        f  = BBContactsFolder(self, fname, ms)
+        ms.add_folder(f)
+
+        return f
 
     @classmethod
     def new_store (self, fname, ftype=None):
