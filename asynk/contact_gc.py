@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Sat Jul 14 10:25:02 IST 2012
+## Last Modified : Wed Jul 25 16:26:33 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -239,12 +239,12 @@ class GCContact(Contact):
                         continue
                     gids.append(gid.href)
 
-                # We encode to json, and then escape the double quotes which
-                # will trip up the BBDB parser... Ah, the endless stream of
-                # hacks that keep life interesting...
-                js = demjson.encode(gids)
-                self.add_custom('gids',
-                                js.replace('"', '\\"'))
+                if len(gids) > 0:
+                    # We encode to json, and then escape the double quotes
+                    # which will trip up the BBDB parser... Ah, the endless
+                    # stream of hacks that keep life interesting...
+                    js = demjson.encode(gids)
+                    self.add_custom('gids', js.replace('"', '\\"'))
 
     def _snarf_emails_from_gce (self, ce):
         """Fetch the email entries in the specified ContactEntry object and
