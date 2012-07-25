@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Sun Jul 01 12:04:03 IST 2012
+## Last Modified : Wed Jul 25 16:05:55 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -75,15 +75,27 @@ class Sync:
         if f1:
             self.set_f1(f1)
         else:
+            ## We may have to create a folder we are processing a BBDB database.
             logging.error('Could not find folder with ID fid1: %s', fid1)
-            raise Exception()
+            if self.get_db1id() == 'bb':
+                logging.error('Creating BBBD folder %s in store', fid1)
+                f1 = db1.new_folder(fid1)
+                self.set_f1(f1)
+            else:
+                raise Exception()
 
         f2 = db2.find_folder(fid2)[0]
         if f2:
             self.set_f2(f2)
         else:
+            ## We may have to create a folder we are processing a BBDB database.
             logging.error('Could not find folder with ID fid2: %s', fid2)
-            raise Exception()
+            if self.get_db2id() == 'bb':
+                logging.error('Creating BBBD folder %s in store', fid2)
+                f2 = db2.new_folder(fid2)
+                self.set_f2(f2)
+            else:
+                raise Exception()
 
         db1.prep_for_sync(self.get_db2id(), profile, dr)
         db2.prep_for_sync(self.get_db1id(), profile, dr)
