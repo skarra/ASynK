@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 18:52:19 IST 2012
-## Last Modified : Thu Jul 19 12:52:01 IST 2012
+## Last Modified : Wed Jul 25 15:28:14 IST 2012
 ##
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -196,36 +196,41 @@ class MessageStore:
         pre += lines
         return self.set_preamble(pre)
 
+    def _parse_preamble (self, fn, bbf):
+        ff = bbf.readline()
+        if re.search('coding:', ff):
+            # Ignore first line if such: ;; -*-coding: utf-8-emacs;-*-
+            self.append_preamble(ff)
+            ff = bbf.readline()
+
+        # Processing: ;;; file-format: 8
+        res = re.search(';;; file-(format|version):\s*(\d+)', ff)
+        if not res:
+            bbf.close()
+            raise BBDBFileFormatError('Unrecognizable format line: %s' % ff)
+
+        self.append_preamble(ff)
+        ver = res.group(2)
+        self.set_file_format(ver)
+
+        supported = self.get_db().supported_file_formats()
+        if not ver in supported:
+            bbf.close()
+            raise BBDBFileFormatError(('Cannot process file "%s" '
+                                       '(version %s). Supported versions '
+                                       'are: %s' % (fn, ver, supported)))
+
+        return ver
+
     def parse_with_encoding (self, def_f, fn, encoding):
         """Folder object to which the parsed contacts will be added. fn is the
         name of the BBDB file/message store. encoding is a string representing
         a text encoding such as utf-8, latin-1, etc."""
 
         with codecs.open(fn, encoding=encoding) as bbf:
-            ff = bbf.readline()
-            if re.search('coding:', ff):
-                # Ignore first line if such: ;; -*-coding: utf-8-emacs;-*-
-                self.append_preamble(ff)
-                ff = bbf.readline()
+            ver = self._parse_preamble(fn, bbf)
 
-            # Processing: ;;; file-format: 8
-            res = re.search(';;; file-(format|version):\s*(\d+)', ff)
-            if not res:
-                bbf.close()
-                raise BBDBFileFormatError('Unrecognizable format line: %s' % ff)
-
-            self.append_preamble(ff)
-            ver = res.group(2)
-            self.set_file_format(ver)
-
-            supported = self.get_db().supported_file_formats()
-            if not ver in supported:
-                bbf.close()
-                raise BBDBFileFormatError(('Cannot process file "%s" '
-                                           '(version %s). Supported versions '
-                                           'are: %s' % (fn, ver, supported)))
-
-            ## Now fetch and set up the parsign routines specific to the file
+            ## Now fetch and set up the parsing routines specific to the file
             ## format 
             self._set_regexes(ver)
 
@@ -235,8 +240,8 @@ class MessageStore:
                     ff = bbf.readline()
                 except UnicodeDecodeError, e:
                     ## We got the encoding wrong. We will have to drop
-                    ## everything we have done, and start all over again.
-                    ## At a later stage, we could optimize by skipping over
+                    ## everything we have done, and start all over again.  At
+                    ## a later stage, we could optimize by skipping over
                     ## whatever we have read so far, but then we will need to
                     ## evalute if the parsed strings will be in the same
                     ## encoding or not. Tricky and shady business, this.
@@ -255,8 +260,7 @@ class MessageStore:
                     logging.error('Could not parse BBDB record: %s', ff)
 
                     raise BBDBFileFormatError(('Cannot proceed with '
-                                              'processing file "%s" ') %
-                                              fn)
+                                              'processing file "%s" ') % fn)
 
                 fon = c.get_bbdb_folder()
 
@@ -268,8 +272,6 @@ class MessageStore:
                     f.add_contact(c)
                 else:
                     def_f.add_contact(c)
-
-                # self.add_contact(c)
 
                 cnt += 1
 
