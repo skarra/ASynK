@@ -1,6 +1,6 @@
 ##
 ## Created       : Sun Dec 04 19:42:50 IST 2011
-## Last Modified : Fri Jun 01 17:41:07 IST 2012
+## Last Modified : Thu Aug 09 13:44:46 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -921,7 +921,7 @@ class OLContact(Contact):
     def _add_dates_to_olprops (self, olprops):
         cd = self.get_created()
         if cd:
-            cd = iso8601.parse(cd)
+            cd = utils.asynk_ts_parse(cd)
             olprops.append((mt.PR_CREATION_TIME, cd))
 
         bday = self.get_birthday()
