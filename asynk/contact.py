@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Wed May 16 23:11:43 IST 2012
+## Last Modified : Thu Aug 09 12:16:02 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -139,6 +139,20 @@ class Contact(Item):
 
         self._set_prop('name', val)
         return val
+
+    def get_disp_name (self):
+        """In many cases we just want some name to be displayed - in debug
+        messages, etc. which has to be built from a number of fields. This
+        routine does that."""
+
+        n = self.get_name()
+        if not n:
+            n = self.get_firstname()
+            if not n:
+                n = ''
+                n += self.get_lastname()
+
+        return n
 
     def get_prefix (self):
         return self._get_prop('prefix')

@@ -680,7 +680,7 @@ class OLContact(Contact):
         val = self._get_olprop(olpd, tag)
         if not val:
             logging.debug('con_ol:scpfo: No custom props found: %s',
-                          self.get_name())
+                          self.get_disp_name())
             return
         
         d = demjson.decode(val)

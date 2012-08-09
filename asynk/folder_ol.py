@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sun Jul 01 12:04:17 IST 2012
+## Last Modified : Thu Aug 09 12:16:13 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -225,10 +225,10 @@ class OLFolder(Folder):
             try:
                 eid = olc.save()
                 logging.info('Successfully created outlook entry for %30s (%s)',
-                             olc.get_name(), olc.get_itemid())
+                             olc.get_disp_name(), olc.get_itemid())
             except Exception, e:
                 logging.error('Could not save contact (%s) due to: %s',
-                              olc.get_name(), str(e))
+                              olc.get_disp_name(), str(e))
                 logging.debug('Contact Entry: %s', olc)
                 logging.debug(traceback.format_exc())
                 success = False
