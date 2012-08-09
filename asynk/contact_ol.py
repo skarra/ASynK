@@ -648,13 +648,13 @@ class OLContact(Contact):
         imadd = self._get_olprop(olpd, imtag)
 
         if not imadd:
-            if not len(ims) == 0:
+            if ims and not len(ims) == 0:
                 logging.debug('ol:sifo: No IM in Outlook but custom ims : %s',
                               ims)
             return
 
-        if len(ims) == 0:
-            logging.error('%s is a new OL entry with IM',
+        if not ims or len(ims) == 0:
+            logging.debug('%s is a new OL entry with IM',
                           self.get_name())
             ims = {'_im_addr_label' : 'default'}
 
