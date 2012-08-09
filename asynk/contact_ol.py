@@ -533,11 +533,14 @@ class OLContact(Contact):
         ## when the custom property is read and parsed
 
         addrs = self.get_custom('addrs')
+        if not addrs:
+            return
+
         try:
             prim_label = addrs['_prim_addr_label']
         except KeyError, e:
             logging.debug('OL Contact %s does not have _prim_addr_label',
-                          self.get_name())
+                          self.get_disp_name())
             prim_label = 'Home'
 
         ## First deal with all the directly available addresses
