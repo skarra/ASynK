@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Sun Jul 01 14:00:53 IST 2012
+## Last Modified : Thu Aug 09 10:17:21 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -19,7 +19,35 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
-import logging, os, re
+import iso8601, logging, os, re, string
+
+def asynk_ts_to_iso8601 (ts):
+    """The text timestamps in ASynK will be stored in a format that is readily
+    usable by BBDB. Frequently there is a need to parse it into other formats,
+    and as an intermediate step we would like to convert it into iso8601
+    format to leverage the libraries available for handling iso8601. This
+    routine converts a text string in the internal ASynK (BBDB) text format,
+    into iso8601 format with Zone Specifier."""
+
+    ## FIXME: All of these assume the timestamps are in UTC. Bad things can
+    ## happen if some other timezone is provided.
+    try:
+        ## Eliminate the case where the input string is already in iso8601
+        ## format... 
+        iso8601.parse(ts)
+        return ts
+    except ValueError, e:
+        return re.sub(r'(\d\d\d\d-\d\d-\d\d) (\d\d:\d\d:\d\d).*$',
+                      r'\1T\2Z', ts)
+
+def asynk_ts_parse (ts):
+    """For historical reasons (IOW Bugs), ASynK versions have stored created
+    and modified timestamps in two distinct text representations. This routine
+    is a wrapper to gracefully handle both cases, convert it into a iso
+    string, and then parse it into a python datetime object, which is returned
+    """
+
+    return iso8601.parse(asynk_ts_to_iso8601(ts))
 
 def abs_pathname (config, fname):
     """If fname is an absolute path then it is returned as is. If it starts
