@@ -728,10 +728,6 @@ class OLContact(Contact):
         return
 
     def _add_names_gender_to_olprops (self, olprops):
-        n = self.get_name()
-        if n:
-            olprops.append((mt.PR_DISPLAY_NAME, n))
-
         fatag = self.get_proptags().valu('ASYNK_PR_FILE_AS')
         if self.get_fileas():
             olprops.append((fatag, self.get_fileas()))
@@ -751,6 +747,24 @@ class OLContact(Contact):
         gn = self.get_firstname()
         if gn:
             olprops.append((mt.PR_GIVEN_NAME, gn))
+
+        n = self.get_name()
+        if n:
+            olprops.append((mt.PR_DISPLAY_NAME, n))
+        else:
+            n = ''
+            if gn:
+                n += gn
+                if ln or mn:
+                    n += ' '
+            if mn:
+                n += mn
+                if ln:
+                    n += ' '
+            if ln:
+                n += ln
+
+            olprops.append((mt.PR_DISPLAY_NAME, n))
 
         pr = self.get_prefix()
         if pr:
