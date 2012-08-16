@@ -19,7 +19,7 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
-import copy, logging, os, re, sys, traceback
+import copy, logging, re
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
 from   contact_gc     import GCContact
