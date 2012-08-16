@@ -20,22 +20,13 @@
 ##
 ## ####
 ##
-## This is the sync driver. At some point this might become the main driver
-## replacing gout.py
 
-# from   ol_wrapper    import Outlook
-# from   ol_contact    import Contact
-# from   gc_wrapper    import GC
-# from   win32com.mapi import mapitags, mapiutil
-# import atom, gdata.contacts.client
+import logging, os
 
-import getopt, logging, os, sys, traceback
-
-import state, utils
 from   state         import Config
-import demjson, base64
+import demjson
 
-import atom, gdata, gdata.client
+import atom, gdata
 from   gdata.client import BadAuthentication
 from   pimdb_gc     import GCPIMDB
 import gdata.contacts.data, gdata.contacts.client
