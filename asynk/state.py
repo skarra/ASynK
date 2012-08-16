@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 13:54:53 IST 2011
-## Last Modified : Mon Jul 02 22:46:37 IST 2012
+## Last Modified : Thu Aug 16 18:05:57 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -28,9 +28,7 @@
 ## and we are continuing to use the same handling framework...
 
 import iso8601, demjson
-import logging, os, re, time, traceback
-
-import utils
+import logging, os, re, time
 
 sync_dirs = ['SYNC1WAY', 'SYNC2WAY']
 
@@ -46,7 +44,7 @@ class Config:
         the user has to explicitly save to disk."""
 
         confi   = None
-        statefi = None
+        statei  = None
 
         self.confn  = os.path.abspath(confn)
         self.staten = os.path.abspath(staten) 
@@ -451,9 +449,9 @@ class Config:
             gid = self.get_ol_gid(pname)
 
             if destid in ret:
-                ret[destid].append(pname)
+                ret[destid].append(gid)
             else:
-                ret.update({destid : [pname]})
+                ret.update({destid : [gid]})
 
         return ret
                 
