@@ -27,7 +27,7 @@
 
 from abc     import ABCMeta, abstractmethod
 
-class GoutInvalidPropValueError(Exception):
+class ASynKInvalidPropValueError(Exception):
     pass
 
 class Folder:
@@ -240,7 +240,7 @@ class Folder:
 
     def set_type (self, t):
         if not t in self.valid_types:
-            raise GoutFolderInvalidPropValueError(
+            raise ASynKInvalidPropValueError(
                 'Invalid type in Folder:set_type : %s' % t)
 
         self._set_prop('type', t)
