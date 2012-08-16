@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Thu Aug 09 10:17:21 IST 2012
+## Last Modified : Thu Aug 16 18:12:35 IST 2012
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -19,7 +19,7 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
-import iso8601, logging, os, re, string
+import iso8601, logging, os, re
 
 def asynk_ts_to_iso8601 (ts):
     """The text timestamps in ASynK will be stored in a format that is readily
