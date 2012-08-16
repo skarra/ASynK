@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu May 31 12:07:44 IST 2012
+## Last Modified : Thu Aug 16 16:48:00 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -249,16 +249,16 @@ class Folder:
         return self.get_db().get_dbid()
 
     def is_contacts_folder (self):
-        return True if self.type == Folder.PR_IPM_CONTACT_ENTRYID else False
+        return True if self.get_type() == Folder.PR_IPM_CONTACT_ENTRYID else False
 
     def is_notes_folder (self):
-        return True if self.type == Folder.PR_IPM_NOTE_ENTRYID else False
+        return True if self.get_type() == Folder.PR_IPM_NOTE_ENTRYID else False
 
     def is_tasks_folder (self):
-        return True if self.type == Folder.PR_IPM_TASK_ENTRYID else False
+        return True if self.get_type() == Folder.PR_IPM_TASK_ENTRYID else False
 
     def is_appt_folder (self):
-        return True if self.type == Folder.PR_IPM_APPOINTMENT_ENTRYID else False
+        return True if self.get_type() == Folder.PR_IPM_APPOINTMENT_ENTRYID else False
 
 ## FIXME: This file needs extensive unit testing. There's quite a bit of
 ## pseudo-repititive codet hat has been produced by manual cop-n-paste, which
