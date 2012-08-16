@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Aug 09 12:16:02 IST 2012
+## Last Modified : Thu Aug 09 19:05:33 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -145,12 +145,21 @@ class Contact(Item):
         messages, etc. which has to be built from a number of fields. This
         routine does that."""
 
-        n = self.get_name()
-        if not n:
-            n = self.get_firstname()
-            if not n:
-                n = ''
-                n += self.get_lastname()
+        n  = ''
+        gn = self.get_firstname()
+        ln = self.get_lastname()
+        mn = self.get_middlename()
+
+        if gn:
+            n += gn
+            if ln or mn:
+                n += ' '
+        if mn:
+            n += mn
+            if ln:
+                n += ' '
+        if ln:
+            n += ln
 
         return n
 
