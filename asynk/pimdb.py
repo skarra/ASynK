@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu May 17 08:39:36 IST 2012
+## Last Modified : Thu Aug 16 16:45:19 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -339,16 +339,16 @@ class PIMDB:
 
         ret = []
         if self.has_contacts():
-            ret.append(self.CONTACT_t)
+            ret.append(Folder.CONTACT_t)
 
         if self.has_tasks():
-            ret.append(self.TASK_t)
+            ret.append(Folder.TASK_t)
 
         if self.has_notes():
-            ret.append(self.NOTE_t)
+            ret.append(Folder.NOTE_t)
 
-        if self.has_apptss():
-            ret.append(self.APPT_t)
+        if self.has_appts():
+            ret.append(Folder.APPT_t)
 
         return ret
 
