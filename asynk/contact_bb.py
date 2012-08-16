@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Wed Jul 25 16:22:59 IST 2012
+## Last Modified : Thu Aug 16 14:57:30 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -454,7 +454,6 @@ class BBContact(Contact):
                     custom.update({key : demjson.encode(affix[1:])})
             elif re.search(noted['folder'], key):
                 self.set_bbdb_folder(val)
-                custom.update({key : val})
             else:
                 ## The rest of the stuff go into the 'Custom' field...
                 custom.update({key : val})
