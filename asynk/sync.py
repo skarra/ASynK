@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Jul 19 15:04:46 IST 2011
-## Last Modified : Wed Jul 25 16:05:55 IST 2012
+## Last Modified : Thu Aug 16 18:29:01 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -191,9 +191,18 @@ class Sync:
         db1id = self.get_db1id()
         db2id = self.get_db2id()
 
-        # The two db ids need to be specified in sorted order
-        db1 = db1id if db1id < db2id else db2id
-        db2 = db2id if db1id < db2id else db1id
+        ## FIXME: The following commented out code appears very fishy. I am
+        ## not able to recall why these two have to be used in sorted order. I
+        ## am pretty sure there was some sense behind it, but as of now db1
+        ## and db2 are not really being used; so the code works even without
+        ## this "sorted" behaviour... Hm, this really should go, but I am
+        ## being conservative here and leving the stuff commented out so we
+        ## can come back to it later if required.
+
+        # # The two db ids need to be specified in sorted order
+        # db1 = db1id if db1id < db2id else db2id
+        # db2 = db2id if db1id < db2id else db1id
+
         cr = self.get_config().get_conflict_resolve(pname)
 
         if cr == db2id:

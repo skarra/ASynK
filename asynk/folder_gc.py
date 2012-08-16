@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Jun 15 07:18:47 IST 2012
+## Last Modified : Thu Aug 16 18:35:21 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -123,13 +123,21 @@ class GCContactsFolder(Folder):
         logging.info('Querying Google for status of Contact Entries...')
         stag = conf.make_sync_label(pname, destid)
 
-        ## Sort the DBIds so dest1 has the 'lower' ID
-        db1 = self.get_db().get_dbid()
-        if db1 > destid:
-            db2 = db1
-            db1 = destid
-        else:
-            db2 = destid
+        ## FIXME: The following commented out code appears very fishy. I am
+        ## not able to recall why these two have to be used in sorted order. I
+        ## am pretty sure there was some sense behind it, but as of now db1
+        ## and db2 are not really being used; so the code works even without
+        ## this "sorted" behaviour... Hm, this really should go, but I am
+        ## being conservative here and leving the stuff commented out so we
+        ## can come back to it later if required.
+
+        # ## Sort the DBIds so dest1 has the 'lower' ID
+        # db1 = self.get_db().get_dbid()
+        # if db1 > destid:
+        #     db2 = db1
+        #     db1 = destid
+        # else:
+        #     db2 = destid
 
         if not updated_min:
             updated_min = conf.get_last_sync_stop(pname)
