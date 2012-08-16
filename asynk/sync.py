@@ -376,11 +376,7 @@ class SyncLists:
         self.dels.update({f1id : f2id})
 
     def entry_exists (self, f1id):
-        try:
-            val = self.all[f1id]
-            return True
-        except KeyError, e:
-            return False
+        return f1id in self.all
 
     def add_entry (self, f1id, f2id):
         self.add_etag(f1id, f2id)
