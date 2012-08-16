@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Thu May 31 23:00:30 IST 2012
+## Last Modified : Thu Aug 16 08:02:33 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -118,7 +118,7 @@ class BBContactsFolder(Folder):
         for locid, con in self.get_contacts().iteritems():
             if stag in con.get_sync_tags():
                 t, remid = con.get_sync_tags(stag)[0]
-                re.append({locid : remid})
+                ret.append({locid : remid})
 
         return ret
 
