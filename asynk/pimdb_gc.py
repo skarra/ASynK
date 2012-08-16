@@ -1,6 +1,6 @@
 ##
 ## Created       : Thu Jul 07 14:47:54 IST 2011
-## Last Modified : Tue Jul 03 07:45:32 IST 2012
+## Last Modified : Thu Aug 16 18:15:32 IST 2012
 ##
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -73,7 +73,7 @@ class GCPIMDB(PIMDB):
             ftype = Folder.CONTACT_t
 
         if ftype != Folder.CONTACT_t:
-            logging.erorr('Only Contact Groups are supported at this time.')
+            logging.error('Only Contact Groups are supported at this time.')
             return None
 
         gn              = gdata.data.Name(name=fname)
