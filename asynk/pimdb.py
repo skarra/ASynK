@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Aug 16 16:45:19 IST 2012
+## Last Modified : Thu Aug 16 18:19:58 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -82,14 +82,14 @@ class PIMDB:
         raise NotImplementedError
 
     @abstractmethod
-    def new_folder (self, fname, type):
+    def new_folder (self, fname, type, storeid=None):
         """Create a new folder of specified type and return an id. The folder
         will not contain any items"""
 
         raise NotImplementedError
 
     @abstractmethod
-    def del_folder (self, itemid):
+    def del_folder (self, itemid, store=None):
         """Get rid of the specified folder."""
 
         raise NotImplementedError
@@ -120,7 +120,7 @@ class PIMDB:
         raise NotImplementedError
 
     @abstractmethod
-    def prep_for_sync (self, dbid):
+    def prep_for_sync (self, dbid, pname, dr):
         """This routine will be invoked at the time sync is initialized. dbid
         is the id of the other PIMDB to which sync is being set up. Please
         note that the sync direction could be anything. (Perhaps eventually we
@@ -213,7 +213,7 @@ class PIMDB:
 
         return self._set_att('phones_map', None)
 
-    def list_folders (self):
+    def list_folders (self, silent=False):
         """Print details of all folders in the PIMDB. Detail will typically
         include one line per folder, with its name, and any identifier that
         can be used for further referencing."""

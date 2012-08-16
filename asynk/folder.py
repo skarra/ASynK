@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Aug 16 16:48:00 IST 2012
+## Last Modified : Thu Aug 16 18:36:34 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -90,7 +90,7 @@ class Folder:
         raise NotImplementedError
 
     @abstractmethod
-    def prep_sync_lists (self, destid, last_sync_stop=None, limit=0):
+    def prep_sync_lists (self, destid, sl, last_sync_stop=None, limit=0):
         """Prepare and return a set of list of new, modified and deleted
         entries in the current folder since the last sync to the corresponding
         folder in the destination PIM Database identified by destid.
@@ -99,6 +99,7 @@ class Folder:
         Soon Now.
 
         - destid is the two letter PIMDB id
+        - sl is an object of type SyncList whose members are populated
         - last_sync_stop was the end of the last sync cycle. It should be a
         iso8601 formatted string - typically read out of the app_state.json
         - limit can be used during debug time to limit the number of messages
@@ -149,7 +150,7 @@ class Folder:
         raise NotImplementedError
 
     @abstractmethod
-    def writeback_sync_tags (self, items):
+    def writeback_sync_tags (self, pname, items):
         """After a create operation (above), the IDs will need to be written
         on the other side DB. This routine should do that. The operation is
         explicitly separated out because it could be a batch operation by
