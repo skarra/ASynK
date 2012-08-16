@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu Aug 16 14:57:30 IST 2012
+## Last Modified : Thu Aug 16 16:57:20 IST 2012
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -28,7 +28,7 @@
 import copy, logging, re, string, uuid
 from   contact    import Contact
 from   utils      import chompq, unchompq
-import demjson, pimdb_bb, folder_bb, utils
+import demjson, pimdb_bb, folder_bb
 
 class BBDBParseError(Exception):
     pass
@@ -364,7 +364,7 @@ class BBContact(Contact):
         elif re.search(nmap['fax_work'], label):
             self.add_fax_work(num)
         elif re.search(nmap['fax_other'], label):
-            self.add_fax_other(num)
+            self.add_fax_home(num)
         else:
             self.add_phone_other(num)
 
