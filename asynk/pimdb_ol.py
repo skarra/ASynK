@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Sat May 12 10:41:58 IST 2012
+## Last Modified : Thu Aug 16 18:19:09 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -525,7 +525,7 @@ class OLPIMDB(PIMDB):
     def set_olsession (self, olsession):
         return self._set_att('olsession', olsession)
 
-    def del_folder (self, itemid):
+    def del_folder (self, itemid, store=None):
         """Get rid of the specified folder."""
 
         logging.info('Operation del-folder is not implemented for Outlook '
