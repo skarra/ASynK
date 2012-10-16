@@ -40,7 +40,7 @@ that website.
 ** Dependencies
 
    - You need Python (tested with 2.7, try earlier versions at your
-     descretion; may not work with Python 3)
+     discretion; may not work with Python 3)
 
    - If you wish to sync to Outlook you can do that only on Windows. Further
      you will need MS Outlook installed, along with a third party python
@@ -66,7 +66,7 @@ that website.
    The supported doc types are: 'pdf', 'html', 'info', 'docbook', and 'text' 
 
    You may have to install additional programs like makeinfo, texi2html
-   etc. See the "Depdencies" section in the documentation
+   etc. See the "Dependencies" section in the documentation
 
 ** Usage
 
@@ -85,4 +85,4 @@ that website.
 
    On any non-windows platform your ~/.bbdb will be synced to google.
 
-   For furhter usage help, try "python asynk.py -h"
+   For further usage help, try "python asynk.py -h"
