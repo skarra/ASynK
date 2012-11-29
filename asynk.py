@@ -78,7 +78,7 @@ def main (argv=sys.argv):
         if os.path.isfile(os.path.join(ASYNK_BASE_DIR, 'state.json')):
             shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'state.json'),
                          os.path.join(uinps.user_dir, 'state.json'))
-            print 'We have copied your state.json to new user director: ',
+            print 'We have copied your state.json to new user directory: ',
             print uinps.user_dir
             print 'We have not copied any of your logs and backup directories.'
         else:
