@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Mon Jul 02 22:41:07 IST 2012
+## Last Modified : Sat Jan 05 15:13:25 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -823,6 +823,8 @@ class Asynk:
         t = self.get_store_id('bb')
         if t:
             bbfn = t
+        else:
+            bbfn = '~/.bbdb'
 
         if not bbfn:
             raise AsynkError('No BBDB Store provided. Unable to initialize.')
