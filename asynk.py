@@ -110,7 +110,7 @@ def main (argv=sys.argv):
     asynk.dispatch()
 
 def setup_logging (config):
-    """Set up the logging setings to the defaults. The log directory is
+    """Set up the logging settings to the defaults. The log directory is
     created inside asynk_user_dir, which is assumed to exist already"""
 
     formatter = logging.Formatter('[%(asctime)s.%(msecs)03d '
@@ -211,7 +211,7 @@ def setup_parser ():
     p.add_argument('--direction', action='store', default='2way',
                    choices=('1way', '2way'),
                    help='Specifies whether a sync has to be unidirectional '
-                   'or bidirectional. Defaults to bidiretioanl sync, i.e. '
+                   'or bidirectional. Defaults to bidirectional sync, i.e. '
                    '"2way"')
 
     p.add_argument('--label-regex', action='store',
@@ -266,7 +266,7 @@ class Asynk:
     def _login (self, force=False):
         """This routine is typically invoked after the operation handler
         performs parameter checking. We do not want to invoke this in the
-        constructor itself becuase it causes delay, and unnecessary database
+        constructor itself because it causes delay, and unnecessary database
         or network access even in the case there are errors on the command
         line.
 
@@ -361,7 +361,7 @@ class Asynk:
                     (re.search('_profile', self.get_op()))):
                 raise AsynkParserError('--db needed for this operation.')
 
-        # The validation that followsi s only relevant for command line
+        # The validation that follows is only relevant for command line
         # usage.
 
         if self.get_op() == 'op_startweb':
@@ -531,7 +531,7 @@ class Asynk:
         else:
            if (not cr in [db1, db2]):
                raise AsynkParserError('--conflict-resolve should be one of '
-                                      'the two dbids specified ealrier.')
+                                      'the two dbids specified earlier.')
 
         sync_dir = self.get_sync_dir()
 
@@ -602,7 +602,7 @@ class Asynk:
         if hr:
             del profiles[pname]
             conf.set_profiles(profiles)
-            logging.info('Successfully deleted the profiel %s from your '
+            logging.info('Successfully deleted the profile %s from your '
                          'Asynk configuration.', pname)
         else:
             logging.info('Due to errors in clearing sync tags, profile '
@@ -859,7 +859,7 @@ class Asynk:
             elif conf.profile_exists(def_pname):
                 pname = def_pname
             else:
-                ## Hm, the default profile disappeared from under us... No
+                ## Hmm, the default profile disappeared from under us... No
                 ## worries, just reset to null and move on..
                 conf.set_default_profile(None)
                 raise AsynkParserError('Could not find default profile to '
