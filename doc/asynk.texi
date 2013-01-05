@@ -65,7 +65,7 @@ If you would not read through this documentation from cover to cover, but
 rather learn by looking at examples, head straight to the section titled
 ``Recipes''. It contains enough examples to help you get going.
 
-So, where were we? Ah, yes, introducting ASynK. Here are some of the high
+So, where were we? Ah, yes, introducing ASynK. Here are some of the high
 level features of ASynK:
 
 @include intro.texi
@@ -114,7 +114,7 @@ formats. Version 4.8 is known to work with our sources.
 
 @item
 @strong{texi2pdf}: Is needed to build the documentation in PDF format. Version
-1.34 is knownto work with our sources.
+1.34 is known to work with our sources.
 @end enumerate
 @end enumerate
 
@@ -155,7 +155,7 @@ box''. There are also other important changes to the structure of the BBDB
 record in file format version 7.
 
 @item
-@strong{Timestamp Customziation}: ASynK expects timestamps to be in UTC -
+@strong{Timestamp Customization}: ASynK expects timestamps to be in UTC -
 i.e. they should all end with the @kbd{+0000}. If you have customized your
 BBDB timestamp format, it can lead to confusing results.
 
@@ -170,12 +170,12 @@ only store year, month and day. So BBDB will overwrite the granular ASynK
 timestamps with a yyyy-mm-dd timestamp, and your bi-directional sync will not
 quite work as you would like. 
 
-The above limiation can be overcome by applying the following simple
+The above limitation can be overcome by applying the following simple
 patch. With this patch in place ASynK will work quite well. There is a
 downside, however - certain time-based search in BBDB may behave differently
 (search newer, search older etc. will behave differently owing to differences
 in timestamp format). But one would like to think the ability to do
-bidirectional sync outweighs this minor irritance.
+bidirectional sync outweighs this minor irritation.
 
 @verbatim
 commit eb6ba8d342a46d61c45b0ce4c1de7711ff011466
@@ -188,12 +188,12 @@ Date:   Wed May 16 18:09:50 2012 +0530
     that is not available with the 2.x series. A detailed timestamp
     is needed to do a sync with a third party.
     
-    The ideal way would have been to fully implement the verison 7
+    The ideal way would have been to fully implement the version 7
     changes on 2.36. However that involves a lot of changes and is
     risky - for e.g. introducing a new key name field (affix)
     will stretch my understanding of BBDB internals. Best to just
     provide a quick hack for those willing to live with it only to
-    try ASynK or similar sync softwrae.
+    try ASynK or similar sync software.
     
     The obvious pitfall is that commands that work on teh timestamp
     field (like newer or older filters and delete) will start
@@ -361,7 +361,7 @@ pair of folders is captured in a sync @dfn{Profile}. Most ASynK operations
 operate on a specified sync profile. So you will need to set up at least one
 profile before you can play with ASynK.
 
-EachProfile has the following information associated with it:
+Each Profile has the following information associated with it:
 
 @enumerate
 @item
@@ -392,16 +392,16 @@ and updated automatically by the system and you do not have to worry about
 it.
 
 @item
-@strong{Conflict Resolution Direction}: Occassionally one ends up editing an
+@strong{Conflict Resolution Direction}: Occasionally one ends up editing an
 item in multiple places or devices, and this situation leads to a conflict -
 i.e. the same item has been updated since the last sync on both ends. There is
 no magic way to figure out which is the correct version. So we have to use a
 pre-determined tie breaker. This parameter tells the system in which direction
 to resolve this conflict. This field can be specified at the time of profile
 creation, but defaults to the first dbid specified in the profile. Once
-profile is created, the direction of confict resolution cannot be specified
+profile is created, the direction of conflict resolution cannot be specified
 for a operation.
-@cindex confliction resolution
+@cindex conflict resolution
 
 @item
 @strong{Sync Direction}: Although ASynK is designed to be a two way sync, you
@@ -474,7 +474,7 @@ optional arguments:
                         Folder operations, specifies folder name
   --direction {1way,2way}
                         Specifies whether a sync has to be unidirectional or
-                        bidirectional. Defaults to bidiretioanl sync, i.e.
+                        bidirectional. Defaults to bidirectional sync, i.e.
                         "2way"
   --label-regex LABEL_REGEX
                         A regular expression for sync artification to be
@@ -517,7 +517,7 @@ state is explained in more detail in the @ref{Internals, Internals}, section.
 The entire application configuration is stored as a JSON file, the default of
 which is available as config.json in in the root directory of the
 application. It has copious comments and explanation of its various fields, so
-we will only list the main configuarable parameters here, and will just point
+we will only list the main configurable parameters here, and will just point
 you to the source to find out more.
 
 The first time you run ASynK, a copy of the config file is made to ~/.asynk
@@ -528,7 +528,7 @@ It is important to note at the outset that the only way these parameters can
 be configured is by hand - you need to edit the ~/.asynk/config.json file. The
 changes will be read and processed in the next run. In future we have plans of
 implementing a html/browser interface, when we will support editing these
-through that same interface so we can finally bid goodby to mucking with json
+through that same interface so we can finally bid goodbye to mucking with json
 files.
 
 @enumerate
@@ -621,23 +621,23 @@ contacts around.
 @node Recipes, Internals, Customization, Top
 @chapter Recipes
 
-Note to Self: This section ideally shoud only give examples without really
+Note to Self: This section ideally should only give examples without really
 explaining the options, constraints  etc. in depth - that should be done in
 the previous section on ``Using ASynK'' where the complete documentation for
 every flag in the system will be documented, and will the authoritative single
 reference for such things. This will entail some reorg of the doc content and
 much additional content as well...
 
-The easiest way to get used to AsynK is to look at some examples. This chaper
+The easiest way to get used to AsynK is to look at some examples. This chapter
 contains some of the simplest use cases. You can refer to section @ref{Using
-ASynK, Using ASynK}, for detailed documentaiton on each flag, legal and
+ASynK, Using ASynK}, for detailed documentation on each flag, legal and
 illegal options, etc.
 
 @section Basic Usage: using the default sync profiles
 @kbd{$ python asynk.py --op=sync [--dry-run] [--log=debug]}
 
 The most common use case is to sync your ~/.bbdb file with google contacts or
-your default outlook contacts folder iwth google contacts. ASynK comes
+your default outlook contacts folder with google contacts. ASynK comes
 preconfigured to easily do those "out of the box".
 
 When you run the above mentioned command on a windows box a default profile
@@ -651,7 +651,7 @@ it every time you run ASynK.
 If you want to select your bbdb file, or google contacts group to sync to,  or
 set up additional sync profiles you should read through the following
 sections, or if you are feeling particularly adventurous, edit the file
-~/.asynk/state.json (definitely not recomended for a first time user, though)
+~/.asynk/state.json (definitely not recommended for a first time user, though)
 
 @section Explore Folders and Create Synk Profile
 @enumerate
@@ -690,7 +690,7 @@ last column of output. A few things to note:
 @enumerate
 @item
 For a google sync profile operation, if a --store option is skipped, the user
-is prompted for a username and passwrod from stdin. If a --store option is
+is prompted for a username and password from stdin. If a --store option is
 given on the command line, it is used as the login name and only the password
 is prompted for.
 
@@ -791,7 +791,7 @@ Cardassia:Gout sriramkarra$ python asynk.py --op=create-profile --db gc bb  \
 @end verbatim
 
 The @kbd{--op=create-profile} operation takes two dbids, two store ids and two
-folder ids. The command line is quite a handful, but you sould not have to
+folder ids. The command line is quite a handful, but you should not have to
 repeat this operation too often. It is worth noting the following about the
 options passed:
 
@@ -870,7 +870,7 @@ Password: [00:53:12.291     INFO] Successfully parsed 338 entries.
 [00:53:12.291     INFO] BBDB database not backed up for dry run
 [00:53:12.292     INFO] Last synk for profile etcbb2 was at: 2012-05-11T11:01:56.57Z
 [00:53:12.292     INFO] Querying Google for status of Contact Entries...
-[00:53:13.157     INFO] Response recieved from Google. Processing...
+[00:53:13.157     INFO] Response received from Google. Processing...
 [00:53:13.157     INFO] No entries in feed.
 [00:53:13.159     INFO] ==== gc =====
 [00:53:13.160     INFO]    New              :     0
@@ -1008,7 +1008,7 @@ actual two way sync happens. Note the following:
 
 @enumerate
 @item
-The BBDB file is backedup before any modifications are made. The location is
+The BBDB file is backed up before any modifications are made. The location is
 echoed to the console as an INFO message. It is also captured in a log file as
 noted.
 
@@ -1028,7 +1028,7 @@ let's study the problem in the field and take a call on how to tackle it.
 @item
 @emph{Clear Sync Flags from Contact Entries}. Recall that ASynK stores some
 tracking information (such as the contact's IDs in other remote folders) as
-custom user fields. These custom fields are readily viewable and nin Google
+custom user fields. These custom fields are readily viewable and editable in Google
 Contacts and BBDB, and as you can manually edit or delete them on a per
 contact basis, if you so desire (although it is most definitely @emph{not
 recommended)}. MS Outlook, on the other hand, does not provide any reasonable
@@ -1096,7 +1096,7 @@ Password: [11:45:11.073     INFO] Successfully parsed 2 entries.
 [11:45:14.313     INFO] Found 0 contacts with matching sync tag(s). 
 [11:45:14.321     INFO] Found 0 contacts with matching sync tag(s). 
 [11:45:14.322     INFO] Saving BBDB File /Users/sriramkarra/stuff/code/python/Gout/test/bbdb.olbb...
-[11:45:14.655     INFO] Successfully deleted the profiel etcbb3 from your Asynk configuration.
+[11:45:14.655     INFO] Successfully deleted the profile etcbb3 from your Asynk configuration.
 @end verbatim
 
 This does two things: remove the sync artifacts from both folders in the
@@ -1190,7 +1190,7 @@ v0.2 UI is purely command line, even on Windows.
 
 @item 
 v0.2 introduces the concept of sync profiles and folder-folder sync, which is
-much more advanced than what we had earlie. v0.1 always did a sync between the
+much more advanced than what we had earlier. v0.1 always did a sync between the
 default contacts folder in the default message store with a newly created
 folder called Gout on google.
 
@@ -1245,8 +1245,8 @@ separate group, no go.
 
 @item
 Older versions of this tool had issues with extracting email addresses from
-Outlook entries - EX email addresses for thos who care. Incidentally, this EX
-email address problem plagues a number of sync solutions, inclunding an
+Outlook entries - EX email addresses for those who care. Incidentally, this EX
+email address problem plagues a number of sync solutions, including an
 otherwise excellent product from TouchDown for Outlook PST.
 @end itemize
 
@@ -1268,7 +1268,7 @@ possible.
 
 @cindex Other Sync Programs
 
-@subsection What is wrong wtih GoContactSync?
+@subsection What is wrong with GoContactSync?
 
 GoContactSync (@url{http://sourceforge.net/projects/gocontactsync} is a GPL-ed
 two way sync solution between MS Outlook and Google Contacts. It has
