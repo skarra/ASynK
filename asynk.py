@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Sat Jan 05 15:13:25 IST 2013
+## Last Modified : Tue Mar 19 22:29:17 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -208,7 +208,7 @@ def setup_parser ():
                    help=('For profile operations, specifies profile name. '
                          'For Folder operations, specifies folder name'))
 
-    p.add_argument('--direction', action='store', default='2way',
+    p.add_argument('--direction', action='store', default=None,
                    choices=('1way', '2way'),
                    help='Specifies whether a sync has to be unidirectional '
                    'or bidirectional. Defaults to bidirectional sync, i.e. '
@@ -396,7 +396,11 @@ class Asynk:
         else:
             self.set_folder_ids(None)
 
-        d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYNC2WAY'
+        if uinps.direction:
+            d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYNC2WAY'
+        else:
+            d = None
+
         self.set_sync_dir(d)
         self.set_label_re(uinps.label_regex)
         self.set_conflict_resolve(uinps.conflict_resolve)
@@ -881,6 +885,12 @@ class Asynk:
     
             self.add_store_id(self.get_db1(), conf.get_stid1(pname))
             self.add_store_id(self.get_db2(), conf.get_stid2(pname))
+
+            if not self.get_sync_dir():
+                self.set_sync_dir(conf.get_sync_dir(pname))
+
+            if not self.get_conflict_resolve():
+                self.set_conflict_resolve(conf.get_conflict_resolve(pname))
 
         if login:
             self._login()
