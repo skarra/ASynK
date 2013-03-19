@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu Aug 16 16:57:20 IST 2012
+## Last Modified : Tue Mar 19 11:45:41 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -295,26 +295,26 @@ class BBContact(Contact):
 
                 streets = fields['streets']
                 sts = re.findall(str_re, streets)
-                sts = [chompq(x) for x in sts]
+                sts = map(self._unquoted, [chompq(x) for x in sts])
 
                 if sts:
                     addict.update({'street' : '\n'.join(sts)})
 
                 city = fields['city']
                 if city:
-                    addict.update({'city' : chompq(city)})
+                    addict.update({'city' : self._unquoted(chompq(city))})
 
                 state = fields['state']
                 if state:
-                    addict.update({'state' : chompq(state)})
+                    addict.update({'state' : self._unquoted(chompq(state))})
 
                 country = fields['country']
                 if country:
-                    addict.update({'country' : chompq(country)})
+                    addict.update({'country' : self._unquoted(chompq(country))})
 
                 pin = fields['zip']
                 if pin:
-                    addict.update({'zip' : chompq(pin)})
+                    addict.update({'zip' : self._unquoted(chompq(pin))})
 
                 self.add_postal(chompq(label), addict)
                 if i == 0:
@@ -607,6 +607,14 @@ class BBContact(Contact):
         else:
             return '(' + ret + ')'
 
+    def _unquoted (self, x):
+        return string.replace(x, r'\"', '"') if x else ''
+
+    ## FIXME: unchompq should not be here... fix this to be the exact inverse
+    ## of _unquoted defined above. x
+    def _quoted (self, x):
+        return unchompq(string.replace(x, '"', r'\"') if x else '')
+
     def _get_postal_as_string (self):
         ret = ''
         for l, a in self.get_postal(as_array=True):
@@ -614,15 +622,12 @@ class BBContact(Contact):
 
             if 'street' in a and a['street']:
                 strts = a['street'].split('\n')
-                ret += '(' + ' '.join([unchompq(x) for x in strts]) + ')'
+                ret += '(' + ' '.join([self._quoted(x) for x in strts]) + ')'
             else:
                 ret += 'nil'
 
-            ret += ' ' + (unchompq(a['city'])    if a['city']    else '""')
-            ret += ' ' + (unchompq(a['state'])   if a['state']   else '""')
-            ret += ' ' + (unchompq(a['zip'])     if a['zip']     else '""')
-            ret += ' ' + (unchompq(a['country']) if a['country'] else '""')
-
+            arr = [a['city'], a['state'], a['zip'], a['country']]
+            ret += ' ' + ' '.join(map(self._quoted, arr))
             ret += ']'
 
         if ret == '':
