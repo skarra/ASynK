@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Tue Mar 19 11:45:41 IST 2013
+## Last Modified : Wed Mar 20 21:57:56 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -29,6 +29,19 @@ import copy, logging, re, string, uuid
 from   contact    import Contact
 from   utils      import chompq, unchompq
 import demjson, pimdb_bb, folder_bb
+
+def esc_str (x):
+    """This takes a raw string and ensures all problematic characters are
+    escaped appropriately so it is safe to be written to BBDB store."""
+
+    return string.replace(x, '"', r'\"') if x else ''
+
+def unesc_str (x):
+    """This is the inverse of escape_str. i.e. this undoes any escaping
+    that is present in the string x that had to be done to make it safe to
+    write to BBDB store."""
+
+    return string.replace(x, r'\"', '"') if x else ''
 
 class BBDBParseError(Exception):
     pass
@@ -295,26 +308,26 @@ class BBContact(Contact):
 
                 streets = fields['streets']
                 sts = re.findall(str_re, streets)
-                sts = map(self._unquoted, [chompq(x) for x in sts])
+                sts = map(unesc_str, [chompq(x) for x in sts])
 
                 if sts:
                     addict.update({'street' : '\n'.join(sts)})
 
                 city = fields['city']
                 if city:
-                    addict.update({'city' : self._unquoted(chompq(city))})
+                    addict.update({'city' : unesc_str(chompq(city))})
 
                 state = fields['state']
                 if state:
-                    addict.update({'state' : self._unquoted(chompq(state))})
+                    addict.update({'state' : unesc_str(chompq(state))})
 
                 country = fields['country']
                 if country:
-                    addict.update({'country' : self._unquoted(chompq(country))})
+                    addict.update({'country' : unesc_str(chompq(country))})
 
                 pin = fields['zip']
                 if pin:
-                    addict.update({'zip' : self._unquoted(chompq(pin))})
+                    addict.update({'zip' : unesc_str(chompq(pin))})
 
                 self.add_postal(chompq(label), addict)
                 if i == 0:
@@ -607,27 +620,19 @@ class BBContact(Contact):
         else:
             return '(' + ret + ')'
 
-    def _unquoted (self, x):
-        return string.replace(x, r'\"', '"') if x else ''
-
-    ## FIXME: unchompq should not be here... fix this to be the exact inverse
-    ## of _unquoted defined above. x
-    def _quoted (self, x):
-        return unchompq(string.replace(x, '"', r'\"') if x else '')
-
     def _get_postal_as_string (self):
         ret = ''
         for l, a in self.get_postal(as_array=True):
             ret += '[' + unchompq(l) + ' '
 
             if 'street' in a and a['street']:
-                strts = a['street'].split('\n')
-                ret += '(' + ' '.join([self._quoted(x) for x in strts]) + ')'
+                s = a['street'].split('\n')
+                ret += '(' + ' '.join([unchompq(x) for x in map(esc_str, s)]) + ')'
             else:
                 ret += 'nil'
 
             arr = [a['city'], a['state'], a['zip'], a['country']]
-            ret += ' ' + ' '.join(map(self._quoted, arr))
+            ret += ' ' + ' '.join([unchompq(x) for x in map(esc_str, arr)])
             ret += ']'
 
         if ret == '':
