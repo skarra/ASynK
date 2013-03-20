@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Wed Mar 20 21:57:56 IST 2013
+## Last Modified : Wed Mar 20 22:29:40 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -167,21 +167,23 @@ class BBContact(Contact):
     def _snarf_names_from_parse_res (self, pr):
         n = pr['firstname']
         if n and n != 'nil':
-            self.set_firstname(chompq(n))
+            self.set_firstname(unesc_str(chompq(n)))
 
         n = pr['lastname']
         if n and n != 'nil':
-            self.set_lastname(chompq(n))
+            self.set_lastname(unesc_str(chompq(n)))
 
         try:
             affix = pr['affix']
             if affix and affix != 'nil':
                 str_re = self.get_store().get_str_re()
                 affix = re.findall(str_re, affix)
-                self.set_suffix(chompq(affix[0]))
+                self.set_suffix(unesc_str(chompq(affix[0])))
 
                 if len(affix) > 1:
-                    aff = demjson.encode([chompq(x) for x in affix[1:]])
+                    aff = demjson.encode([unesc_str(chompq(x)) for x in affix[1:]])
+                    ## FIXME: Do we need to escape the quotes in json encoding
+                    ## as in the except clause?
                     self.add_custom('affix', aff)
         except KeyError, e:
             ## FIXME: There should be a better way to handle the format
@@ -492,8 +494,8 @@ class BBContact(Contact):
 
     def _get_names_as_string (self):
         ret = ''
-        n = self.get_firstname()
-        l = self.get_lastname()
+        n = esc_str(self.get_firstname())
+        l = esc_str(self.get_lastname())
 
         if bool(l) != bool(n):
             # A Logical xor to check if one and only one of the two strings is
@@ -520,7 +522,7 @@ class BBContact(Contact):
         ## field. Othewrise we will just let all the stuff get handled in the
         ## custom handling routine - even the first suffix.
 
-        a = self.get_suffix()
+        a = esc_str(self.get_suffix())
         bbdb_ver = self.get_store().get_file_format()
         if not a:
             if bbdb_ver != '6':
