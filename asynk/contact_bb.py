@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu Mar 21 15:58:11 IST 2013
+## Last Modified : Thu Mar 21 17:43:25 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -216,7 +216,7 @@ class BBContact(Contact):
             nick   = aka[0]
             rest   = aka[1:]
             if nick:
-                self.set_nickname(chompq(nick))
+                self.set_nickname(unesc_str(chompq(nick)))
 
             if rest and len(rest) > 0:
                 ## Note that 'rest' is an array, and it will not be possible
@@ -547,7 +547,7 @@ class BBContact(Contact):
         return ret
 
     def _get_aka_as_string (self):
-        nick = self.get_nickname()
+        nick = esc_str(self.get_nickname())
         if not nick:
             return 'nil'
         nick = unchompq(nick)
