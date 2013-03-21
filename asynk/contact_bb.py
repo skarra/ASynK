@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Wed Mar 20 22:29:40 IST 2013
+## Last Modified : Thu Mar 21 15:48:25 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -197,7 +197,6 @@ class BBContact(Contact):
                     affix = affix[1:]
                     if len(affix) > 0:
                         aff = demjson.encode(affix)
-                        aff = string.replace(aff, '"', r'\"')
                         self.add_custom('affix', aff)
 
     def _snarf_aka_from_parse_res (self, pr):
@@ -234,7 +233,7 @@ class BBContact(Contact):
             if ver == '6':
                 cs = chompq(cs[0]).split('; ')
 
-            self.set_company(chompq(cs[0]))
+            self.set_company(unesc_str(chompq(cs[0])))
             rest = cs[1:]
 
             if rest and len(rest) > 0:
@@ -423,7 +422,7 @@ class BBContact(Contact):
             (key, val) = note[:2]
 
             key = key.rstrip()
-            val = chompq(val)
+            val = unesc_str(chompq(val))
 
             if key == noted['created']:
                 self.set_created(val)
@@ -443,7 +442,6 @@ class BBContact(Contact):
                 self._add_im(noted['ims'], key, val)
             elif key == noted['notes']:
                 ## Undo any replacements we might have done earlier
-                val = string.replace(val, r'\"', '"')
                 val = string.replace(val, '\\n', '\n')
                 self.add_notes(val)
             elif key == noted['birthday']:
@@ -461,7 +459,6 @@ class BBContact(Contact):
             elif re.search(noted['middle_name'], key):
                 self.set_middlename(val)
             elif re.search('affix', key):
-                val = string.replace(val, r'\"', '"')
                 affix = demjson.decode(val)
                 if len(affix) > 0:
                     self.set_suffix(affix[0])
@@ -559,7 +556,7 @@ class BBContact(Contact):
             return '(' + nick + ')'
 
     def _get_company_as_string (self):
-        comp1 = self.get_company()
+        comp1 = esc_str(self.get_company())
         if not comp1:
             return 'nil'
 
@@ -671,16 +668,16 @@ class BBContact(Contact):
         ret += '(%s . %s) ' % (noted['created'], unchompq(self.get_created()))
         ret += '(%s . %s) ' % (noted['updated'], unchompq(self.get_updated()))
 
-        p = self.get_prefix()
-        g = self.get_gender()
-        t = self.get_title()
-        d = self.get_dept()
-        b = self.get_birthday()
-        a = self.get_anniv()
-        i = self.get_im()
+        p = esc_str(self.get_prefix())
+        g = esc_str(self.get_gender())
+        t = esc_str(self.get_title())
+        d = esc_str(self.get_dept())
+        b = esc_str(self.get_birthday())
+        a = esc_str(self.get_anniv())
+        i = esc_str(self.get_im())
         n = self.get_notes()
-        m = self.get_middlename()
-        f = self.get_bbdb_folder()
+        m = esc_str(self.get_middlename())
+        f = esc_str(self.get_bbdb_folder())
 
         if p:
             ret += '(%s . %s) ' % (noted['prefix'],  unchompq(p))
@@ -700,7 +697,7 @@ class BBContact(Contact):
             ## BBDB cannot handle actual line breaks and double quotes. We
             ## need to quote them. And convert the dos line endings while we
             ## are at it...
-            no = string.replace(n[0], '"', r'\"')
+            no = esc_str(n[0])
             no = string.replace(no, '\r\n', '\\n')
             no = string.replace(no, '\n', '\\n')
             ret += '(%s . %s) ' % (noted['notes'], unchompq(no))
@@ -714,10 +711,8 @@ class BBContact(Contact):
         for label, note in self.get_custom().iteritems():
             if label in ['company', 'aka']:
                 continue
-            if label in ['affix']:
-                note = string.replace(note, '"', r'\"')
 
-            ret += '(%s . %s) ' % (label, unchompq(note))
+            ret += '(%s . %s) ' % (label, unchompq(esc_str(note)))
 
         return '(' + ret + ')'
 
