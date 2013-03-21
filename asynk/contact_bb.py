@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu Mar 21 15:48:25 IST 2013
+## Last Modified : Thu Mar 21 15:58:11 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -34,14 +34,23 @@ def esc_str (x):
     """This takes a raw string and ensures all problematic characters are
     escaped appropriately so it is safe to be written to BBDB store."""
 
-    return string.replace(x, '"', r'\"') if x else ''
+    if not x:
+        return x
+
+    x = string.replace(x, '\r\n', '\\n')
+    x = string.replace(x, '\n', '\\n')
+    return string.replace(x, '"', r'\"')
 
 def unesc_str (x):
     """This is the inverse of escape_str. i.e. this undoes any escaping
     that is present in the string x that had to be done to make it safe to
     write to BBDB store."""
 
-    return string.replace(x, r'\"', '"') if x else ''
+    if not x:
+        return x
+
+    x = string.replace(x, '\\n', '\n')
+    return string.replace(x, r'\"', '"')
 
 class BBDBParseError(Exception):
     pass
@@ -441,8 +450,6 @@ class BBContact(Contact):
             elif re.search(noted['ims'], key):
                 self._add_im(noted['ims'], key, val)
             elif key == noted['notes']:
-                ## Undo any replacements we might have done earlier
-                val = string.replace(val, '\\n', '\n')
                 self.add_notes(val)
             elif key == noted['birthday']:
                 if self._is_valid_date(val, noted['birthday']):
@@ -698,8 +705,6 @@ class BBContact(Contact):
             ## need to quote them. And convert the dos line endings while we
             ## are at it...
             no = esc_str(n[0])
-            no = string.replace(no, '\r\n', '\\n')
-            no = string.replace(no, '\n', '\\n')
             ret += '(%s . %s) ' % (noted['notes'], unchompq(no))
         if m and m != '':
             ret += '(%s . %s) ' % (noted['middle_name'], unchompq(m))
