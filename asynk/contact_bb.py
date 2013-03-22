@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Thu Mar 21 17:43:25 IST 2013
+## Last Modified : Fri Mar 22 14:00:25 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -660,8 +660,8 @@ class BBContact(Contact):
             im_label_fmt = '%s'
 
         ret = ''
-        for label, value in ims.iteritems():
-            ret += ' ('+ (im_label_fmt % label) + ' . ' + unchompq(value) + ')'
+        for l, v in ims.iteritems():
+            ret += ' ('+ (im_label_fmt % l) + ' . ' + unchompq(esc_str(v)) + ')'
 
         return ret
 
@@ -681,7 +681,7 @@ class BBContact(Contact):
         d = esc_str(self.get_dept())
         b = esc_str(self.get_birthday())
         a = esc_str(self.get_anniv())
-        i = esc_str(self.get_im())
+        i = self.get_im()
         n = self.get_notes()
         m = esc_str(self.get_middlename())
         f = esc_str(self.get_bbdb_folder())
