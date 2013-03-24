@@ -1,6 +1,6 @@
 ## 
 ## Created       : Sat May 12 11:31:29 IST 2012
-## Last Modified : Thu May 17 20:29:31 IST 2012
+## Last Modified : Fri Mar 22 15:07:02 IST 2013
 ## 
 ## Copyright (C) 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -20,6 +20,10 @@
 ##
 
 import os
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+
+from google.appengine.dist import use_library
+use_library('django', '1.2')
 
 from google.appengine.ext             import webapp, db
 from google.appengine.ext.webapp      import template
