@@ -16,6 +16,9 @@ handlers:
 - url: /doc
   static_dir: doc
 
+- url: /downloads
+  static_dir: downloads
+
 - url: /.*
   script: asynk.py
 
