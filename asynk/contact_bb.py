@@ -1,6 +1,6 @@
 ##
 ## Created       : Fri Apr 06 19:08:32 IST 2012
-## Last Modified : Fri Mar 22 14:00:25 IST 2013
+## Last Modified : Tue Mar 26 18:59:40 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -609,6 +609,30 @@ class BBContact(Contact):
         else:
             return '(' + ret + ')'
 
+    def _get_websites_as_string (self):
+        ## FIXME: What happens to the "get_web_prim()". 
+
+        ret = []
+        for i, web in enumerate(self.get_web_home()):
+            if not web:
+                continue
+
+            label = 'Web-%02d-Home' % i
+            value = unchompq(esc_str(web))
+
+            ret.append("(%s . %s)" % (label, value))
+
+        for i, web in enumerate(self.get_web_work()):
+            if not web:
+                continue
+
+            label = 'Web-%02d-Work' % i
+            value = unchompq(esc_str(web))
+
+            ret.append("(%s . %s)" % (label, value))
+
+        return ' '.join(ret)
+
     def _get_phones_as_string (self):
         ## Note that any BBDB phone number that was structured in the North
         ## Amerial format will be munged into an equivalent string notation
@@ -712,6 +736,7 @@ class BBContact(Contact):
             ret += '(%s . %s) ' % (noted['folder'],  unchompq(f))
 
         ret += self._get_sync_tags_as_str() + ' '
+        ret += self._get_websites_as_string() + ' '
 
         for label, note in self.get_custom().iteritems():
             if label in ['company', 'aka']:
