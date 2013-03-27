@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Tue Mar 19 22:29:17 IST 2013
+## Last Modified : Wed Mar 27 17:40:59 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -165,6 +165,10 @@ def setup_parser ():
     p.add_argument('--dry-run', action='store_true',
                    help='Do not sync, but merely show what will happen '
                    'if a sync is performed.')
+    
+    p.add_argument('--sync-all', action='store_true',
+                   help='when used with --op=sync, this will ignore previous '
+                   'synchronization state, and perform a complete resync.')
 
     p.add_argument('--op', action='store',
                    choices=('list-folders',
@@ -368,6 +372,7 @@ class Asynk:
             return
 
         self.set_dry_run(uinps.dry_run)
+        self.set_sync_all(uinps.sync_all)
         self.set_name(uinps.name)
 
         if uinps.store:
@@ -623,9 +628,31 @@ class Asynk:
         conf  = self.get_config()
         pname = self._load_profile()
 
+        startt_old = conf.get_last_sync_start(pname)
+        stopt_old  = conf.get_last_sync_stop(pname)
+
+        if self.is_sync_all():
+            # This is the case the user wants to force a sync ignoring the
+            # earlier sync states. This is useful when ASynK code changes -
+            # and let's say we add support for synching a enw field, or some
+            # such.
+            #
+            # This works by briefly resetting the last sync start and stop
+            # times to fool the system. If the user is doing a dry run, we
+            # will restore his earlier times dutifully.
+            if self.is_dry_run():
+                logging.debug('Temporarily resetting last sync times...')
+            conf.set_last_sync_start(pname, val="1980-01-01T00:00:00.00+00:00")
+            conf.set_last_sync_stop(pname, val="1980-01-01T00:00:00.00+00:00")
+
         sync = Sync(conf, pname, self.get_db(), dr=self.is_dry_run())
         if self.is_dry_run():
             sync.prep_lists(self.get_sync_dir())
+            # Since it is only a dry run, resetting to the timestamps to the
+            # real older sync is sort of called for.
+            conf.set_last_sync_start(pname, val=startt_old)
+            conf.set_last_sync_stop(pname, val=stopt_old)
+            logging.debug('Rest last sync timestamps to real values')
         else:
             try:
                 startt = conf.get_curr_time()
@@ -729,6 +756,12 @@ class Asynk:
 
     def is_dry_run (self):
         return self._get_att('dry_run')
+
+    def set_sync_all (self, val):
+        return self._set_att('sync_all', val)
+
+    def is_sync_all (self):
+        return self._get_att('sync_all')
 
     def set_folder_ids (self, val):
         """val should be a dictionary of dbid : folderid pairs."""
