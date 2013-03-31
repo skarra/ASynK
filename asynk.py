@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Wed Mar 27 17:40:59 IST 2013
+## Last Modified : Sun Mar 31 22:43:32 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -20,7 +20,7 @@
 ## not, see <http://www.gnu.org/licenses/>.
 
 import argparse, datetime, logging, os, platform
-import re, shutil, string, sys, traceback
+import netrc, re, shutil, string, sys, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -284,24 +284,54 @@ class Asynk:
         if self.logged_in and not force:
             return
 
+        conf = self.get_config()
+        pname = self.get_name()
+        mach = 'gc_%s' % pname
+
+        ## For gmail authentication credentials, the password can be provided
+        ## in a variety of ways; in the order of priority: a) on the command
+        ## line b) in the ~/.netrc file where the machine name is derived from
+        ## the profile name (more on this later), and finally c) from keyboard
+        n = None
+        netrc_user = None
+        netrc_pass = None
+
         if 'gc' in [self.get_db1(), self.get_db2()]:
+            # Use the netrc as a backup in case userid / pwd are not provided
+            try:
+                n = netrc.netrc()
+                if mach in n.hosts.keys():
+                    netrc_user, netrc_a, netrc_pass = n.authenticators(mach)
+                    logging.debug('Parsed netrc: Username: %s, Password: %s',
+                                  netrc_user, netrc_pass)
+            except IOError, e:
+                logging.debug('~/.netrc not found.')
+
             gcuser = self.get_store_id('gc')
             if not gcuser:
+                if netrc_user:
+                    gcuser = netrc_user
                 while not gcuser:
                     gcuser = raw_input('Please enter your username: ')
                 self.add_store_id('gc', gcuser)
 
             self.set_gcuser(gcuser)
 
-            while not self.get_gcpw():
-                self.set_gcpw(raw_input('Password: '))
-                if not self.get_gcpw():
-                    print 'Password cannot be blank'
+            if self.get_gcpw():
+                logging.debug('Using command line gmail password for logging in')
 
-        conf = self.get_config()
+            while not self.get_gcpw():
+                if netrc_pass and self.get_gcuser() == netrc_user:
+                    self.set_gcpw(netrc_pass)
+                else:
+                    logging.debug('Either netrc did not have credentials for '
+                                  ' User (%s) or has different login', gcuser)
+                    self.set_gcpw(raw_input('Password: '))
+                    if not self.get_gcpw():
+                        print 'Password cannot be blank'
+
         db1id = self.get_db1()
         db2id = self.get_db2()
-        pname = self.get_name()
 
         if db1id:
             login_func = 'login_%s' % db1id
