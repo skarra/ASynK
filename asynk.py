@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Sun Mar 31 22:43:32 IST 2013
+## Last Modified : Mon Apr 01 07:14:39 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -302,8 +302,6 @@ class Asynk:
                 n = netrc.netrc()
                 if mach in n.hosts.keys():
                     netrc_user, netrc_a, netrc_pass = n.authenticators(mach)
-                    logging.debug('Parsed netrc: Username: %s, Password: %s',
-                                  netrc_user, netrc_pass)
             except IOError, e:
                 logging.debug('~/.netrc not found.')
 
