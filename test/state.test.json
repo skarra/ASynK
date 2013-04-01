@@ -1,0 +1,33 @@
+{ "app_root" : "/Users/sriramkarra/stuff/code/python/ASynK/test",
+  "default_profile" : null,
+  "file_version" : 5,
+  "profiles" : { "defgcbb" : { "coll_1" : { "dbid" : "gc",
+              "foid" : null,
+              "stid" : null
+            },
+          "coll_2" : { "dbid" : "bb",
+              "foid" : "default",
+              "stid" : "~/.bbdb"
+            },
+          "conflict_resolve" : "bb",
+          "last_sync_start" : "1980-01-01T00:00:00.00+00:00",
+          "last_sync_stop" : "1980-01-01T00:00:00.00+00:00",
+          "olgid" : null,
+          "sync_dir" : "SYNC2WAY"
+        },
+      "defgcol" : { "coll_1" : { "dbid" : "gc",
+              "foid" : null,
+              "stid" : null
+            },
+          "coll_2" : { "dbid" : "ol",
+              "foid" : null,
+              "stid" : null
+            },
+          "conflict_resolve" : "gc",
+          "last_sync_start" : "2012-07-03T02:30:13.01Z",
+          "last_sync_stop" : "2012-07-03T02:30:13.01Z",
+          "olgid" : 36865,
+          "sync_dir" : "SYNC1WAY"
+        }
+    }
+}

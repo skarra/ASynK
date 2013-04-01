@@ -1,0 +1,99 @@
+// -*- javascript -*-
+
+// This file is part of ASynK
+//
+// ASynK is free software: you can redistribute it and/or modify it under
+// the terms of the GNU Affero General Public License as published by the
+// Free Software Foundation, version 3 of the License
+//
+// ASynK is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
+// License for more details.
+//
+// You should have a copy of the license in the doc/ directory of ASynK.  If
+// not, see <http://www.gnu.org/licenses/>.
+//
+// ////
+
+// This is the application state json file that a new user will start out with.
+
+{
+    // This absolutely has to be the same as the version of the
+    // config.json file. If they are different it will help us
+    // identify if any migration has to be performed - in the future.
+    'file_version' : 4,
+
+    // The default profile. It will contain the name of one of the
+    // profile keys once the user makes at a sync or at least sets up
+    // a profile. After every sync command the value of this variable
+    // is reset to the just used profile name.
+    'default_profile' : null,
+
+    'profiles' : {
+	// The following is an example of what a profile could like. This
+	// sample profile will not be written to the state.json file
+
+	'defgcol' : {
+	    "coll_1" : {
+		"dbid" : "gc",
+		"stid" : null,
+		"foid" : null,
+	    },
+
+	    "coll_2" : {
+		"dbid" : "ol",
+		"stid" : null,
+		"foid" : null,
+	    },
+
+	    'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
+	    'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
+
+	    // Default direction in which to perform Sync. Values can
+	    // be one of ['SYNC1WAY' or 'SYCN2WAY'].
+            'sync_dir'        : "SYNC2WAY",
+
+            // Direction in which to resolve conflicts if the same
+            // entry is modified both locally and in the google
+            // cloud. Value should be one of the two dbids (in this
+            // instance, either 'gc' or 'ol')
+	    'conflict_resolve' : 'gc',
+
+            // The GID used to compute the custom property tag that is
+            // used to store the sync tag.
+            'olgid' : 0x9001,
+	}, // profiles['defgcol']
+
+	'defgcbb' : {
+	    "coll_1" : {
+		"dbid" : "gc",
+		"stid" : null,
+		"foid" : null,
+	    },
+
+	    "coll_2" : {
+		"dbid" : "bb",
+		"stid" : "~/.bbdb",
+		"foid" : "default",
+	    },
+
+	    'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
+	    'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
+
+	    // Default direction in which to perform Sync. Values can
+	    // be one of ['SYNC1WAY' or 'SYCN2WAY'].
+            'sync_dir'        : "SYNC2WAY",
+
+            // Direction in which to resolve conflicts if the same
+            // entry is modified both locally and in the google
+            // cloud. Value should be one of the two dbids (in this
+            // instance, either 'gc' or 'bb')
+	    'conflict_resolve' : 'gc',
+
+            // The GID used to compute the custom property tag that is
+            // used to store the sync tag.
+            'olgid' : null,
+	}, // profiles['defgcbb']
+    }, // 'profiles'
+}
