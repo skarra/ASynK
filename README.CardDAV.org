@@ -9,7 +9,25 @@ The carddav branch is an experimental branch for a new datastore backend for Car
    Discovered Apple's pretty decent caldavclientibrary, which has webdav/caldav/carddav wrappers. It's going to make it easier to deal with the server, and we will at least work with Apple's Calendar server. Hooked up this guy with a simple test script and pimdb_cd.py is on its way! Humble beginning.
 
 * Timelog
-  CLOCK: [2013-04-02 Tue 18:41]--[2013-04-02 Tue 19:42] =>  1:01
-  CLOCK: [2013-04-02 Tue 17:47]--[2013-04-02 Tue 18:26] =>  0:39
-  CLOCK: [2013-04-02 Tue 14:26]--[2013-04-02 Tue 15:21] =>  0:55
-  CLOCK: [2013-04-02 Tue 12:58]--[2013-04-02 Tue 13:48] =>  0:50
+
+** Clockings
+
+   CLOCK: [2013-04-03 Wed 16:27]--[2013-04-03 Wed 17:36] =>  1:09
+   CLOCK: [2013-04-03 Wed 05:29]--[2013-04-03 Wed 06:52] =>  1:23
+   CLOCK: [2013-04-02 Tue 18:41]--[2013-04-02 Tue 19:42] =>  1:01
+   CLOCK: [2013-04-02 Tue 17:47]--[2013-04-02 Tue 18:26] =>  0:39
+   CLOCK: [2013-04-02 Tue 14:26]--[2013-04-02 Tue 15:21] =>  0:55
+   CLOCK: [2013-04-02 Tue 12:58]--[2013-04-02 Tue 13:48] =>  0:50
+
+** Summary
+
+#+BEGIN: clocktable :maxlevel 2 :scope file
+Clock summary at [2013-04-03 Wed 17:36]
+
+| L | Headline     | Time   |      |
+|---+--------------+--------+------|
+|   | *Total time* | *5:57* |      |
+|---+--------------+--------+------|
+| 1 | Timelog      | 5:57   |      |
+| 2 | Clockings    |        | 5:57 |
+#+END:
