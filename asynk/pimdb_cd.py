@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:00:12 IST 2013
-## Last Modified : Wed Apr 03 06:48:13 IST 2013
+## Last Modified : Wed Apr 03 16:33:35 IST 2013
 ##
 ## Copyright (C) 2013 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -24,10 +24,13 @@
 from   state        import Config
 from   pimdb        import PIMDB
 from   folder       import Folder
+from   folder_cd    import CDContactsFolder
+from   caldavclientlibrary.protocol.webdav.definitions  import davxml
+from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
 from   caldavclientlibrary.protocol.url   import URL
 from   caldavclientlibrary.client.account import CalDAVAccount
 
-import logging, os, re, urlparse
+import logging, os, re, urllib, urlparse
 
 class CDPIMDB(PIMDB):
     """A wrapper over a connection to a CardDAV server with methods for common
@@ -64,10 +67,9 @@ class CDPIMDB(PIMDB):
             logging.erorr('Only Contact Groups are supported at this time.')
             return None
 
-        root = self.get_root_adbk_path()
+        root = self.get_def_root_folder_path()
         resource = URL(os.path.join(root, fname))
         ret = self.get_account().session.makeAddressBook(resource)
-        logging.debug('Result of makeAddressBook(%s): %s', resource, ret)
 
     def del_folder (self, itemid, store=None):
         """Get rid of the specified folder."""
@@ -77,12 +79,15 @@ class CDPIMDB(PIMDB):
     def set_folders (self):
         """See the documentation in class PIMDB"""
 
-        pass
+        fs = self.fetch_folders()
+        for root, name in fs:
+            fo   = CDContactsFolder(self, None, name, root)
 
     def set_def_folders (self):
         """See the documentation in class PIMDB"""
 
-        raise NotImplementedError
+        ## Already set in the context of the set_folders() method above.
+        pass
    
     def set_sync_folders (self):
         """See the documentation in class PIMDB"""
@@ -171,12 +176,50 @@ class CDPIMDB(PIMDB):
                                  principal=None, logging=False)
         self.set_account(account)
 
-    def get_root_adbk_path (self):
-        acc = self.get_account()
-        principal = acc.getPrincipal()
-        homeset = principal.adbkhomeset
+    def get_contacts_folders_roots (self):
+        return self.get_account().getPrincipal().adbkhomeset
+
+    def get_def_root_folder_path (self):
+        homeset = self.get_contacts_folders_roots()
         if not homeset:
             raise Exception('Principal does not have any addressbook home')
 
         ## FIXME: What does it mean to have multiple paths in adbkhomeset?
+        ## FIXME: We should be fetching the default folders using:
+        ## {urn:ietf:params:xml:ns:carddav}default-addressbook-URL
         return homeset[0].path
+
+    def fetch_folders (self):
+        """Fetch and return the list of addressbooks from the server."""
+        
+        logging.debug('CDPIMDB.set_folders(): Begin')
+
+        sess  = self.get_account().session
+        roots = self.get_contacts_folders_roots()
+        props = (davxml.resourcetype, davxml.getlastmodified,)
+
+        for root in roots:
+            path = root.path
+            logging.debug('Processing Root path %s in Root.', path)
+            results = sess.getPropertiesOnHierarchy(URL(url=path), props)
+            items = results.keys()
+            items.sort()
+            for rurl in items:
+                rurl = urllib.unquote(rurl)
+                if rurl == path:
+                    continue
+
+                props = results[rurl]
+                rtype = props.get(davxml.resourcetype)
+                ret   = []
+                if not isinstance(rtype, str):
+                    for child in rtype.getchildren():
+                        if child.tag == carddavxml.addressbook:
+                            name = rurl[len(path):-1]
+                            logging.debug('Found Folder %-15s in path %s',
+                                          name, path)
+                            ret.append((path, name))
+
+        logging.debug('CDPIMDB.set_folders(): Done.')
+
+        return ret
