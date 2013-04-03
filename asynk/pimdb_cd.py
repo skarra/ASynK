@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:00:12 IST 2013
-## Last Modified : Tue Apr 02 19:29:23 IST 2013
+## Last Modified : Wed Apr 03 06:48:13 IST 2013
 ##
 ## Copyright (C) 2013 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -23,12 +23,15 @@
 
 from   state        import Config
 from   pimdb        import PIMDB
+from   folder       import Folder
+from   caldavclientlibrary.protocol.url   import URL
 from   caldavclientlibrary.client.account import CalDAVAccount
 
-import logging, re, urlparse
+import logging, os, re, urlparse
 
 class CDPIMDB(PIMDB):
-    """GC object is a wrapper for a Google Contacts stream API."""
+    """A wrapper over a connection to a CardDAV server with methods for common
+    server operations"""
 
     def __init__ (self, config, uri, user, pw):
         """If 'server' dooes not start with a http:// or a https:// it is
@@ -53,7 +56,18 @@ class CDPIMDB(PIMDB):
     def new_folder (self, fname, ftype=None, storeid=None):
         """See the documentation in class PIMDB"""
 
-        raise NotImplementedError
+        logging.debug('bb:new_folder(): fname: %s; ftype: %s', fname, ftype)
+        if not ftype:
+            ftype = Folder.CONTACT_t
+
+        if ftype != Folder.CONTACT_t:
+            logging.erorr('Only Contact Groups are supported at this time.')
+            return None
+
+        root = self.get_root_adbk_path()
+        resource = URL(os.path.join(root, fname))
+        ret = self.get_account().session.makeAddressBook(resource)
+        logging.debug('Result of makeAddressBook(%s): %s', resource, ret)
 
     def del_folder (self, itemid, store=None):
         """Get rid of the specified folder."""
@@ -94,6 +108,12 @@ class CDPIMDB(PIMDB):
 
     def set_server (self, server):
         self.server = server
+
+    def get_account (self):
+        return self.account
+
+    def set_account (self, account):
+        self.account = account
 
     def get_path (self):
         return self.path
@@ -146,6 +166,17 @@ class CDPIMDB(PIMDB):
         sf  = self.get_server()
         ssl = sf.startswith('https://')
         server = sf[8:] if ssl else sf[7:]
-        accnt  = CalDAVAccount(server, ssl=ssl, user=self.get_user(),
-                              pswd=self.get_pw(), root=self.get_path(),
-                              principal=None, logging=False)
+        account  = CalDAVAccount(server, ssl=ssl, user=self.get_user(),
+                                 pswd=self.get_pw(), root=self.get_path(),
+                                 principal=None, logging=False)
+        self.set_account(account)
+
+    def get_root_adbk_path (self):
+        acc = self.get_account()
+        principal = acc.getPrincipal()
+        homeset = principal.adbkhomeset
+        if not homeset:
+            raise Exception('Principal does not have any addressbook home')
+
+        ## FIXME: What does it mean to have multiple paths in adbkhomeset?
+        return homeset[0].path

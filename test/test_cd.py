@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:32:55 IST 2013
-## Last Modified : Tue Apr 02 19:33:20 IST 2013
+## Last Modified : Wed Apr 03 06:42:04 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -37,11 +37,15 @@ sys.path          = EXTRA_PATHS + sys.path
 from state         import Config
 from pimdb_cd      import CDPIMDB
 
+def new_folder (cd, name=None):
+    cd.new_folder(fname=name if name else 'goofy')
+
 def main (argv=None):
     conf = Config(os.path.join('..', 'config.json'), 'state.test.json')
     user = raw_input('Enter Username:')
     pw   = raw_input('Password:')
     cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
+    new_folder(cd)
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
