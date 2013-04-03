@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:00:12 IST 2013
-## Last Modified : Wed Apr 03 16:33:35 IST 2013
+## Last Modified : Wed Apr 03 17:25:41 IST 2013
 ##
 ## Copyright (C) 2013 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -46,6 +46,7 @@ class CDPIMDB(PIMDB):
         self.parse_uri(uri)
         self.cd_init()
         self.set_folders()
+        self.set_def_folders()
 
     ##
     ## First implementation of the abstract methods of PIMDB.
@@ -57,7 +58,13 @@ class CDPIMDB(PIMDB):
         return 'cd'
 
     def new_folder (self, fname, ftype=None, storeid=None):
-        """See the documentation in class PIMDB"""
+        """See the documentation in class PIMDB.
+
+        It appears like CardDAV allows multiple 'root' addressbooks, and
+        multiple folders in each addressbook. In order to support this we will
+        have to provide a storeid to distinguish the various root
+        addressbooks. For now new_folder will only create the default root
+        addressbook which is the first entry in the adbkhomeset property."""
 
         logging.debug('bb:new_folder(): fname: %s; ftype: %s', fname, ftype)
         if not ftype:
@@ -80,14 +87,24 @@ class CDPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         fs = self.fetch_folders()
-        for root, name in fs:
-            fo   = CDContactsFolder(self, None, name, root)
+        for uri, root, name in fs:
+            fo   = CDContactsFolder(self, uri, name, root)
+            self.add_contacts_folder(fo)
 
     def set_def_folders (self):
         """See the documentation in class PIMDB"""
 
-        ## Already set in the context of the set_folders() method above.
-        pass
+        ## FIXME: We should be fetching the default folders using:
+        ## {urn:ietf:params:xml:ns:carddav}default-addressbook-URL
+
+        root     = self.get_def_root_folder_path()
+        props    = (carddavxml.def_adbk_url,)
+
+        res, bad = self.session().getProperties(URL(url=root), props)
+        def_uri  = res.values()[0].toString().strip()
+        logging.debug('Looking for default folder: "%s"', def_uri)
+        def_f, t = self.find_folder(def_uri)
+        self.set_def_folder(Folder.CONTACT_t, def_f)
    
     def set_sync_folders (self):
         """See the documentation in class PIMDB"""
@@ -156,6 +173,8 @@ class CDPIMDB(PIMDB):
     def set_settings (self, s):
         self.settings = s
 
+    def session (self):
+        return self.get_account().session
     ##
     ## Other internal and non-static methods
     ##
@@ -185,8 +204,6 @@ class CDPIMDB(PIMDB):
             raise Exception('Principal does not have any addressbook home')
 
         ## FIXME: What does it mean to have multiple paths in adbkhomeset?
-        ## FIXME: We should be fetching the default folders using:
-        ## {urn:ietf:params:xml:ns:carddav}default-addressbook-URL
         return homeset[0].path
 
     def fetch_folders (self):
@@ -194,10 +211,11 @@ class CDPIMDB(PIMDB):
         
         logging.debug('CDPIMDB.set_folders(): Begin')
 
-        sess  = self.get_account().session
+        sess  = self.session()
         roots = self.get_contacts_folders_roots()
         props = (davxml.resourcetype, davxml.getlastmodified,)
 
+        ret   = []
         for root in roots:
             path = root.path
             logging.debug('Processing Root path %s in Root.', path)
@@ -211,14 +229,13 @@ class CDPIMDB(PIMDB):
 
                 props = results[rurl]
                 rtype = props.get(davxml.resourcetype)
-                ret   = []
                 if not isinstance(rtype, str):
                     for child in rtype.getchildren():
                         if child.tag == carddavxml.addressbook:
                             name = rurl[len(path):-1]
-                            logging.debug('Found Folder %-15s in path %s',
-                                          name, path)
-                            ret.append((path, name))
+                            logging.debug('Found Folder %-15s in URI "%s"',
+                                          name, rurl)
+                            ret.append((rurl.strip(), path, name))
 
         logging.debug('CDPIMDB.set_folders(): Done.')
 

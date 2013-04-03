@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 12:59:03 IST 2013
-## Last Modified : Wed Apr 03 16:24:47 IST 2013
+## Last Modified : Wed Apr 03 17:21:46 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -36,7 +36,10 @@ class CDContactsFolder(Folder):
     ##        
 
     def __str__ (self):
-        raise NotImplementedError
+        ret = 'Contacts'
+
+        return ('%s.\tName: %s;\tGID: %s;\t' % (ret, self.get_name(),
+                                                self.get_itemid()))
 
     def get_batch_size (self):
         """See the documentation in folder.Folder"""
