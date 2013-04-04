@@ -35,7 +35,7 @@ class BBContactsFolder(Folder):
         self.set_itemid(fn)
         self.set_name(fn)
 
-        self.contacts = {}
+        self.reset_contacts()
 
     def __del__ (self):
         if self.is_dirty():
@@ -289,6 +289,9 @@ class BBContactsFolder(Folder):
         if len(itemids) > 0:
             self.save()
         return retv, retf
+
+    def reset_contacts (self):
+        self.contacts = {}
 
     def get_contacts (self):
         return self.contacts
