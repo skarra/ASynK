@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 19:02:15 IST 2013
-## Last Modified : Thu Apr 04 15:40:58 IST 2013
+## Last Modified : Thu Apr 04 18:54:03 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -25,6 +25,9 @@
 ##
 
 from   contact    import Contact
+from   vobject    import vobject
+import utils
+import md5, uuid
 
 class CDContact(Contact):
     def __init__ (self, folder, con=None, vco=None, itemid=None):
@@ -45,13 +48,23 @@ class CDContact(Contact):
             assert(itemid)
             self.set_itemid(itemid)
 
+        if not (con or vco):
+            self.set_uid(str(uuid.uuid1()))
+
     ##
     ## First the inherited abstract methods from the base classes
     ##
 
     def save (self):
         """Saves the current contact on the server."""
-        pass
+
+        vco = self.init_vco_from_props()
+        vcf_data = vco.serialize()
+        print 'vcf: ', vcf_data
+        fn  = md5.new(vcf_data).hexdigest() + '.vcf'
+        fo  = self.get_folder()
+
+        fo.put_item(fn, vcf_data, 'text/vcard')
 
     ##
     ## Now onto the non-abstract methods.
@@ -69,10 +82,25 @@ class CDContact(Contact):
     def set_vco (self, vco):
         return self._set_att('vco', vco)
 
+    def get_uid (self):
+        return self._get_att('uid')
+
+    def set_uid (self, uid):
+        return self._set_att('uid', uid)
+
     ## The Rest...
 
     def init_props_from_vco (self, vco):
         self._snarf_names_gender_from_vco(vco)
+
+    def init_vco_from_props (self):
+        vco = vobject.vCard()
+
+        self._add_uid_to_vco(vco)
+        self._add_prodid_to_vco(vco)
+        self._add_names_gender_to_vco(vco)
+
+        return self.set_vco(vco)
 
     def _snarf_names_gender_from_vco (self, vco):
         if not vco:
@@ -103,3 +131,34 @@ class CDContact(Contact):
 
         ## FIXME: vCard3.0 does not really support standard gender
         ## fields... This is going to be a perennial problem.
+
+    def _add_uid_to_vco (self, vco):
+        vco.add('uid')
+        vco.uid.value = self.get_uid()
+
+    def _add_prodid_to_vco (self, vco):
+        vco.add('prodid')
+        vco.prodid.value = utils.asynk_ver_str()
+
+    def _add_names_gender_to_vco (self, vco):
+        vco.add('n')
+        vco.n.value = vobject.vcard.Name()
+        if self.get_lastname():
+            vco.n.value.family = self.get_lastname()
+        if self.get_firstname():
+            vco.n.value.given = self.get_firstname()
+
+        if self.get_middlename():
+            vco.n.value.additional = self.get_middlename()
+
+        if self.get_prefix():
+            vco.n.value.prefix=self.get_prefix()
+
+        if self.get_suffix():
+            vco.n.value.suffix = self.get_suffix()
+
+        if self.get_disp_name():
+            vco.add('fn')
+            vco.fn.value = self.get_disp_name()
+
+        ## FIXME: As before ensure we handle the Formatted Name, if available.
