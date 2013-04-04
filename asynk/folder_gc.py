@@ -76,10 +76,7 @@ SYNC_INTERNAL_SERVER_ERROR = 500
 ## structure as well. for now, taking the easy way out
 
 class GCContactsFolder(Folder):
-    """A GC Folder directly corresponds to a Contacts Group or a Calendar, for
-    e.g. This itself will be an abstract class that implements some of the
-    abstract methods, but the real final leaf classes will be the Google
-    Contacts and Google Tasks classes"""
+    """A class that wraps a Google Contacts folder of label."""
 
     #    __metaclass__ = ABCMeta
 
