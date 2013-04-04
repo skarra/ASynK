@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Aug 09 19:05:33 IST 2012
+## Last Modified : Thu Apr 04 16:09:00 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -145,23 +145,9 @@ class Contact(Item):
         messages, etc. which has to be built from a number of fields. This
         routine does that."""
 
-        n  = ''
-        gn = self.get_firstname()
-        ln = self.get_lastname()
-        mn = self.get_middlename()
-
-        if gn:
-            n += gn
-            if ln or mn:
-                n += ' '
-        if mn:
-            n += mn
-            if ln:
-                n += ' '
-        if ln:
-            n += ln
-
-        return n
+        return ' '.join([x.strip() for x in [self.get_firstname(),
+                                             self.get_middlename(),
+                                             self.get_lastname()] if x])
 
     def get_prefix (self):
         return self._get_prop('prefix')
