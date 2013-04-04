@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:00:12 IST 2013
-## Last Modified : Wed Apr 03 17:25:41 IST 2013
+## Last Modified : Thu Apr 04 12:29:53 IST 2013
 ##
 ## Copyright (C) 2013 by Sriram Karra <karra.etc@gmail.com>
 ##
@@ -154,12 +154,6 @@ class CDPIMDB(PIMDB):
 
     def set_pw (self, pw):
         self.pw = pw
-
-    def get_session (self):
-        return self.session
-
-    def set_session (self, sess):
-        self.session = sess
 
     def get_def_headers (self):
         return self.def_headers

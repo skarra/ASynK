@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 12:59:03 IST 2013
-## Last Modified : Wed Apr 03 17:21:46 IST 2013
+## Last Modified : Thu Apr 04 13:21:58 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -20,6 +20,11 @@
 ##
 
 from   folder         import Folder
+from   contact_cd     import CDContact
+from   caldavclientlibrary.protocol.url                 import URL
+from   caldavclientlibrary.protocol.webdav.definitions  import davxml
+
+import logging
 
 class CDContactsFolder(Folder):
     def __init__ (self, db, fid, gn, root_path):
@@ -96,6 +101,49 @@ class CDContactsFolder(Folder):
 
     def get_contacts (self):
         return self.contacts    
+
+    def add_contact (self, bbc):
+        self.contacts.update({bbc.get_itemid() : bbc})
+
+    def _refresh_contacts (self):
+        logging.debug('Refreshing Contacts for folder %s...',
+                      self.get_name())
+        self.reset_contacts()
+        ## Now fetch from server
+
+        sess  = self.get_db().session()
+        path  = URL(url=self.get_itemid())
+        props = (davxml.getetag,)
+        items = sess.getPropertiesOnHierarchy(path, props)
+
+        for uri in items:
+            if uri == path.toString().strip():
+                continue
+
+            ## FIXME: We also need to ensure we skip any contained
+            ## collections, and only deal with bona fide vCard files.
+
+            result = sess.readData(URL(url=uri))
+            if not result:
+                logging.error('Could not GET URI: "%s"', uri)
+                continue
+            data, etag = result
+
+            cdc = CDContact(self, vco=data, itemid=uri)
+            self.add_contact(cdc)
+            logging.debug('Successfully fetched and added contact: %s',
+                          uri)
+
+        logging.debug('Refreshing Contacts for folder %s..done.',
+                      self.get_name())
+
+    def show (self):
+        self._refresh_contacts()
+        cons = self.get_contacts()
+        logging.info('Total contained contacts: %d', len(cons.keys()))
+        logging.info('Items in brief: ')
+        for itemid, con in cons.iteritems():
+            logging.info('  Itemid: %s', itemid)
 
     def get_root_path (self):
         return self._get_prop('root_path')
