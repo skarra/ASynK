@@ -1,17 +1,33 @@
-This file is a README for the 'carddav' branch. This file will be deleted after this branch is merged with master.
+This file is a README for the 'carddav' branch. This file will be deleted
+after this branch is merged with master.
 
-The carddav branch is an experimental branch for a new datastore backend for CardDAV servers. The idea is with this one can sync BBDB and MS Outlook contacts to a CardDAV server.
+The carddav branch is an experimental branch for a new datastore backend for
+CardDAV servers. The idea is with this one can sync BBDB and MS Outlook
+contacts to a CardDAV server.
 
 * Status
 
+** Thu Apr 04 13:27:53 IST 2013
+
+   Able to read server side addressbook folders, fetch their contents, and
+   construct the pimdb/folder/contact objects. Next step is to be able to
+   parse the vCard files and construct Contacts objects from fetched contents.
+
 ** Tue Apr 02 19:39:42 IST 2013
 
-   Discovered Apple's pretty decent caldavclientibrary, which has webdav/caldav/carddav wrappers. It's going to make it easier to deal with the server, and we will at least work with Apple's Calendar server. Hooked up this guy with a simple test script and pimdb_cd.py is on its way! Humble beginning.
+   Discovered Apple's pretty decent caldavclientlibrary, which has
+   webdav/caldav/carddav wrappers. It's going to make it easier to deal with
+   the server, and we will at least work with Apple's Calendar server. Hooked
+   up this guy with a simple test script and pimdb_cd.py is on its way! Humble
+   beginning.
 
 * Timelog
 
 ** Clockings
-
+   CLOCK: [2013-04-04 Thu 13:20]--[2013-04-04 Thu 13:25] =>  0:05
+   CLOCK: [2013-04-04 Thu 11:28]--[2013-04-04 Thu 12:47] =>  1:19
+   CLOCK: [2013-04-04 Thu 07:30]--[2013-04-04 Thu 08:24] =>  0:54
+   CLOCK: [2013-04-03 Wed 18:51]--[2013-04-03 Wed 20:22] =>  1:31
    CLOCK: [2013-04-03 Wed 16:27]--[2013-04-03 Wed 17:36] =>  1:09
    CLOCK: [2013-04-03 Wed 05:29]--[2013-04-03 Wed 06:52] =>  1:23
    CLOCK: [2013-04-02 Tue 18:41]--[2013-04-02 Tue 19:42] =>  1:01
@@ -22,12 +38,12 @@ The carddav branch is an experimental branch for a new datastore backend for Car
 ** Summary
 
 #+BEGIN: clocktable :maxlevel 2 :scope file
-Clock summary at [2013-04-03 Wed 17:36]
+Clock summary at [2013-04-04 Thu 13:25]
 
 | L | Headline     | Time   |      |
 |---+--------------+--------+------|
-|   | *Total time* | *5:57* |      |
+|   | *Total time* | *9:46* |      |
 |---+--------------+--------+------|
-| 1 | Timelog      | 5:57   |      |
-| 2 | Clockings    |        | 5:57 |
+| 1 | Timelog      | 9:46   |      |
+| 2 | Clockings    |        | 9:46 |
 #+END:
