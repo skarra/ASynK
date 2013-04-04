@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ##
 ## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Mon Apr 01 07:14:39 IST 2013
+## Last Modified : Thu Apr 04 18:52:44 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -47,9 +47,6 @@ from   pimdb_gc         import GCPIMDB
 from   pimdb_bb         import BBPIMDB
 from   folder_bb        import BBContactsFolder
 import utils
-
-## Some Global Variables to get started
-asynk_ver = 'v0.4.1+'
 
 class AsynkParserError(Exception):
     pass
@@ -248,7 +245,7 @@ def setup_parser ():
                    'a log file for tracking purposes')
 
     p.add_argument('--version', action='version',
-                   version='%(prog)s ' + ('%s' % asynk_ver))
+                   version='%(prog)s ' + ('%s' % utils.asynk_ver))
 
     return p
 
