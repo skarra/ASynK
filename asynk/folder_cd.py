@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 12:59:03 IST 2013
-## Last Modified : Thu Apr 04 15:29:07 IST 2013
+## Last Modified : Thu Apr 04 19:20:24 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -101,7 +101,7 @@ class CDContactsFolder(Folder):
         self.contacts = {}
 
     def get_contacts (self):
-        return self.contacts    
+        return self.contacts
 
     def add_contact (self, bbc):
         self.contacts.update({bbc.get_itemid() : bbc})
@@ -152,3 +152,9 @@ class CDContactsFolder(Folder):
 
     def set_root_path (self, root_path):
         self._set_prop('root_path', root_path)
+
+    def put_item (self, name, data, content_type):
+        path = URL(url="%s%s" % (self.get_itemid(), name))
+        res = self.get_db().session().writeData(path, data, content_type)
+
+        ## FIXME: How do we handle errors?

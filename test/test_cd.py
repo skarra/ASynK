@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:32:55 IST 2013
-## Last Modified : Thu Apr 04 12:44:55 IST 2013
+## Last Modified : Thu Apr 04 18:24:59 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -36,6 +36,7 @@ sys.path          = EXTRA_PATHS + sys.path
 
 from state         import Config
 from pimdb_cd      import CDPIMDB
+from contact_cd    import CDContact
 
 def new_folder (cd, name=None):
     cd.new_folder(fname=name if name else 'goofy')
@@ -46,7 +47,15 @@ def main (argv=None):
     pw   = raw_input('Password:')
     cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
 
-    cd.get_def_folder().show()
+    # cd.get_def_folder().show()
+
+    c = CDContact(cd.get_def_folder())
+    c.set_firstname('Ananya')
+    c.set_lastname('Tripathi')
+    c.set_prefix('Dr.')
+    c.set_suffix('Jr.')
+
+    c.save()
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
