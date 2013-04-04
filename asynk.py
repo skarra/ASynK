@@ -47,9 +47,6 @@ from   pimdb_bb         import BBPIMDB
 from   folder_bb        import BBContactsFolder
 import utils
 
-## Some Global Variables to get started
-asynk_ver = 'v0.4.1+'
-
 class AsynkParserError(Exception):
     pass
 
@@ -247,7 +244,7 @@ def setup_parser ():
                    'a log file for tracking purposes')
 
     p.add_argument('--version', action='version',
-                   version='%(prog)s ' + ('%s' % asynk_ver))
+                   version='%(prog)s ' + ('%s' % utils.asynk_ver))
 
     return p
 
