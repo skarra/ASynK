@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Sat May 12 10:44:51 IST 2012
+## Last Modified : Thu Apr 04 22:01:01 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -147,7 +147,7 @@ def create_gc_contact (asynk, uinps):
     # FIXME: We should do a more exhaustive sort of contact, with multiple
     # entries of each type of possible entry and so on...
 
-    return gcf.new_item(con)
+    return con.save()
 
 class TestGCBBSyncFunctions(unittest.TestCase):
     def setUp (self):

@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Thu Apr 04 06:59:40 IST 2013
+## Last Modified : Thu Apr 04 22:00:46 IST 2013
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -205,17 +205,6 @@ class GCContactsFolder(Folder):
         logging.debug('Total Contacts   : %5d', len(newi))
         logging.debug('num with etags   : %5d', etag_cnt)
         logging.debug('num del bef sync : %5d', skip)
-
-    def new_item (self, item):
-        """Add the specified item to the folder."""
-
-        if item.__class__.__name__ == 'GCContact':
-            con = item
-        else:
-            con = GCContact(self, con=item)
-
-        eid = con.save()
-        return eid
 
     def get_itemids (self, pname, destid):
         self._refresh_contacts()
