@@ -1,0 +1,3 @@
+[submodule "lib/vobject"]
+	path = lib/vobject
+	url = git@github.com:skarra/vobject.git
