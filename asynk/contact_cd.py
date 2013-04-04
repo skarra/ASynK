@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 19:02:15 IST 2013
-## Last Modified : Thu Apr 04 13:21:22 IST 2013
+## Last Modified : Thu Apr 04 15:40:58 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -43,7 +43,7 @@ class CDContact(Contact):
         if vco:
             self.init_props_from_vco(vco)
             assert(itemid)
-            self.set_itemid(itemid)            
+            self.set_itemid(itemid)
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -72,4 +72,34 @@ class CDContact(Contact):
     ## The Rest...
 
     def init_props_from_vco (self, vco):
-        pass
+        self._snarf_names_gender_from_vco(vco)
+
+    def _snarf_names_gender_from_vco (self, vco):
+        if not vco:
+            return
+
+        if vco.n and vco.n.value:
+            if vco.n.value.given:
+                self.set_firstname(vco.n.value.given)
+
+            if vco.n.value.family:
+                self.set_lastname(vco.n.value.family)
+
+            if vco.n.value.additional:
+                self.set_middlename(vco.n.value.additional)
+
+            if vco.n.value.prefix:
+                self.set_prefix(vco.n.value.prefix)
+
+            if vco.n.value.suffix:
+                self.set_suffix(vco.n.value.suffix)
+
+        ## FIXME: Need to handle the formatted name when it is present. There
+        ## are known cases when the formatted name is different from the
+        ## Last/First - for e.g. in apple addressbook, the FN is the orgname
+        ## if the user has checked the 'company' box. So I guess the right way
+        ## to handle the formatted name business is to faithfully copy
+        ## whatever is there.
+
+        ## FIXME: vCard3.0 does not really support standard gender
+        ## fields... This is going to be a perennial problem.
