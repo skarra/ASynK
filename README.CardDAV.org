@@ -7,6 +7,20 @@ contacts to a CardDAV server.
 
 * Status
 
+** Thu Apr 04 19:21:33 IST 2013
+
+   Able to (a) fetch a vcf file from server (b) parse and extract a few fields
+   (like name, suffix etc.) from it, and (c) construct a contact object
+
+   Also able to construct a simple CDContact objet, and then push it to the
+   sever.
+
+   That is some pretty good progress... but many things about UID management
+   are not clear. For sake of convenience added a get_uid/set_uid pair for
+   contact_cd.py, but this is not the right way to go. Need to understand how
+   the vCard UID field is used And also figure out how it is to be used in
+   synching.
+
 ** Thu Apr 04 13:27:53 IST 2013
 
    Able to read server side addressbook folders, fetch their contents, and
@@ -23,7 +37,23 @@ contacts to a CardDAV server.
 
 * Timelog
 
+** Summary
+
+#+BEGIN: clocktable :maxlevel 2 :scope file
+Clock summary at [2013-04-04 Thu 19:28]
+
+| L | Headline     | Time    |       |
+|---+--------------+---------+-------|
+|   | *Total time* | *12:47* |       |
+|---+--------------+---------+-------|
+| 1 | Timelog      | 12:47   |       |
+| 2 | Clockings    |         | 12:47 |
+#+END:
+
 ** Clockings
+   CLOCK: [2013-04-04 Thu 18:21]--[2013-04-04 Thu 19:20] =>  0:59
+   CLOCK: [2013-04-04 Thu 16:32]--[2013-04-04 Thu 17:01] =>  0:29
+   CLOCK: [2013-04-04 Thu 14:10]--[2013-04-04 Thu 15:43] =>  1:33
    CLOCK: [2013-04-04 Thu 13:20]--[2013-04-04 Thu 13:25] =>  0:05
    CLOCK: [2013-04-04 Thu 11:28]--[2013-04-04 Thu 12:47] =>  1:19
    CLOCK: [2013-04-04 Thu 07:30]--[2013-04-04 Thu 08:24] =>  0:54
@@ -34,16 +64,3 @@ contacts to a CardDAV server.
    CLOCK: [2013-04-02 Tue 17:47]--[2013-04-02 Tue 18:26] =>  0:39
    CLOCK: [2013-04-02 Tue 14:26]--[2013-04-02 Tue 15:21] =>  0:55
    CLOCK: [2013-04-02 Tue 12:58]--[2013-04-02 Tue 13:48] =>  0:50
-
-** Summary
-
-#+BEGIN: clocktable :maxlevel 2 :scope file
-Clock summary at [2013-04-04 Thu 13:25]
-
-| L | Headline     | Time   |      |
-|---+--------------+--------+------|
-|   | *Total time* | *9:46* |      |
-|---+--------------+--------+------|
-| 1 | Timelog      | 9:46   |      |
-| 2 | Clockings    |        | 9:46 |
-#+END:
