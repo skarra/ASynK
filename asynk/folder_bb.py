@@ -1,6 +1,6 @@
 ##
 ## Created       : Sat Apr 07 20:03:04 IST 2012
-## Last Modified : Fri Aug 17 08:54:43 IST 2012
+## Last Modified : Wed Apr 03 19:15:59 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -36,7 +36,7 @@ class BBContactsFolder(Folder):
         self.set_itemid(fn)
         self.set_name(fn)
 
-        self.contacts = {}
+        self.reset_contacts()
 
     def __del__ (self):
         if self.is_dirty():
@@ -290,6 +290,9 @@ class BBContactsFolder(Folder):
         if len(itemids) > 0:
             self.save()
         return retv, retf
+
+    def reset_contacts (self):
+        self.contacts = {}
 
     def get_contacts (self):
         return self.contacts
