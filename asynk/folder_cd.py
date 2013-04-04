@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 12:59:03 IST 2013
-## Last Modified : Thu Apr 04 13:21:58 IST 2013
+## Last Modified : Thu Apr 04 15:29:07 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -21,6 +21,7 @@
 
 from   folder         import Folder
 from   contact_cd     import CDContact
+from   vobject        import vobject
 from   caldavclientlibrary.protocol.url                 import URL
 from   caldavclientlibrary.protocol.webdav.definitions  import davxml
 
@@ -129,7 +130,8 @@ class CDContactsFolder(Folder):
                 continue
             data, etag = result
 
-            cdc = CDContact(self, vco=data, itemid=uri)
+            vco = vobject.readOne(data)
+            cdc = CDContact(self, vco=vco, itemid=uri)
             self.add_contact(cdc)
             logging.debug('Successfully fetched and added contact: %s',
                           uri)
@@ -143,7 +145,7 @@ class CDContactsFolder(Folder):
         logging.info('Total contained contacts: %d', len(cons.keys()))
         logging.info('Items in brief: ')
         for itemid, con in cons.iteritems():
-            logging.info('  Itemid: %s', itemid)
+            logging.info('  Name: %-25s Itemid: %s', con.get_disp_name(), itemid)
 
     def get_root_path (self):
         return self._get_prop('root_path')
