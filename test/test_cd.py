@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:32:55 IST 2013
-## Last Modified : Wed Apr 03 06:42:04 IST 2013
+## Last Modified : Thu Apr 04 12:44:55 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -45,7 +45,8 @@ def main (argv=None):
     user = raw_input('Enter Username:')
     pw   = raw_input('Password:')
     cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
-    new_folder(cd)
+
+    cd.get_def_folder().show()
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
