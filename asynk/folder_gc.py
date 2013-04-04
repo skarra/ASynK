@@ -205,17 +205,6 @@ class GCContactsFolder(Folder):
         logging.debug('num with etags   : %5d', etag_cnt)
         logging.debug('num del bef sync : %5d', skip)
 
-    def new_item (self, item):
-        """Add the specified item to the folder."""
-
-        if item.__class__.__name__ == 'GCContact':
-            con = item
-        else:
-            con = GCContact(self, con=item)
-
-        eid = con.save()
-        return eid
-
     def get_itemids (self, pname, destid):
         self._refresh_contacts()
         ret = {}
