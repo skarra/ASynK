@@ -1,6 +1,6 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Tue Mar 26 15:55:26 IST 2013
+## Last Modified : Thu Apr 04 18:53:05 IST 2013
 ## 
 ## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
 ## 
@@ -20,6 +20,12 @@
 ##
 
 import iso8601, logging, os, re
+
+## Some Global Variables to get started
+asynk_ver = 'v0.4.1+'
+
+def asynk_ver_str ():
+    return 'ASynK %s' % asynk_ver
 
 def asynk_ts_to_iso8601 (ts):
     """The text timestamps in ASynK will be stored in a format that is readily
