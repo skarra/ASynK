@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Mar 21 15:19:33 IST 2013
+## Last Modified : Fri Apr 05 15:27:05 IST 2013
 ##
 ## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -246,6 +246,7 @@ class GCContact(Contact):
         """Fetch the email entries in the specified ContactEntry object and
         populate them in the internal email address strutures."""
 
+        ## FIXME: Custom email labels are lost. It should be handled properly.
         if ce.email:
             for email in ce.email:
                 if email.address:
