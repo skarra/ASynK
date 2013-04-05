@@ -245,6 +245,7 @@ class GCContact(Contact):
         """Fetch the email entries in the specified ContactEntry object and
         populate them in the internal email address strutures."""
 
+        ## FIXME: Custom email labels are lost. It should be handled properly.
         if ce.email:
             for email in ce.email:
                 if email.address:
