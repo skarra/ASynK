@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 19:02:15 IST 2013
-## Last Modified : Thu Apr 04 18:54:03 IST 2013
+## Last Modified : Fri Apr 05 06:51:58 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -61,6 +61,7 @@ class CDContact(Contact):
         vco = self.init_vco_from_props()
         vcf_data = vco.serialize()
         print 'vcf: ', vcf_data
+
         fn  = md5.new(vcf_data).hexdigest() + '.vcf'
         fo  = self.get_folder()
 
@@ -129,8 +130,14 @@ class CDContact(Contact):
         ## to handle the formatted name business is to faithfully copy
         ## whatever is there.
 
-        ## FIXME: vCard3.0 does not really support standard gender
-        ## fields... This is going to be a perennial problem.
+        ## FIXME: Even with vCard 3.0, we are able to write and read a GENDER:
+        ## type. So we could just get away with using all the new vCard 4.0
+        ## types with vCard 3.0 too... But we'll revisit these at a later
+        ## time. For now we will use X- attributes, with a FIXME note for
+        ## the extended attributes that are now supported 'natively' in vCard
+        ## 4.0
+        if hasattr(vco, 'x-gender'):
+            self.set_gender(vco.x_gender.value)
 
     def _add_uid_to_vco (self, vco):
         vco.add('uid')
@@ -160,5 +167,9 @@ class CDContact(Contact):
         if self.get_disp_name():
             vco.add('fn')
             vco.fn.value = self.get_disp_name()
+
+        if self.get_gender():
+            vco.add('x-gender')
+            vco.x_gender.value = self.get_gender()
 
         ## FIXME: As before ensure we handle the Formatted Name, if available.
