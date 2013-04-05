@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 19:02:15 IST 2013
-## Last Modified : Fri Apr 05 06:51:58 IST 2013
+## Last Modified : Fri Apr 05 15:46:25 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -28,6 +28,19 @@ from   contact    import Contact
 from   vobject    import vobject
 import utils
 import md5, uuid
+
+## FIXME: This method should probably be inside vCard class. But not feeling
+## adventorous enough to muck with that code
+def vco_find_in_group (vco, attr, group):
+    if not attr in vco.keys():
+        return None
+
+    elems = vco.contents[attr]
+    for elem in elems:
+        if elem.group and elem.group.value == group:
+            return elem
+
+    return None
 
 class CDContact(Contact):
     def __init__ (self, folder, con=None, vco=None, itemid=None):
@@ -93,6 +106,7 @@ class CDContact(Contact):
 
     def init_props_from_vco (self, vco):
         self._snarf_names_gender_from_vco(vco)
+        self._snarf_emails_from_vco(vco)
 
     def init_vco_from_props (self):
         vco = vobject.vCard()
@@ -100,8 +114,13 @@ class CDContact(Contact):
         self._add_uid_to_vco(vco)
         self._add_prodid_to_vco(vco)
         self._add_names_gender_to_vco(vco)
+        self._add_emails_to_vco(vco)
 
         return self.set_vco(vco)
+
+    ##
+    ## The _add_* methods
+    ##
 
     def _snarf_names_gender_from_vco (self, vco):
         if not vco:
@@ -139,13 +158,53 @@ class CDContact(Contact):
         if hasattr(vco, 'x-gender'):
             self.set_gender(vco.x_gender.value)
 
+    def _snarf_emails_from_vco (self, vco):
+        if not hasattr(vco, 'email'):
+            return
+
+        emails = vco.contents['email']
+        for em in emails:
+            em_types = em.params['TYPE'] if 'TYPE' in em.params else None
+                
+            ## The following code is commented out because it deals with the
+            ## case when the vCard file has custom labels associated with
+            ## specific email addresses. ASynK currently does not this
+            ## ability. We should be moving in the direction of treating email
+            ## addresses similar to Postal Addresses and Phone numbers.
+            # if em.group:
+            #     label = vco_find_in_group(vco, 'x-ablabel', em.group)
+            #     if not label:
+            #         logging.error("Could not find label name for email: %s",
+            #                       em.value)
+            #         self.add_email_other(em.value)
+            #         continue
+            #     ## We will do something here to save the label as well.
+            #     self.add_email_other(em.value)
+
+            if em_types:
+                if 'pref' in em_types:
+                    self.set_email_prim(em.value)
+
+                if 'WORK' in em_types:
+                    self.add_email_work(em.value)
+                elif 'HOME' in em_types:
+                    self.add_email_home(em.value)
+                else:
+                    self.add_email_other(em.value)
+            else:
+                self.add_email_other(em.value)
+
+    ##
+    ## the _add_* methods
+    ##
+
     def _add_uid_to_vco (self, vco):
         vco.add('uid')
         vco.uid.value = self.get_uid()
 
     def _add_prodid_to_vco (self, vco):
         vco.add('prodid')
-        vco.prodid.value = utils.asynk_ver_str()
+        vco.prodid.value = '-//' + utils.asynk_ver_str() + '//EN'
 
     def _add_names_gender_to_vco (self, vco):
         vco.add('n')
@@ -173,3 +232,25 @@ class CDContact(Contact):
             vco.x_gender.value = self.get_gender()
 
         ## FIXME: As before ensure we handle the Formatted Name, if available.
+
+    def _add_emails_to_vco_helper (self, vco, func, typ):
+        email_prim = self.get_email_prim()
+        for email in func():
+            if not email:
+                continue
+
+            e = vco.add('email')
+            e.value = email
+
+            if email_prim:
+                e.params.update({'TYPE' : ['INTERNET', 'pref']})
+            else:
+                e.params.update({'TYPE' : ['INTERNET']})
+
+            if typ:
+                e.params['TYPE'].append(typ)
+
+    def _add_emails_to_vco (self, vco):
+        self._add_emails_to_vco_helper(vco, self.get_email_home, 'HOME')
+        self._add_emails_to_vco_helper(vco, self.get_email_work, 'WORK')
+        self._add_emails_to_vco_helper(vco, self.get_email_other, '')
