@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed Apr 03 12:59:03 IST 2013
-## Last Modified : Thu Apr 04 22:27:56 IST 2013
+## Last Modified : Fri Apr 05 15:40:32 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -139,14 +139,19 @@ class CDContactsFolder(Folder):
         logging.debug('Refreshing Contacts for folder %s..done.',
                       self.get_name())
 
-    def show (self):
+    def show (self, detailed=False):
         self._refresh_contacts()
         cons = self.get_contacts()
         logging.info('Total contained contacts: %d', len(cons.keys()))
         logging.info('Items in brief: ')
+
         for itemid, con in cons.iteritems():
-            logging.info('  Name: %-25s Gender: %s Itemid: %s',
-                         con.get_disp_name(), con.get_gender(), itemid)
+            if detailed:
+                logging.info('Printing Contact: %s', con.get_disp_name())
+                logging.info('%s', con)
+            else:
+                logging.info('  Name: %-25s Gender: %s Itemid: %s',
+                             con.get_disp_name(), con.get_gender(), itemid)
 
     def get_root_path (self):
         return self._get_prop('root_path')

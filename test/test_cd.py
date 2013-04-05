@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:32:55 IST 2013
-## Last Modified : Fri Apr 05 06:48:33 IST 2013
+## Last Modified : Fri Apr 05 15:49:05 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -48,10 +48,10 @@ def main (argv=None):
     cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
 
     create_contact(cd)
-    show_def_folder(cd)
+    show_def_folder(cd, True)
 
-def show_def_folder (cd):
-    cd.get_def_folder().show()
+def show_def_folder (cd, details=False):
+    cd.get_def_folder().show(details)
 
 def create_contact (cd):
     c = CDContact(cd.get_def_folder())
@@ -60,6 +60,7 @@ def create_contact (cd):
     c.set_prefix('Dr.')
     c.set_suffix('Jr.')
     c.set_gender('Female')
+    c.add_email_home('ananya@gmail.com')
 
     c.save()
     print c
