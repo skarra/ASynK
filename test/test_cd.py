@@ -1,6 +1,6 @@
 ##
 ## Created       : Tue Apr 02 13:32:55 IST 2013
-## Last Modified : Thu Apr 04 18:24:59 IST 2013
+## Last Modified : Fri Apr 05 06:48:33 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -47,15 +47,22 @@ def main (argv=None):
     pw   = raw_input('Password:')
     cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
 
-    # cd.get_def_folder().show()
+    create_contact(cd)
+    show_def_folder(cd)
 
+def show_def_folder (cd):
+    cd.get_def_folder().show()
+
+def create_contact (cd):
     c = CDContact(cd.get_def_folder())
     c.set_firstname('Ananya')
     c.set_lastname('Tripathi')
     c.set_prefix('Dr.')
     c.set_suffix('Jr.')
+    c.set_gender('Female')
 
     c.save()
+    print c
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
