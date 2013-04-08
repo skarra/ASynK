@@ -1,8 +1,8 @@
 ## 
 ## Created       : Tue Jul 26 06:54:41 IST 2011
-## Last Modified : Tue Mar 26 15:55:26 IST 2013
+## Last Modified : Mon Apr 08 16:48:20 IST 2013
 ## 
-## Copyright (C) 2011, 2012 by Sriram Karra <karra.etc@gmail.com>
+## Copyright (C) 2011, 2012, 2013 by Sriram Karra <karra.etc@gmail.com>
 ## 
 ## This file is part of ASynK
 ##
@@ -20,6 +20,25 @@
 ##
 
 import iso8601, logging, os, re
+
+def yyyy_mm_dd_to_pytime (date_str):
+    ## FIXME: Temporary hack to ensure we have a yyyy-mm-dd format. Google
+    ## allows the year to be skipped. Outlook crates a problem. We bridge the
+    ## gap by inserting '1887' (birth year of Srinivasa Ramanujan)
+    res = re.search('--(\d\d)-(\d\d)', date_str)
+    if res:
+        date_str = '1887-%s-%s' % (res.group(1), res.group(2))
+
+    dt = datetime.strptime(date_str, '%Y-%m-%d')
+    return pywintypes.Time(dt.timetuple())
+
+def pytime_to_yyyy_mm_dd (pyt):
+    if pyt.year == 1887:
+        ## Undo the hack noted above.
+        return ('--%02d-%02d' % (pyt.month, pyt.day))
+    else:
+        return ('%04d-%02d-%02d' % (pyt.year, pyt.month, pyt.day))
+
 
 def asynk_ts_to_iso8601 (ts):
     """The text timestamps in ASynK will be stored in a format that is readily
