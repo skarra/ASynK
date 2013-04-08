@@ -1,6 +1,6 @@
 ##
 ## Created       : Wed May 18 13:16:17 IST 2011
-## Last Modified : Fri Jun 01 11:17:01 IST 2012
+## Last Modified : Sun Jun 17 18:50:39 IST 2012
 ##
 ## Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -488,12 +488,15 @@ class OLTasksFolder(OLFolder):
         self.set_type(Folder.PR_IPM_TASK_ENTRYID)
 
     def print_key_stats (self):
+        self.print_incomplete_tasks(detail=False)
+
+    def print_incomplete_tasks (self, detail=True):
         total       = 0
         recurring   = 0
         expired     = 0
         completed   = 0
 
-        ctable = self.get_obj().GetContentsTable(mapi.MAPI_UNICODE)
+        ctable = self.get_fobj().GetContentsTable(mapi.MAPI_UNICODE)
         ctable.SetColumns(self.def_cols, 0)
 
         while True:
@@ -544,7 +547,7 @@ class OLTasksFolder(OLFolder):
                 duedate = 'Not Available'
 
 
-            if complete:
+            if complete or not detail:
                 continue
 
             print 'Task #%3d: Heading: %s' % (total, subject)
@@ -555,7 +558,7 @@ class OLTasksFolder(OLFolder):
             print '\tDue Date  : ', duedate
             print '\n'
 
-        print '===== Summary Status for Task Folder: %s ======' % self.name
+        print '===== Summary Status for Task Folder: %s ======' % self.get_name()
         print '\tTotal Tasks count : %4d' % total
         print '\tRecurring count   : %4d' % recurring
         print '\tExpired count     : %4d' % expired
