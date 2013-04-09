@@ -1,6 +1,5 @@
 ##
-## Created       : Sat May 12 10:44:13 IST 2011
-## Last Modified : Thu Jul 12 10:37:39 IST 2012
+## Created : Sat May 12 10:44:13 IST 2011
 ##
 ## This file is part of ASynK
 ##

@@ -1,9 +1,8 @@
 #!/usr/bin/python
 ##
-## Created       : Tue Apr 10 15:55:20 IST 2012
-## Last Modified : Mon Apr 01 07:14:39 IST 2013
+## Created :Tue Apr 10 15:55:20 IST 2012
 ##
-## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
+## Copyright (C) 2012, 2013 Sriram Karra <karra.etc@gmail.com>
 ##
 ## This file is part of ASynK
 ##

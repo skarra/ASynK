@@ -1,5 +1,5 @@
-- Created       : Wed Aug 24 22:41:42 IST 2011
-- Last Modified : Thu Jul 05 15:22:22 IST 2012
+Created : Wed Aug 24 22:41:42 IST 2011
+
 
 This is only a short introduction and some key points of interest. For more
 details on how to use ASynK please refer to the included documentation, or the
