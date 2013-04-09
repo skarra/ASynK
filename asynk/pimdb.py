@@ -1,8 +1,7 @@
 ## 
-## Created       : Tue Mar 13 14:26:01 IST 2012
-## Last Modified : Thu Aug 16 18:19:58 IST 2012
+## Created : Tue Mar 13 14:26:01 IST 2012
 ##
-## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
+## Copyright (C) 2012, 2013 Sriram Karra <karra.etc@gmail.com>
 ##
 ## This file is part of ASynK
 ##
