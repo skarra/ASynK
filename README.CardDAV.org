@@ -7,6 +7,23 @@ contacts to a CardDAV server.
 
 * Status
 
+** Wed Apr 10 07:22:11 IST 2013
+
+   Got the multiget request to work. Now on to figuring out the rest of the stuff.
+
+** Sat Apr 06 22:36:39 IST 2013
+
+   Started to explore how to start querying the server, etc. Turns out we have
+   a few major problems:
+   
+   a) webdav/carddav do not have a concept of multiput. So when we are putting
+      updates to the server, we have to do one URI at a time. How lame!
+
+   b) The apple tool and client library we have does not really implement the
+      carddav multiget and other options. We have some way to go to figure out
+      how to implement some of those things first before using them in our
+      code.
+
 ** Fri Apr 05 15:53:17 IST 2013
 
    Learnt that UID is required; the URI has nothing to do with the UID (or any
@@ -59,15 +76,19 @@ contacts to a CardDAV server.
 ** Summary
 
 #+BEGIN: clocktable :maxlevel 3 :scope file
-Clock summary at [2013-04-05 Fri 15:52]
+Clock summary at [2013-04-09 Tue 17:38]
 
 | L | Headline       | Time    |       |      |
 |---+----------------+---------+-------+------|
-|   | *Total time*   | *16:37* |       |      |
+|   | *Total time*   | *21:01* |       |      |
 |---+----------------+---------+-------+------|
-| 1 | Timelog        | 16:37   |       |      |
-| 2 | April          |         | 16:37 |      |
-| 3 | April 05, 2013 |         |       | 3:18 |
+| 1 | Timelog        | 21:01   |       |      |
+| 2 | April          |         | 21:01 |      |
+| 3 | April 09, 2013 |         |       | 0:29 |
+| 3 | April 08, 2013 |         |       | 1:52 |
+| 3 | April 07, 2013 |         |       | 0:09 |
+| 3 | April 06, 2013 |         |       | 1:32 |
+| 3 | April 05, 2013 |         |       | 3:40 |
 | 3 | April 04, 2013 |         |       | 5:51 |
 | 3 | April 03, 2013 |         |       | 4:03 |
 | 3 | April 02, 2013 |         |       | 3:25 |
@@ -75,28 +96,45 @@ Clock summary at [2013-04-05 Fri 15:52]
 
 ** April
 
+*** April 09, 2013
+    CLOCK: [2013-04-09 Tue 17:09]--[2013-04-09 Tue 17:38] =>  0:29
+
+*** April 08, 2013
+   CLOCK: [2013-04-08 Mon 11:25]--[2013-04-08 Mon 11:59] =>  0:34
+   CLOCK: [2013-04-08 Mon 09:55]--[2013-04-08 Mon 11:13] =>  1:18
+
+*** April 07, 2013
+    CLOCK: [2013-04-07 Sun 07:39]--[2013-04-07 Sun 07:48] =>  0:09
+
+*** April 06, 2013
+    CLOCK: [2013-04-06 Sat 21:34]--[2013-04-06 Sat 22:38] =>  1:04
+    CLOCK: [2013-04-06 Sat 19:06]--[2013-04-06 Sat 19:27] =>  0:21
+    CLOCK: [2013-04-06 Sat 18:10]--[2013-04-06 Sat 18:17] =>  0:07
+
 *** April 05, 2013
-   CLOCK: [2013-04-05 Fri 13:21]--[2013-04-05 Fri 15:50] =>  2:29
-   CLOCK: [2013-04-05 Fri 12:45]--[2013-04-05 Fri 13:18] =>  0:33
-   CLOCK: [2013-04-05 Fri 10:09]--[2013-04-05 Fri 10:15] =>  0:06
-   CLOCK: [2013-04-05 Fri 06:48]--[2013-04-05 Fri 06:58] =>  0:10
+    CLOCK: [2013-04-06 Sat 06:08]--[2013-04-06 Sat 06:29] =>  0:21
+    CLOCK: [2013-04-05 Fri 21:35]--[2013-04-05 Fri 21:36] =>  0:01
+    CLOCK: [2013-04-05 Fri 13:21]--[2013-04-05 Fri 15:50] =>  2:29
+    CLOCK: [2013-04-05 Fri 12:45]--[2013-04-05 Fri 13:18] =>  0:33
+    CLOCK: [2013-04-05 Fri 10:09]--[2013-04-05 Fri 10:15] =>  0:06
+    CLOCK: [2013-04-05 Fri 06:48]--[2013-04-05 Fri 06:58] =>  0:10
 
 *** April 04, 2013
-   CLOCK: [2013-04-04 Thu 22:03]--[2013-04-04 Thu 22:35] =>  0:32
-   CLOCK: [2013-04-04 Thu 18:21]--[2013-04-04 Thu 19:20] =>  0:59
-   CLOCK: [2013-04-04 Thu 16:32]--[2013-04-04 Thu 17:01] =>  0:29
-   CLOCK: [2013-04-04 Thu 14:10]--[2013-04-04 Thu 15:43] =>  1:33
-   CLOCK: [2013-04-04 Thu 13:20]--[2013-04-04 Thu 13:25] =>  0:05
-   CLOCK: [2013-04-04 Thu 11:28]--[2013-04-04 Thu 12:47] =>  1:19
-   CLOCK: [2013-04-04 Thu 07:30]--[2013-04-04 Thu 08:24] =>  0:54
+    CLOCK: [2013-04-04 Thu 22:03]--[2013-04-04 Thu 22:35] =>  0:32
+    CLOCK: [2013-04-04 Thu 18:21]--[2013-04-04 Thu 19:20] =>  0:59
+    CLOCK: [2013-04-04 Thu 16:32]--[2013-04-04 Thu 17:01] =>  0:29
+    CLOCK: [2013-04-04 Thu 14:10]--[2013-04-04 Thu 15:43] =>  1:33
+    CLOCK: [2013-04-04 Thu 13:20]--[2013-04-04 Thu 13:25] =>  0:05
+    CLOCK: [2013-04-04 Thu 11:28]--[2013-04-04 Thu 12:47] =>  1:19
+    CLOCK: [2013-04-04 Thu 07:30]--[2013-04-04 Thu 08:24] =>  0:54
 
 *** April 03, 2013
-   CLOCK: [2013-04-03 Wed 18:51]--[2013-04-03 Wed 20:22] =>  1:31
-   CLOCK: [2013-04-03 Wed 16:27]--[2013-04-03 Wed 17:36] =>  1:09
-   CLOCK: [2013-04-03 Wed 05:29]--[2013-04-03 Wed 06:52] =>  1:23
+    CLOCK: [2013-04-03 Wed 18:51]--[2013-04-03 Wed 20:22] =>  1:31
+    CLOCK: [2013-04-03 Wed 16:27]--[2013-04-03 Wed 17:36] =>  1:09
+    CLOCK: [2013-04-03 Wed 05:29]--[2013-04-03 Wed 06:52] =>  1:23
 
 *** April 02, 2013
-   CLOCK: [2013-04-02 Tue 18:41]--[2013-04-02 Tue 19:42] =>  1:01
-   CLOCK: [2013-04-02 Tue 17:47]--[2013-04-02 Tue 18:26] =>  0:39
-   CLOCK: [2013-04-02 Tue 14:26]--[2013-04-02 Tue 15:21] =>  0:55
-   CLOCK: [2013-04-02 Tue 12:58]--[2013-04-02 Tue 13:48] =>  0:50
+    CLOCK: [2013-04-02 Tue 18:41]--[2013-04-02 Tue 19:42] =>  1:01
+    CLOCK: [2013-04-02 Tue 17:47]--[2013-04-02 Tue 18:26] =>  0:39
+    CLOCK: [2013-04-02 Tue 14:26]--[2013-04-02 Tue 15:21] =>  0:55
+    CLOCK: [2013-04-02 Tue 12:58]--[2013-04-02 Tue 13:48] =>  0:50
