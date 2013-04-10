@@ -1,6 +1,5 @@
 ##
-## Created       : Wed Apr 03 19:02:15 IST 2013
-## Last Modified : Fri Apr 05 15:46:25 IST 2013
+## Created : Wed Apr 03 19:02:15 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
