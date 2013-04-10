@@ -1,6 +1,5 @@
 ##
-## Created       : Tue Apr 02 13:32:55 IST 2013
-## Last Modified : Fri Apr 05 15:49:05 IST 2013
+## Created : Tue Apr 02 13:32:55 IST 2013
 ##
 ## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -47,7 +46,7 @@ def main (argv=None):
     pw   = raw_input('Password:')
     cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
 
-    create_contact(cd)
+    # create_contact(cd)
     show_def_folder(cd, True)
 
 def show_def_folder (cd, details=False):
