@@ -47,7 +47,15 @@ def main (argv=None):
     cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
 
     # create_contact(cd)
-    show_def_folder(cd, True)
+    # show_def_folder(cd, True)
+    fi = cd.get_def_folder().find_items
+    cs = fi(itemids=['/addressbooks/__uids__/skarrag/addressbook/395dc187673076cdba17557d12f94ce5.vcf',
+                '/addressbooks/__uids__/skarrag/addressbook/7d69f2f10edb55e9ec15f99cdd321b88.vcf',
+                '/addressbooks/__uids__/skarrag/addressbook/8afb07c99deac51532a10a4070aa48ec.vcf'])
+
+    for c in cs:
+        print c
+        print
 
 def show_def_folder (cd, details=False):
     cd.get_def_folder().show(details)

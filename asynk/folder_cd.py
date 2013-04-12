@@ -23,6 +23,7 @@ from   contact_cd     import CDContact
 from   vobject        import vobject
 from   caldavclientlibrary.protocol.url                 import URL
 from   caldavclientlibrary.protocol.webdav.definitions  import davxml
+from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
 
 import logging
 
@@ -69,7 +70,19 @@ class CDContactsFolder(Folder):
     def find_items (self, itemids):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        sess = self.get_db().session()
+        results = sess.multiGet(URL(path=self.get_itemid()), itemids,
+                                (davxml.getetag, carddavxml.address_data))
+
+        ret = []
+        for key, item in results.iteritems():
+            etag = item.getNodeProperties()[davxml.getetag]
+            vcf  = item.getNodeProperties()[carddavxml.address_data]
+
+            vco = vobject.readOne(vcf.text)
+            ret.append(CDContact(self, vco=vco, itemid=key))
+
+        return ret
 
     def batch_create (self, src_sl, src_dbid, items):
         """See the documentation in folder.Folder"""
