@@ -65,7 +65,15 @@ class CDContactsFolder(Folder):
     def find_item (self, itemid):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        sess = self.get_db().session()
+        result = sess.readData(URL(path=itemid))
+        if not result:
+            return None
+
+        data, _ignore_etag = result
+        cd = CDContact(self, vco=vobject.readOne(data), itemid=itemid)
+
+        return cd
 
     def find_items (self, itemids):
         """See the documentation in folder.Folder"""
