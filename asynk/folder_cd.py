@@ -137,24 +137,13 @@ class CDContactsFolder(Folder):
         props = (davxml.getetag,)
         items = sess.getPropertiesOnHierarchy(path, props)
 
-        for uri in items:
-            if uri == path.toString().strip():
-                continue
+        hrefs = [x for x in items if x != path.toString().strip()]
+        cons  = self.find_items(hrefs)
 
-            ## FIXME: We also need to ensure we skip any contained
-            ## collections, and only deal with bona fide vCard files.
-
-            result = sess.readData(URL(url=uri))
-            if not result:
-                logging.error('Could not GET URI: "%s"', uri)
-                continue
-            data, etag = result
-
-            vco = vobject.readOne(data)
-            cdc = CDContact(self, vco=vco, itemid=uri)
-            self.add_contact(cdc)
+        for con in cons:
+            self.add_contact(con)
             logging.debug('Successfully fetched and added contact: %s',
-                          uri)
+                          con.get_name())
 
         logging.debug('Refreshing Contacts for folder %s..done.',
                       self.get_name())
