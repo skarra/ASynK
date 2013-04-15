@@ -44,6 +44,7 @@ from   gdata.client     import BadAuthentication
 from   folder           import Folder
 from   pimdb_gc         import GCPIMDB
 from   pimdb_bb         import BBPIMDB
+from   pimdb_cd         import CDPIMDB
 from   folder_bb        import BBContactsFolder
 import utils
 
@@ -188,7 +189,7 @@ def setup_parser ():
                    default=os.path.expanduser('~/.asynk'),
                    help=('Directory to store ASynK config files, logs ' +
                          'directory, BBDB backups directory, etc.'))
-    p.add_argument('--db',  action='store', choices=('bb', 'gc', 'ol'),
+    p.add_argument('--db',  action='store', choices=('bb', 'gc', 'ol', 'cd'),
                    nargs='+',
                    help=('DB IDs required for most actions. ' +
                          'Some actions need two DB IDs - do it with two --db ' +
@@ -225,13 +226,24 @@ def setup_parser ():
                    'places. value should be one of the two dbids that are '
                    'already specified.')
 
-    # A Group for BBDB stuff
+    # Google Contacts authentication
     gg = p.add_argument_group('Google Authentication')
     gg.add_argument('--pwd', action='store', 
                    help=('Google password. Relevant only if --db=gc is used. '
                          'If this option is not specified, user is prompted '
                          'password from stdin'))
 
+    # CardDAV server authentication
+    cg = p.add_argument_group('CardDAV Server Authentication')
+    cg.add_argument('--cduser', action='store', 
+                     help=('CardDAV username. Relevant only if --db=cd is used. '
+                         'If this option is not specified, user is prompted '
+                         'for it from stdin'))
+
+    cg.add_argument('--cdpwd', action='store', 
+                     help=('CardDAV password. Relevant only if --db=cd is used. '
+                         'If this option is not specified, user is prompted '
+                         'for it from stdin'))
 
     # gw = p.add_argument_group('Web Parameters')
     # gw.add_argument('--port', action='store', type=int,
@@ -363,6 +375,9 @@ class Asynk:
 
         self.set_db1(None)
         self.set_db2(None)
+
+        self.set_cduser(None)
+        self.set_cdpw(None)
 
         ## More to come here...
 
@@ -540,6 +555,12 @@ class Asynk:
 
         fid1 = self.get_folder_id(db1)
         fid2 = self.get_folder_id(db2)
+
+        if db1 == 'cd' and fid1[-1] != '/':
+            fid1 += '/'
+
+        if db2 == 'cd' and fid2[-1] != '/':
+            fid2 += '/'
 
         if None in [fid1, fid2]:
             raise AsynkParserError('--create-folder needs two Folders IDs to be '
@@ -855,6 +876,18 @@ class Asynk:
 
     def set_gcpw (self, val):
         return self._set_att('gcpw', val)
+
+    def get_cduser (self):
+        return self._get_att('cduser')
+
+    def set_cduser (self, val):
+        return self._set_att('cduser', val)
+
+    def get_cdpw (self):
+        return self._get_att('cdpw')
+
+    def set_cdpw (self, val):
+        return self._set_att('cdpw', val)
 
     def get_port (self):
         return self._get_att('port')
