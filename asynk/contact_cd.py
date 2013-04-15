@@ -23,6 +23,10 @@
 ## words this file wraps a vCard object.
 ##
 
+## TODO: On priority we need to sync the (a) sync tags and (b) the last
+## modification time stamp. These two are critical to maintain state of
+## synchronization.
+
 from   contact    import Contact
 from   vobject    import vobject
 import utils
@@ -106,6 +110,7 @@ class CDContact(Contact):
     def init_props_from_vco (self, vco):
         self._snarf_names_gender_from_vco(vco)
         self._snarf_emails_from_vco(vco)
+        self._snarf_dates_from_vco(vco)
 
     def init_vco_from_props (self):
         vco = vobject.vCard()
@@ -114,6 +119,7 @@ class CDContact(Contact):
         self._add_prodid_to_vco(vco)
         self._add_names_gender_to_vco(vco)
         self._add_emails_to_vco(vco)
+        self.add_dates_to_vco(vco)
 
         return self.set_vco(vco)
 
@@ -193,6 +199,18 @@ class CDContact(Contact):
             else:
                 self.add_email_other(em.value)
 
+    def _snarf_dates_from_vco (self, vco):
+        if not vco:
+            return
+
+        if hasattr(vco, 'rev') and vco.rev.value:
+            self.set_updated(vco.rev.value)
+        else:
+            self.set_updated("19800101T000000Z")
+            
+        # FIXME: Do the same for (a) creation timestamp, (b) anniversaries (c)
+        # date of birth.
+
     ##
     ## the _add_* methods
     ##
@@ -253,3 +271,9 @@ class CDContact(Contact):
         self._add_emails_to_vco_helper(vco, self.get_email_home, 'HOME')
         self._add_emails_to_vco_helper(vco, self.get_email_work, 'WORK')
         self._add_emails_to_vco_helper(vco, self.get_email_other, '')
+
+    def _add_dates_to_vco (self, vco):
+
+        ## FIXME: Implement support for creation date, DOB and anniversaries.
+        vco.add('rev')
+        vco.rev.value = self.get_updated()
