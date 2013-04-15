@@ -338,6 +338,12 @@ class Asynk:
                     if not self.get_gcpw():
                         print 'Password cannot be blank'
 
+        ## FIXME: All of this stuff constrains the use of same type of db for
+        ## source and destination. The more code we put in here the harder it
+        ## will get to support such a scenario.
+        if 'cd' in [self.get_db1(), self.get_db2()]:
+            self._init_cd_user_pw(pname)
+
         db1id = self.get_db1()
         db2id = self.get_db2()
 
@@ -367,6 +373,41 @@ class Asynk:
 
         self.logged_in = True
             
+    def _init_cd_user_pw (self, pname):
+        netrc_user = None
+        netrc_pass = None
+        mach = 'cd_%s' % pname
+
+        # Use the netrc as a backup in case userid / pwd are not provided
+        try:
+            n = netrc.netrc()
+            if mach in n.hosts.keys():
+                netrc_user, netrc_a, netrc_pass = n.authenticators(mach)
+        except IOError, e:
+            logging.debug('~/.netrc not found.')
+
+        if not self.get_cduser():
+            cduser = None
+            if netrc_user:
+                cduser = netrc_user
+            while not cduser:
+                cduser = raw_input('Please enter your username: ')
+
+            self.set_cduser(cduser)
+
+        if self.get_cdpw():
+            logging.debug('Using command line gmail password for logging in')
+
+        while not self.get_cdpw():
+            if netrc_pass and self.get_cduser() == netrc_user:
+                self.set_cdpw(netrc_pass)
+            else:
+                logging.debug('Either netrc did not have credentials for '
+                              ' User (%s) or has different login', cduser)
+                self.set_cdpw(raw_input('Password: '))
+                if not self.get_cdpw():
+                    print 'Password cannot be blank'
+
     def reset_fields (self):
         self.atts = {}
 
@@ -941,6 +982,15 @@ class Asynk:
 
     def login_ol (self):
         return OLPIMDB(self.get_config())
+
+    def login_cd (self):
+        try:
+            pimcd = CDPIMDB(self.get_config(), self.get_store_id('cd'),
+                            self.get_cduser(), self.get_cdpw())
+        except BadAuthentication:
+            raise AsynkError('Invalid Google credentials. Cannot proceed.')
+
+        return pimcd
 
     def _get_validated_pname (self):
         conf  = self.get_config()
