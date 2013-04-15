@@ -7,6 +7,12 @@ contacts to a CardDAV server.
 
 * Status
 
+** Mon Apr 15 18:22:28 IST 2013
+
+   Some pretty nice progress. Now we can create a new profile containing a
+   'cd' store, and do a sync dry run. The status are properly fetched and
+   displayed.
+
 ** Wed Apr 10 07:22:11 IST 2013
 
    Got the multiget request to work. Now on to figuring out the rest of the stuff.
@@ -76,14 +82,17 @@ contacts to a CardDAV server.
 ** Summary
 
 #+BEGIN: clocktable :maxlevel 3 :scope file
-Clock summary at [2013-04-09 Tue 17:38]
+Clock summary at [2013-04-15 Mon 18:24]
 
 | L | Headline       | Time    |       |      |
 |---+----------------+---------+-------+------|
-|   | *Total time*   | *21:01* |       |      |
+|   | *Total time*   | *26:23* |       |      |
 |---+----------------+---------+-------+------|
-| 1 | Timelog        | 21:01   |       |      |
-| 2 | April          |         | 21:01 |      |
+| 1 | Timelog        | 26:23   |       |      |
+| 2 | April          |         | 26:23 |      |
+| 3 | April 15, 2013 |         |       | 3:09 |
+| 3 | April 13, 2013 |         |       | 1:00 |
+| 3 | April 10, 2013 |         |       | 1:13 |
 | 3 | April 09, 2013 |         |       | 0:29 |
 | 3 | April 08, 2013 |         |       | 1:52 |
 | 3 | April 07, 2013 |         |       | 0:09 |
@@ -95,6 +104,16 @@ Clock summary at [2013-04-09 Tue 17:38]
 #+END:
 
 ** April
+
+*** April 15, 2013
+    CLOCK: [2013-04-15 Mon 16:00]--[2013-04-15 Mon 18:23] =>  2:23
+    CLOCK: [2013-04-15 Mon 06:55]--[2013-04-15 Mon 07:41] =>  0:46
+
+*** April 13, 2013
+    CLOCK: [2013-04-13 Sat 10:51]--[2013-04-13 Sat 11:51] =>  1:00
+
+*** April 10, 2013
+    CLOCK: [2013-04-10 Wed 14:04]--[2013-04-10 Wed 15:17] =>  1:13
 
 *** April 09, 2013
     CLOCK: [2013-04-09 Tue 17:09]--[2013-04-09 Tue 17:38] =>  0:29
