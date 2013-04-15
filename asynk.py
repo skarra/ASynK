@@ -304,6 +304,8 @@ class Asynk:
         netrc_user = None
         netrc_pass = None
 
+        ## FIXME: The code block that follows can be refactored and reduced to
+        ## a variant of self._init_cd_user_pw()
         if 'gc' in [self.get_db1(), self.get_db2()]:
             # Use the netrc as a backup in case userid / pwd are not provided
             try:
@@ -588,6 +590,8 @@ class Asynk:
                                       'the two dbids specified earlier.')
 
         sync_dir = self.get_sync_dir()
+        if not sync_dir:
+            sync_dir = "SYNC2WAY"
 
         if 'ol' in [db1, db2]:
             olgid = conf.get_ol_next_gid(db1 if 'ol' == db2 else db2)
