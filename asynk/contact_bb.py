@@ -112,16 +112,7 @@ class BBContact(Contact):
         if ret:
             return ret
 
-        ret = ''
-        fn = self.get_firstname()
-        if fn:
-            ret += (fn + ' ')
-
-        ln = self.get_lastname()
-        if ln:
-            ret += ln
-
-        return ret
+        return self.get_disp_name()
 
     ##
     ## Now onto the non-abstract methods.
