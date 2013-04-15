@@ -31,6 +31,9 @@ class CDContactsFolder(Folder):
     def __init__ (self, db, fid, gn, root_path):
         Folder.__init__(self, db)
 
+        if fid[-1] != '/':
+            fid += '/'
+
         self.set_itemid(fid)
         self.set_name(gn)
         self.set_root_path(root_path)
@@ -50,17 +53,83 @@ class CDContactsFolder(Folder):
     def get_batch_size (self):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        raise 100
 
-    def prep_sync_lists (self, destid, sl, last_sync_stop=None, limit=0):
+    def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        pname = sl.get_pname()
+        conf  = self.get_config()
+        pdb1id = conf.get_profile_db1(pname)
+        oldi  = conf.get_itemids(pname)
+        curi  = self.get_itemids(pname, destid)
+
+        kss = curi.keys()
+        for x, y in oldi.iteritems():
+            if not x in kss and not y in kss:
+                logging.debug('Del      Carddav Contact: %s:%s', x, y)
+                if pdb1id == self.get_dbid():
+                    sl.add_del(x, y)
+                else:
+                    sl.add_del(y,x)
+
+        logging.info('Querying Carddav server for status of Contact Entries...')
+        stag = conf.make_sync_label(pname, destid)
+
+        if not updated_min:
+            updated_min = conf.get_last_sync_stop(pname)
+
+        skip     = 0
+        etag_cnt = 0
+
+        # Note: crdid refers to the CardDAV server item id for the contact,
+        # and the remid refers to the ID on the other end of the sync
+        # profile.
+        for i, (crdid, item) in enumerate(self.get_contacts().iteritems()):
+            remid = None # WTF. Something needs to go here.
+
+            ## FIXME: We need to fetch the etag and use it before writing a
+            ## modification to the server. But such 'niceities' can wait a
+            ## bit...
+
+            # etag = entry.etag
+
+            name = 'No Name'
+            if item.get_name():
+                name = item.get_name()
+            elif item.get_disp_name():
+                name = item.get_disp_name()
+
+            if not remid:
+                # New contact
+                logging.debug('New      CardDAV Contact: %20s %s', 
+                              name, crdid)
+                sl.add_new(crdid)
+            else:
+                if item.get_last_modification_time() > updated_min:
+                    logging.debug('Modified CardDAV Contact: %20s %s', 
+                                  name, crdid)
+                    sl.add_mod(crdid, remid)
+                else:
+                    sl.add_unmod(crdid)
+
+            # FIXME: We should really storing the etags here...
+            sl.add_etag(crdid, None)
+
+        logging.debug('Total Contacts   : %5d', len(curi))
 
     def get_itemids (self, pname, destid):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        self._refresh_contacts()
+        ret = {}
+        stag = self.get_config().make_sync_label(pname, destid)
+        for locid, con in self.get_contacts().iteritems():
+            if stag in con.get_sync_tags():
+                t, remid = con.get_sync_tags(stag)[0]
+                ret.update({locid : remid})
+
+        return ret
 
     def find_item (self, itemid):
         """See the documentation in folder.Folder"""

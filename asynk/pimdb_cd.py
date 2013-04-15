@@ -39,6 +39,9 @@ class CDPIMDB(PIMDB):
         """If 'server' dooes not start with a http:// or a https:// it is
         assumed to be equivalent to http:// """
 
+        logging.debug('Logging into CardDAV server: %s - user: %s',
+                      uri, user)
+
         PIMDB.__init__(self, config)
         self.set_user(user)
         self.set_pw(pw)
@@ -113,7 +116,9 @@ class CDPIMDB(PIMDB):
     def prep_for_sync (self, dbid, pname, dr):
         """See the documentation in class PIMDB"""
 
-        raise NotImplementedError
+        ## FIXME: Can do stuff like ensure if the folder is still there, and
+        ## such error checking.
+        pass
 
     ##
     ## Now the non-abstract methods and internal methods
