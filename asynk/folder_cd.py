@@ -73,7 +73,6 @@ class CDContactsFolder(Folder):
                 else:
                     sl.add_del(y,x)
 
-        logging.info('Querying Carddav server for status of Contact Entries...')
         stag = conf.make_sync_label(pname, destid)
 
         if not updated_min:
@@ -83,13 +82,11 @@ class CDContactsFolder(Folder):
         # and the remid refers to the ID on the other end of the sync
         # profile.
         for i, (crdid, item) in enumerate(self.get_contacts().iteritems()):
-            remid = None # WTF. Something needs to go here.
-
-            ## FIXME: We need to fetch the etag and use it before writing a
-            ## modification to the server. But such 'niceities' can wait a
-            ## bit...
-
-            # etag = entry.etag
+            try:
+                label, remid = item.get_sync_tags(stag)[0]
+            except IndexError, e:
+                label = None
+                remid = None
 
             name = 'No Name'
             if item.get_name():
@@ -103,7 +100,7 @@ class CDContactsFolder(Folder):
                               name, crdid)
                 sl.add_new(crdid)
             else:
-                if item.get_last_modification_time() > updated_min:
+                if item.get_updated(iso=True) > updated_min:
                     logging.debug('Modified CardDAV Contact: %20s %s', 
                                   name, crdid)
                     sl.add_mod(crdid, remid)
@@ -155,7 +152,7 @@ class CDContactsFolder(Folder):
 
             vco = vobject.readOne(vcf.text)
             cd = CDContact(self, vco=vco, itemid=key)
-            cd.set_etag(etag)
+            cd.set_etag(etag.text)
             ret.append(cd)
 
         return ret
@@ -189,7 +186,33 @@ class CDContactsFolder(Folder):
     def batch_update (self, src_sl, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        logging.info('folder_cd:batch_update: Not implemented yet.')
+        logging.info('folder_cd:batch_update: Updating contacts on Server...')
+
+        my_dbid = self.get_dbid()
+        c       = self.get_config()
+        pname   = src_sl.get_pname()
+
+        src_sync_tag = c.make_sync_label(pname, src_dbid)
+        dst_sync_tag = c.make_sync_label(pname, my_dbid)
+
+        cons = self.get_contacts()
+
+        ## FIXME: We will try to overwrite using the etags we had fetched just
+        ## a fe moments back. It could still fail; and the error handling
+        ## needs to be robust ... but it is not
+
+        success = True
+
+        for item in items:
+            tag, href = item.get_sync_tags(dst_sync_tag)[0]
+            con_old = cons[href]
+            con_new = CDContact(self, con=item)
+
+            con_new.set_uid(con_old.get_uid())
+            con_new.update_sync_tags(src_sync_tag, item.get_itemid())
+            con_new.save(etag=con_old.get_etag())
+
+        return success
 
     def writeback_sync_tags (self, pname, items):
         """See the documentation in folder.Folder"""
@@ -231,9 +254,8 @@ class CDContactsFolder(Folder):
 
         cons  = self.find_items(hrefs)
 
-        for con, etag in zip(cons, etags):
+        for con in cons:
             self.add_contact(con)
-            con.set_etag(etag)
             logging.debug('Successfully fetched and added contact: %s',
                           con.get_disp_name())
 
@@ -260,11 +282,11 @@ class CDContactsFolder(Folder):
     def set_root_path (self, root_path):
         self._set_prop('root_path', root_path)
 
-    def put_item (self, name, data, content_type):
-        url = "%s%s" % (self.get_itemid(), name)
-        path = URL(url=url)
-        res = self.get_db().session().writeData(path, data, content_type)
+    def put_item (self, name, data, content_type, etag=None):
+        path = URL(url=name)
+        res = self.get_db().session().writeData(path, data, content_type,
+                                                etag=etag)
 
-        return url
+        return name
 
         ## FIXME: How do we handle errors?
