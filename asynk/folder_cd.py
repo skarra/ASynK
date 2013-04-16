@@ -22,6 +22,7 @@ from   folder         import Folder
 from   contact_cd     import CDContact
 from   vobject        import vobject
 from   caldavclientlibrary.protocol.url                 import URL
+from   caldavclientlibrary.protocol.http.util           import HTTPError
 from   caldavclientlibrary.protocol.webdav.definitions  import davxml
 from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
 
@@ -178,15 +179,13 @@ class CDContactsFolder(Folder):
 
             item.update_sync_tags(dst_sync_tag, cd.get_itemid())
 
-            logging.info('Wrote contacts %20s to CardDAV server...',
-                         cd.get_disp_name())
+            logging.info('Successfully created CardDAV entry for %30s (%s)',
+                         cd.get_disp_name(), cd.get_itemid())
 
         return True
 
     def batch_update (self, src_sl, src_dbid, items):
         """See the documentation in folder.Folder"""
-
-        logging.info('folder_cd:batch_update: Updating contacts on Server...')
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
@@ -210,14 +209,26 @@ class CDContactsFolder(Folder):
 
             con_new.set_uid(con_old.get_uid())
             con_new.update_sync_tags(src_sync_tag, item.get_itemid())
-            con_new.save(etag=con_old.get_etag())
+
+            try:
+                con_new.save(etag=con_old.get_etag())
+                logging.info('Successfully updated CardDAV entry for %30s (%s)',
+                             con_new.get_disp_name(), con_new.get_itemid())
+            except HTTPError, e:
+                logging.error('Error (%s). Could not update CardDAV entry %s',
+                              e, con_new.get_disp_name())
+                success = False
 
         return success
 
     def writeback_sync_tags (self, pname, items):
         """See the documentation in folder.Folder"""
 
-        logging.info('folder_cd:writeback_sync_tags: Not implemented yet.')
+        success = True
+        for item in items:
+            success = success and item.save()
+
+        return success
 
     def bulk_clear_sync_flags (self, label_re=None):
         """See the documentation in folder.Folder"""
