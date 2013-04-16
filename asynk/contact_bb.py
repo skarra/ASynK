@@ -36,9 +36,12 @@ def esc_str (x):
     if not x:
         return x
 
+    x = string.replace(x, "\\", "\\\\")
     x = string.replace(x, '\r\n', '\\n')
     x = string.replace(x, '\n', '\\n')
-    return string.replace(x, '"', r'\"')
+    x = string.replace(x, '"', r'\"')
+
+    return x
 
 def unesc_str (x):
     """This is the inverse of escape_str. i.e. this undoes any escaping
@@ -48,8 +51,11 @@ def unesc_str (x):
     if not x:
         return x
 
+    x = string.replace(x, r'\"', '"')
     x = string.replace(x, '\\n', '\n')
-    return string.replace(x, r'\"', '"')
+    x = string.replace(x, "\\\\", "\\")
+
+    return x
 
 class BBDBParseError(Exception):
     pass
