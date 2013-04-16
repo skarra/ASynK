@@ -79,9 +79,6 @@ class CDContactsFolder(Folder):
         if not updated_min:
             updated_min = conf.get_last_sync_stop(pname)
 
-        skip     = 0
-        etag_cnt = 0
-
         # Note: crdid refers to the CardDAV server item id for the contact,
         # and the remid refers to the ID on the other end of the sync
         # profile.
@@ -114,7 +111,7 @@ class CDContactsFolder(Folder):
                     sl.add_unmod(crdid)
 
             # FIXME: We should really storing the etags here...
-            sl.add_etag(crdid, None)
+            sl.add_etag(crdid, item.get_etag())
 
         logging.debug('Total Contacts   : %5d', len(curi))
 
@@ -157,7 +154,9 @@ class CDContactsFolder(Folder):
             vcf  = item.getNodeProperties()[carddavxml.address_data]
 
             vco = vobject.readOne(vcf.text)
-            ret.append(CDContact(self, vco=vco, itemid=key))
+            cd = CDContact(self, vco=vco, itemid=key)
+            cd.set_etag(etag)
+            ret.append(cd)
 
         return ret
 
@@ -206,13 +205,16 @@ class CDContactsFolder(Folder):
         props = (davxml.getetag,)
         items = sess.getPropertiesOnHierarchy(path, props)
 
-        hrefs = [x for x in items if x != path.toString().strip()]
+        hrefs = [x for x in items.keys() if x != path.toString().strip()]
+        etags = [items[x].get(davxml.getetag, "-") for x in items.keys()]
+
         cons  = self.find_items(hrefs)
 
-        for con in cons:
+        for con, etag in zip(cons, etags):
             self.add_contact(con)
+            con.set_etag(etag)
             logging.debug('Successfully fetched and added contact: %s',
-                          con.get_name())
+                          con.get_disp_name())
 
         logging.debug('Refreshing Contacts for folder %s..done.',
                       self.get_name())
