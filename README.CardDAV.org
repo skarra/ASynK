@@ -7,6 +7,16 @@ contacts to a CardDAV server.
 
 * Status
 
+** Tue Apr 16 18:40:45 IST 2013
+
+   Lots of progress. Now the batch_create and batch_update methods are
+   implemented. So a BBDB, say, contacts that are not synched, or are synched
+   and updated, are properly identified and synched to server - full etag
+   support and all that good stuff.
+
+   CardDAV server side dedits are not getting properly recognized. This and
+   other stuff needs to be figured out next. Exciting.
+
 ** Mon Apr 15 18:22:28 IST 2013
 
    Some pretty nice progress. Now we can create a new profile containing a
@@ -82,14 +92,15 @@ contacts to a CardDAV server.
 ** Summary
 
 #+BEGIN: clocktable :maxlevel 3 :scope file
-Clock summary at [2013-04-15 Mon 18:24]
+Clock summary at [2013-04-16 Tue 18:44]
 
 | L | Headline       | Time    |       |      |
 |---+----------------+---------+-------+------|
-|   | *Total time*   | *26:23* |       |      |
+|   | *Total time*   | *31:38* |       |      |
 |---+----------------+---------+-------+------|
-| 1 | Timelog        | 26:23   |       |      |
-| 2 | April          |         | 26:23 |      |
+| 1 | Timelog        | 31:38   |       |      |
+| 2 | April          |         | 31:38 |      |
+| 3 | April 16, 2013 |         |       | 5:15 |
 | 3 | April 15, 2013 |         |       | 3:09 |
 | 3 | April 13, 2013 |         |       | 1:00 |
 | 3 | April 10, 2013 |         |       | 1:13 |
@@ -104,6 +115,12 @@ Clock summary at [2013-04-15 Mon 18:24]
 #+END:
 
 ** April
+
+*** April 16, 2013
+    CLOCK: [2013-04-16 Tue 15:04]--[2013-04-16 Tue 18:40] =>  3:36
+    CLOCK: [2013-04-16 Tue 11:19]--[2013-04-16 Tue 11:38] =>  0:19
+    CLOCK: [2013-04-16 Tue 09:27]--[2013-04-16 Tue 09:38] =>  0:11
+    CLOCK: [2013-04-16 Tue 06:38]--[2013-04-16 Tue 07:47] =>  1:09
 
 *** April 15, 2013
     CLOCK: [2013-04-15 Mon 16:00]--[2013-04-15 Mon 18:23] =>  2:23
