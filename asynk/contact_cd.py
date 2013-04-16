@@ -53,6 +53,7 @@ class CDContact(Contact):
 
         Contact.__init__(self, folder, con)
 
+        self.set_etag(None)
         conf = self.get_config()
         if con:
             ## FIXME: Reproduce the logic from other contact_* files for this case
@@ -104,6 +105,12 @@ class CDContact(Contact):
 
     def set_uid (self, uid):
         return self._set_att('uid', uid)
+
+    def get_etag (self):
+        return self._get_att('etag')
+
+    def set_etag (self, etag):
+        return self._set_att('etag', etag)
 
     ## The Rest...
 
