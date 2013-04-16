@@ -143,13 +143,45 @@ class CDPIMDB(PIMDB):
 
        If t is None, the current time is returned."""
 
+       ## FIXME: This whole date time business is a HUGE mess. We should
+       ## standardize the way we deal with timestamps. The best case scenario
+       ## all timestamps stored in item/contact objects should be
+       ## datetime.datetime obejcts, and any conversions that are needed
+       ## should be handled at the client side.
+
        if not t:
            t = datetime.datetime.utcnow()
+       elif type(t) == str or type(t) == unicode:
+           ## Most likely this is in iso8601 format.
+           res = re.search(r'(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d).*', t)
+           if res:
+               t = res.group(1)
+           else:
+               t = datetime.datetime.utcnow()
+
+           t = datetime.datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
        else:
            if t.tzinfo:
                t = t - t.tzinfo.utcoffset(t)
     
        return t.strftime('%Y%m%dT%H%M%SZ')
+
+    @classmethod
+    def parse_vcard_time (self, t):
+        """Return a datetime object containing the native UTC timestamp based
+        on the specified vCard REV timestamp string."""
+
+       # IMP: Note that we assume the time is in UTC - and ignore what is
+       # actually in the string. This sucks, but this is all I am willing to
+       # do for the m moment. FIXME
+
+        res = re.search(r'(\d\d\d\d\\d\d\\d\dT\d\d\d\d\d\dZ).*', t)
+        if res:
+            t = res.group(1)
+        else:
+            return None
+        
+        return datetime.datetime.strptime(t, '%Y%m%d%TH%M%SZ')
 
     ## Note: I learnt of the setter, and @property and @property.setter
     ## decorations well after I started developing ASynK. So for the sake of
