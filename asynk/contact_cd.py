@@ -30,6 +30,8 @@
 from   contact    import Contact
 from   vobject    import vobject
 import pimdb_cd, utils
+from   caldavclientlibrary.protocol.http.util import HTTPError
+
 import datetime, logging, md5, re, string, uuid
 
 ## FIXME: This method should probably be inside vCard class. But not feeling
@@ -89,19 +91,26 @@ class CDContact(Contact):
     def save (self, etag=None):
         """Saves the current contact on the server."""
 
-        vco = self.init_vco_from_props()
+        fo       = self.get_folder()
+        vco      = self.init_vco_from_props()
         vcf_data = vco.serialize()
-
-        fo  = self.get_folder()
+        success  = True
 
         if self.get_itemid():
             fo.put_item(self.get_itemid(), vcf_data, 'text/vcard', etag=etag)
         else:
+            assert(not etag)
             fn =  fo.get_itemid()
             fn += "/" + md5.new(vcf_data).hexdigest() + '.vcf'
 
             ## FIXME: Handle errors and all that good stuff.
-            self.set_itemid(fo.put_item(fn, vcf_data, 'text/vcard'))
+            self.set_itemid(fn)
+            try:
+                fo.put_item(fn, vcf_data, 'text/vcard')
+            except HTTPError, e:
+                success = False
+
+        return success
 
     ## First the get/set methods
     
@@ -256,11 +265,8 @@ class CDContact(Contact):
 
         for label, val in vco.contents.iteritems():
             if re.search(pname_re, label):
-                value = val[0].value
-                logging.debug('Found sync label: %s; val: %s',
-                              label, value)
                 label = label[2:].replace('-', ':')
-                self.update_sync_tags(label, value)
+                self.update_sync_tags(label, val[0].value)
 
     ##
     ## the _add_* methods
