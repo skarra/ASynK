@@ -175,13 +175,13 @@ class CDPIMDB(PIMDB):
        # actually in the string. This sucks, but this is all I am willing to
        # do for the m moment. FIXME
 
-        res = re.search(r'(\d\d\d\d\\d\d\\d\dT\d\d\d\d\d\dZ).*', t)
+        res = re.search(r'(\d\d\d\d\d\d\d\dT\d\d\d\d\d\dZ).*', t)
         if res:
             t = res.group(1)
         else:
             return None
         
-        return datetime.datetime.strptime(t, '%Y%m%d%TH%M%SZ')
+        return datetime.datetime.strptime(t, '%Y%m%dT%H%M%SZ')
 
     ## Note: I learnt of the setter, and @property and @property.setter
     ## decorations well after I started developing ASynK. So for the sake of
