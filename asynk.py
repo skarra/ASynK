@@ -742,7 +742,7 @@ class Asynk:
             # real older sync is sort of called for.
             conf.set_last_sync_start(pname, val=startt_old)
             conf.set_last_sync_stop(pname, val=stopt_old)
-            logging.debug('Rest last sync timestamps to real values')
+            logging.debug('Reset last sync timestamps to real values')
         else:
             try:
                 startt = conf.get_curr_time()
