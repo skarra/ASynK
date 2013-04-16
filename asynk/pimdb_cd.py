@@ -83,7 +83,17 @@ class CDPIMDB(PIMDB):
     def del_folder (self, itemid, store=None):
         """Get rid of the specified folder."""
 
-        raise NotImplementedError
+        sess = self.session()
+        path = URL(url=itemid)
+
+        logging.info('Deleting all the contained items. Will not remove folder')
+
+        items = sess.getPropertiesOnHierarchy(path, (davxml.getetag,))
+        hrefs = [x for x in items.keys() if x != path.toString().strip()]
+
+        for href in hrefs:
+            sess.deleteResource(URL(url=href))
+            logging.info('Deleted file %s...', href)
 
     def set_folders (self):
         """See the documentation in class PIMDB"""
