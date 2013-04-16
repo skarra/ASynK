@@ -24,7 +24,7 @@
 ## their own files.
 ##
 
-import logging, re
+import datetime, logging, re
 
 from abc     import ABCMeta, abstractmethod
 from pimdb   import PIMDB, GoutInvalidPropValueError
@@ -243,8 +243,12 @@ class Item:
 
         return self._set_prop('created', c)
 
-    def get_updated (self):
-        return self._get_prop('updated')
+    def get_updated (self, iso=False):
+        val = self._get_prop('updated')
+        if type(val) == datetime.datetime and iso:
+            return val.isoformat()
+        else:
+            return val
 
     def set_updated (self, u):
         if not self.in_init():
@@ -343,8 +347,7 @@ class Item:
         return len(arr) > 0
 
     def __str__ (self):
-        ret = ''
-
+        ret = '\n%18s: %s\n' % ('itemid', self.get_itemid())
         props = self.get_prop_names()
         for prop in props:
             ret += '%18s: %s\n' % (prop, self._get_prop(prop))
