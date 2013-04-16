@@ -29,8 +29,8 @@
 
 from   contact    import Contact
 from   vobject    import vobject
-import utils, pimdb_cd
-import logging, md5, uuid
+import pimdb_cd, utils
+import datetime, logging, md5, re, string, uuid
 
 ## FIXME: This method should probably be inside vCard class. But not feeling
 ## adventorous enough to muck with that code
@@ -54,40 +54,54 @@ class CDContact(Contact):
         Contact.__init__(self, folder, con)
 
         self.set_etag(None)
+        self.set_uid(None)
+        self.set_vco(vco)
+
+        ## Sometimes we might be creating a contact object from a Google
+        ## contact object or other entry which might have the ID in its sync
+        ## tags field. if that is present, we should use it to initialize the
+        ## itemid field for the current object
+
         conf = self.get_config()
         if con:
-            ## FIXME: Reproduce the logic from other contact_* files for this case
-            pass
+            try:
+                pname_re = conf.get_profile_name_re()
+                label    = conf.make_sync_label(pname_re, self.get_dbid())
+                tag, itemid = con.get_sync_tags(label)[0]              
+                self.set_itemid(itemid)
+            except Exception, e:
+                logging.debug('Potential new CDContact: %s', con.get_name())
 
-        self.set_vco(vco)
-        if vco:
+        elif vco:
             self.init_props_from_vco(vco)
             assert(itemid)
             self.set_itemid(itemid)
-        else:
-            self.set_uid(str(uuid.uuid1()))
 
         self.in_init(False)
+
+        if not self.get_uid():
+            self.set_uid(str(uuid.uuid1()))
 
     ##
     ## First the inherited abstract methods from the base classes
     ##
 
-    def save (self):
+    def save (self, etag=None):
         """Saves the current contact on the server."""
 
         vco = self.init_vco_from_props()
         vcf_data = vco.serialize()
-        print 'vcf: ', vcf_data
 
-        fn  = md5.new(vcf_data).hexdigest() + '.vcf'
         fo  = self.get_folder()
 
-        fo.put_item(fn, vcf_data, 'text/vcard')
+        if self.get_itemid():
+            fo.put_item(self.get_itemid(), vcf_data, 'text/vcard', etag=etag)
+        else:
+            fn =  fo.get_itemid()
+            fn += "/" + md5.new(vcf_data).hexdigest() + '.vcf'
 
-    ##
-    ## Now onto the non-abstract methods.
-    ##
+            ## FIXME: Handle errors and all that good stuff.
+            self.set_itemid(fo.put_item(fn, vcf_data, 'text/vcard'))
 
     ## First the get/set methods
     
@@ -120,19 +134,20 @@ class CDContact(Contact):
         self._snarf_names_gender_from_vco(vco)
         self._snarf_emails_from_vco(vco)
         self._snarf_dates_from_vco(vco)
+        self._snarf_sync_tags_from_vco(vco)
 
     def init_vco_from_props (self):
         vco = vobject.vCard()
 
         if self.dirty():
-            t = pimdb_cd.CDPIMDB.get_vcard_time()
-            self.set_updated(t)
+            self.set_updated(datetime.datetime.utcnow())
 
         self._add_uid_to_vco(vco)
         self._add_prodid_to_vco(vco)
         self._add_names_gender_to_vco(vco)
         self._add_emails_to_vco(vco)
         self._add_dates_to_vco(vco)
+        self._add_sync_tags_to_vco(vco)
 
         self.dirty(False)
         return self.set_vco(vco)
@@ -226,12 +241,26 @@ class CDContact(Contact):
             return
 
         if hasattr(vco, 'rev') and vco.rev.value:
-            self.set_updated(vco.rev.value)
+            dt = pimdb_cd.CDPIMDB.parse_vcard_time(vco.rev.value)
         else:
-            self.set_updated("19800101T000000Z")
+            dt = pimdb_cd.CDPIMDB.parse_vcard_time("19800101T000000Z")
             
+        self.set_updated(dt)
+
         # FIXME: Do the same for (a) creation timestamp, (b) anniversaries (c)
         # date of birth.
+
+    def _snarf_sync_tags_from_vco (self, vco):
+        conf      = self.get_config()
+        pname_re  = "^x-" + conf.get_profile_name_re()
+
+        for label, val in vco.contents.iteritems():
+            if re.search(pname_re, label):
+                value = val[0].value
+                logging.debug('Found sync label: %s; val: %s',
+                              label, value)
+                label = label[2:].replace('-', ':')
+                self.update_sync_tags(label, value)
 
     ##
     ## the _add_* methods
@@ -298,4 +327,21 @@ class CDContact(Contact):
 
         ## FIXME: Implement support for creation date, DOB and anniversaries.
         vco.add('rev')
-        vco.rev.value = self.get_updated()
+        vco.rev.value = pimdb_cd.CDPIMDB.get_vcard_time(self.get_updated())
+
+    def _add_sync_tags_to_vco (self, vco):
+        conf     = self.get_config()
+        pname_re = conf.get_profile_name_re()
+        label    = conf.make_sync_label(pname_re, self.get_dbid())
+
+        ret = ''
+        i = 0
+        for key, val in self.get_sync_tags().iteritems():
+            # Skip any sync tag with CardDAV IDs as values.
+            if re.search(label, key) or not val:
+                continue
+
+            ## Make the label more vCard friendly
+            key = 'x-' + string.replace(key, ':', '-')
+            l = vco.add(key)
+            l.value = val
