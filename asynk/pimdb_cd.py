@@ -29,7 +29,7 @@ from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
 from   caldavclientlibrary.protocol.url   import URL
 from   caldavclientlibrary.client.account import CalDAVAccount
 
-import logging, os, re, urllib, urlparse
+import datetime, logging, os, re, urllib, urlparse
 
 class CDPIMDB(PIMDB):
     """A wrapper over a connection to a CardDAV server with methods for common
@@ -123,6 +123,23 @@ class CDPIMDB(PIMDB):
     ##
     ## Now the non-abstract methods and internal methods
     ##
+
+    @classmethod
+    def get_vcard_time (self, t=None):
+       """Convert a datetime.datetime object to a time string formatted in the
+       format used in vCard files - which is always represented in UTC. So the
+       passed value should either be a naive object having the UTC time, or an
+       aware object with tzinfo set.
+
+       If t is None, the current time is returned."""
+
+       if not t:
+           t = datetime.datetime.utcnow()
+       else:
+           if t.tzinfo:
+               t = t - t.tzinfo.utcoffset(t)
+    
+       return t.strftime('%Y%m%dT%H%M%SZ')
 
     ## Note: I learnt of the setter, and @property and @property.setter
     ## decorations well after I started developing ASynK. So for the sake of

@@ -29,8 +29,8 @@
 
 from   contact    import Contact
 from   vobject    import vobject
-import utils
-import md5, uuid
+import utils, pimdb_cd
+import logging, md5, uuid
 
 ## FIXME: This method should probably be inside vCard class. But not feeling
 ## adventorous enough to muck with that code
@@ -64,9 +64,10 @@ class CDContact(Contact):
             self.init_props_from_vco(vco)
             assert(itemid)
             self.set_itemid(itemid)
-
-        if not (con or vco):
+        else:
             self.set_uid(str(uuid.uuid1()))
+
+        self.in_init(False)
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -115,6 +116,7 @@ class CDContact(Contact):
     ## The Rest...
 
     def init_props_from_vco (self, vco):
+        self._snarf_uid_from_vco(vco)
         self._snarf_names_gender_from_vco(vco)
         self._snarf_emails_from_vco(vco)
         self._snarf_dates_from_vco(vco)
@@ -122,17 +124,30 @@ class CDContact(Contact):
     def init_vco_from_props (self):
         vco = vobject.vCard()
 
+        if self.dirty():
+            t = pimdb_cd.CDPIMDB.get_vcard_time()
+            self.set_updated(t)
+
         self._add_uid_to_vco(vco)
         self._add_prodid_to_vco(vco)
         self._add_names_gender_to_vco(vco)
         self._add_emails_to_vco(vco)
-        self.add_dates_to_vco(vco)
+        self._add_dates_to_vco(vco)
 
+        self.dirty(False)
         return self.set_vco(vco)
 
     ##
     ## The _add_* methods
     ##
+
+    def _snarf_uid_from_vco (self, vco):
+        if not vco:
+            return
+
+        if hasattr(vco, 'uid'):
+            if vco.uid and vco.uid.value:
+                self.set_uid(vco.uid.value)
 
     def _snarf_names_gender_from_vco (self, vco):
         if not vco:
