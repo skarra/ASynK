@@ -163,22 +163,43 @@ class CDContactsFolder(Folder):
     def batch_create (self, src_sl, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        my_dbid = self.get_dbid()
+        c       = self.get_config()
+        src_sync_tag = c.make_sync_label(src_sl.get_pname(), src_dbid)
+        dst_sync_tag = c.make_sync_label(src_sl.get_pname(), my_dbid)
+
+        success = True
+        for item in items:
+
+            ## CardDAV does not support a multiput operation. So we will have
+            ## to PUT the damn items one at a time. What kind of a standard is
+            ## this, anyway?
+
+            cd = CDContact(self, con=item)
+            cd.update_sync_tags(src_sync_tag, item.get_itemid(), save=True)
+            self.add_contact(cd)            
+
+            item.update_sync_tags(dst_sync_tag, cd.get_itemid())
+
+            logging.info('Wrote contacts %20s to CardDAV server...',
+                         cd.get_disp_name())
+
+        return True
 
     def batch_update (self, src_sl, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        logging.info('folder_cd:batch_update: Not implemented yet.')
 
     def writeback_sync_tags (self, pname, items):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        logging.info('folder_cd:writeback_sync_tags: Not implemented yet.')
 
     def bulk_clear_sync_flags (self, label_re=None):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        logging.info('folder_cd:bulk_clear_sync_tags: Not implemented yet.')
 
 
     ##
@@ -240,7 +261,10 @@ class CDContactsFolder(Folder):
         self._set_prop('root_path', root_path)
 
     def put_item (self, name, data, content_type):
-        path = URL(url="%s%s" % (self.get_itemid(), name))
+        url = "%s%s" % (self.get_itemid(), name)
+        path = URL(url=url)
         res = self.get_db().session().writeData(path, data, content_type)
+
+        return url
 
         ## FIXME: How do we handle errors?
