@@ -46,12 +46,22 @@ def main (argv=None):
     pw   = raw_input('Password:')
     cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
 
+    root = '/addressbooks/__uids__/skarrag/addressbook/'
+
     # create_contact(cd)
-    # show_def_folder(cd, True)
+    show_def_folder(cd, True)
+    # multi_get(cd, root)
+    # get(cd, root)
+
+def get (cd, root):
+    fi = cd.get_def_folder()
+    print fi.find_item(root + '395dc187673076cdba17557d12f94ce5.vcf')
+
+def multi_get (cd, root):
     fi = cd.get_def_folder().find_items
-    cs = fi(itemids=['/addressbooks/__uids__/skarrag/addressbook/395dc187673076cdba17557d12f94ce5.vcf',
-                '/addressbooks/__uids__/skarrag/addressbook/7d69f2f10edb55e9ec15f99cdd321b88.vcf',
-                '/addressbooks/__uids__/skarrag/addressbook/8afb07c99deac51532a10a4070aa48ec.vcf'])
+    cs = fi(itemids=[root + '395dc187673076cdba17557d12f94ce5.vcf',
+                     root + '7d69f2f10edb55e9ec15f99cdd321b88.vcf',
+                     root + '8afb07c99deac51532a10a4070aa48ec.vcf'])
 
     for c in cs:
         print c
@@ -62,12 +72,12 @@ def show_def_folder (cd, details=False):
 
 def create_contact (cd):
     c = CDContact(cd.get_def_folder())
-    c.set_firstname('Ananya')
-    c.set_lastname('Tripathi')
+    c.set_firstname('Nalini')
+    c.set_lastname('Bharatula')
     c.set_prefix('Dr.')
     c.set_suffix('Jr.')
     c.set_gender('Female')
-    c.add_email_home('ananya@gmail.com')
+    c.add_email_home('nalinib22@gmail.com')
 
     c.save()
     print c
