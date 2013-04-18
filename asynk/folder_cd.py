@@ -126,6 +126,16 @@ class CDContactsFolder(Folder):
 
         return ret
 
+    def del_itemids (self, itemids):
+        sess = self.get_db().session()
+        for href in itemids:
+            try:
+                sess.deleteResource(URL(url=href))
+                self.del_contact(href)
+                logging.info('Deleted CardDAV server contact %s...', href)
+            except HTTPError, e:
+                logging.error('Could not delete itemid: %s (%s)', href, e)
+
     def find_item (self, itemid):
         """See the documentation in folder.Folder"""
 
@@ -248,6 +258,10 @@ class CDContactsFolder(Folder):
 
     def add_contact (self, bbc):
         self.contacts.update({bbc.get_itemid() : bbc})
+
+    def del_contact (self, itemid):
+        if itemid in self.contacts:
+            del self.contacts[itemid]
 
     def _refresh_contacts (self):
         logging.debug('Refreshing Contacts for folder %s...',
