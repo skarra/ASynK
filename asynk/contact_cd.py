@@ -257,17 +257,11 @@ class CDContact(Contact):
         self.set_updated(dt)
 
         if hasattr(vco, 'bday') and vco.bday.value:
-            res = re.search('(\d\d\d\d)(\d\d)(\d\d)', vco.bday.value)
-            if res:
-                year  = res.group(1)
-                month = res.group(2)
-                day   = res.group(3)
-
-                if 'X-APPLE-OMIT-YEAR' in vco.bday.params.keys():
-                    assert(year == vco.bday.params['X-APPLE-OMIT-YEAR'][0])
-                    year = "-"
-
-                self.set_birthday('%s-%s-%s' % (year, month, day))
+            ign = 'X-APPLE-OMIT-YEAR' in vco.bday.params.keys()
+            bday = self._parse_vcard_date(vco.bday.value, ign)
+                                          
+            if bday:
+                self.set_birthday(bday)
             else:
                 logging.warning('Ignoring unrecognized birthdate (%s) for %s',
                                 vco.bday.value, self.get_disp_name())
@@ -361,6 +355,24 @@ class CDContact(Contact):
 
         ign = year if year == ignore_year else None
         return ign, "%s%s%s" % (year, month, day)
+
+    def _parse_vcard_date (self, vd, ign):
+        """Takes a vCard date in yyyymmdd format and returns a string
+        formatted in the BBDB/google contacts date format accounting for
+        ignored year."""
+
+        res = re.search('(\d\d\d\d)(\d\d)(\d\d)', vd)
+        if res:
+            year  = res.group(1)
+            month = res.group(2)
+            day   = res.group(3)
+
+            if ign:
+                year = "-"
+
+            return "%s-%s-%s" % (year, month, day)
+
+        return None
 
     def _add_dates_to_vco (self, vco):
 
