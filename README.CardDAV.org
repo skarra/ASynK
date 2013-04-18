@@ -3,9 +3,25 @@ after this branch is merged with master.
 
 The carddav branch is an experimental branch for a new datastore backend for
 CardDAV servers. The idea is with this one can sync BBDB and MS Outlook
-contacts to a CardDAV server.
+fcontacts to a CardDAV server.
 
 * Status
+
+** Thu Apr 18 18:16:40 IST 2013
+
+   All sync related stuff is now sorted. All changes on both client and server
+   get picked up and "the needful" is done! Hurrah.
+
+   The next big item to crack is to do a thorough map of the fields and vCard
+   attributes. This is particularly important given the terrible situation
+   with respect to interop and lack of standardization.
+
+   In the spirit of "be flexible in what you accept, be conservative in what
+   you put out"... as applicable to our situation, I think the best approach
+   is to identify the most popular extended attributes for various situations,
+   and to (a) look for them to input data and (b) to write redundant
+   attribtues for different clients so the generated vCard files will be
+   readable by multiple clients.
 
 ** Tue Apr 16 18:40:45 IST 2013
 
@@ -115,6 +131,9 @@ Clock summary at [2013-04-16 Tue 18:44]
 #+END:
 
 ** April
+
+*** April 18, 2013
+    CLOCK: [2013-04-18 Thu 16:36]--[2013-04-18 Thu 18:16] =>  1:40
 
 *** April 16, 2013
     CLOCK: [2013-04-16 Tue 15:04]--[2013-04-16 Tue 18:40] =>  3:36
