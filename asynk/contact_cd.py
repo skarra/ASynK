@@ -256,6 +256,22 @@ class CDContact(Contact):
             
         self.set_updated(dt)
 
+        if hasattr(vco, 'bday') and vco.bday.value:
+            res = re.search('(\d\d\d\d)(\d\d)(\d\d)', vco.bday.value)
+            if res:
+                year  = res.group(1)
+                month = res.group(2)
+                day   = res.group(3)
+
+                if 'X-APPLE-OMIT-YEAR' in vco.bday.params.keys():
+                    assert(year == vco.bday.params['X-APPLE-OMIT-YEAR'][0])
+                    year = "-"
+
+                self.set_birthday('%s-%s-%s' % (year, month, day))
+            else:
+                logging.warning('Ignoring unrecognized birthdate (%s) for %s',
+                                vco.bday.value, self.get_disp_name())
+
         # FIXME: Do the same for (a) creation timestamp, (b) anniversaries (c)
         # date of birth.
 
@@ -329,11 +345,35 @@ class CDContact(Contact):
         self._add_emails_to_vco_helper(vco, self.get_email_work, 'WORK')
         self._add_emails_to_vco_helper(vco, self.get_email_other, '')
 
+    def _convert_to_vcard_date (self, bd):
+        """Return a (ign_year, date_str) tuple based on the input BBDB format
+        date string."""
+
+        ignore_year = "1604"
+        res = re.search('((\d\d\d\d)|-)-(\d\d)-(\d\d)', bd)
+
+        year  = res.group(1)
+        month = res.group(3)
+        day   = res.group(4)
+
+        if year == "-":
+            year = ignore_year
+
+        ign = year if year == ignore_year else None
+        return ign, "%s%s%s" % (year, month, day)
+
     def _add_dates_to_vco (self, vco):
 
         ## FIXME: Implement support for creation date, DOB and anniversaries.
         vco.add('rev')
         vco.rev.value = pimdb_cd.CDPIMDB.get_vcard_time(self.get_updated())
+
+        if self.get_birthday():
+            ign, day = self._convert_to_vcard_date(self.get_birthday())
+            d = vco.add('bday')
+            d.value = day
+            if ign:
+                d.params = {'X-APPLE-OMIT-YEAR' : [ign]}
 
     def _add_sync_tags_to_vco (self, vco):
         conf     = self.get_config()
