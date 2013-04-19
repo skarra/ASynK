@@ -112,7 +112,9 @@ class CDContact(Contact):
         else:
             assert(not etag)
             fn =  fo.get_itemid()
-            fn += "/" + md5.new(vcf_data).hexdigest() + '.vcf'
+            if fn[-1] != '/':
+                fn += "/"
+            fn += md5.new(vcf_data).hexdigest() + '.vcf'
 
             ## FIXME: Handle errors and all that good stuff.
             self.set_itemid(fn)
