@@ -52,6 +52,8 @@ def vco_find_in_group (vco, attr, group):
 
 class CDContact(Contact):
 
+    ORG        = 'ORG'
+    TITLE      = 'TITLE'
     GENDER     = 'X-GENDER'
     ABDATE     = 'X-ABDATE'
     ABLABEL    = 'X-ABLABEL'
@@ -155,6 +157,7 @@ class CDContact(Contact):
         self._snarf_uid_from_vco(vco)
         self._snarf_names_gender_from_vco(vco)
         self._snarf_emails_from_vco(vco)
+        self._snarf_org_details_from_vco(vco)
         self._snarf_dates_from_vco(vco)
         self._snarf_sync_tags_from_vco(vco)
 
@@ -168,6 +171,7 @@ class CDContact(Contact):
         self._add_prodid_to_vco(vco)
         self._add_names_gender_to_vco(vco)
         self._add_emails_to_vco(vco)
+        self._add_org_details_to_vco(vco)
         self._add_dates_to_vco(vco)
         self._add_sync_tags_to_vco(vco)
 
@@ -261,6 +265,17 @@ class CDContact(Contact):
                     self.add_email_other(em.value)
             else:
                 self.add_email_other(em.value)
+
+    def _snarf_org_details_from_vco (self, vco):
+        if hasattr(vco, l(self.TITLE)):
+            self.set_title(getattr(vco, l(self.TITLE)).value)
+
+        # We will deal with just a single company value.
+        if hasattr(vco, l(self.ORG)):
+            orgl = getattr(vco, l(self.ORG))
+            self.set_company(orgl.value[0])
+            self.set_dept(orgl.value[1])
+            logging.debug('** WTF: %s', orgl.value)
 
     def _snarf_dates_from_vco (self, vco):
         if not vco:
@@ -416,6 +431,21 @@ class CDContact(Contact):
             return "%s-%s-%s" % (year, month, day)
 
         return None
+
+    def _add_org_details_to_vco (self, vco):
+        company = self.get_company()
+        dept    = self.get_dept()
+        title   = self.get_title()
+
+        if title:
+            t = vco.add(l(self.TITLE))
+            t.value = title
+
+        if company or dept:
+            org = vco.add(l(self.ORG))
+            org.value = []
+            org.value.append(company if company else '')
+            org.value.append(dept if dept else '')
 
     def _add_dates_to_vco (self, vco):
         ## Last Modification Timestamp
