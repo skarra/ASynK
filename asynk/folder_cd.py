@@ -244,6 +244,7 @@ class CDContactsFolder(Folder):
         """See the documentation in folder.Folder"""
 
         logging.info('folder_cd:bulk_clear_sync_tags: Not implemented yet.')
+        return True
 
 
     ##
