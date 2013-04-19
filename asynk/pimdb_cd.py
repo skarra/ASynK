@@ -36,7 +36,7 @@ class CDPIMDB(PIMDB):
     server operations"""
 
     def __init__ (self, config, uri, user, pw):
-        """If 'server' dooes not start with a http:// or a https:// it is
+        """If 'uri' dooes not start with a http:// or a https:// it is
         assumed to be equivalent to http:// """
 
         logging.debug('Logging into CardDAV server: %s - user: %s',
@@ -237,7 +237,7 @@ class CDPIMDB(PIMDB):
     ##
 
     def parse_uri (self, uri):
-        if not uri.startswith('^http'):
+        if not uri.startswith('http'):
             uri = 'http://' + uri
         splits = urlparse.urlsplit(uri)
         self.set_server(splits.scheme + "://" + splits.netloc)
