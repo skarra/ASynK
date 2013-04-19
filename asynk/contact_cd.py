@@ -37,12 +37,12 @@ import datetime, logging, md5, re, string, uuid
 ## FIXME: This method should probably be inside vCard class. But not feeling
 ## adventorous enough to muck with that code
 def vco_find_in_group (vco, attr, group):
-    if not attr in vco.keys():
+    if not hasattr(vco, attr):
         return None
 
     elems = vco.contents[attr]
     for elem in elems:
-        if elem.group and elem.group.value == group:
+        if elem.group == group:
             return elem
 
     return None
@@ -58,6 +58,7 @@ class CDContact(Contact):
         self.set_etag(None)
         self.set_uid(None)
         self.set_vco(vco)
+        self._group_count = 0
 
         ## Sometimes we might be creating a contact object from a Google
         ## contact object or other entry which might have the ID in its sync
@@ -161,6 +162,10 @@ class CDContact(Contact):
         self.dirty(False)
         return self.set_vco(vco)
 
+    def gen_group_name (self):
+        self._group_count += 1
+        return 'item%d' % self._group_count
+
     ##
     ## The _add_* methods
     ##
@@ -249,6 +254,7 @@ class CDContact(Contact):
         if not vco:
             return
 
+        ## Last Modification Timestamp
         if hasattr(vco, 'rev') and vco.rev.value:
             dt = pimdb_cd.CDPIMDB.parse_vcard_time(vco.rev.value)
         else:
@@ -256,6 +262,7 @@ class CDContact(Contact):
             
         self.set_updated(dt)
 
+        ## Date of Birth
         if hasattr(vco, 'bday') and vco.bday.value:
             ign = 'X-APPLE-OMIT-YEAR' in vco.bday.params.keys()
             bday = self._parse_vcard_date(vco.bday.value, ign)
@@ -266,12 +273,29 @@ class CDContact(Contact):
                 logging.warning('Ignoring unrecognized birthdate (%s) for %s',
                                 vco.bday.value, self.get_disp_name())
 
-        # FIXME: Do the same for (a) creation timestamp, (b) anniversaries (c)
-        # date of birth.
+        ## Anniversary. FIXME: We are currently only processing Apple
+        ## Addressbook treatment of this vCard extension.
+        if hasattr(vco, 'x-abdate'):
+            for abdate in vco.contents['x-abdate']:
+                ign = 'X-APPLE-OMIT-YEAR' in abdate.params
+
+                group = abdate.group
+                assert(group)
+
+                label = vco_find_in_group(vco, 'x-ablabel', group).value
+
+                if label == '_$!<Anniversary>!$_':
+                    self.set_anniv(self._parse_vcard_date(abdate.value, ign))
+                else:
+                    logging.warning('Ignoring Date field %s (%s) for (%s)',
+                                    label, abdate.value, self.get_disp_name())
+                    
+
+        # FIXME: Do the same for creation timestamp
 
     def _snarf_sync_tags_from_vco (self, vco):
         conf      = self.get_config()
-        pname_re  = "^x-" + conf.get_profile_name_re()
+        pname_re  = "^x-asynk-" + conf.get_profile_name_re() + "-"
 
         for label, val in vco.contents.iteritems():
             if re.search(pname_re, label):
@@ -339,7 +363,7 @@ class CDContact(Contact):
         self._add_emails_to_vco_helper(vco, self.get_email_work, 'WORK')
         self._add_emails_to_vco_helper(vco, self.get_email_other, '')
 
-    def _convert_to_vcard_date (self, bd):
+    def _convert_to_vcard_date (self, bd, sep=''):
         """Return a (ign_year, date_str) tuple based on the input BBDB format
         date string."""
 
@@ -354,7 +378,7 @@ class CDContact(Contact):
             year = ignore_year
 
         ign = year if year == ignore_year else None
-        return ign, "%s%s%s" % (year, month, day)
+        return ign, "%s%s%s%s%s" % (year, sep, month, sep, day)
 
     def _parse_vcard_date (self, vd, ign):
         """Takes a vCard date in yyyymmdd format and returns a string
@@ -362,6 +386,11 @@ class CDContact(Contact):
         ignored year."""
 
         res = re.search('(\d\d\d\d)(\d\d)(\d\d)', vd)
+        if not res:
+            ## Stupid Apple Addressbook puts out dates in two different
+            ## formats...
+            res = re.search('(\d\d\d\d)-(\d\d)-(\d\d)', vd)
+
         if res:
             year  = res.group(1)
             month = res.group(2)
@@ -375,17 +404,33 @@ class CDContact(Contact):
         return None
 
     def _add_dates_to_vco (self, vco):
-
-        ## FIXME: Implement support for creation date, DOB and anniversaries.
+        ## Last Modification Timestamp
         vco.add('rev')
         vco.rev.value = pimdb_cd.CDPIMDB.get_vcard_time(self.get_updated())
 
+        ## Birthday
         if self.get_birthday():
             ign, day = self._convert_to_vcard_date(self.get_birthday())
             d = vco.add('bday')
             d.value = day
             if ign:
                 d.params = {'X-APPLE-OMIT-YEAR' : [ign]}
+
+        ## FIXME: Implement support for creation date, and anniversaries.
+        if self.get_anniv():
+            group = self.gen_group_name()
+            ign, day = self._convert_to_vcard_date(self.get_anniv(),
+                                                   sep="-")
+            d       = vco.add('x-abdate')
+            d.value = day
+            d.group = group
+            d.params.update({'TYPE' : ['pref']})
+            if ign:
+                d.params.update({'X-APPLE-OMIT-YEAR' : [ign]})
+
+            l       = vco.add('x-ablabel')
+            l.value = '_$!<Anniversary>!$_'
+            l.group = group
 
     def _add_sync_tags_to_vco (self, vco):
         conf     = self.get_config()
