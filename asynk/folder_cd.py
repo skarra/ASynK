@@ -214,6 +214,10 @@ class CDContactsFolder(Folder):
 
         for item in items:
             tag, href = item.get_sync_tags(dst_sync_tag)[0]
+            ## FIXME: Some times we might find it expedient to force a
+            ## "update" without the contact being present int he remote. If
+            ## that happens the next line will throw an KeyError. You are
+            ## warned. 
             con_old = cons[href]
             con_new = CDContact(self, con=item)
 
