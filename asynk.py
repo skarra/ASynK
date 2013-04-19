@@ -62,6 +62,7 @@ def main (argv=sys.argv):
     uinps = parser.parse_args()
 
     # Make the user directory if it does not exist
+    uinps.user_dir = os.path.abspath(os.path.expanduser(uinps.user_dir))
     if not os.path.exists(uinps.user_dir):
         print 'Creating ASynK User directory at: ', uinps.user_dir
         os.makedirs(uinps.user_dir)
