@@ -34,6 +34,9 @@ from   caldavclientlibrary.protocol.http.util import HTTPError
 
 import datetime, logging, md5, re, string, uuid
 
+def l (s):
+    return s.lower()
+
 ## FIXME: This method should probably be inside vCard class. But not feeling
 ## adventorous enough to muck with that code
 def vco_find_in_group (vco, attr, group):
@@ -48,6 +51,13 @@ def vco_find_in_group (vco, attr, group):
     return None
 
 class CDContact(Contact):
+
+    GENDER     = 'X-GENDER'
+    ABDATE     = 'X-ABDATE'
+    ABLABEL    = 'X-ABLABEL'
+    OMIT_YEAR  = 'X-APPLE-OMIT-YEAR'
+    SYNC_TAG_PREFIX  = 'X-ASYNK-SYNCTAG-'
+
     def __init__ (self, folder, con=None, vco=None, itemid=None):
         """vco, if not None, should be a valid vCard object (i.e. the contents
         of a vCard file, for e.g. When vco is not None, itemid should also be
@@ -211,8 +221,8 @@ class CDContact(Contact):
         ## time. For now we will use X- attributes, with a FIXME note for
         ## the extended attributes that are now supported 'natively' in vCard
         ## 4.0
-        if hasattr(vco, 'x-gender'):
-            self.set_gender(vco.x_gender.value)
+        if hasattr(vco, l(self.GENDER)):
+            self.set_gender(vco.contents[l(self.GENDER)][0].value)
 
     def _snarf_emails_from_vco (self, vco):
         if not hasattr(vco, 'email'):
@@ -264,7 +274,7 @@ class CDContact(Contact):
 
         ## Date of Birth
         if hasattr(vco, 'bday') and vco.bday.value:
-            ign = 'X-APPLE-OMIT-YEAR' in vco.bday.params.keys()
+            ign = self.OMIT_YEAR in vco.bday.params.keys()
             bday = self._parse_vcard_date(vco.bday.value, ign)
                                           
             if bday:
@@ -275,14 +285,14 @@ class CDContact(Contact):
 
         ## Anniversary. FIXME: We are currently only processing Apple
         ## Addressbook treatment of this vCard extension.
-        if hasattr(vco, 'x-abdate'):
-            for abdate in vco.contents['x-abdate']:
-                ign = 'X-APPLE-OMIT-YEAR' in abdate.params
+        if hasattr(vco, l(self.ABDATE)):
+            for abdate in vco.contents[l(self.ABDATE)]:
+                ign = self.OMIT_YEAR in abdate.params
 
                 group = abdate.group
                 assert(group)
 
-                label = vco_find_in_group(vco, 'x-ablabel', group).value
+                label = vco_find_in_group(vco, l(self.ABLABEL), group).value
 
                 if label == '_$!<Anniversary>!$_':
                     self.set_anniv(self._parse_vcard_date(abdate.value, ign))
@@ -295,11 +305,13 @@ class CDContact(Contact):
 
     def _snarf_sync_tags_from_vco (self, vco):
         conf      = self.get_config()
-        pname_re  = "^x-asynk-" + conf.get_profile_name_re() + "-"
+        pname_re  = conf.get_profile_name_re()
+        pname_re  = "^" + l(self.SYNC_TAG_PREFIX) + pname_re + "-"
 
         for label, val in vco.contents.iteritems():
             if re.search(pname_re, label):
-                label = label[2:].replace('-', ':')
+                label = string.replace(label, l(self.SYNC_TAG_PREFIX), '')
+                label = string.replace('asynk-' + label, '-', ':')
                 self.update_sync_tags(label, val[0].value)
 
     ##
@@ -336,8 +348,8 @@ class CDContact(Contact):
             vco.fn.value = self.get_disp_name()
 
         if self.get_gender():
-            vco.add('x-gender')
-            vco.x_gender.value = self.get_gender()
+            g = vco.add(self.GENDER.lower())
+            g.value = self.get_gender()
 
         ## FIXME: As before ensure we handle the Formatted Name, if available.
 
@@ -414,23 +426,23 @@ class CDContact(Contact):
             d = vco.add('bday')
             d.value = day
             if ign:
-                d.params = {'X-APPLE-OMIT-YEAR' : [ign]}
+                d.params = {self.OMIT_YEAR : [ign]}
 
         ## FIXME: Implement support for creation date, and anniversaries.
         if self.get_anniv():
             group = self.gen_group_name()
             ign, day = self._convert_to_vcard_date(self.get_anniv(),
                                                    sep="-")
-            d       = vco.add('x-abdate')
+            d       = vco.add(l(self.ABDATE))
             d.value = day
             d.group = group
             d.params.update({'TYPE' : ['pref']})
             if ign:
-                d.params.update({'X-APPLE-OMIT-YEAR' : [ign]})
+                d.params.update({self.OMIT_YEAR : [ign]})
 
-            l       = vco.add('x-ablabel')
-            l.value = '_$!<Anniversary>!$_'
-            l.group = group
+            la       = vco.add(l(self.ABLABEL))
+            la.value = '_$!<Anniversary>!$_'
+            la.group = group
 
     def _add_sync_tags_to_vco (self, vco):
         conf     = self.get_config()
@@ -445,6 +457,9 @@ class CDContact(Contact):
                 continue
 
             ## Make the label more vCard friendly
-            key = 'x-' + string.replace(key, ':', '-')
-            l = vco.add(key)
-            l.value = val
+            key = string.replace(key, ':', '-')
+            key = string.replace(key, 'asynk-', '')
+            key = l(self.SYNC_TAG_PREFIX) + key
+
+            la = vco.add(key)
+            la.value = val
