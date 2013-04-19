@@ -1,11 +1,29 @@
-This file is a README for the 'carddav' branch. This file will be deleted
-after this branch is merged with master.
+This file is a README for the 'carddav' branch - an experimental branch for a
+new datastore backend for CardDAV servers. The idea is with this one can sync
+BBDB and MS Outlook contacts to a CardDAV server.
 
-The carddav branch is an experimental branch for a new datastore backend for
-CardDAV servers. The idea is with this one can sync BBDB and MS Outlook
-fcontacts to a CardDAV server.
+* TODOs
 
-* Status
+** For initial announcement on bbdb-info and asynk-users
+
+*** Field support
+
+    - Creation Date
+    - Notes
+    - Phone numbers
+
+*** Other stuff
+
+    - Section in this README with usage guide for people who want to try it out
+    - (Optional) Table of supported fields and interop matrix
+
+** Post-Announcement
+
+   - Test against different servers and maintain supported status
+   - Recognize server return format and assert vCard 3.0
+   - Support additional vCard property tag extensions in common use. 
+
+* Developer's Log
 
 ** Thu Apr 18 18:16:40 IST 2013
 
@@ -108,14 +126,16 @@ fcontacts to a CardDAV server.
 ** Summary
 
 #+BEGIN: clocktable :maxlevel 3 :scope file
-Clock summary at [2013-04-16 Tue 18:44]
+Clock summary at [2013-04-19 Fri 18:43]
 
 | L | Headline       | Time    |       |      |
 |---+----------------+---------+-------+------|
-|   | *Total time*   | *31:38* |       |      |
+|   | *Total time*   | *36:14* |       |      |
 |---+----------------+---------+-------+------|
-| 1 | Timelog        | 31:38   |       |      |
-| 2 | April          |         | 31:38 |      |
+| 1 | Timelog        | 36:14   |       |      |
+| 2 | April          |         | 36:14 |      |
+| 3 | April 19, 2013 |         |       | 2:56 |
+| 3 | April 18, 2013 |         |       | 1:40 |
 | 3 | April 16, 2013 |         |       | 5:15 |
 | 3 | April 15, 2013 |         |       | 3:09 |
 | 3 | April 13, 2013 |         |       | 1:00 |
@@ -131,6 +151,11 @@ Clock summary at [2013-04-16 Tue 18:44]
 #+END:
 
 ** April
+
+*** April 19, 2013
+    CLOCK: [2013-04-19 Fri 17:15]--[2013-04-19 Fri 18:43] =>  1:28
+    CLOCK: [2013-04-19 Fri 14:34]--[2013-04-19 Fri 15:44] =>  1:10
+    CLOCK: [2013-04-19 Fri 11:04]--[2013-04-19 Fri 11:22] =>  0:18
 
 *** April 18, 2013
     CLOCK: [2013-04-18 Thu 16:36]--[2013-04-18 Thu 18:16] =>  1:40
