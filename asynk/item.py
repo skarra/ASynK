@@ -234,8 +234,12 @@ class Item:
 
         self.dbid = val
 
-    def get_created (self):
-        return self._get_prop('created')
+    def get_created (self, iso=False):
+        val = self._get_prop('created')
+        if type(val) == datetime.datetime and iso:
+            return val.isoformat()
+        else:
+            return val
 
     def set_created (self, c):
         if not self.in_init():
