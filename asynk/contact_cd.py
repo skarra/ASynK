@@ -54,6 +54,7 @@ class CDContact(Contact):
 
     ## Standard vCard 3.0 property tags
     ORG        = 'ORG'
+    NOTE       = 'NOTE'
     TITLE      = 'TITLE'
     NICKNAME   = 'NICKNAME'
 
@@ -64,6 +65,7 @@ class CDContact(Contact):
     OMIT_YEAR  = 'X-APPLE-OMIT-YEAR'
 
     ## OUr own extensions
+    X_NOTE     = 'X-ASYNK_NOTE'
     CREATED    = 'X-ASYNK-CREATED'
     SYNC_TAG_PREFIX  = 'X-ASYNK-SYNCTAG-'
 
@@ -167,6 +169,7 @@ class CDContact(Contact):
         self._snarf_org_details_from_vco(vco)
         self._snarf_dates_from_vco(vco)
         self._snarf_sync_tags_from_vco(vco)
+        self._snarf_notes_from_vco(vco)
 
     def init_vco_from_props (self):
         vco = vobject.vCard()
@@ -181,6 +184,7 @@ class CDContact(Contact):
         self._add_org_details_to_vco(vco)
         self._add_dates_to_vco(vco)
         self._add_sync_tags_to_vco(vco)
+        self._add_notes_to_vco(vco)
 
         self.dirty(False)
         return self.set_vco(vco)
@@ -350,6 +354,16 @@ class CDContact(Contact):
                 label = string.replace(label, l(self.SYNC_TAG_PREFIX), '')
                 label = string.replace('asynk-' + label, '-', ':')
                 self.update_sync_tags(label, val[0].value)
+
+    def _snarf_notes_from_vco (self, vco):
+        if hasattr(vco, l(self.NOTE)):
+            note = getattr(vco, l(self.NOTE))
+            self.add_notes(note.value)
+
+        if hasattr(vco, l(self.X_NOTE)):
+            notes = demjson.decode(getattr(vco, l(self.X_NOTE)).value)
+            for note in notes:
+                self.add_notes(note)
 
     ##
     ## the _add_* methods
@@ -524,3 +538,15 @@ class CDContact(Contact):
 
             la = vco.add(key)
             la.value = val
+
+    def _add_notes_to_vco (self, vco):
+        notes = self.get_notes()
+        if not notes or len(notes) <= 0:
+            return
+
+        no = vco.add(l(self.NOTE))
+        no.value = notes[0]
+
+        if len(notes) > 1:
+            xno = vco.add(l(self.X_NOTE))
+            xno.value = demjson.encode(notes[1:])
