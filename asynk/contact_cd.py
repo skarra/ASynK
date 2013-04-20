@@ -29,10 +29,10 @@
 
 from   contact    import Contact
 from   vobject    import vobject
-import pimdb_cd, utils
+import demjson, pimdb_cd, utils
 from   caldavclientlibrary.protocol.http.util import HTTPError
 
-import datetime, logging, md5, re, string, uuid
+import copy, datetime, logging, md5, re, string, uuid
 
 def l (s):
     return s.lower()
@@ -52,13 +52,19 @@ def vco_find_in_group (vco, attr, group):
 
 class CDContact(Contact):
 
+    ## Standard vCard 3.0 property tags
     ORG        = 'ORG'
     TITLE      = 'TITLE'
+    NICKNAME   = 'NICKNAME'
+
+    ## The vCard 3.0 extensions in 'common use'
     GENDER     = 'X-GENDER'
     ABDATE     = 'X-ABDATE'
     ABLABEL    = 'X-ABLABEL'
-    CREATED    = 'X-ASYNK-CREATED'
     OMIT_YEAR  = 'X-APPLE-OMIT-YEAR'
+
+    ## OUr own extensions
+    CREATED    = 'X-ASYNK-CREATED'
     SYNC_TAG_PREFIX  = 'X-ASYNK-SYNCTAG-'
 
     def __init__ (self, folder, con=None, vco=None, itemid=None):
@@ -215,6 +221,15 @@ class CDContact(Contact):
             if vco.n.value.suffix:
                 self.set_suffix(vco.n.value.suffix)
 
+        if hasattr(vco, l(self.NICKNAME)):
+            nicks = vco.contents[l(self.NICKNAME)]
+            if len(nicks) > 0:
+                self.set_nickname(nicks[0].value)
+
+                if len(nicks) > 1:
+                    ns = [x.value for x in nicks[1:]]
+                    self.set_custom('aka', demjson.encode(ns))
+
         ## FIXME: Need to handle the formatted name when it is present. There
         ## are known cases when the formatted name is different from the
         ## Last/First - for e.g. in apple addressbook, the FN is the orgname
@@ -370,8 +385,12 @@ class CDContact(Contact):
             vco.fn.value = self.get_disp_name()
 
         if self.get_gender():
-            g = vco.add(self.GENDER.lower())
+            g = vco.add(l(self.GENDER))
             g.value = self.get_gender()
+
+        if self.get_nickname():
+            g = vco.add(l(self.NICKNAME))
+            g.value = self.get_nickname()
 
         ## FIXME: As before ensure we handle the Formatted Name, if available.
 
