@@ -57,6 +57,7 @@ class CDContact(Contact):
     GENDER     = 'X-GENDER'
     ABDATE     = 'X-ABDATE'
     ABLABEL    = 'X-ABLABEL'
+    CREATED    = 'X-ASYNK-CREATED'
     OMIT_YEAR  = 'X-APPLE-OMIT-YEAR'
     SYNC_TAG_PREFIX  = 'X-ASYNK-SYNCTAG-'
 
@@ -275,11 +276,18 @@ class CDContact(Contact):
             orgl = getattr(vco, l(self.ORG))
             self.set_company(orgl.value[0])
             self.set_dept(orgl.value[1])
-            logging.debug('** WTF: %s', orgl.value)
 
     def _snarf_dates_from_vco (self, vco):
         if not vco:
             return
+
+        if hasattr(vco, l(self.CREATED)):
+            dt = getattr(vco, l(self.CREATED)).value
+            dt = pimdb_cd.CDPIMDB.parse_vcard_time(dt)
+        else:
+            dt = datetime.datetime.utcnow()
+
+        self.set_created(dt)
 
         ## Last Modification Timestamp
         if hasattr(vco, 'rev') and vco.rev.value:
@@ -316,9 +324,6 @@ class CDContact(Contact):
                 else:
                     logging.warning('Ignoring Date field %s (%s) for (%s)',
                                     label, abdate.value, self.get_disp_name())
-                    
-
-        # FIXME: Do the same for creation timestamp
 
     def _snarf_sync_tags_from_vco (self, vco):
         conf      = self.get_config()
@@ -448,6 +453,10 @@ class CDContact(Contact):
             org.value.append(dept if dept else '')
 
     def _add_dates_to_vco (self, vco):
+        ## Created Timestamp
+        c = vco.add(l(self.CREATED))
+        c.value = pimdb_cd.CDPIMDB.get_vcard_time(self.get_created())
+
         ## Last Modification Timestamp
         vco.add('rev')
         vco.rev.value = pimdb_cd.CDPIMDB.get_vcard_time(self.get_updated())
@@ -460,7 +469,8 @@ class CDContact(Contact):
             if ign:
                 d.params = {self.OMIT_YEAR : [ign]}
 
-        ## FIXME: Implement support for creation date, and anniversaries.
+        ## A single anniversary. FIXME: Apple supports multiple. To hell with
+        ## that - for now.
         if self.get_anniv():
             group = self.gen_group_name()
             ign, day = self._convert_to_vcard_date(self.get_anniv(),
