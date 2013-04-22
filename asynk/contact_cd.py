@@ -52,14 +52,19 @@ def vco_find_in_group (vco, attr, group):
 
 class CDContact(Contact):
 
+    ## FIXME - these tags should really be a function of the file format, and
+    ## be wrapped up in some form of parameterized property tag parsing/emit
+    ## methods... Hm.
+
     ## Standard vCard 3.0 property tags
     ORG        = 'ORG'
+    TEL        = 'TEL'
     NOTE       = 'NOTE'
     TITLE      = 'TITLE'
     NICKNAME   = 'NICKNAME'
 
     ## The vCard 3.0 extensions in 'common use'
-    GENDER     = 'X-GENDER'
+    GENDER     = 'X-GENDER'               # vCard 4.0 supports a 'native' GENDER tag
     ABDATE     = 'X-ABDATE'
     ABLABEL    = 'X-ABLABEL'
     OMIT_YEAR  = 'X-APPLE-OMIT-YEAR'
@@ -166,6 +171,7 @@ class CDContact(Contact):
         self._snarf_uid_from_vco(vco)
         self._snarf_names_gender_from_vco(vco)
         self._snarf_emails_from_vco(vco)
+        self._snarf_phones_from_vco(vco)
         self._snarf_org_details_from_vco(vco)
         self._snarf_dates_from_vco(vco)
         self._snarf_sync_tags_from_vco(vco)
@@ -181,6 +187,7 @@ class CDContact(Contact):
         self._add_prodid_to_vco(vco)
         self._add_names_gender_to_vco(vco)
         self._add_emails_to_vco(vco)
+        self._add_phones_to_vco(vco)
         self._add_org_details_to_vco(vco)
         self._add_dates_to_vco(vco)
         self._add_sync_tags_to_vco(vco)
@@ -285,6 +292,34 @@ class CDContact(Contact):
                     self.add_email_other(em.value)
             else:
                 self.add_email_other(em.value)
+
+    def _snarf_phones_from_vco (self, vco):
+        if hasattr(vco, l(self.TEL)):
+            for phone in vco.contents[l(self.TEL)]:
+                if not 'TYPE' in phone.params:
+                    ## What does this mean?
+                    logging.debug('No TYPE for Phone: %s', phone)
+                    continue
+
+                ph_types = phone.params['TYPE']
+                if 'VOICE' in ph_types:
+                    if 'HOME' in ph_types:
+                        self.add_phone_home(('Home', phone.value))
+                    elif 'WORK' in ph_types:
+                        self.add_phone_work(('Work', phone.value))
+                    elif 'CELL' in ph_types:
+                        self.add_phone_mob(('Mobile', phone.value))
+                    else:
+                        self.add_phone_other(('Other', phone.value))
+
+                if 'FAX' in ph_types:
+                    if 'HOME' in ph_types:
+                        self.add_fax_home(('home', phone.value))
+                    elif 'WORK' in ph_types:
+                        self.add_fax_work(('work', phone.value))
+                    else:
+                        ## FIXME: There is no 'other' fax. Make it home fax.
+                        self.add_fax_home(('other', phone.value))
 
     def _snarf_org_details_from_vco (self, vco):
         if hasattr(vco, l(self.TITLE)):
@@ -429,6 +464,51 @@ class CDContact(Contact):
         self._add_emails_to_vco_helper(vco, self.get_email_home, 'HOME')
         self._add_emails_to_vco_helper(vco, self.get_email_work, 'WORK')
         self._add_emails_to_vco_helper(vco, self.get_email_other, '')
+
+    def _add_phones_helper (self, vco, elem, pref, types, value):
+        if not value:
+            return
+
+        p       = vco.add(elem)
+        p.value = value
+
+        params  = {'TYPE' : types}
+        if pref:
+            params['TYPE'].append('pref')
+
+        p.params = params        
+
+    def _add_phones_to_vco (self, vco):
+        ph_prim = self.get_phone_prim()
+
+        ## Phone numbers
+
+        for label, ph in self.get_phone_home():
+            self._add_phones_helper(vco, l(self.TEL), ph == ph_prim,
+                                    ['VOICE', 'HOME'], ph)
+
+        for label, ph in self.get_phone_work():
+            self._add_phones_helper(vco, l(self.TEL), ph == ph_prim,
+                                    ['VOICE', 'WORK'], ph)
+        
+        for label, ph in self.get_phone_mob():
+            self._add_phones_helper(vco, l(self.TEL), ph == ph_prim,
+                                    ['VOICE', 'CELL'], ph)
+
+        for label, ph in self.get_phone_other():
+            self._add_phones_helper(vco, l(self.TEL), ph == ph_prim,
+                                    ['VOICE', 'OTHER'], ph)
+
+
+        ## Fax numbers
+
+        for label, ph in self.get_fax_home():
+            self._add_phones_helper(vco, l(self.TEL), ph == ph_prim,
+                                    ['FAX', 'HOME'], ph)
+
+        for label, ph in self.get_fax_work():
+            self._add_phones_helper(vco, l(self.TEL), ph == ph_prim,
+                                    ['FAX', 'WORK'], ph)
 
     def _convert_to_vcard_date (self, bd, sep=''):
         """Return a (ign_year, date_str) tuple based on the input BBDB format
