@@ -340,6 +340,7 @@ class BBContact(Contact):
         ph_re = self.get_store().get_ph_re()
         phs   = re.findall(ph_re, pr['phones']) if pr['phones'] else None
 
+        first = True
         if phs:
             for ph in phs:
                 res = re.search(ph_re, '[' + ph[0] + ']')
@@ -354,6 +355,9 @@ class BBContact(Contact):
 
                     label = chompq(resg['phlabel'])
                     self._classify_and_add_phone(label, (label, phnum))
+                    if first:
+                        self.set_phone_prim(phnum)
+                        first = False
                 else:
                     logging.debug('Could not parse phone: %s', ph[0])
 
