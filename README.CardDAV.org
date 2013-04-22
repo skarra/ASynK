@@ -48,18 +48,18 @@ BBDB and MS Outlook contacts to a CardDAV server.
 
    5. The following fields are synched to/from the carddav contacts:
 
-      First name
-      Last name
-      Middle name
-      Formatted name
-      Suffix, Prefix
-      Gender
-      Email addresses
-      Phone numbers
-      Title
-      Department
-      Company name
-      Notes
+      - First name
+      - Last name
+      - Middle name
+      - Formatted name
+      - Suffix, Prefix
+      - Gender
+      - Email addresses
+      - Phone numbers
+      - Title
+      - Department
+      - Company name
+      - Notes
 
       More will be supported over time.
 
