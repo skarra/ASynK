@@ -407,6 +407,7 @@ class BBPIMDB(PIMDB):
         def_ms = self.add_msgstore(def_fn)
         self.set_def_msgstore(def_ms)
         self.set_folders()
+        self.set_def_folders()
 
     ##
     ## First implementation of the abstract methods of PIMDB.
