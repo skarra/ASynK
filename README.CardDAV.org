@@ -2,18 +2,58 @@ This file is a README for the 'carddav' branch - an experimental branch for a
 new datastore backend for CardDAV servers. The idea is with this one can sync
 BBDB and MS Outlook contacts to a CardDAV server.
 
+* Installation & Usage Notes for CardDAV
+
+  Keep in mind this is an experimental feature. Unlike Google Contacts,
+  CardDAV servers do not generally support a roll back feature. This means any
+  ASynK bugs could potentially lead to loss of information for you. So please
+  take your own precautions before you deploy this with your live data.
+
+** Steps
+
+   $ ./asynk.py --op=create-profile --name testbbcd --user-dir=~/.asynk.carddav --db bb cd --folder default default --store <opath-to-bbdb-file> 'https:localhost:8443'
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.carddav --name testbbcd --dry-run
+
+   Ensure you are able to login to your account properly.
+
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.carddav --name testbbcd
+
+** Notes
+
+   1. Create a test set up for your evaluation. This should include a test
+      list of your contacts in a separate BBDB datastore, and a test carddav
+      server account. I also strongly encourage you use the --user-dir option
+      while invoking asynk, so that your 'production' state.json is not messed
+      with.
+
+   2. The config.json format has changed a bit to accomodate the
+      requirements. So you should copy the config.json from the asynk source
+      directory manually to your asynk user dir. This step will be automated
+      at a later time before official release.
+
+   3. You will be prompted for your carddav server login and password from
+      STDIN. You can avoid having to type this repeatedly by piping your
+      password to asynk or having the following entry in your ~/.netrc
+
+      machine cd_testbbcd
+      login <<login>>
+      password <<password>>
+
+      Note that the 'testbbcd' is the name of the test profile you created.
+
+   4. If you want to sync to a specific folder on the server you can do that
+      at the time of profile creation, like in this example: 
+
+      $ ./asynk.py --op=create-profile --name testbbcd --user-dir=~/.asynk.carddav --db bb cd --folder default '/addressbooks/__uids__/skarrag/addressbook' --store <opath-to-bbdb-file> 'localhost:8008'
+
+
 * TODOs
 
 ** For initial announcement on bbdb-info and asynk-users
 
-*** Field support
-
-    - Creation Date
-    - Notes
-    - Phone numbers
-
 *** Other stuff
 
+    - User should be able to use default addressbook on carddav server
     - Section in this README with usage guide for people who want to try it out
     - (Optional) Table of supported fields and interop matrix
 
@@ -22,6 +62,13 @@ BBDB and MS Outlook contacts to a CardDAV server.
    - Test against different servers and maintain supported status
    - Recognize server return format and assert vCard 3.0
    - Support additional vCard property tag extensions in common use. 
+
+*** Tag support
+ 
+    - IM
+    - WWW
+    - Postal Addresses
+    - Custom fields
 
 * Developer's Log
 
@@ -126,14 +173,16 @@ BBDB and MS Outlook contacts to a CardDAV server.
 ** Summary
 
 #+BEGIN: clocktable :maxlevel 3 :scope file
-Clock summary at [2013-04-19 Fri 18:43]
+Clock summary at [2013-04-22 Mon 07:25]
 
 | L | Headline       | Time    |       |      |
 |---+----------------+---------+-------+------|
-|   | *Total time*   | *36:14* |       |      |
+|   | *Total time*   | *37:45* |       |      |
 |---+----------------+---------+-------+------|
-| 1 | Timelog        | 36:14   |       |      |
-| 2 | April          |         | 36:14 |      |
+| 1 | Timelog        | 37:45   |       |      |
+| 2 | April          |         | 37:45 |      |
+| 3 | April 21, 2013 |         |       | 1:09 |
+| 3 | April 20, 2013 |         |       | 0:22 |
 | 3 | April 19, 2013 |         |       | 2:56 |
 | 3 | April 18, 2013 |         |       | 1:40 |
 | 3 | April 16, 2013 |         |       | 5:15 |
@@ -151,6 +200,13 @@ Clock summary at [2013-04-19 Fri 18:43]
 #+END:
 
 ** April
+
+*** April 21, 2013
+    CLOCK: [2013-04-21 Sun 20:57]--[2013-04-21 Sun 21:18] =>  0:21
+    CLOCK: [2013-04-21 Sun 06:30]--[2013-04-21 Sun 07:18] =>  0:48
+
+*** April 20, 2013
+    CLOCK: [2013-04-20 Sat 06:03]--[2013-04-20 Sat 06:25] =>  0:22
 
 *** April 19, 2013
     CLOCK: [2013-04-19 Fri 17:15]--[2013-04-19 Fri 18:43] =>  1:28
