@@ -7,7 +7,7 @@ BBDB and MS Outlook contacts to a CardDAV server.
   Keep in mind this is an experimental feature. Unlike Google Contacts,
   CardDAV servers do not generally support a roll back feature. This means any
   ASynK bugs could potentially lead to loss of information for you. So please
-  take your own precautions before you deploy this with your live data.
+  take your own precautions before you deploy this on your live data.
 
 ** Steps
 
@@ -46,19 +46,28 @@ BBDB and MS Outlook contacts to a CardDAV server.
 
       $ ./asynk.py --op=create-profile --name testbbcd --user-dir=~/.asynk.carddav --db bb cd --folder default '/addressbooks/__uids__/skarrag/addressbook' --store <opath-to-bbdb-file> 'localhost:8008'
 
+   5. The following fields are synched to/from the carddav contacts:
+
+      First name
+      Last name
+      Middle name
+      Formatted name
+      Suffix, Prefix
+      Gender
+      Email addresses
+      Phone numbers
+      Title
+      Department
+      Company name
+      Notes
+
+      More will be supported over time.
 
 * TODOs
 
-** For initial announcement on bbdb-info and asynk-users
+** Post initial announcement
 
-*** Other stuff
-
-    - User should be able to use default addressbook on carddav server
-    - Section in this README with usage guide for people who want to try it out
     - (Optional) Table of supported fields and interop matrix
-
-** Post-Announcement
-
    - Test against different servers and maintain supported status
    - Recognize server return format and assert vCard 3.0
    - Support additional vCard property tag extensions in common use. 
