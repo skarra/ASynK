@@ -855,7 +855,7 @@ class OLContact(Contact):
             ## FIXME: Additional phone numbers should be put into the custom
             ## property for later use.
             logging.error('Not so silently ignoring %d Home numbers for %s',
-                          len(ph)-2, self.get_name())
+                          len(ph)-2, self.get_disp_name())
 
         ph = self.get_phone_work()
         if len(ph) >= 1:
@@ -868,7 +868,7 @@ class OLContact(Contact):
                 olprops.append((mt.PR_BUSINESS2_TELEPHONE_NUMBER, num))
         if len(ph) >= 3:
             logging.error('Not so silently ignoring %d Work numbers for %s',
-                          len(ph)-2, self.get_name())
+                          len(ph)-2, self.get_disp_name())
 
         ph = self.get_phone_mob()
         if len(ph) >= 1:
@@ -877,7 +877,7 @@ class OLContact(Contact):
                 olprops.append((mt.PR_MOBILE_TELEPHONE_NUMBER, num))
         if len(ph) >= 2:
             logging.error('Not so silently ignoring %d Mobile numbers for %s',
-                          len(ph)-1, self.get_name())
+                          len(ph)-1, self.get_disp_name())
 
         ph_prim = self.get_phone_prim()
         if ph_prim:
