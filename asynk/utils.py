@@ -24,6 +24,9 @@ def yyyy_mm_dd_to_pytime (date_str):
     ## FIXME: Temporary hack to ensure we have a yyyy-mm-dd format. Google
     ## allows the year to be skipped. Outlook crates a problem. We bridge the
     ## gap by inserting '1887' (birth year of Srinivasa Ramanujan)
+
+    import pywintypes
+
     res = re.search('--(\d\d)-(\d\d)', date_str)
     if res:
         date_str = '1887-%s-%s' % (res.group(1), res.group(2))

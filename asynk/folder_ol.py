@@ -262,7 +262,7 @@ class OLFolder(Folder):
                 hr, ps = oli.DeleteProps(def_cols)
             except Exception, e:
                 logging.error('%s: Could not clear our MAPI props for: %s (%s)',
-                              'gc:batch_update()', item.get_name(), e)
+                              'ol:batch_update()', item.get_name(), e)
                 logging.debug(traceback.format_exc())
                 success = False
                 continue
@@ -272,10 +272,10 @@ class OLFolder(Folder):
                 hr, ps = oli.SetProps(olprops)
                 oli.SaveChanges(mapi.KEEP_OPEN_READWRITE)
                 logging.info('Successfully updated changes to Outlook for %s',
-                             item.get_name())
+                             item.get_disp_name())
             except Exception, e:
                 logging.error('%s: Could not set new props set for: %s (%s)',
-                              'gc:batch_update()', item.get_name(), e)
+                              'ol:batch_update()', item.get_disp_name(), e)
                 success = False
                 continue
 
