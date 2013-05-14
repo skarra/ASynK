@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 // Created       : Sat May 05 13:15:20 IST 2012
-// Last Modified : Sun Mar 24 22:01:27 IST 2013
+// Last Modified : Mon Apr 22 16:12:35 IST 2013
 //
 // Copyright (C) 2012, Sriram Karra <karra.etc@gmail.com>
 // All Rights Reserved
@@ -86,6 +86,43 @@
 
       <div id="announce_text" class="section" style="display:none">
 	<h2>Announcements</h2>
+
+	<h3>
+	<span class="announce_title">Mon Apr 22 16:07:32 IST 2013</span>
+	</h3>
+
+	<div class="announce_text">
+	  Experimental support for CardDAV servers has been added to ASynK. As
+	  this is still an early release the code lives in a separate branch
+	  on github. You can view and checkout the code here:
+	  https://github.com/skarra/ASynK/tree/carddav.
+
+	  Key notes for this work:
+	  <ol>
+	    <li>It is only tested with Apple's Calendar Server on my local Mac
+	    with a few test BBDB files . I would love to hear how this works
+	    with other carddav servers out there.</li>
+
+	    <li>The new branch on the git repo has a bunch of new git
+	    submodules. If you are an existing user of ASynK, I would
+	    recommend you checkout a fresh copy of the carddav branch for your
+	    initial trials.</li
+
+	    <li>The config.json format has changed to accomodate the
+            requirements of a new datastore. You should copy the config.json
+            from the asynk source directory manually to your asynk user
+            dir. This step will be automated at a later time before official
+            release.</li>
+
+	    <li>The CardDAV protocol does not have a batch write operation -
+	    but has a batch read method - which means that writing lots of
+	    contacts to a remote server may be slow - much slower than
+	    synching to a google contacts server using ASynK. This situation
+	    will not change unless something changes with the WebDAV
+	    protocol.</li>
+
+	  </ol>
+	</div>
 
 	<h3>
 	<span class="announce_title">Sun Mar 24 22:01:16 IST 2013</span>
@@ -422,7 +459,7 @@
 <p/>
   <div id="footer_content">
     Copyright &copy; 2012 Sriram Karra (karra.etc at gmail dot com)<br/>
-    Last Modified: Sun Mar 24 22:01:25 IST 2013
+    Last Modified: Mon Apr 22 16:12:34 IST 2013
 </footer>
 
 </body>
