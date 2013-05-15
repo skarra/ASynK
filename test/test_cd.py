@@ -44,7 +44,7 @@ def main (argv=None):
     conf = Config(os.path.join('..', 'config.json'), 'state.test.json')
     user = raw_input('Enter Username:')
     pw   = raw_input('Password:')
-    cd   = CDPIMDB(conf, 'localhost:8008', user, pw)
+    cd   = CDPIMDB(conf, 'https://localhost:8443', user, pw)
 
     root = '/addressbooks/__uids__/skarrag/addressbook/'
 

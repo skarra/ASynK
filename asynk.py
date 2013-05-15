@@ -19,7 +19,7 @@
 ## not, see <http://www.gnu.org/licenses/>.
 
 import argparse, datetime, logging, os, platform
-import netrc, re, shutil, string, sys, traceback
+import netrc, re, string, sys, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -67,34 +67,7 @@ def main (argv=sys.argv):
         print 'Creating ASynK User directory at: ', uinps.user_dir
         os.makedirs(uinps.user_dir)
 
-    # If there is no config file, then let's copy something that makes
-    # sense...
-    if not os.path.isfile(os.path.join(uinps.user_dir, 'state.json')):
-        # Let's first see if there is anything in the asynk source root
-        # directory - this would be the case with early users of ASynK when
-        # there was no support for a user-level config dir in ~/.asynk/
-        if os.path.isfile(os.path.join(ASYNK_BASE_DIR, 'state.json')):
-            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'state.json'),
-                         os.path.join(uinps.user_dir, 'state.json'))
-            print 'We have copied your state.json to new user directory: ',
-            print uinps.user_dir
-            print 'We have not copied any of your logs and backup directories.'
-        else:
-            ## Looks like this is a pretty "clean" run. So just copy the
-            ## state.init file to get things rolling
-            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'state.init.json'),
-                         os.path.join(uinps.user_dir, 'state.json'))            
-
-    # Now copy the config.json file as well.
-    if not os.path.isfile(os.path.join(uinps.user_dir, 'config.json')):
-            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'config.json'),
-                         os.path.join(uinps.user_dir, 'config.json'))
-
-    state_filen = os.path.join(uinps.user_dir, 'state.json')
-    conf_filen  = os.path.join(uinps.user_dir, 'config.json')
-
-    config =  Config(conf_filen, state_filen)
-    config.set_user_dir(uinps.user_dir)
+    config =  Config(ASYNK_BASE_DIR, uinps.user_dir)
 
     setup_logging(config)
     logging.debug('Command line: "%s"', ' '.join(sys.argv))
