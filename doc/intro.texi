@@ -1,7 +1,7 @@
 @enumerate
 @item
-ASynK allows two-way sync of Contacts across any two support sources - Google
-Contacts, Microsoft Outlook, and Emacs BBDB.
+ASynK allows two-way sync of Contacts across any two supported sources - Google
+Contacts, Microsoft Outlook, CardDAV and Emacs BBDB.
 
 @item
 ASynK is the only two-way synchronization option for BBDB known to be in

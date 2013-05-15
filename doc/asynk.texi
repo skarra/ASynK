@@ -58,8 +58,8 @@ Appendices
 @chapter Introduction
 
 ASynK is a flexible Contacts synchronization program that works with a
-variety of Contacts software such as Microsoft Outlook, Google Contacts, and
-Emacs BBDB.
+variety of Contacts software such as Microsoft Outlook, Google Contacts,
+CardDAV and Emacs BBDB.
 
 If you would not read through this documentation from cover to cover, but
 rather learn by looking at examples, head straight to the section titled
@@ -136,6 +136,55 @@ to work with Office 2008 and Office 2010
 @end enumerate
 @cindex Windows
 
+@subsection CardDAV Specific Notes
+Keep in mind this is an experimental feature. Unlike Google Contacts, CardDAV
+servers do not generally support a roll back feature. This means any ASynK
+bugs could potentially lead to loss of information for you. So please take
+your own precautions before you deploy this on your live data. The user of the
+@kbd{--user-dir=} option is also high encouraged.
+
+At the moment the follwing fields are synched in both ways. All other fields
+will be lost in transit. More may be supported over time.
+
+@enumerate  
+@item
+First name
+
+@item
+Last name
+
+@item
+Middle name
+
+@item
+Formatted name
+
+@item
+Suffix, Prefix
+
+@item
+Gender
+
+@item
+Email addresses
+
+@item
+Phone numbers
+
+@item
+Title
+
+@item
+Department
+
+@item
+Company name
+
+@item
+Notes
+
+@end enumerate
+
 @subsection BBDB Specific Notes
 ASynK can parse and write BBDB files without the need for Emacs or
 BBDB. However, ensure you are using BBDB at the time ASynK is reading/writing
@@ -195,7 +244,7 @@ Date:   Wed May 16 18:09:50 2012 +0530
     provide a quick hack for those willing to live with it only to
     try ASynK or similar sync software.
     
-    The obvious pitfall is that commands that work on teh timestamp
+    The obvious pitfall is that commands that work on the timestamp
     field (like newer or older filters and delete) will start
     to behave differently because a string comparison is done to
     check if a date is newer or older.
@@ -284,9 +333,9 @@ Google, MS Outlook and BBDB are know as ``PIM Databases'', and each is a ``PIM
 DB'', or @dfn{pimdb}. PIM stands for Personal Information Manager. PIMDB is
 PIM Database.
 
-Each PIMDB is referred to using a unique two letter specifier -'bb' for
-BBDB, 'gc' for Google Contacts, and 'ol' for Outlook. This two letter
-specifier is called a @dfn{dbid}
+Each PIMDB is referred to using a unique two letter specifier -'bb' for BBDB,
+'gc' for Google Contacts, 'cd' for CardDAV and 'ol' for Outlook. This two
+letter specifier is called a @dfn{dbid}
 
 @subsection @dfn{Item}s
 Your personal information collection includes contacts, notes, appointments,
@@ -310,6 +359,11 @@ what they are for each of the @dfn{PIMDB}s we have.
 In Google, a @dfn{Message Store} is identified by a user login/password. If
 you have two Google accounts you have access to two @dfn{Message Store}s on
 Google Contacts.
+
+With CardDAV, as you can have any number server and a user login/password for
+your account on that server. In this case a @dfn{Message Store} is the server
+name - with a leading http or https, and a trailing port number, and
+associated user credentials.
 
 With MS Outlook, there is a built in concept of a @dfn{MessageStore}. Each
 account you create becomes a @dfn{Message Store}. If you add a PST file to your
@@ -380,7 +434,7 @@ IDs, so the user can user the appropriate IDs at profile creation time.
 @item
 @strong{DB IDs}: Two DB IDs that hold the folders that are to be synched. This
 is specified at the time of profile creation and has to be specified by the
-user. They have to one of the supported DB IDs, which are 'bb', 'gc', and
+user. They have to one of the supported DB IDs, which are 'bb', 'gc', 'cd' and
 'ol', in this version. The order in which the DB IDs are specified matters -
 as explained below.
 
@@ -436,16 +490,16 @@ To run ASynK, change to the root of the downloaded ASynK directory, and type
 the following sections we look at each of the flags and options in detail (in
 time, of course).
 @verbatim
-Cardassia:Gout sriramkarra$ python asynk.py -h
-usage: asynk.py [-h] [--dry-run]
-                [--op {list-folders,create-folder,create-store,show-folder,
-                       del-folder,list-profiles,create-profile,show-profile,
-                       del-profile,sync,startweb,clear-sync-artifacts}]
-                [--db {bb,gc,ol} [{bb,gc,ol} ...]] [--store STORE [STORE ...]]
-                [--folder FOLDER [FOLDER ...]] [--item ITEM] [--name NAME]
-                [--direction {1way,2way}] [--label-regex LABEL_REGEX]
+Cardassia:ASynK sriramkarra$ ./asynk.py --help
+usage: asynk.py [-h] [--dry-run] [--sync-all]
+                [--op {list-folders,create-folder,create-store,show-folder,del-folder,list-profiles,create-profile,del-profile,sync,clear-sync-artifacts}]
+                [--user-dir USER_DIR] [--db {bb,gc,ol,cd} [{bb,gc,ol,cd} ...]]
+                [--store STORE [STORE ...]] [--folder FOLDER [FOLDER ...]]
+                [--item ITEM] [--name NAME] [--direction {1way,2way}]
+                [--label-regex LABEL_REGEX]
                 [--conflict-resolve CONFLICT_RESOLVE] [--pwd PWD]
-                [--port PORT] [--log {debug,info,error,critical}] [--version]
+                [--cduser CDUSER] [--cdpwd CDPWD]
+                [--log {debug,info,error,critical}] [--version]
 
 ASynK: PIM Awesome Sync by Karra
 
@@ -453,11 +507,13 @@ optional arguments:
   -h, --help            show this help message and exit
   --dry-run             Do not sync, but merely show what will happen if a
                         sync is performed.
-  --op {list-folders,create-folder,create-store,show-folder,del-folder,
-        list-profiles,create-profile,show-profile,del-profile,sync,startweb,
-        clear-sync-artifacts}
+  --sync-all            when used with --op=sync, this will ignore previous
+                        synchronization state, and perform a complete resync.
+  --op {list-folders,create-folder,create-store,show-folder,del-folder,list-profiles,create-profile,del-profile,sync,clear-sync-artifacts}
                         Specific management operation to be performed.
-  --db {bb,gc,ol} [{bb,gc,ol} ...]
+  --user-dir USER_DIR   Directory to store ASynK config files, logs directory,
+                        BBDB backups directory, etc.
+  --db {bb,gc,ol,cd} [{bb,gc,ol,cd} ...]
                         DB IDs required for most actions. Some actions need
                         two DB IDs - do it with two --db flags. When doing so
                         remember that order might be important for certain
@@ -486,13 +542,23 @@ optional arguments:
                         places. value should be one of the two dbids that are
                         already specified.
   --log {debug,info,error,critical}
-                        Specify level of logging.
+                        Specify level of console logging. Note that DEBUG
+                        level logs are always written to a log file for
+                        tracking purposes
   --version             show program's version number and exit
 
 Google Authentication:
   --pwd PWD             Google password. Relevant only if --db=gc is used. If
                         this option is not specified, user is prompted
                         password from stdin
+
+CardDAV Server Authentication:
+  --cduser CDUSER       CardDAV username. Relevant only if --db=cd is used. If
+                        this option is not specified, user is prompted for it
+                        from stdin
+  --cdpwd CDPWD         CardDAV password. Relevant only if --db=cd is used. If
+                        this option is not specified, user is prompted for it
+                        from stdin
 @end verbatim
 
 TODO: Detailed documentation on what each of the above flags mean, etc.
@@ -512,24 +578,23 @@ the sync, etc.
 In this section we only talk about application configuration. The application
 state is explained in more detail in the @ref{Internals, Internals}, section.
 
-@section @kbd{config.json}
+@section @kbd{config.json} and @kbd{config.py}
 
-The entire application configuration is stored as a JSON file, the default of
-which is available as config.json in in the root directory of the
-application. It has copious comments and explanation of its various fields, so
-we will only list the main configurable parameters here, and will just point
-you to the source to find out more.
+The entire application configuration is stored as a JSON file in the
+application_root/config/ directory. It has copious comments and explanation of
+its various fields, so we will only list the main configurable parameters
+here, and will just point you to the source to find out more. You should not
+edit this JSON file directly as it might get updated in subsquent releases of
+ASynK. 
 
-The first time you run ASynK, a copy of the config file is made to ~/.asynk
-(which is the default per-user asynk config directory), or to a directory
-specified with the @kbd{--user-dir} command line option.
-
-It is important to note at the outset that the only way these parameters can
-be configured is by hand - you need to edit the ~/.asynk/config.json file. The
-changes will be read and processed in the next run. In future we have plans of
-implementing a html/browser interface, when we will support editing these
-through that same interface so we can finally bid goodbye to mucking with json
-files.
+All of your own customizations should be placed in the file
+~/.asynk/config.py. You can look in the file for example customizations and
+further instructions. The first time you run ASynK, a copy of a sample
+config.py is made to ~/.asynk (which is the default per-user asynk config
+directory), or to a directory specified with the @kbd{--user-dir} command line
+option. For all subsequent runs, the default config.json is loaded, then the
+user customizations are executed by loading the config.py file from the user
+directory.
 
 @enumerate
 @item
@@ -606,7 +671,7 @@ Google Contacts
 
 @enumerate
 @item
-@emph{Postal Map}Google's address system is interesting - a user can either
+@emph{Postal Map}: Google's address system is interesting - a user can either
 have a standard category, or a user defined label. A generic user defined
 label has the same problem as with others - it is hard to classify. So we need
 a map for Google as well.
@@ -617,6 +682,36 @@ Note that your sync field customizations for all the databases should be
 consistent, otherwise there would be information loss as you sync your
 contacts around.
 @end enumerate
+
+@section Authentication using ~/.netrc
+For Google and CardDAV you are required to provide a username and password to
+perform most operations. These credentials can be specified in a number of
+ways including command line flags, or through the STDIN on being prompted for
+them. There is yet another way to set this up that will reduce your typing and
+will consolidate all your asynk related authentication information in the same
+place. That is by using the ~/.netrc file. 
+
+Let's say you have a ASynK profile named @kbd{testbbcc} connects your BBDB
+file to a Google Contacts account. You can specify the auth credentials for
+this profile by inserting the following lines in youru ~/.netrc.
+
+@verbatim
+machine gc_testbbgc
+  login <<< username >>>
+  password <<< password >>>
+@end verbatim
+
+Here the @kbd{gc_} prefix to the profile name specifies clearly that this is a
+Google account. Replace the @kbd{<<< >>>} with your actual values.
+
+Similarly for a CardDAV account credentials the @kbd{gc_} prefix will become
+@kbd{cd_}. Like so:
+
+@verbatim
+machine cd_testbbcd
+  login <<< username >>>
+  password <<< password >>>
+@end verbatim
 
 @node Recipes, Internals, Customization, Top
 @chapter Recipes
