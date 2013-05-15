@@ -347,7 +347,44 @@ class MessageStore:
             for name, f in self.get_folders().iteritems():
                 f.write_to_file(bbf)
 
-        bbf.close()
+    def prep_for_sync (self, pname):
+        self.create_backup(pname)
+
+    def create_backup (self, pname):
+        """Make a backup of the BBDB store into the backup directory"""
+
+        conf = self.get_config()
+        bdir = os.path.join(conf.get_user_dir(), conf.get_backup_dir())
+
+        stamp = string.replace(str(datetime.datetime.now()), ' ', '.')
+        stamp = string.replace(stamp, ':', '-')
+        backup_name = os.path.join(bdir, 'bbdb_backup.' + pname + '.' + stamp)
+
+        src = self.get_name()
+
+        logging.info('Backedup BBDB Store (%s) to file: %s', src, backup_name)
+        shutil.copy2(src, backup_name)
+        
+        self.set_last_backup_name(backup_name)
+
+    def restore_backup (self):
+        """This method is invoked if something went wrong and the current sync
+        operation needs to be unwound. In such a case we will restore the
+        datastore to the backup made at the beginning of the current sync."""
+
+        backup = self.get_last_backup_name()
+        store  = self.get_name()
+        logging.info('Restoring BBDB Store (%s) from backup... (%s)',
+                     store, backup)
+        shutil.copy2(backup, store)
+        logging.info('Restoring BBDB Store (%s) from backup...done (%s)',
+                     store, backup)
+
+    def get_last_backup_name (self):
+        return self._last_backup
+
+    def set_last_backup_name (self, backup):
+        self._last_backup = backup
 
 class BBPIMDB(PIMDB):
     """Wrapper class over the BBDB, by implementing the PIMDB abstract
@@ -370,6 +407,7 @@ class BBPIMDB(PIMDB):
         def_ms = self.add_msgstore(def_fn)
         self.set_def_msgstore(def_ms)
         self.set_folders()
+        self.set_def_folders()
 
     ##
     ## First implementation of the abstract methods of PIMDB.
@@ -528,9 +566,7 @@ class BBPIMDB(PIMDB):
             logging.info('BBDB database not backed up for dry run')
             return
 
-        ## Make a backup of the BBDB store into the backup directory
         conf = self.get_config()
-        db1  = conf.get_profile_db1(pname)
         bdir = os.path.join(conf.get_user_dir(), conf.get_backup_dir())
 
         if not os.path.exists(bdir):
@@ -544,20 +580,9 @@ class BBPIMDB(PIMDB):
         logging.info('Deleting BBDB backup files older than %d days, '
                      'if any...done', period)    
 
-        stamp = string.replace(str(datetime.datetime.now()), ' ', '.')
-        stamp = string.replace(stamp, ':', '-')
-        backup_name = os.path.join(bdir, 'bbdb_backup.' + pname + '.' + stamp)
+        for store in self.get_msgstores().values():
+            store.prep_for_sync(pname)
 
-        if db1 == dbid:
-            src = conf.get_stid2(pname)
-        else:
-            src = conf.get_stid1(pname)
-
-        src = utils.abs_pathname(conf, src)
-
-        logging.info('Backedup BBDB Store (%s) to file: %s', src, backup_name)
-        shutil.copy2(src, backup_name)
-      
     ##
     ## Now the non-abstract methods and internal methods
     ##

@@ -146,7 +146,7 @@ def create_gc_contact (asynk, uinps):
     # FIXME: We should do a more exhaustive sort of contact, with multiple
     # entries of each type of possible entry and so on...
 
-    return gcf.new_item(con)
+    return con.save()
 
 class TestGCBBSyncFunctions(unittest.TestCase):
     def setUp (self):

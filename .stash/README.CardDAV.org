@@ -1,0 +1,297 @@
+This file is a README for the 'carddav' branch - an experimental branch for a
+new datastore backend for CardDAV servers. The idea is with this one can sync
+BBDB and MS Outlook contacts to a CardDAV server.
+
+* Installation & Usage Notes for CardDAV
+
+  Keep in mind this is an experimental feature. Unlike Google Contacts,
+  CardDAV servers do not generally support a roll back feature. This means any
+  ASynK bugs could potentially lead to loss of information for you. So please
+  take your own precautions before you deploy this on your live data.
+
+** Steps
+
+   $ ./asynk.py --op=create-profile --name testbbcd --user-dir=~/.asynk.carddav --db bb cd --folder default default --store <opath-to-bbdb-file> 'https:localhost:8443'
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.carddav --name testbbcd --dry-run
+
+   Ensure you are able to login to your account properly.
+
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.carddav --name testbbcd
+
+** Notes
+
+   1. Create a test set up for your evaluation. This should include a test
+      list of your contacts in a separate BBDB datastore, and a test carddav
+      server account. I also strongly encourage you use the --user-dir option
+      while invoking asynk, so that your 'production' state.json is not messed
+      with.
+
+   2. The config.json format has changed a bit to accomodate the
+      requirements. So you should copy the config.json from the asynk source
+      directory manually to your asynk user dir. This step will be automated
+      at a later time before official release.
+
+   3. You will be prompted for your carddav server login and password from
+      STDIN. You can avoid having to type this repeatedly by piping your
+      password to asynk or having the following entry in your ~/.netrc
+
+      machine cd_testbbcd
+      login <<login>>
+      password <<password>>
+
+      Note that the 'testbbcd' is the name of the test profile you created.
+
+   4. If you want to sync to a specific folder on the server you can do that
+      at the time of profile creation, like in this example: 
+
+      $ ./asynk.py --op=create-profile --name testbbcd --user-dir=~/.asynk.carddav --db bb cd --folder default '/addressbooks/__uids__/skarrag/addressbook' --store <opath-to-bbdb-file> 'localhost:8008'
+
+   5. The following fields are synched to/from the carddav contacts:
+
+      - First name
+      - Last name
+      - Middle name
+      - Formatted name
+      - Suffix, Prefix
+      - Gender
+      - Email addresses
+      - Phone numbers
+      - Title
+      - Department
+      - Company name
+      - Notes
+
+      More will be supported over time.
+
+* TODOs
+
+** Post initial announcement
+
+    - (Optional) Table of supported fields and interop matrix
+   - Test against different servers and maintain supported status
+   - Recognize server return format and assert vCard 3.0
+   - Support additional vCard property tag extensions in common use. 
+
+*** Tag support
+ 
+    - IM
+    - WWW
+    - Postal Addresses
+    - Custom fields
+
+* Developer's Log
+
+** Thu Apr 18 18:16:40 IST 2013
+
+   All sync related stuff is now sorted. All changes on both client and server
+   get picked up and "the needful" is done! Hurrah.
+
+   The next big item to crack is to do a thorough map of the fields and vCard
+   attributes. This is particularly important given the terrible situation
+   with respect to interop and lack of standardization.
+
+   In the spirit of "be flexible in what you accept, be conservative in what
+   you put out"... as applicable to our situation, I think the best approach
+   is to identify the most popular extended attributes for various situations,
+   and to (a) look for them to input data and (b) to write redundant
+   attribtues for different clients so the generated vCard files will be
+   readable by multiple clients.
+
+** Tue Apr 16 18:40:45 IST 2013
+
+   Lots of progress. Now the batch_create and batch_update methods are
+   implemented. So a BBDB, say, contacts that are not synched, or are synched
+   and updated, are properly identified and synched to server - full etag
+   support and all that good stuff.
+
+   CardDAV server side dedits are not getting properly recognized. This and
+   other stuff needs to be figured out next. Exciting.
+
+** Mon Apr 15 18:22:28 IST 2013
+
+   Some pretty nice progress. Now we can create a new profile containing a
+   'cd' store, and do a sync dry run. The status are properly fetched and
+   displayed.
+
+** Wed Apr 10 07:22:11 IST 2013
+
+   Got the multiget request to work. Now on to figuring out the rest of the stuff.
+
+** Sat Apr 06 22:36:39 IST 2013
+
+   Started to explore how to start querying the server, etc. Turns out we have
+   a few major problems:
+   
+   a) webdav/carddav do not have a concept of multiput. So when we are putting
+      updates to the server, we have to do one URI at a time. How lame!
+
+   b) The apple tool and client library we have does not really implement the
+      carddav multiget and other options. We have some way to go to figure out
+      how to implement some of those things first before using them in our
+      code.
+
+** Fri Apr 05 15:53:17 IST 2013
+
+   Learnt that UID is required; the URI has nothing to do with the UID (or any
+   other field for that matter). Just needs to be unique. The RFC talks about
+   this topic.
+
+   Implemented email address support; and spent a lot of time understaning how
+   params are encoded by vobject etc.
+
+   Also learnt that the overall field mapping interop situation is a
+   mess. vCard 3.0 is the most widely implemented system; and yet there are so
+   many basic fields that are not defined. Respect for MS has gone up another
+   notch after I found their [MS-OXVCARD.pdf] specification laying out in
+   details the field mappings from outlook contact from/to vCard.
+
+   The mapping strategy is to see what Google Contact, Apple Addressbook, and
+   MS Outlook mapings look like and support them as applicable. Reading is
+   fine, but writing may be a challenge.
+
+** Thu Apr 04 19:21:33 IST 2013
+
+   Able to (a) fetch a vcf file from server (b) parse and extract a few fields
+   (like name, suffix etc.) from it, and (c) construct a contact object
+
+   Also able to construct a simple CDContact objet, and then push it to the
+   sever.
+
+   That is some pretty good progress... but many things about UID management
+   are not clear. For sake of convenience added a get_uid/set_uid pair for
+   contact_cd.py, but this is not the right way to go. Need to understand how
+   the vCard UID field is used And also figure out how it is to be used in
+   synching.
+
+** Thu Apr 04 13:27:53 IST 2013
+
+   Able to read server side addressbook folders, fetch their contents, and
+   construct the pimdb/folder/contact objects. Next step is to be able to
+   parse the vCard files and construct Contacts objects from fetched contents.
+
+** Tue Apr 02 19:39:42 IST 2013
+
+   Discovered Apple's pretty decent caldavclientlibrary, which has
+   webdav/caldav/carddav wrappers. It's going to make it easier to deal with
+   the server, and we will at least work with Apple's Calendar server. Hooked
+   up this guy with a simple test script and pimdb_cd.py is on its way! Humble
+   beginning.
+
+* Timelog
+
+** Summary
+
+#+BEGIN: clocktable :maxlevel 3 :scope file
+Clock summary at [2013-05-15 Wed 08:19]
+
+| L | Headline       | Time    |       |      |
+|---+----------------+---------+-------+------|
+|   | *Total time*   | *39:49* |       |      |
+|---+----------------+---------+-------+------|
+| 1 | Timelog        | 39:49   |       |      |
+| 2 | May            |         |  2:04 |      |
+| 3 | May 15, 2013   |         |       | 1:15 |
+| 3 | May 14, 2013   |         |       | 0:49 |
+| 2 | April          |         | 37:45 |      |
+| 3 | April 21, 2013 |         |       | 1:09 |
+| 3 | April 20, 2013 |         |       | 0:22 |
+| 3 | April 19, 2013 |         |       | 2:56 |
+| 3 | April 18, 2013 |         |       | 1:40 |
+| 3 | April 16, 2013 |         |       | 5:15 |
+| 3 | April 15, 2013 |         |       | 3:09 |
+| 3 | April 13, 2013 |         |       | 1:00 |
+| 3 | April 10, 2013 |         |       | 1:13 |
+| 3 | April 09, 2013 |         |       | 0:29 |
+| 3 | April 08, 2013 |         |       | 1:52 |
+| 3 | April 07, 2013 |         |       | 0:09 |
+| 3 | April 06, 2013 |         |       | 1:32 |
+| 3 | April 05, 2013 |         |       | 3:40 |
+| 3 | April 04, 2013 |         |       | 5:51 |
+| 3 | April 03, 2013 |         |       | 4:03 |
+| 3 | April 02, 2013 |         |       | 3:25 |
+#+END:
+
+
+** May
+
+*** May 15, 2013
+    CLOCK: [2013-05-15 Wed 05:59]--[2013-05-15 Wed 07:14] =>  1:15
+
+*** May 14, 2013
+    CLOCK: [2013-05-14 Tue 17:16]--[2013-05-14 Tue 18:05] =>  0:49
+
+** April
+
+*** April 21, 2013
+    CLOCK: [2013-04-21 Sun 20:57]--[2013-04-21 Sun 21:18] =>  0:21
+    CLOCK: [2013-04-21 Sun 06:30]--[2013-04-21 Sun 07:18] =>  0:48
+
+*** April 20, 2013
+    CLOCK: [2013-04-20 Sat 06:03]--[2013-04-20 Sat 06:25] =>  0:22
+
+*** April 19, 2013
+    CLOCK: [2013-04-19 Fri 17:15]--[2013-04-19 Fri 18:43] =>  1:28
+    CLOCK: [2013-04-19 Fri 14:34]--[2013-04-19 Fri 15:44] =>  1:10
+    CLOCK: [2013-04-19 Fri 11:04]--[2013-04-19 Fri 11:22] =>  0:18
+
+*** April 18, 2013
+    CLOCK: [2013-04-18 Thu 16:36]--[2013-04-18 Thu 18:16] =>  1:40
+
+*** April 16, 2013
+    CLOCK: [2013-04-16 Tue 15:04]--[2013-04-16 Tue 18:40] =>  3:36
+    CLOCK: [2013-04-16 Tue 11:19]--[2013-04-16 Tue 11:38] =>  0:19
+    CLOCK: [2013-04-16 Tue 09:27]--[2013-04-16 Tue 09:38] =>  0:11
+    CLOCK: [2013-04-16 Tue 06:38]--[2013-04-16 Tue 07:47] =>  1:09
+
+*** April 15, 2013
+    CLOCK: [2013-04-15 Mon 16:00]--[2013-04-15 Mon 18:23] =>  2:23
+    CLOCK: [2013-04-15 Mon 06:55]--[2013-04-15 Mon 07:41] =>  0:46
+
+*** April 13, 2013
+    CLOCK: [2013-04-13 Sat 10:51]--[2013-04-13 Sat 11:51] =>  1:00
+
+*** April 10, 2013
+    CLOCK: [2013-04-10 Wed 14:04]--[2013-04-10 Wed 15:17] =>  1:13
+
+*** April 09, 2013
+    CLOCK: [2013-04-09 Tue 17:09]--[2013-04-09 Tue 17:38] =>  0:29
+
+*** April 08, 2013
+   CLOCK: [2013-04-08 Mon 11:25]--[2013-04-08 Mon 11:59] =>  0:34
+   CLOCK: [2013-04-08 Mon 09:55]--[2013-04-08 Mon 11:13] =>  1:18
+
+*** April 07, 2013
+    CLOCK: [2013-04-07 Sun 07:39]--[2013-04-07 Sun 07:48] =>  0:09
+
+*** April 06, 2013
+    CLOCK: [2013-04-06 Sat 21:34]--[2013-04-06 Sat 22:38] =>  1:04
+    CLOCK: [2013-04-06 Sat 19:06]--[2013-04-06 Sat 19:27] =>  0:21
+    CLOCK: [2013-04-06 Sat 18:10]--[2013-04-06 Sat 18:17] =>  0:07
+
+*** April 05, 2013
+    CLOCK: [2013-04-06 Sat 06:08]--[2013-04-06 Sat 06:29] =>  0:21
+    CLOCK: [2013-04-05 Fri 21:35]--[2013-04-05 Fri 21:36] =>  0:01
+    CLOCK: [2013-04-05 Fri 13:21]--[2013-04-05 Fri 15:50] =>  2:29
+    CLOCK: [2013-04-05 Fri 12:45]--[2013-04-05 Fri 13:18] =>  0:33
+    CLOCK: [2013-04-05 Fri 10:09]--[2013-04-05 Fri 10:15] =>  0:06
+    CLOCK: [2013-04-05 Fri 06:48]--[2013-04-05 Fri 06:58] =>  0:10
+
+*** April 04, 2013
+    CLOCK: [2013-04-04 Thu 22:03]--[2013-04-04 Thu 22:35] =>  0:32
+    CLOCK: [2013-04-04 Thu 18:21]--[2013-04-04 Thu 19:20] =>  0:59
+    CLOCK: [2013-04-04 Thu 16:32]--[2013-04-04 Thu 17:01] =>  0:29
+    CLOCK: [2013-04-04 Thu 14:10]--[2013-04-04 Thu 15:43] =>  1:33
+    CLOCK: [2013-04-04 Thu 13:20]--[2013-04-04 Thu 13:25] =>  0:05
+    CLOCK: [2013-04-04 Thu 11:28]--[2013-04-04 Thu 12:47] =>  1:19
+    CLOCK: [2013-04-04 Thu 07:30]--[2013-04-04 Thu 08:24] =>  0:54
+
+*** April 03, 2013
+    CLOCK: [2013-04-03 Wed 18:51]--[2013-04-03 Wed 20:22] =>  1:31
+    CLOCK: [2013-04-03 Wed 16:27]--[2013-04-03 Wed 17:36] =>  1:09
+    CLOCK: [2013-04-03 Wed 05:29]--[2013-04-03 Wed 06:52] =>  1:23
+
+*** April 02, 2013
+    CLOCK: [2013-04-02 Tue 18:41]--[2013-04-02 Tue 19:42] =>  1:01
+    CLOCK: [2013-04-02 Tue 17:47]--[2013-04-02 Tue 18:26] =>  0:39
+    CLOCK: [2013-04-02 Tue 14:26]--[2013-04-02 Tue 15:21] =>  0:55
+    CLOCK: [2013-04-02 Tue 12:58]--[2013-04-02 Tue 13:48] =>  0:50

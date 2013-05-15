@@ -61,6 +61,14 @@ class Sync:
 
         logging.debug('db    : %s', db1)
 
+        if fid1 == 'default':
+            fid1 = db1.get_def_folder().get_itemid()
+            logging.debug('Updated fid1  : %s', fid1)
+
+        if fid2 == 'default':
+            fid2 = db2.get_def_folder().get_itemid()
+            logging.debug('Updated fid2  : %s', fid2)
+
         f1 = db1.find_folder(fid1)[0]
         if f1:
             self.set_f1(f1)

@@ -35,7 +35,7 @@ class BBContactsFolder(Folder):
         self.set_itemid(fn)
         self.set_name(fn)
 
-        self.contacts = {}
+        self.reset_contacts()
 
     def __del__ (self):
         if self.is_dirty():
@@ -163,6 +163,7 @@ class BBContactsFolder(Folder):
         except Exception, e:
             logging.error('bb:bc: Could not save BBDB folder %s (%s)',
                           self.get_name(), str(e))
+            self.get_store().restore_backup()
             logging.debug(traceback.format_exc())
             return False
 
@@ -189,10 +190,13 @@ class BBContactsFolder(Folder):
         except Exception, e:
             logging.error('bb:wst: Could not save BBDB folder %s (%s)',
                           self.get_name(), str(e))
+            self.get_store().restore_backup()
             logging.debug(traceback.format_exc())
             return False
 
     def bulk_clear_sync_flags (self, label_re=None):
+        self.get_store().create_backup(pname='clear_sync')
+
         if not label_re:
             label_re = 'asynk:[a-z][a-z]:id'
 
@@ -214,13 +218,13 @@ class BBContactsFolder(Folder):
         try:
             self.set_dirty()
             self.get_store().save_file()
+            if cnt > 0:
+                logging.info('Saving changes to disk...done')
         except Exception, e:
             logging.error('Caught exception (%s) while saving BBDB folder',
                           str(e))
+            self.get_store().restore_backup()
             ret = False
-
-        if cnt > 0:
-            logging.info('Saving changes to disk...done')
 
         return ret
 
@@ -289,6 +293,9 @@ class BBContactsFolder(Folder):
         if len(itemids) > 0:
             self.save()
         return retv, retf
+
+    def reset_contacts (self):
+        self.contacts = {}
 
     def get_contacts (self):
         return self.contacts
