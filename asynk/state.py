@@ -27,7 +27,7 @@
 ## and we are continuing to use the same handling framework...
 
 import iso8601, demjson
-import logging, os, re, time
+import logging, os, re, shutil, sys, time
 
 sync_dirs = ['SYNC1WAY', 'SYNC2WAY']
 
@@ -35,42 +35,62 @@ class AsynkConfigError(Exception):
     pass
 
 class Config:
-    confi_curr_ver = 3
-
-    def __init__ (self, confn, staten, sync_through=True):
+    def __init__ (self, asynk_base_dir, user_dir, sync_through=True):
         """If sync_through is True, any change to the configuration is
         immediately written back to the original disk file, otherwise
         the user has to explicitly save to disk."""
 
+        self.state = { 'state'  : {},
+                       'config' : {} }
+
+        self.sync_through = sync_through
+        self.set_app_root(asynk_base_dir)
+        self.set_user_dir(user_dir)
+
         confi   = None
         statei  = None
+        self.sync_through   = False
+        self.confi_curr_ver = self._get_latest_config_version()
 
-        self.confn  = os.path.abspath(confn)
-        self.staten = os.path.abspath(staten) 
-        self.sync_through = False
+        self.confpy = os.path.abspath(os.path.join(user_dir, 'config.py'))
+        self.confn  = 'config_v%d.json' % self.confi_curr_ver
+        self.confn  = os.path.abspath(os.path.join(asynk_base_dir,
+                                                   'config', self.confn))
+        self.staten = os.path.abspath(os.path.join(user_dir, 'state.json'))
+
+        self._setup_state_json()
+        self._migrate_config_if_reqd(self.confi_curr_ver)
 
         try:
-            confi = open(confn, "r")
+            confi = open(self.confn, "r")
         except IOError, e:
-            logging.critical('Error! Could not Open file (%s): %s', confn, e)
+            logging.critical('Error! Could not Open file (%s): %s', self.confn, e)
             raise
 
         try:
-            statei = open(staten, "r")
+            statei = open(self.staten, "r")
         except IOError, e:
-            logging.critical('Error! Could not Open file (%s): %s', staten, e)
+            logging.critical('Error! Could not Open file (%s): %s', self.staten, e)
             raise
 
-        stc = confi.read()
-        sts = statei.read()
+        stc = demjson.decode(confi.read())
+        sts = demjson.decode(statei.read())
+
+        self._customize_config(self.confpy, stc)
 
         # #  A sample profile is given in the initial distribution, that should
         # #  not be written back to the file. Do the needful.
         # if 'sample' in sts['profiles']:
         #     del sts['profiles']['sample']
 
-        self.state = { 'state'  : demjson.decode(sts),
-                       'config' : demjson.decode(stc), }
+        self.state = { 'state'  : sts,
+                       'config' : stc, }
+
+        ## FIXME: A bit grotesque that we have to do this again. But let's go
+        ## with this flow for now.
+
+        self.set_app_root(asynk_base_dir)
+        self.set_user_dir(user_dir)
 
         confi.close()
         statei.close()
@@ -82,12 +102,94 @@ class Config:
                          'to configure. Note that this is optional and your '
                          'ASynK will continue to work as before.')
 
-        self.set_app_root(os.path.abspath(''))
-        self.sync_through = sync_through
-
     ##
     ## Helper routines
     ##
+
+    def _get_latest_config_version (self):
+        ## FIXME: We need to read the root_dir/config/ directory to list all
+        ## the configuration jsons and pick out the latest file version number
+        ## from that list. For now hard coding this stuff as we need to
+        ## implement the migration stuff at priority.
+
+        return 5
+
+    def _setup_state_json (self):
+        user_dir = self.get_user_dir()
+        base_dir = self.get_app_root()
+
+        # If there is no config file, then let's copy something that makes
+        # sense...
+        if not os.path.isfile(os.path.join(user_dir, 'state.json')):
+            # Let's first see if there is anything in the asynk source root
+            # directory - this would be the case with early users of ASynK when
+            # there was no support for a user-level config dir in ~/.asynk/
+            if os.path.isfile(os.path.join(base_dir, 'state.json')):
+                shutil.copy2(os.path.join(base_dir, 'state.json'),
+                             os.path.join(user_dir, 'state.json'))
+                print 'We have copied your state.json to new user directory: ',
+                print user_dir
+                print 'We have not copied any of your logs and backup directories.'
+            else:
+                ## Looks like this is a pretty "clean" run. So just copy the
+                ## state.init file to get things rolling
+                shutil.copy2(os.path.join(base_dir, 'state.init.json'),
+                             os.path.join(user_dir, 'state.json'))
+
+    def _migrate_config_if_reqd (self, curr_ver):
+        user_dir = self.get_user_dir()
+        base_dir = self.get_app_root()
+        confpy_init = os.path.join(base_dir, 'config', 'config.init.py')
+        confpy      = os.path.join(user_dir, 'config.py')
+        confjs      = os.path.join(user_dir, 'config.json')
+        confjs_curr = os.path.join(base_dir, 'config',
+                                   'config_v%d.json' % curr_ver)
+
+        if not os.path.isfile(confpy):
+            shutil.copy2(confpy_init, confpy)
+
+        if os.path.isfile(confjs):
+            user_config = open(confjs, 'r').read()
+
+            user_ver = demjson.decode(user_config)['file_version']
+            confjs_curr1 = os.path.join(base_dir, 'config',
+                                        'config_v%d.json' % user_ver)
+            std_config  = open(confjs_curr1, 'r').read()
+
+            if user_config != std_config:
+                print
+                print '*** NOTE: Due to recent changes to the customization system'
+                print '***       your config needs to be'
+                print '***       migrated. However as you have modified your'
+                print '***       configuration, auto migration is not possible'
+                print '***       and we need your manual intervention.'
+                print
+                print '***       You need to do the following steps:'
+                print
+                print '***       1) delete your customization json'
+                print '***       2) port your changes to the new config.py file'
+                print '***          that has been copied to you asynk config dir.'
+                print
+                print '*** You can view the comments in config.py for ideas.'
+                print '*** ASynK will now exit without doing anything more.'
+                print
+
+                sys.exit(0)
+            else:
+                os.remove(confjs)
+                print '*** NOTE: Custom config auto migrated from v%d' % user_ver
+
+    def _customize_config (self, confpy, config):
+        user_dir = self.get_user_dir()
+        sys.path += [user_dir]
+        confpy_m = None
+        try:
+            confpy_m = __import__('config')
+        except Exception, e:
+            print 'Error importing config from %s: %s' % (user_dir, e)
+            return
+
+        confpy_m.customize_config(config)
 
     ## Not dependent on sync state between a pair of PIMDs
 

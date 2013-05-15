@@ -27,16 +27,38 @@ sys.path = EXTRA_PATHS + sys.path
 
 from   state import Config, AsynkConfigError
 
-conf_fn    = '../../config.json'
-state_src  = '../../state.init.json'
-state_dest = './state.test.json'
+user_dir   = os.path.abspath('user_dir')
+state_src  = os.path.join('..', '..', 'state.init.json')
+state_dest = os.path.join(user_dir, 'state.json')
 
-shutil.copyfile(state_src, state_dest)
-config = Config(confn=conf_fn, staten=state_dest)
+confnv4_src = os.path.join('..', '..', 'config', 'config_v4.json')
+confnv5_src = os.path.join('..', '..', 'config', 'config_v5.json')
+confn_dest  = os.path.join(user_dir, 'config.json')
+confnv4_src_dirty = os.path.join('.', 'config_v4.dirty.json')
 
-def main (argv=None):
+config = None
+
+def run (conf_src):
+    if os.path.exists(user_dir):
+        logging.debug('Clearing user directory: %s', user_dir)
+        shutil.rmtree(user_dir)
+    else:
+        logging.debug('Creating user directory: %s', user_dir)
+
+    os.makedirs(user_dir)
+
+    shutil.copyfile(state_src, state_dest)
+    shutil.copyfile(conf_src, confn_dest)
+
+    global config
+    config = Config(asynk_base_dir='../../', user_dir=user_dir)
+
     suite = unittest.TestLoader().loadTestsFromTestCase(TestStateFunctions)
     unittest.TextTestRunner(verbosity=2).run(suite)
+
+def main ():
+    run(conf_src=confnv4_src)
+    run(conf_src=confnv4_src_dirty)
 
 class TestStateFunctions(unittest.TestCase):
 
@@ -54,7 +76,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_get_conf_file_version (self):
         val = self.config.get_conf_file_version()
-        self.assertTrue(val == 4)
+        self.assertEqual(val, 5)
 
     def test_read_label_prefix (self):
         val = self.config.get_label_prefix()
@@ -96,6 +118,10 @@ class TestStateFunctions(unittest.TestCase):
     def test_read_ol_gid_base (self):
         val = self.config.get_ol_gid_base('gc')
         self.assertTrue(val == 0x9001)
+
+    def test_read_backup_hold_period (self):
+        val = self.config.get_backup_hold_period()
+        self.assertEqual(val, 10)
 
     ##
     ## Now onto the state.json accessors
