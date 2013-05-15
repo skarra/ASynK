@@ -143,6 +143,18 @@ bugs could potentially lead to loss of information for you. So please take
 your own precautions before you deploy this on your live data. The user of the
 @kbd{--user-dir=} option is also high encouraged.
 
+In other words, the following flow is recommended while you give carddav
+support a try:
+
+@verbatim
+   $ ./asynk.py --op=create-profile --name testbbcd --user-dir=~/.asynk.carddav --db bb cd --folder default default --store <opath-to-bbdb-file> 'https:localhost:8443'
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.carddav --name testbbcd --dry-run
+
+   # Ensure you are able to login to your account properly.
+
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.carddav --name testbbcd
+@end verbatim
+
 At the moment the follwing fields are synched in both ways. All other fields
 will be lost in transit. More may be supported over time.
 
@@ -183,6 +195,19 @@ Company name
 @item
 Notes
 
+@end enumerate
+
+Specifically, the following are not synched:
+
+@enumerate
+@item
+IM
+@item
+WWW
+@item
+Postal Addresses
+@item
+Custom fields
 @end enumerate
 
 @subsection BBDB Specific Notes
