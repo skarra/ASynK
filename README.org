@@ -1,6 +1,5 @@
 Created : Wed Aug 24 22:41:42 IST 2011
 
-
 This is only a short introduction and some key points of interest. For more
 details on how to use ASynK please refer to the included documentation, or the
 official website for ASynK is at: http://karra-asynk.appspot.com You will find
@@ -13,8 +12,8 @@ that website.
   written in Python. ASynK was earlier known as Gout. High level features
   include:
 
-  - ASynK allows two-way sync of Contacts across any two support sources -
-    Google Contacts, Microsoft Outlook, and Emacs BBDB.
+  - ASynK allows two-way sync of Contacts across any two supported sources -
+    Google Contacts, Microsoft Outlook, any CardDAV server and Emacs BBDB.
   
   - ASynK is the only two-way synchronization option for BBDB known to be in
     existence today. So if you are keen to keep your BBDB content synchronized
