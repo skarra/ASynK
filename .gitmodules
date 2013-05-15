@@ -1,0 +1,6 @@
+[submodule "lib/vobject"]
+	path = lib/vobject
+	url = git@github.com:skarra/vobject.git
+[submodule "lib/.CalDAVClientLibrary"]
+	path = lib/.CalDAVClientLibrary
+	url = git@github.com:skarra/CalDAVClientLibrary.git

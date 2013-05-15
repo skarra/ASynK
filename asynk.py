@@ -19,7 +19,7 @@
 ## not, see <http://www.gnu.org/licenses/>.
 
 import argparse, datetime, logging, os, platform
-import netrc, re, shutil, string, sys, traceback
+import netrc, re, string, sys, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -44,11 +44,9 @@ from   gdata.client     import BadAuthentication
 from   folder           import Folder
 from   pimdb_gc         import GCPIMDB
 from   pimdb_bb         import BBPIMDB
+from   pimdb_cd         import CDPIMDB
 from   folder_bb        import BBContactsFolder
 import utils
-
-## Some Global Variables to get started
-asynk_ver = 'v0.4.1+'
 
 class AsynkParserError(Exception):
     pass
@@ -64,38 +62,12 @@ def main (argv=sys.argv):
     uinps = parser.parse_args()
 
     # Make the user directory if it does not exist
+    uinps.user_dir = os.path.abspath(os.path.expanduser(uinps.user_dir))
     if not os.path.exists(uinps.user_dir):
         print 'Creating ASynK User directory at: ', uinps.user_dir
         os.makedirs(uinps.user_dir)
 
-    # If there is no config file, then let's copy something that makes
-    # sense...
-    if not os.path.isfile(os.path.join(uinps.user_dir, 'state.json')):
-        # Let's first see if there is anything in the asynk source root
-        # directory - this would be the case with early users of ASynK when
-        # there was no support for a user-level config dir in ~/.asynk/
-        if os.path.isfile(os.path.join(ASYNK_BASE_DIR, 'state.json')):
-            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'state.json'),
-                         os.path.join(uinps.user_dir, 'state.json'))
-            print 'We have copied your state.json to new user directory: ',
-            print uinps.user_dir
-            print 'We have not copied any of your logs and backup directories.'
-        else:
-            ## Looks like this is a pretty "clean" run. So just copy the
-            ## state.init file to get things rolling
-            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'state.init.json'),
-                         os.path.join(uinps.user_dir, 'state.json'))            
-
-    # Now copy the config.json file as well.
-    if not os.path.isfile(os.path.join(uinps.user_dir, 'config.json')):
-            shutil.copy2(os.path.join(ASYNK_BASE_DIR, 'config.json'),
-                         os.path.join(uinps.user_dir, 'config.json'))
-
-    state_filen = os.path.join(uinps.user_dir, 'state.json')
-    conf_filen  = os.path.join(uinps.user_dir, 'config.json')
-
-    config =  Config(conf_filen, state_filen)
-    config.set_user_dir(uinps.user_dir)
+    config =  Config(ASYNK_BASE_DIR, uinps.user_dir)
 
     setup_logging(config)
     logging.debug('Command line: "%s"', ' '.join(sys.argv))
@@ -191,7 +163,7 @@ def setup_parser ():
                    default=os.path.expanduser('~/.asynk'),
                    help=('Directory to store ASynK config files, logs ' +
                          'directory, BBDB backups directory, etc.'))
-    p.add_argument('--db',  action='store', choices=('bb', 'gc', 'ol'),
+    p.add_argument('--db',  action='store', choices=('bb', 'gc', 'ol', 'cd'),
                    nargs='+',
                    help=('DB IDs required for most actions. ' +
                          'Some actions need two DB IDs - do it with two --db ' +
@@ -228,13 +200,24 @@ def setup_parser ():
                    'places. value should be one of the two dbids that are '
                    'already specified.')
 
-    # A Group for BBDB stuff
+    # Google Contacts authentication
     gg = p.add_argument_group('Google Authentication')
     gg.add_argument('--pwd', action='store', 
                    help=('Google password. Relevant only if --db=gc is used. '
                          'If this option is not specified, user is prompted '
                          'password from stdin'))
 
+    # CardDAV server authentication
+    cg = p.add_argument_group('CardDAV Server Authentication')
+    cg.add_argument('--cduser', action='store', 
+                     help=('CardDAV username. Relevant only if --db=cd is used. '
+                         'If this option is not specified, user is prompted '
+                         'for it from stdin'))
+
+    cg.add_argument('--cdpwd', action='store', 
+                     help=('CardDAV password. Relevant only if --db=cd is used. '
+                         'If this option is not specified, user is prompted '
+                         'for it from stdin'))
 
     # gw = p.add_argument_group('Web Parameters')
     # gw.add_argument('--port', action='store', type=int,
@@ -247,7 +230,7 @@ def setup_parser ():
                    'a log file for tracking purposes')
 
     p.add_argument('--version', action='version',
-                   version='%(prog)s ' + ('%s' % asynk_ver))
+                   version='%(prog)s ' + ('%s' % utils.asynk_ver))
 
     return p
 
@@ -295,6 +278,8 @@ class Asynk:
         netrc_user = None
         netrc_pass = None
 
+        ## FIXME: The code block that follows can be refactored and reduced to
+        ## a variant of self._init_cd_user_pw()
         if 'gc' in [self.get_db1(), self.get_db2()]:
             # Use the netrc as a backup in case userid / pwd are not provided
             try:
@@ -327,6 +312,12 @@ class Asynk:
                     if not self.get_gcpw():
                         print 'Password cannot be blank'
 
+        ## FIXME: All of this stuff constrains the use of same type of db for
+        ## source and destination. The more code we put in here the harder it
+        ## will get to support such a scenario.
+        if 'cd' in [self.get_db1(), self.get_db2()]:
+            self._init_cd_user_pw(pname)
+
         db1id = self.get_db1()
         db2id = self.get_db2()
 
@@ -356,6 +347,41 @@ class Asynk:
 
         self.logged_in = True
             
+    def _init_cd_user_pw (self, pname):
+        netrc_user = None
+        netrc_pass = None
+        mach = 'cd_%s' % pname
+
+        # Use the netrc as a backup in case userid / pwd are not provided
+        try:
+            n = netrc.netrc()
+            if mach in n.hosts.keys():
+                netrc_user, netrc_a, netrc_pass = n.authenticators(mach)
+        except IOError, e:
+            logging.debug('~/.netrc not found.')
+
+        if not self.get_cduser():
+            cduser = None
+            if netrc_user:
+                cduser = netrc_user
+            while not cduser:
+                cduser = raw_input('Please enter your username: ')
+
+            self.set_cduser(cduser)
+
+        if self.get_cdpw():
+            logging.debug('Using command line gmail password for logging in')
+
+        while not self.get_cdpw():
+            if netrc_pass and self.get_cduser() == netrc_user:
+                self.set_cdpw(netrc_pass)
+            else:
+                logging.debug('Either netrc did not have credentials for '
+                              ' User (%s) or has different login', cduser)
+                self.set_cdpw(raw_input('Password: '))
+                if not self.get_cdpw():
+                    print 'Password cannot be blank'
+
     def reset_fields (self):
         self.atts = {}
 
@@ -366,6 +392,9 @@ class Asynk:
 
         self.set_db1(None)
         self.set_db2(None)
+
+        self.set_cduser(None)
+        self.set_cdpw(None)
 
         ## More to come here...
 
@@ -544,6 +573,12 @@ class Asynk:
         fid1 = self.get_folder_id(db1)
         fid2 = self.get_folder_id(db2)
 
+        if db1 == 'cd' and fid1[-1] != '/':
+            fid1 += '/'
+
+        if db2 == 'cd' and fid2[-1] != '/':
+            fid2 += '/'
+
         if None in [fid1, fid2]:
             raise AsynkParserError('--create-folder needs two Folders IDs to be '
                                    'specified with --folder-id.')
@@ -570,6 +605,8 @@ class Asynk:
                                       'the two dbids specified earlier.')
 
         sync_dir = self.get_sync_dir()
+        if not sync_dir:
+            sync_dir = "SYNC2WAY"
 
         if 'ol' in [db1, db2]:
             olgid = conf.get_ol_next_gid(db1 if 'ol' == db2 else db2)
@@ -679,7 +716,7 @@ class Asynk:
             # real older sync is sort of called for.
             conf.set_last_sync_start(pname, val=startt_old)
             conf.set_last_sync_stop(pname, val=stopt_old)
-            logging.debug('Rest last sync timestamps to real values')
+            logging.debug('Reset last sync timestamps to real values')
         else:
             try:
                 startt = conf.get_curr_time()
@@ -859,6 +896,18 @@ class Asynk:
     def set_gcpw (self, val):
         return self._set_att('gcpw', val)
 
+    def get_cduser (self):
+        return self._get_att('cduser')
+
+    def set_cduser (self, val):
+        return self._set_att('cduser', val)
+
+    def get_cdpw (self):
+        return self._get_att('cdpw')
+
+    def set_cdpw (self, val):
+        return self._set_att('cdpw', val)
+
     def get_port (self):
         return self._get_att('port')
 
@@ -907,6 +956,15 @@ class Asynk:
 
     def login_ol (self):
         return OLPIMDB(self.get_config())
+
+    def login_cd (self):
+        try:
+            pimcd = CDPIMDB(self.get_config(), self.get_store_id('cd'),
+                            self.get_cduser(), self.get_cdpw())
+        except BadAuthentication:
+            raise AsynkError('Invalid Google credentials. Cannot proceed.')
+
+        return pimcd
 
     def _get_validated_pname (self):
         conf  = self.get_config()

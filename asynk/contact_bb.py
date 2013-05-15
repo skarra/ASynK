@@ -36,12 +36,9 @@ def esc_str (x):
     if not x:
         return x
 
-    x = string.replace(x, "\\", "\\\\")
-    x = string.replace(x, '\r\n', '\\n')
-    x = string.replace(x, '\n', '\\n')
-    x = string.replace(x, '"', r'\"')
-
-    return x
+    x = x.replace('\r\n', '\\n')
+    x = x.replace('\n', '\\n')
+    return x.replace('"', r'\"')
 
 def unesc_str (x):
     """This is the inverse of escape_str. i.e. this undoes any escaping
@@ -51,11 +48,16 @@ def unesc_str (x):
     if not x:
         return x
 
+<<<<<<< HEAD
     x = string.replace(x, r'\"', '"')
     x = string.replace(x, '\\n', '\n')
     x = string.replace(x, "\\\\", "\\")
 
     return x
+=======
+    x = x.replace('\\n', '\n')
+    return x.replace(r'\"', '"')
+>>>>>>> carddav
 
 class BBDBParseError(Exception):
     pass
@@ -118,16 +120,7 @@ class BBContact(Contact):
         if ret:
             return ret
 
-        ret = ''
-        fn = self.get_firstname()
-        if fn:
-            ret += (fn + ' ')
-
-        ln = self.get_lastname()
-        if ln:
-            ret += ln
-
-        return ret
+        return self.get_disp_name()
 
     ##
     ## Now onto the non-abstract methods.
@@ -355,6 +348,7 @@ class BBContact(Contact):
         ph_re = self.get_store().get_ph_re()
         phs   = re.findall(ph_re, pr['phones']) if pr['phones'] else None
 
+        first = True
         if phs:
             for ph in phs:
                 res = re.search(ph_re, '[' + ph[0] + ']')
@@ -369,6 +363,9 @@ class BBContact(Contact):
 
                     label = chompq(resg['phlabel'])
                     self._classify_and_add_phone(label, (label, phnum))
+                    if first:
+                        self.set_phone_prim(phnum)
+                        first = False
                 else:
                     logging.debug('Could not parse phone: %s', ph[0])
 

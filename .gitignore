@@ -22,6 +22,10 @@ state.json
 logs
 backups
 
+# Karra's Password files for development purposes
+cd.pwd
+gc.pwd
+
 # Doc related stuff.
 
 *.html
