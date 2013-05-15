@@ -48,16 +48,8 @@ def unesc_str (x):
     if not x:
         return x
 
-<<<<<<< HEAD
-    x = string.replace(x, r'\"', '"')
-    x = string.replace(x, '\\n', '\n')
-    x = string.replace(x, "\\\\", "\\")
-
-    return x
-=======
     x = x.replace('\\n', '\n')
     return x.replace(r'\"', '"')
->>>>>>> carddav
 
 class BBDBParseError(Exception):
     pass
