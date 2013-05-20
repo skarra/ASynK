@@ -156,10 +156,10 @@ class CDPIMDB(PIMDB):
            res = re.search(r'(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d).*', t)
            if res:
                t = res.group(1)
+               t = datetime.datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
            else:
                t = datetime.datetime.utcnow()
 
-           t = datetime.datetime.strptime(t, '%Y-%m-%d %H:%M:%S')
        else:
            if t.tzinfo:
                t = t - t.tzinfo.utcoffset(t)
