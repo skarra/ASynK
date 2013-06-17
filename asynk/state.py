@@ -36,6 +36,15 @@ class AsynkConfigError(Exception):
 
 class Config:
     def __init__ (self, asynk_base_dir, user_dir, sync_through=True):
+        ## FIXME: The sync_through flag does not really work as expected. The
+        ## intended behaviour was this will provide a default which can be
+        ## overriden in any call. The way each attribute write has been
+        ## implemented, all the methods override this explicitly - basically
+        ## rendering this useless, more or less. The right fix is to set the
+        ## default values for 'sync' in attribute writers to this value and
+        ## allow the callers to override it as required. This 'bug' has no
+        ## user-facing consequences. So get to it some time.
+
         """If sync_through is True, any change to the configuration is
         immediately written back to the original disk file, otherwise
         the user has to explicitly save to disk."""
@@ -43,13 +52,12 @@ class Config:
         self.state = { 'state'  : {},
                        'config' : {} }
 
-        self.sync_through = sync_through
+        self.sync_through = False
         self.set_app_root(asynk_base_dir)
         self.set_user_dir(user_dir)
 
         confi   = None
         statei  = None
-        self.sync_through   = False
         self.confi_curr_ver = self._get_latest_config_version()
 
         self.confpy = os.path.abspath(os.path.join(user_dir, 'config.py'))
@@ -101,6 +109,8 @@ class Config:
                          'your config.json so you get additional variables '
                          'to configure. Note that this is optional and your '
                          'ASynK will continue to work as before.')
+
+        self.sync_through = sync_through
 
     ##
     ## Helper routines
