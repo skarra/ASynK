@@ -26,10 +26,11 @@ from   folder       import Folder
 from   folder_cd    import CDContactsFolder
 from   caldavclientlibrary.protocol.webdav.definitions  import davxml
 from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
+from   caldavclientlibrary.protocol.http.util           import HTTPError
 from   caldavclientlibrary.protocol.url   import URL
 from   caldavclientlibrary.client.account import CalDAVAccount
 
-import datetime, logging, os, re, urllib, urlparse
+import datetime, logging, os, re, sys, urllib, urlparse
 
 class CDPIMDB(PIMDB):
     """A wrapper over a connection to a CardDAV server with methods for common
@@ -247,9 +248,16 @@ class CDPIMDB(PIMDB):
         sf  = self.get_server()
         ssl = sf.startswith('https://')
         server = sf[8:] if ssl else sf[7:]
-        account  = CalDAVAccount(server, ssl=ssl, user=self.get_user(),
-                                 pswd=self.get_pw(), root=self.get_path(),
-                                 principal=None, logging=False)
+        try:
+            account  = CalDAVAccount(server, ssl=ssl, user=self.get_user(),
+                                     pswd=self.get_pw(), root=self.get_path(),
+                                     principal=None, logging=False)
+        except HTTPError, e:
+            server = "Carddav Server (%s)" % sf
+            logging.fatal('Could not open connection to %s. Error: %s',
+                          server, e)
+            sys.exit(-1)
+            
         self.set_account(account)
 
     def get_contacts_folders_roots (self):
