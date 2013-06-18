@@ -358,7 +358,9 @@ class Asynk:
             if mach in n.hosts.keys():
                 netrc_user, netrc_a, netrc_pass = n.authenticators(mach)
         except IOError, e:
-            logging.debug('~/.netrc not found.')
+            logging.info('~/.netrc not found.')
+        except netrc.NetrcParseError, e:
+            logging.warning('Ignoring ~/.netrc as it could not be parsed (%s)', e)
 
         if not self.get_cduser():
             cduser = None
