@@ -70,21 +70,25 @@ class Config:
         self._migrate_config_if_reqd(self.confi_curr_ver)
 
         try:
+            print 'Applying base config from file %s...' % self.confn
             confi = open(self.confn, "r")
+            print 'Applying base config from file %s...done' % self.confn
         except IOError, e:
-            logging.critical('Error! Could not Open file (%s): %s', self.confn, e)
+            print 'Error! Could not Open file (%s): %s' % (self.confn, e)
             raise
 
         try:
             statei = open(self.staten, "r")
         except IOError, e:
-            logging.critical('Error! Could not Open file (%s): %s', self.staten, e)
+            print 'Error! Could not Open file (%s): %s' % (self.staten, e)
             raise
 
         stc = demjson.decode(confi.read())
         sts = demjson.decode(statei.read())
 
+        print 'Applying user customizations from file %s...' % self.confpy
         self._customize_config(self.confpy, stc)
+        print 'Applying user customizations from file %s...done' % self.confpy
 
         # #  A sample profile is given in the initial distribution, that should
         # #  not be written back to the file. Do the needful.
@@ -122,7 +126,7 @@ class Config:
         ## from that list. For now hard coding this stuff as we need to
         ## implement the migration stuff at priority.
 
-        return 5
+        return 6
 
     def _setup_state_json (self):
         user_dir = self.get_user_dir()
@@ -340,6 +344,9 @@ class Config:
 
     def get_ol_cus_pid (self):
         return self.get_db_config('ol')['cus_pid']
+
+    def get_cd_logging (self):
+        return self.get_db_config('cd')['log']
 
     ##
     ## get-set pairs for sync state parameters in state.json
