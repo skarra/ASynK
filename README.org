@@ -46,7 +46,7 @@ that website.
      library called Pywin32 from Mark Hammond
 
    - On Debian (and likely Ubuntu) you will need the following packages:
-        sudo apt-get install python-argparse
+        sudo apt-get install python-argparse python-vobject
         
 ** Building Documentation
 
