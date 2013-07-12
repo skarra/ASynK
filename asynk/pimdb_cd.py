@@ -46,6 +46,7 @@ class CDPIMDB(PIMDB):
         PIMDB.__init__(self, config)
         self.set_user(user)
         self.set_pw(pw)
+        self.set_client_logging(config.get_cd_logging())
         self.parse_uri(uri)
         self.cd_init()
         self.set_folders()
@@ -233,6 +234,13 @@ class CDPIMDB(PIMDB):
 
     def session (self):
         return self.get_account().session
+
+    def set_client_logging (self, val):
+        self.client_logging = val
+
+    def get_client_logging (self):
+        return self.client_logging
+
     ##
     ## Other internal and non-static methods
     ##
@@ -251,11 +259,13 @@ class CDPIMDB(PIMDB):
         try:
             account  = CalDAVAccount(server, ssl=ssl, user=self.get_user(),
                                      pswd=self.get_pw(), root=self.get_path(),
-                                     principal=None, logging=False)
+                                     principal=None,
+                                     logging=self.get_client_logging())
         except HTTPError, e:
             server = "Carddav Server (%s)" % sf
             logging.fatal('Could not open connection to %s. Error: %s',
                           server, e)
+            raise
             sys.exit(-1)
             
         self.set_account(account)
