@@ -27,8 +27,11 @@ import logging, os, os.path, sys, traceback
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
-DIR_PATH    = os.path.abspath(os.path.dirname(os.path.realpath('../Gout')))
-EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
+CUR_DIR           = os.path.abspath('')
+ASYNK_BASE_DIR    = os.path.abspath('..')
+print ASYNK_BASE_DIR
+EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
+               os.path.join(ASYNK_BASE_DIR, 'asynk'),]
 sys.path = EXTRA_PATHS + sys.path
 
 from state         import Config
@@ -44,8 +47,7 @@ def main (argv=None):
     else:
         bbfn = '/Users/sriramkarra/.bbdb.t'
 
-    tests = TestBBContact(config_fn='../config.json',
-                          state_fn='./state.json',
+    tests = TestBBContact(asynk_base_dir=ASYNK_BASE_DIR, user_dir='./',
                           bbfn=bbfn)
     if len(sys.argv) > 2:
         name = sys.argv[2]
@@ -56,10 +58,10 @@ def main (argv=None):
     # tests.write_to_file()
 
 class TestBBContact:
-    def __init__ (self, config_fn, state_fn, bbfn):
+    def __init__ (self, asynk_base_dir, user_dir, bbfn):
         logging.debug('Getting started... Reading Config File...')
 
-        self.config = Config(config_fn, state_fn)
+        self.config = Config(asynk_base_dir, user_dir)
         self.bb     = BBPIMDB(self.config, bbfn)
         ms          = self.bb.get_def_msgstore()
         self.deff   = ms.get_folder(ms.get_def_folder_name())
