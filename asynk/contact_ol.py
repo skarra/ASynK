@@ -392,6 +392,7 @@ class OLContact(Contact):
         self.set_entryid(self.get_itemid())
 
     def _snarf_names_gender_from_olprops (self, olpd):
+        ## FIXME: Are we missing snarfing any 'ASYNK_PR_FILE_AS' paramter?
         self.set_firstname(self._get_olprop(olpd, mt.PR_GIVEN_NAME))
         self.set_middlename(self._get_olprop(olpd, mt.PR_MIDDLE_NAME))
         self.set_lastname(self._get_olprop(olpd, mt.PR_SURNAME))
