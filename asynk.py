@@ -44,7 +44,6 @@ from   gdata.client     import BadAuthentication
 from   folder           import Folder
 from   pimdb_gc         import GCPIMDB
 from   pimdb_bb         import BBPIMDB
-from   pimdb_cd         import CDPIMDB
 from   folder_bb        import BBContactsFolder
 import utils
 
@@ -960,6 +959,11 @@ class Asynk:
         return OLPIMDB(self.get_config())
 
     def login_cd (self):
+        try:
+            from   pimdb_cd         import CDPIMDB
+        except ImportError, e:
+            raise AsynkError("%s: Cannot use any CardDAV accounts" % e)
+
         try:
             pimcd = CDPIMDB(self.get_config(), self.get_store_id('cd'),
                             self.get_cduser(), self.get_cdpw())
