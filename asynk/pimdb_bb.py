@@ -361,6 +361,7 @@ class MessageStore:
         backup_name = os.path.join(bdir, 'bbdb_backup.' + pname + '.' + stamp)
 
         src = self.get_name()
+        src = utils.abs_pathname(self.get_config(), src)
 
         logging.info('Backedup BBDB Store (%s) to file: %s', src, backup_name)
         shutil.copy2(src, backup_name)
