@@ -28,6 +28,7 @@ from   datetime import datetime
 
 from   contact import Contact
 from   win32com.mapi import mapitags as mt
+import asynk_mapitags as amt
 from   win32com.mapi import mapi
 import demjson, iso8601, winerror, win32api, pywintypes
 
@@ -76,6 +77,33 @@ class OLContact(Contact):
 
         self.set_synchable_fields_list()
         self.set_proptags(folder.get_proptags())
+        pvalu = self.get_proptags().valu
+
+        self.addr_map = {
+            'work' : {
+                'street'  : pvalu('ASYNK_PR_WORK_ADDRESS_STREET'),
+                'city'    : pvalu('ASYNK_PR_WORK_ADDRESS_CITY'),
+                'state'   : pvalu('ASYNK_PR_WORK_ADDRESS_STATE_OR_PROVINCE'),
+                'country' : pvalu('ASYNK_PR_WORK_ADDRESS_COUNTRY'),
+                'zip'     : pvalu('ASYNK_PR_WORK_ADDRESS_POSTAL_CODE')
+            },
+
+            'home' : {
+                'street'  : mt.PR_HOME_ADDRESS_STREET_W,
+                'city'    : mt.PR_HOME_ADDRESS_CITY_W,
+                'state'   : mt.PR_HOME_ADDRESS_STATE_OR_PROVINCE_W,
+                'country' : mt.PR_HOME_ADDRESS_COUNTRY_W,
+                'zip'     : mt.PR_HOME_ADDRESS_POSTAL_CODE_W,
+            },
+
+            'other' : {
+                'street'  : mt.PR_OTHER_ADDRESS_STREET_W,
+                'city'    : mt.PR_OTHER_ADDRESS_CITY_W,
+                'state'   : mt.PR_OTHER_ADDRESS_STATE_OR_PROVINCE_W,
+                'country' : mt.PR_OTHER_ADDRESS_COUNTRY_W,
+                'zip'     : mt.PR_OTHER_ADDRESS_POSTAL_CODE_W,
+            },
+        }
 
         self.set_olprops(olprops)
 
@@ -89,22 +117,27 @@ class OLContact(Contact):
     def set_synchable_fields_list (self):
         fields = self.get_db().get_db_config()['sync_fields']
         fields = self._process_sync_fields(fields)
+        ptags  = self.get_folder().get_proptags()
 
-        olcf = self.get_folder()
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_FILE_AS'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_EMAIL_1'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_EMAIL_2'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_EMAIL_3'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_IM_1'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_DUE_DATE'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_STATE'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_RECUR'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_COMPLETE'))
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_TASK_DATE_COMPLETED'))
+        fields.append(ptags.valu('ASYNK_PR_FILE_AS'))
+        fields.append(ptags.valu('ASYNK_PR_EMAIL_1'))
+        fields.append(ptags.valu('ASYNK_PR_EMAIL_2'))
+        fields.append(ptags.valu('ASYNK_PR_EMAIL_3'))
+        fields.append(ptags.valu('ASYNK_PR_IM_1'))
+        fields.append(ptags.valu('ASYNK_PR_WORK_ADDRESS_POST_OFFICE_BOX'))
+        fields.append(ptags.valu('ASYNK_PR_WORK_ADDRESS_STREET'))
+        fields.append(ptags.valu('ASYNK_PR_WORK_ADDRESS_CITY'))
+        fields.append(ptags.valu('ASYNK_PR_WORK_ADDRESS_STATE_OR_PROVINCE'))
+        fields.append(ptags.valu('ASYNK_PR_WORK_ADDRESS_COUNTRY'))
+        fields.append(ptags.valu('ASYNK_PR_WORK_ADDRESS_POSTAL_CODE'))
+        fields.append(ptags.valu('ASYNK_PR_TASK_DUE_DATE'))
+        fields.append(ptags.valu('ASYNK_PR_TASK_STATE'))
+        fields.append(ptags.valu('ASYNK_PR_TASK_RECUR'))
+        fields.append(ptags.valu('ASYNK_PR_TASK_COMPLETE'))
+        fields.append(ptags.valu('ASYNK_PR_TASK_DATE_COMPLETED'))
+        fields.append(ptags.valu('ASYNK_PR_CUSTOM_PROPS'))
 
-        fields.append(olcf.get_proptags().valu('ASYNK_PR_CUSTOM_PROPS'))
         self._append_sync_proptags(fields)
-
         self.set_sync_fields(fields)
 
     def _append_sync_proptags (self, fields):
@@ -481,32 +514,6 @@ class OLContact(Contact):
 
             if lab in addrs:
                 del addrs[lab]
-
-    addr_map = {
-        'work' : {
-            'street'  : mt.PR_STREET_ADDRESS_W,
-            'city'    : mt.PR_LOCALITY_W,
-            'state'   : mt.PR_STATE_OR_PROVINCE_W,
-            'country' : mt.PR_COUNTRY_W,
-            'zip'     : mt.PR_POSTAL_CODE
-            },
-
-        'home' : {
-            'street'  : mt.PR_HOME_ADDRESS_STREET_W,
-            'city'    : mt.PR_HOME_ADDRESS_CITY_W,
-            'state'   : mt.PR_HOME_ADDRESS_STATE_OR_PROVINCE_W,
-            'country' : mt.PR_HOME_ADDRESS_COUNTRY_W,
-            'zip'     : mt.PR_HOME_ADDRESS_POSTAL_CODE_W,
-            },
-
-        'other' : {
-            'street'  : mt.PR_OTHER_ADDRESS_STREET_W,
-            'city'    : mt.PR_OTHER_ADDRESS_CITY_W,
-            'state'   : mt.PR_OTHER_ADDRESS_STATE_OR_PROVINCE_W,
-            'country' : mt.PR_OTHER_ADDRESS_COUNTRY_W,
-            'zip'     : mt.PR_OTHER_ADDRESS_POSTAL_CODE_W,
-            },
-        }
 
     def _snarf_postal_from_olprops (self, olpd):
         ## Recall that only one address will be in the property dictionary,

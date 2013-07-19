@@ -28,6 +28,7 @@ from   win32com.mapi  import mapi, mapiutil
 from   win32com.mapi  import mapitags as mt
 from   contact_ol     import OLContact
 import winerror
+import asynk_mapitags as amt
 
 class OLFolder(Folder):
     """An Outlook folder directly corresponds to a MAPI Folder entity. This
@@ -606,6 +607,19 @@ class PropTags:
 
         self.put(name='ASYNK_PR_IM_1', value=self.get_im_prop_tag(1))
 
+        self.put(name='ASYNK_PR_WORK_ADDRESS_POST_OFFICE_BOX',
+                 value=self.get_work_addr_po_prop_tag())
+        self.put(name='ASYNK_PR_WORK_ADDRESS_STREET',
+                 value=self.get_work_addr_st_prop_tag())
+        self.put(name='ASYNK_PR_WORK_ADDRESS_CITY',
+                 value=self.get_work_addr_ct_prop_tag())
+        self.put(name='ASYNK_PR_WORK_ADDRESS_STATE_OR_PROVINCE',
+                 value=self.get_work_addr_sa_prop_tag())
+        self.put(name='ASYNK_PR_WORK_ADDRESS_COUNTRY',
+                 value=self.get_work_addr_co_prop_tag())
+        self.put(name='ASYNK_PR_WORK_ADDRESS_POSTAL_CODE',
+                 value=self.get_work_addr_pc_prop_tag())
+
         self.put('ASYNK_PR_TASK_DUE_DATE', self.get_task_due_date_tag())
         self.put('ASYNK_PR_TASK_STATE',    self.get_task_state_tag())
         self.put('ASYNK_PR_TASK_RECUR',    self.get_task_recur_tag())
@@ -659,11 +673,21 @@ class PropTags:
         smtp address is present in the system the property tag that will
         help us fetch it is not a constant and will differ from system
         to system, and from PST file to PST file. The tag has to be
-        dynamically generated.
+        dynamically generated. Such properties are called named properties in
+        Outlook.
 
         The routine jumps through the requisite hoops and appends those
         property tags to the supplied fields array. The augmented fields
         array is then returned.
+
+        FIXME: Fri Jul 19 19:28:48 IST 2013: There appears to be a bug in this
+        method. The Named property we seemed to have been using so far is the
+        dispidEmailOriginalDisplayName which is technically not the Email
+        address itself. That is available in another named property called
+        dispidEmailEmailAddress. Our approach below will ensure that any user
+        who has taken the trouble to give his Contacts a display name will be
+        lose that information on a round trip to anywhere with ASynK. Oh,
+        well. 
         """
         if n <= 1:
             try:
@@ -671,7 +695,8 @@ class PropTags:
             except KeyError, e:
                 prop_name = [(self.PSETID_Address_GUID, 0x8084)]
                 prop_type = mt.PT_UNICODE
-                prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+                prop_ids = self.def_cf.GetIDsFromNames(prop_name,
+                                                       mapi.MAPI_CREATE)
                 return (prop_type | prop_ids[0])
 
         prev_tag      = self.get_email_prop_tag(n-1)
@@ -727,6 +752,49 @@ class PropTags:
 
     def get_file_as_prop_tag (self):
         prop_name = [(self.PSETID_Address_GUID, 0x8005)]
+        prop_type = mt.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+
+        return (prop_type | prop_ids[0])
+
+    def get_work_addr_po_prop_tag (self):
+        prop_name = [(self.PSETID_Address_GUID,
+                      amt.dispidWorkAddressPostOfficeBox)]
+        prop_type = mt.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+
+        return (prop_type | prop_ids[0])
+
+    def get_work_addr_st_prop_tag (self):
+        prop_name = [(self.PSETID_Address_GUID, amt.dispidWorkAddressStreet)]
+        prop_type = mt.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+
+        return (prop_type | prop_ids[0])
+
+    def get_work_addr_ct_prop_tag (self):
+        prop_name = [(self.PSETID_Address_GUID, amt.dispidWorkAddressCity)]
+        prop_type = mt.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+
+        return (prop_type | prop_ids[0])
+
+    def get_work_addr_sa_prop_tag (self):
+        prop_name = [(self.PSETID_Address_GUID, amt.dispidWorkAddressState)]
+        prop_type = mt.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+
+        return (prop_type | prop_ids[0])
+
+    def get_work_addr_co_prop_tag (self):
+        prop_name = [(self.PSETID_Address_GUID, amt.dispidWorkAddressCountry)]
+        prop_type = mt.PT_UNICODE
+        prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+
+        return (prop_type | prop_ids[0])
+
+    def get_work_addr_pc_prop_tag (self):
+        prop_name = [(self.PSETID_Address_GUID, amt.dispidWorkAddressPostalCode)]
         prop_type = mt.PT_UNICODE
         prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
 
