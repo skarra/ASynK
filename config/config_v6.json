@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Fri Jun 21 06:29:40 IST 2013
+// Last Modified : Fri Jul 19 17:09:58 IST 2013
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -135,10 +135,20 @@
             // lists out the Property Tags that we are really
             // interested in. Everything else is ignored.
             // 
-            // ** IMPORTANT ** Email addresses and Instant Messaging
-            // ** IDs are automatically synched and do not have to
-            // ** appear here - for reasons too obscure to go into
-            // ** here.
+            // ** IMPORTANT ** For some obscure reasons to do with
+            // ** Outlook concept called 'Named Properties', certain
+            // ** fields don't have constant IDs. So they cannot be
+            // ** listed here. The following "Named Properties" will
+            // ** be automatically added for you by ASynK: 
+	    // 
+	    // **    Email addresses
+	    // **    Instant Messaging IDs
+	    // **    Business Postal Address
+	    //
+	    // If you wish to know more about why Outlook wants to be
+	    // so crazy: see here:
+	    // http://msdn.microsoft.com/en-us/library/office/bb905286.aspx
+
             "sync_fields" : [
                 'PR_ENTRYID',                'PR_DEPARTMENT_NAME',
                 'PR_GIVEN_NAME',             'PR_SURNAME',
