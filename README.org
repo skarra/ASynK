@@ -47,6 +47,9 @@ that website.
 
    - On Debian (and likely Ubuntu) you will need the following packages:
         sudo apt-get install python-argparse
+
+   - The dateutil package available from http://labix.org/python-dateutil or
+     https://pypi.python.org/pypi/python-dateutil
         
 ** Building Documentation
 
