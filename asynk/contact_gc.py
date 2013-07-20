@@ -208,7 +208,8 @@ class GCContact(Contact):
 
             if ce.name.full_name:
                 # The FileAs property is required for Outlook. So we need to
-                # keep this around
+                # keep this around. FIXME: it should really be stored as a
+                # custom property on the outlook side.
                 self.set_fileas(ce.name.full_name.text)
 
             if ce.name.name_prefix:
