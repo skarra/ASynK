@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Fri Jul 19 17:09:58 IST 2013
+// Last Modified : Sat Jul 20 07:43:32 IST 2013
 //
 // Copyright (C) 2011, 2012 Sriram Karra <karra.etc@gmail.com>
 //
@@ -135,11 +135,15 @@
             // lists out the Property Tags that we are really
             // interested in. Everything else is ignored.
             // 
-            // ** IMPORTANT ** For some obscure reasons to do with
-            // ** Outlook concept called 'Named Properties', certain
-            // ** fields don't have constant IDs. So they cannot be
-            // ** listed here. The following "Named Properties" will
-            // ** be automatically added for you by ASynK: 
+            // ** IMPORTANT ** For some obscure (possibly historical)
+            // ** reasons Outlook has three types of properites -
+            // ** Tagged Properties, Named Properties with Numercial
+            // ** Identifiers, and Named Properties with a string
+            // ** name. The list below only includes Tagged
+            // ** propertes. I have not yet figured out a generic way
+            // ** to make Named Properties configurable. However be
+            // ** assured that the following Named Properties are
+            // ** added by default and cannot be changed:
 	    // 
 	    // **    Email addresses
 	    // **    Instant Messaging IDs
@@ -147,6 +151,7 @@
 	    //
 	    // If you wish to know more about why Outlook wants to be
 	    // so crazy: see here:
+	    // http://msdn.microsoft.com/en-us/library/office/cc979184.aspx
 	    // http://msdn.microsoft.com/en-us/library/office/bb905286.aspx
 
             "sync_fields" : [

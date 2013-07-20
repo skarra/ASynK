@@ -679,15 +679,6 @@ class PropTags:
         The routine jumps through the requisite hoops and appends those
         property tags to the supplied fields array. The augmented fields
         array is then returned.
-
-        FIXME: Fri Jul 19 19:28:48 IST 2013: There appears to be a bug in this
-        method. The Named property we seemed to have been using so far is the
-        dispidEmailOriginalDisplayName which is technically not the Email
-        address itself. That is available in another named property called
-        dispidEmailEmailAddress. Our approach below will ensure that any user
-        who has taken the trouble to give his Contacts a display name will be
-        lose that information on a round trip to anywhere with ASynK. Oh,
-        well. 
         """
         if n <= 1:
             try:
@@ -704,6 +695,26 @@ class PropTags:
         prev_tag_type = mt.PROP_TYPE(prev_tag)
 
         return mt.PROP_TAG(prev_tag_type, prev_tag_id+1)
+
+        # FIXME: Fri Jul 19 19:28:48 IST 2013: The Named property we seemed to
+        # have been using so far is the dispidEmailOriginalDisplayName which
+        # is technically not the Email address itself. The email addresses are
+        # set via another named property called dispidEmailEmailAddress. The
+        # following code should really do it. The problem with either approach
+        # is that if the user sets the Display Name in Outlook that will be
+        # lost. That can only be fixed by adding some code to ensure the
+        # display name part of it is saved and restored. Till then, let's just
+        # stick with the above code that seems to be alteast preserve the
+        # email addresses.
+
+        # dispids = [None, amt.dispidEmailEmailAddress,
+        #            amt.dispidEmail2EmailAddress,
+        #            amt.dispidEmail3EmailAddress]
+
+        # prop_name = [(self.PSETID_Address_GUID, dispids[n])]
+        # prop_type = mt.PT_UNICODE
+        # prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)
+        # return (prop_type | prop_ids[0])        
 
     def get_im_prop_tag (self, n):
         """I am no expert at this stuff but I found 4 InstantMessaging
