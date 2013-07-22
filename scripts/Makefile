@@ -56,7 +56,7 @@
 ## target. There is nothing to clean up at this stage.
 ##
 
-src = ../asynk.py
+src = ../asynk/utils.py
 
 default:
 ifeq ($(strip ${REL}),)
@@ -77,7 +77,7 @@ endif
 	@echo
 	@echo ==== Cloning temp repository for ${REL}
 	rm -rf /tmp/asynk-${REL}
-	cd .. && git clone . /tmp/asynk-${REL}
+	cd .. && git clone -r . /tmp/asynk-${REL}
 	rm -rf /tmp/asynk-${REL}/.git
 
 	@echo
