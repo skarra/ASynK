@@ -108,16 +108,24 @@ class CDPIMDB(PIMDB):
     def set_def_folders (self):
         """See the documentation in class PIMDB"""
 
-        ## FIXME: We should be fetching the default folders using:
-        ## {urn:ietf:params:xml:ns:carddav}default-addressbook-URL
-
         root     = self.get_def_root_folder_path()
         props    = (carddavxml.def_adbk_url,)
 
         res, bad = self.session().getProperties(URL(url=root), props)
-        def_uri  = res.values()[0].toString().strip()
-        logging.debug('Looking for default folder: "%s"', def_uri)
-        def_f, t = self.find_folder(def_uri)
+        uris = res.values()
+        if len(uris) > 0:
+            def_uri  = [0].toString().strip()
+            logging.debug('Looking for default folder: "%s"', def_uri)
+            def_f, t = self.find_folder(def_uri)
+        else:
+            ## In some instances the server does not respond properly to the
+            ## def_adbk_url property request. In this case we will just pick
+            ## the first folder. One hopes every addressbook server will have
+            ## at least one server
+            fs = self.get_contacts_folders()
+            assert(len(fs) > 0)
+            def_f = fs[0]
+
         self.set_def_folder(Folder.CONTACT_t, def_f)
    
     def set_sync_folders (self):
@@ -284,7 +292,10 @@ class CDPIMDB(PIMDB):
     def fetch_folders (self):
         """Fetch and return the list of addressbooks from the server."""
         
-        logging.debug('CDPIMDB.set_folders(): Begin')
+        ## FIXME: CalDAVPrincipal:listAddressBooks() appears to do something
+        ## very similar. Perhaps we should use that instead of this.
+
+        logging.debug('CDPIMDB.fetch_folders(): Begin')
 
         sess  = self.session()
         roots = self.get_contacts_folders_roots()
@@ -312,6 +323,6 @@ class CDPIMDB(PIMDB):
                                           name, rurl)
                             ret.append((rurl.strip(), path, name))
 
-        logging.debug('CDPIMDB.set_folders(): Done.')
+        logging.debug('CDPIMDB.fetch_folders(): Done.')
 
         return ret
