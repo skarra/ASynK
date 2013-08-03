@@ -38,12 +38,20 @@ from pimdb_bb      import BBPIMDB
 from folder_bb     import BBContactsFolder
 from contact_bb    import BBContact
 
-conf_fn    = '../../config.json'
-state_src  = '../../state.init.json'
-state_dest = './state.test.json'
+asynk_base_dir = os.path.abspath(os.path.join("..", ".."))
+user_dir   = os.path.abspath('user_dir')
+state_src  = os.path.join('..', '..', 'state.init.json')
+state_dest = os.path.join(user_dir, 'state.json')
 
-shutil.copyfile(state_src, state_dest)
-config = Config(confn=conf_fn, staten=state_dest)
+confnv4_src = os.path.join('..', '..', 'config', 'config_v4.json')
+confnv5_src = os.path.join('..', '..', 'config', 'config_v5.json')
+confnv6_src = os.path.join('..', '..', 'config', 'config_v6.json')
+confn_dest  = os.path.join(user_dir, 'config.json')
+confnv4_src_dirty = os.path.join('.', 'config_v4.dirty.json')
+
+shutil.copyfile(state_src,   state_dest)
+shutil.copyfile(confnv6_src, confn_dest)
+config = Config(asynk_base_dir=asynk_base_dir, user_dir=user_dir)
 
 def usage ():
     print 'Usage: python test_bb.py <bbdb db file>'
