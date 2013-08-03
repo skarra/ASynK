@@ -94,6 +94,16 @@ class CDContact(Contact):
         conf = self.get_config()
         if con:
             try:
+                ## FIXME: The code below works for other DBs quite
+                ## well. However with CardDAV there is a problem when the same
+                ## item is synched to more than one server. This happens
+                ## because the itemid is picked up from the first sync tag,
+                ## and the itemid is also assumed to be the full path of the
+                ## file on the server. For now we will assume that you will
+                ## sync your contacts to a single carddav server... The proper
+                ## solution is to pick out the sync tag corresponding to the
+                ## profile being synched... That is itself a problem because
+                ## this class is not as 'state-less' as it can/should be. WTF.
                 pname_re = conf.get_profile_name_re()
                 label    = conf.make_sync_label(pname_re, self.get_dbid())
                 tag, itemid = con.get_sync_tags(label)[0]              
@@ -329,7 +339,8 @@ class CDContact(Contact):
         if hasattr(vco, l(self.ORG)):
             orgl = getattr(vco, l(self.ORG))
             self.set_company(orgl.value[0])
-            self.set_dept(orgl.value[1])
+            if len(orgl.value) > 1:
+                self.set_dept(orgl.value[1])
 
     def _snarf_dates_from_vco (self, vco):
         if not vco:
