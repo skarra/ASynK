@@ -246,7 +246,7 @@ class MessageStore:
                     ## encoding or not. Tricky and shady business, this.
                     raise ASynKBBDBUnicodeError('')
 
-                if ff == '':
+                if re.search('^\s*$', ff):
                     break
 
                 if re.search('^;', ff):
