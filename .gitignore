@@ -15,6 +15,7 @@
 *.pyo
 *.pst
 *.PST
+*.bak
 .DS_Store
 Thumbs.db
 login.auth
