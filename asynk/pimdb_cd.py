@@ -114,7 +114,7 @@ class CDPIMDB(PIMDB):
         res, bad = self.session().getProperties(URL(url=root), props)
         uris = res.values()
         if len(uris) > 0:
-            def_uri  = [0].toString().strip()
+            def_uri  = uris[0].toString().strip()
             logging.debug('Looking for default folder: "%s"', def_uri)
             def_f, t = self.find_folder(def_uri)
         else:
