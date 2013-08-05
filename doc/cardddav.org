@@ -1,0 +1,40 @@
+This file just contains some snippets of documentation that is useful reference for carddav development.
+
+* WebDAV status codes
+
+  The following is extracted from: http://tools.ietf.org/html/rfc2518#section-8.8.5
+
+8.8.5 Status Codes
+
+   201 (Created) - The source resource was successfully copied.  The
+   copy operation resulted in the creation of a new resource.
+
+   204 (No Content) - The source resource was successfully copied to a
+   pre-existing destination resource.
+
+   403 (Forbidden) _ The source and destination URIs are the same.
+
+
+
+
+Goland, et al.              Standards Track                    [Page 39]
+ 
+RFC 2518                         WEBDAV                    February 1999
+
+
+   409 (Conflict) _ A resource cannot be created at the destination
+   until one or more intermediate collections have been created.
+
+   412 (Precondition Failed) - The server was unable to maintain the
+   liveness of the properties listed in the propertybehavior XML element
+   or the Overwrite header is "F" and the state of the destination
+   resource is non-null.
+
+   423 (Locked) - The destination resource was locked.
+
+   502 (Bad Gateway) - This may occur when the destination is on another
+   server and the destination server refuses to accept the resource.
+
+   507 (Insufficient Storage) - The destination resource does not have
+   sufficient space to record the state of the resource after the
+   execution of this method.
