@@ -40,8 +40,8 @@ class CDPIMDB(PIMDB):
         """If 'uri' dooes not start with a http:// or a https:// it is
         assumed to be equivalent to http:// """
 
-        logging.debug('Logging into CardDAV server: %s - user: %s',
-                      uri, user)
+        logging.info('Logging into CardDAV server: %s - user: %s...',
+                     uri, user)
 
         PIMDB.__init__(self, config)
         self.set_user(user)
@@ -51,6 +51,9 @@ class CDPIMDB(PIMDB):
         self.cd_init()
         self.set_folders()
         self.set_def_folders()
+
+        logging.info('Logging into CardDAV server: %s - user: %s... done.',
+                     uri, user)
 
     ##
     ## First implementation of the abstract methods of PIMDB.
