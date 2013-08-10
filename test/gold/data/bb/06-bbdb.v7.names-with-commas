@@ -1,0 +1,4 @@
+;; -*-coding: utf-8-emacs;-*-
+;;; file-format: 7
+
+["Debajeet, the Great" "Das"  nil nil ("HolidayIQ") (["Work" "+91 80 4115 3595"] ["Mobile" "+91 97381 65128"]) nil ("debajeet@holidayiq.com") ((bbdb-id . "d476c03a-e5c8-11e1-8d79-3c07541b9945") (creation-date . "2012-08-10 09:47:58 +0000") (timestamp . "2012-08-10 09:50:06 +0000") (title . "Manager") (department . "B2B Marketing") (notes . "Does something in HolidayIQ :) Met him when went to their office in July 2012.")  (seen-in . "INBOX") ) nil]

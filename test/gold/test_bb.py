@@ -24,7 +24,7 @@
 ##
 ## Usage is: python test_bb.py <bbdbfile>
 
-import logging, os, shutil, sys, traceback, unittest
+import glob, logging, os, shutil, sys, traceback, unittest
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
@@ -48,23 +48,40 @@ confnv5_src = os.path.join('..', '..', 'config', 'config_v5.json')
 confnv6_src = os.path.join('..', '..', 'config', 'config_v6.json')
 confn_dest  = os.path.join(user_dir, 'config.json')
 confnv4_src_dirty = os.path.join('.', 'config_v4.dirty.json')
-
-shutil.copyfile(state_src,   state_dest)
-shutil.copyfile(confnv6_src, confn_dest)
-config = Config(asynk_base_dir=asynk_base_dir, user_dir=user_dir)
+conf_src = confnv6_src
 
 def usage ():
     print 'Usage: python test_bb.py <bbdb db file>'
 
 def main (argv=None):
-    global bbfn
     print 'Command line: ', sys.argv
 
-    if len(sys.argv) > 1:
-        bbfn = sys.argv[1]
+    if os.path.exists(user_dir):
+        logging.debug('Clearing user directory: %s', user_dir)
+        shutil.rmtree(user_dir)
     else:
-        usage()
-        sys.exit(-1)
+        logging.debug('Creating user directory: %s', user_dir)
+
+    os.makedirs(user_dir)
+
+    shutil.copyfile(state_src, state_dest)
+    shutil.copyfile(conf_src, confn_dest)
+
+    global config
+    config = Config(asynk_base_dir=asynk_base_dir, user_dir=user_dir)
+
+    if len(sys.argv) > 1:
+        run(bbfn=sys.argv[1])        
+    else:
+        print "Running tests against all BBDB files in data/bb/..."
+        patt = os.path.join(asynk_base_dir, "test", "gold", "data",
+                            "bb", "*")
+        for f in glob.glob(patt):
+            run(f)
+
+def run (fn):
+    global bbfn
+    bbfn = fn
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestBBDB)
     unittest.TextTestRunner(verbosity=2).run(suite)
@@ -77,33 +94,37 @@ class TestBBDB(unittest.TestCase):
     def test_parse (self):
         self.bb = BBPIMDB(self.config, bbfn)
 
-def rest ():
-    tests = TestBBContact(config_fn='../config.json',
-                          state_fn='./state.json',
-                          bbfn=bbfn)
-    if len(sys.argv) > 2:
-        name = sys.argv[2]
-    else:
-        name = 'Amma'
-
-    tests.print_contacts(name=name)
-    # tests.write_to_file()
-
-class TestBBContact:
-    def __init__ (self, config_fn, state_fn, bbfn):
-        logging.debug('Getting started... Reading Config File...')
-
-        self.config = Config(config_fn, state_fn)
-        self.bb     = BBPIMDB(self.config, bbfn)
-        ms          = self.bb.get_def_msgstore()
-        self.deff   = ms.get_folder(ms.get_def_folder_name())
-
-    def print_contacts (self, cnt=0, name=None):
-        self.deff.print_contacts(cnt=cnt, name=name)
-
-    def write_to_file (self):
-        self.deff.save()
-
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.INFO)
     main()
+
+## FIXME: Sat Aug 10 10:26:52 IST 2013 There needs to be an entry point to
+## this stuff - which is essentially a way to explore the BBDB contents
+## through the eyes of ASynK.
+
+# def rest ():
+#     tests = TestBBContact(config_fn='../config.json',
+#                           state_fn='./state.json',
+#                           bbfn=bbfn)
+#     if len(sys.argv) > 2:
+#         name = sys.argv[2]
+#     else:
+#         name = 'Amma'
+
+#     tests.print_contacts(name=name)
+#     # tests.write_to_file()
+
+# class TestBBContact:
+#     def __init__ (self, config_fn, state_fn, bbfn):
+#         logging.debug('Getting started... Reading Config File...')
+
+#         self.config = Config(config_fn, state_fn)
+#         self.bb     = BBPIMDB(self.config, bbfn)
+#         ms          = self.bb.get_def_msgstore()
+#         self.deff   = ms.get_folder(ms.get_def_folder_name())
+
+#     def print_contacts (self, cnt=0, name=None):
+#         self.deff.print_contacts(cnt=cnt, name=name)
+
+#     def write_to_file (self):
+#         self.deff.save()
