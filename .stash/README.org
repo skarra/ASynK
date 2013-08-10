@@ -1,0 +1,16 @@
+
+* Log
+
+** Fri Aug 09 18:29:39 IST 2013
+
+   Started work on recovering from parsing errors during making lists... -
+   https://github.com/skarra/ASynK/issues/37
+
+   This has many parts:
+
+   a) While building the lists we need to track a new category of contacts -
+      those that had an error. 
+
+   b) Then treat these errors differently.
+
+   c) Identify there have been errors, and treat them differently.
