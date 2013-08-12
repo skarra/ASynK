@@ -136,6 +136,7 @@ class CDContactsFolder(Folder):
             except HTTPError, e:
                 logging.error('Could not delete itemid: %s (%s)', href, e)
 
+
     def find_item (self, itemid):
         """See the documentation in folder.Folder"""
 
@@ -145,9 +146,13 @@ class CDContactsFolder(Folder):
             return None
 
         data, _ignore_etag = result
-        cd = CDContact(self, vco=vobject.readOne(data), itemid=itemid)
 
-        return cd
+        try:
+            return CDContact(self, vco=vobject.readOne(data), itemid=itemid)
+        except Exception, e:
+            logging.error('Error (%s) parsing vCard object for %s',
+                          e, itemid)
+            raise
 
     def find_items (self, itemids):
         """See the documentation in folder.Folder"""
@@ -161,8 +166,13 @@ class CDContactsFolder(Folder):
             etag = item.getNodeProperties()[davxml.getetag]
             vcf  = item.getNodeProperties()[carddavxml.address_data]
 
-            vco = vobject.readOne(vcf.text)
-            cd = CDContact(self, vco=vco, itemid=key)
+            try:
+                cd = CDContact(self, vco=vobject.readOne(vcf.text), itemid=key)
+            except Exception, e:
+                logging.error('Error (%s) parsing vCard object for %s',
+                              e, key)
+                raise
+
             cd.set_etag(etag.text)
             ret.append(cd)
 
