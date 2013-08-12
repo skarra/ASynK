@@ -968,7 +968,7 @@ class Asynk:
             pimcd = CDPIMDB(self.get_config(), self.get_store_id('cd'),
                             self.get_cduser(), self.get_cdpw())
         except BadAuthentication:
-            raise AsynkError('Invalid Google credentials. Cannot proceed.')
+            raise AsynkError('Invalid CardDAV auth credentials. Cannot proceed.')
 
         return pimcd
 
