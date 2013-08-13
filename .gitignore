@@ -22,8 +22,7 @@ login.auth
 state.json
 logs
 backups
-asynk.py.bak
-asynk/utils.py.bak
+user_dir/
 
 # Karra's Password files for development purposes
 cd.pwd
