@@ -23,6 +23,7 @@ state.json
 logs
 backups
 user_dir/
+bbdb.Non-Existent
 
 # Karra's Password files for development purposes
 cd.pwd

@@ -231,18 +231,26 @@ class MessageStore:
 
         return None
 
+    def _set_default_preamble (self):
+        ver = '7'
+        self.append_preamble(';; -*-coding: utf-8-emacs;-*-\n')
+        self.append_preamble(';;; file-format: %s\n' % ver)
+
+        return ver
+
     def parse_with_encoding (self, def_f, fn, encoding):
         """Folder object to which the parsed contacts will be added. fn is the
         name of the BBDB file/message store. encoding is a string representing
         a text encoding such as utf-8, latin-1, etc."""
 
+        if not os.path.exists(fn):
+            utils.touch(fn)
+
         with codecs.open(fn, encoding=encoding) as bbf:
             ver = self._parse_preamble(fn, bbf)
             if not ver:
                 ## We encountered a blank BBDB file.
-                ver = '7'
-                self.append_preamble(';; -*-coding: utf-8-emacs;-*-\n')
-                self.append_preamble(';;; file-format: %s\n' % ver)
+                ver = self._set_default_preamble()
 
             ## Now fetch and set up the parsing routines specific to the file
             ## format 

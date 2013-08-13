@@ -75,6 +75,12 @@ def asynk_ts_parse (ts):
 
     return iso8601.parse(asynk_ts_to_iso8601(ts))
 
+def touch (fn):
+    """Equivalent of the Unix 'touch' command."""
+
+    with open(fn, 'a'):
+        os.utime(fn, None)
+
 def abs_pathname (config, fname):
     """If fname is an absolute path then it is returned as is. If it starts
     with a ~ then expand the path as per Unix conventions and finally if it

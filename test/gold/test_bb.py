@@ -74,9 +74,13 @@ def main (argv=None):
         run(bbfn=sys.argv[1])        
     else:
         print "Running tests against all BBDB files in data/bb/..."
-        patt = os.path.join(asynk_base_dir, "test", "gold", "data",
-                            "bb", "*")
-        for f in glob.glob(patt):
+        bb_data_dir = os.path.join(asynk_base_dir, "test", "gold", "data",
+                                   "bb")
+        patt =  os.path.join(bb_data_dir, "*")
+        test_inputs = glob.glob(patt)
+        test_inputs.append(os.path.abspath('data/bb/bbdb.Non-Existent'))
+
+        for f in test_inputs:
             run(f)
 
 def run (fn):
