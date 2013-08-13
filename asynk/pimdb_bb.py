@@ -196,30 +196,40 @@ class MessageStore:
         return self.set_preamble(pre)
 
     def _parse_preamble (self, fn, bbf):
-        ff = bbf.readline()
-        if re.search('coding:', ff):
-            # Ignore first line if such: ;; -*-coding: utf-8-emacs;-*-
-            self.append_preamble(ff)
+        while True:
             ff = bbf.readline()
+            if not ff:
+                return None
 
-        # Processing: ;;; file-format: 8
-        res = re.search(';;; file-(format|version):\s*(\d+)', ff)
-        if not res:
-            bbf.close()
-            raise BBDBFileFormatError('Unrecognizable format line: %s' % ff)
+            if re.search('coding:', ff):
+                # Ignore first line if such: ;; -*-coding: utf-8-emacs;-*-
+                self.append_preamble(ff)
+                ff = bbf.readline()
+                next
 
-        self.append_preamble(ff)
-        ver = res.group(2)
-        self.set_file_format(ver)
+            if re.search('^\s*$', ff):
+                next
 
-        supported = self.get_db().supported_file_formats()
-        if not ver in supported:
-            bbf.close()
-            raise BBDBFileFormatError(('Cannot process file "%s" '
-                                       '(version %s). Supported versions '
-                                       'are: %s' % (fn, ver, supported)))
+            # Processing: ;;; file-format: 8
+            res = re.search(';;; file-(format|version):\s*(\d+)', ff)
+            if not res:
+                bbf.close()
+                raise BBDBFileFormatError('Unrecognizable format line: %s' % ff)
+    
+            self.append_preamble(ff)
+            ver = res.group(2)
+            self.set_file_format(ver)
+    
+            supported = self.get_db().supported_file_formats()
+            if not ver in supported:
+                bbf.close()
+                raise BBDBFileFormatError(('Cannot process file "%s" '
+                                           '(version %s). Supported versions '
+                                           'are: %s' % (fn, ver, supported)))
+    
+            return ver
 
-        return ver
+        return None
 
     def parse_with_encoding (self, def_f, fn, encoding):
         """Folder object to which the parsed contacts will be added. fn is the
@@ -228,6 +238,11 @@ class MessageStore:
 
         with codecs.open(fn, encoding=encoding) as bbf:
             ver = self._parse_preamble(fn, bbf)
+            if not ver:
+                ## We encountered a blank BBDB file.
+                ver = '7'
+                self.append_preamble(';; -*-coding: utf-8-emacs;-*-\n')
+                self.append_preamble(';;; file-format: %s\n' % ver)
 
             ## Now fetch and set up the parsing routines specific to the file
             ## format 
