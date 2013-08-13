@@ -95,7 +95,7 @@ class TestBBDB(unittest.TestCase):
         self.bb = BBPIMDB(self.config, bbfn)
 
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger().setLevel(logging.ERROR)
     main()
 
 ## FIXME: Sat Aug 10 10:26:52 IST 2013 There needs to be an entry point to
