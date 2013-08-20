@@ -197,7 +197,7 @@ class MessageStore:
 
     def _parse_preamble (self, fn, bbf):
         while True:
-            ff = bbf.readline()
+            ff = bbf.readline().strip()
             if not ff:
                 return None
 
@@ -214,7 +214,7 @@ class MessageStore:
             res = re.search(';;; file-(format|version):\s*(\d+)', ff)
             if not res:
                 bbf.close()
-                raise BBDBFileFormatError('Unrecognizable format line: %s' % ff)
+                raise BBDBFileFormatError('Unrecognizable format line: "%s"' % ff)
     
             self.append_preamble(ff)
             ver = res.group(2)

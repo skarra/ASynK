@@ -1,0 +1,6 @@
+
+;; -*-coding: utf-8-emacs -*-
+;;; file-format: 7
+;; Test comment. Let's see what happens to this.
+;; Another comment at the end of th file.
+["DoN\"ald" "Duck" nil nil nil nil (["Work" ("Shikari" "Boability") "\"Bangalore\"" "" "" ""]) nil ((bbdb-id . "12d680ee-e782-11e1-b5ff-3c07541b9945") (creation-date . "2012-08-09T02:58:45Z") (timestamp . "2013-03-20 17:04:18 +0000") (notes . "Adding a new note. Just for kicks") (folder . "default") (asynk:testbbgc:gc . "https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/b3e2b500a9290bb") (gids . "[\"http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/6\"]")) nil]
