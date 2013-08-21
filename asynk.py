@@ -243,9 +243,9 @@ class Asynk:
             consoleLogger.setLevel(getattr(logging, level))
 
         self.reset_fields()
+        self.set_config(config)
         self.validate_and_snarf_uinps(uinps)
 
-        self.set_config(config)
         self.logged_in = False
 
     def _login (self, force=False):
@@ -399,6 +399,46 @@ class Asynk:
 
         ## More to come here...
 
+    def _snarf_store_ids (self, uinps):
+        temp = {}
+        if uinps.store:
+            if len(uinps.store) >= 1:
+                temp.update({self.get_db1() : uinps.store[0]})
+
+            if len(uinps.store) >= 2:
+                temp.update({self.get_db2() : uinps.store[1]})
+
+        self.set_store_ids(temp)
+
+    def _snarf_gcauth (self, uinps):
+        self.set_gcuser(uinps.gcuser)
+        self.set_gcpw(uinps.gcpwd)
+
+    def _snarf_pname (self, uinps):
+        if uinps.name:
+            self.set_name(uinps.name)
+
+    def _snarf_folder_ids (self, uinps):
+        if uinps.folder:
+            temp = {}
+            if len(uinps.folder) >= 1:
+                temp.update({self.get_db1() : uinps.folder[0]})
+
+            if len(uinps.folder) >= 2:
+                temp.update({self.get_db2() : uinps.folder[1]})
+
+            self.set_folder_ids(temp)
+        else:
+            self.set_folder_ids(None)
+
+    def _snarf_sync_dir (self, uinps):
+        if uinps.direction:
+            d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYNC2WAY'
+        else:
+            d = None
+
+        self.set_sync_dir(d)
+
     def validate_and_snarf_uinps (self, uinps):
         # Most of the validation is already done by argparse. This is where we
         # will do some additional sanity checking and consistency enforcement,
@@ -430,44 +470,16 @@ class Asynk:
 
         self.set_dry_run(uinps.dry_run)
         self.set_sync_all(uinps.sync_all)
-        self.set_name(uinps.name)
 
-        if uinps.store:
-            temp = {}
-            if len(uinps.store) >= 1:
-                temp.update({self.get_db1() : uinps.store[0]})
+        self._snarf_store_ids(uinps)
+        self._snarf_gcauth(uinps)
+        self._snarf_pname(uinps)
+        self._snarf_folder_ids(uinps)
+        self._snarf_sync_dir(uinps)
 
-            if len(uinps.store) >= 2:
-                temp.update({self.get_db2() : uinps.store[1]})
-
-            self.set_store_ids(temp)
-        else:
-            self.set_store_ids({})
-
-        self.set_name(uinps.name)
-
-        if uinps.folder:
-            temp = {}
-            if len(uinps.folder) >= 1:
-                temp.update({self.get_db1() : uinps.folder[0]})
-
-            if len(uinps.folder) >= 2:
-                temp.update({self.get_db2() : uinps.folder[1]})
-
-            self.set_folder_ids(temp)
-        else:
-            self.set_folder_ids(None)
-
-        if uinps.direction:
-            d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYNC2WAY'
-        else:
-            d = None
-
-        self.set_sync_dir(d)
         self.set_label_re(uinps.label_regex)
         self.set_conflict_resolve(uinps.conflict_resolve)
         self.set_item_id(uinps.item)
-        self.set_gcpw(uinps.pwd)
         # self.set_port(uinps.port)
 
     def dispatch (self):
