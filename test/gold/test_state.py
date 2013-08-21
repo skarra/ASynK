@@ -28,7 +28,7 @@ sys.path = EXTRA_PATHS + sys.path
 from   state import Config, AsynkConfigError
 
 user_dir   = os.path.abspath('user_dir')
-state_src  = os.path.join('..', '..', 'state.init.json')
+state_src  = os.path.join('.', 'state.test.json')
 state_dest = os.path.join(user_dir, 'state.json')
 
 confnv4_src = os.path.join('..', '..', 'config', 'config_v4.json')
@@ -140,6 +140,14 @@ class TestStateFunctions(unittest.TestCase):
         val = self.config.get_state_file_version()
         self.assertTrue(val == 5)
 
+    def test_read_profile_names_cnt (self):
+        ps = self.config.get_profile_names()
+        self.assertEqual(len(ps), 2)
+
+    def test_read_profile_names_vals (self):
+        ps = self.config.get_profile_names()
+        self.assertEqual(True, 'defgcol' in ps and 'defgcbb' in ps)
+
     def test_read_sync_start (self):
         val = self.config.get_last_sync_start('defgcol')
         self.assertTrue(val == "1980-01-01T00:00:00.00+00:00")
@@ -215,6 +223,51 @@ class TestStateFunctions(unittest.TestCase):
         p, i = self.config.parse_sync_label(val)
         self.assertEqual(p, 'goofy0123')
         self.assertEqual(i, 'gc')
+
+    def test_matching_pname_1 (self):
+        ps = self.config.find_matching_pname('gc', None, None,
+                                             'ol', None, None)
+        self.assertEqual(True, not not ps)
+        self.assertEqual(True, len(ps) == 1)
+        self.assertEqual(True, ps[0] == 'defgcol')
+
+    def test_matching_pname_2 (self):
+        ps = self.config.find_matching_pname('gc', None, None,
+                                             'bb', "~/.bbdb", "default")
+        self.assertEqual(True, not not ps)
+        self.assertEqual(True, len(ps) == 1)
+        self.assertEqual(True, ps[0] == 'defgcbb')
+
+    def test_matching_pname_3 (self):
+        ps = self.config.find_matching_pname('gc', None, None,
+                                             'bb', "~/.bbdb", None)
+        self.assertEqual(True, not not ps)
+        self.assertEqual(True, len(ps) == 1)
+        self.assertEqual(True, ps[0] == 'defgcbb')
+
+    def test_matching_pname_4 (self):
+        ps = self.config.find_matching_pname('gc', None, None,
+                                             'bb', None, "default")
+        self.assertEqual(True, not not ps)
+        self.assertEqual(True, len(ps) == 1)
+        self.assertEqual(True, ps[0] == 'defgcbb')
+
+    def test_matching_pname_5 (self):
+        ps = self.config.find_matching_pname('gc', None, None,
+                                             'bb', None, None)
+        self.assertEqual(True, not not ps)
+        self.assertEqual(True, len(ps) == 1)
+        self.assertEqual(True, ps[0] == 'defgcbb')
+
+    def test_get_store_pnames_1 (self):
+        ps = self.config.get_store_pnames('gc')
+        self.assertEqual(True, not not ps)
+        self.assertEqual(True, len(ps) == 2)
+        self.assertEqual(True, 'defgcol' in ps and 'defgcbb' in ps)
+
+    def test_get_store_pnames_2 (self):
+        ps = self.config.get_store_pnames('bb')
+        self.assertEqual(False, not not ps)
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)

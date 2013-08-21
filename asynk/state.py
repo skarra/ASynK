@@ -385,10 +385,16 @@ class Config:
     def add_profile (self, pname, val, sync=True):
         return self._update_prop('state', 'profiles', pname, val, sync)
 
+    def get_profile_names (self):
+        return self.get_profiles().keys()
+
     ##
     ## get-set pairs for application modifiable config/state specific to a
     ## sync profile
     ##
+
+    ## FIXME: In all these get_set methods, profile should be renamed to pname
+    ## to avoid confusion
 
     def get_coll_1 (self, profile):
         return self._get_profile_prop(profile, 'coll_1')
@@ -641,6 +647,48 @@ class Config:
 
     def profile_exists (self, pname):
         return pname in self.get_profiles()
+
+    def find_matching_pname (self, db1, st1, fo1, db2, st2, fo2):
+        """Return the name(s) of any existing profile for the matching tuples
+        of db, store, and folder specified. Returns None if there is nothing
+        matching found. As always the order matters."""
+
+        ret = []
+        pnames = self.get_profile_names()
+        for p in pnames:
+            if (self.get_profile_db1(p) == db1 and
+                self.get_profile_db2(p) == db2 and
+                (not st1 or st1 == self.get_stid1(p)) and
+                (not st2 or st2 == self.get_stid2(p)) and
+                (not fo1 or fo1 == self.get_fid1(p))  and
+                (not fo2 or fo2 == self.get_fid2(p))):
+                ret.append(p)
+
+        return ret if len(ret) > 0 else None
+
+    def get_store_pnames (self, db1, db2=None, store=None):
+        """Find the profile name(s) from db1:db2 where the store field matches
+        'store'.
+
+        The return value is an array of profile names.
+
+        If db2 is None, all stores from db1 with matching store are
+        returned. If store is None all pnames from db1 to db2 are returned. If
+        both db2 and store are None, then all pnames from db1 are returned."""
+
+        ps = self.get_profile_names()
+        ret = []
+        for k in ps:
+            if db1 != self.get_profile_db1(k):
+                continue
+            if db2 and db2 != self.get_profile_db2(k):
+                continue
+            if store and store != self.get_stid1(k):
+                continue
+
+            ret.append(k)
+
+        return ret if len(ret) > 0 else None
 
     def get_db_profiles (self, i):
         """Return all the profiles that have the specified DB ID in one of the
