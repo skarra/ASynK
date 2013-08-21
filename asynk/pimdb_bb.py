@@ -197,18 +197,21 @@ class MessageStore:
 
     def _parse_preamble (self, fn, bbf):
         while True:
-            ff = bbf.readline().strip()
+            ff = bbf.readline()
             if not ff:
                 return None
 
+            ff = ff.strip()
             if re.search('coding:', ff):
                 # Ignore first line if such: ;; -*-coding: utf-8-emacs;-*-
                 self.append_preamble(ff)
-                ff = bbf.readline()
-                next
+                continue
 
             if re.search('^\s*$', ff):
-                next
+                continue
+
+            if re.search('^;+$', ff):
+                continue
 
             # Processing: ;;; file-format: 8
             res = re.search(';;; file-(format|version):\s*(\d+)', ff)
@@ -259,7 +262,7 @@ class MessageStore:
             cnt = 0
             while True:
                 try:
-                    ff = bbf.readline()
+                    ff = bbf.readline().strip()
                 except UnicodeDecodeError, e:
                     ## We got the encoding wrong. We will have to drop
                     ## everything we have done, and start all over again.  At

@@ -24,7 +24,7 @@
 ##
 ## Usage is: python test_bb.py <bbdbfile>
 
-import glob, logging, os, shutil, sys, traceback, unittest
+import glob, logging, os, re, shutil, sys, traceback, unittest
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
@@ -94,9 +94,20 @@ class TestBBDB(unittest.TestCase):
     def setUp (self):
         self.config = config
         self.bbdbfn = bbfn
+        self.bb = BBPIMDB(self.config, bbfn)
 
     def test_parse (self):
         self.bb = BBPIMDB(self.config, bbfn)
+
+    def test_ver (self):
+        ver_check = self.get_ver_from_filename()
+        # print "Ver_check: ", ver_check
+        if ver_check:
+            assert(ver_check == self.bb.get_def_msgstore().get_file_format())
+
+    def get_ver_from_filename (self):
+        v = re.search('\.v(\d+)\.', self.bbdbfn)
+        return v.group(1) if v else None
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.ERROR)
