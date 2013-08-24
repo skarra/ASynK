@@ -654,6 +654,11 @@ class Config:
         matching found. As always the order matters."""
 
         ret = []
+        st1 = None if st1 == "default" else st1
+        st2 = None if st2 == "default" else st2
+        fo1 = None if fo1 == "default" else fo1
+        fo2 = None if fo2 == "default" else fo2
+
         pnames = self.get_profile_names()
         for p in pnames:
             if (self.get_profile_db1(p) == db1 and
