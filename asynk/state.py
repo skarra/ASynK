@@ -418,6 +418,7 @@ class Config:
         return self.get_coll_1(profile)['stid']
 
     def set_stid1 (self, profile, stid, sync=True):
+        stid = None if stid == 'None' else stid
         coll1 = self.get_coll_1(profile)
         coll1.update({'stid' : stid})
         return self.set_coll_1(profile, coll1, sync)
@@ -426,6 +427,7 @@ class Config:
         return self.get_coll_2(profile)['stid']
 
     def set_stid2 (self, profile, stid, sync=True):
+        stid = None if stid == 'None' else stid
         coll2 = self.get_coll_2(profile)
         coll2.update({'stid' : stid})
         return self.set_coll_2(profile, coll2, sync)
@@ -434,6 +436,7 @@ class Config:
         return self.get_coll_1(profile)['foid']
 
     def set_fid1 (self, profile, fid, sync=True):
+        fid = None if fid == 'None' else fid
         coll1 = self.get_coll_1(profile)
         coll1.update({'foid' : fid})
         return self.set_coll_1(profile, coll1, sync)
@@ -442,6 +445,7 @@ class Config:
         return self.get_coll_2(profile)['foid']
 
     def set_fid2 (self, profile, fid, sync=True):
+        fid = None if fid == 'None' else fid
         coll2 = self.get_coll_2(profile)
         coll2.update({'foid' : fid})
         return self.set_coll_2(profile, coll2, sync)
@@ -624,26 +628,35 @@ class Config:
             return None
 
     def list_profiles (self):
-        for key, val in self.get_profiles().iteritems():
-            olgid = val['olgid'] if val['olgid'] else 0
-
+        for key in self.get_profiles().keys():
             logging.info('')
-            logging.info('*** Profile   : %s ***',     key)
-            logging.info('  Collection 1: ')
-            logging.info('    DB ID     : %s', val['coll_1']['dbid'])
-            logging.info('    Store ID  : %s', val['coll_1']['stid'])
-            logging.info('    Folder ID : %s', val['coll_1']['foid'])
+            self.show_profile(key)
 
-            logging.info('  Collection 2: ')
-            logging.info('    DB ID     : %s', val['coll_2']['dbid'])
-            logging.info('    Store ID  : %s', val['coll_2']['stid'])
-            logging.info('    Folder ID : %s', val['coll_2']['foid'])
+    def list_profile_names (self):
+        for key in self.get_profiles().keys():
+            logging.info('%s', key)
 
-            logging.info('  sync_start  : %s', val['last_sync_start'])
-            logging.info('  sync_stop   : %s', val['last_sync_stop'])
-            logging.info('  sync_dir    : %s', val['sync_dir'])
-            logging.info('  confl_res   : %s', val['conflict_resolve'])
-            logging.info('  olgid       : 0x%x', olgid)
+    def show_profile (self, name):
+        profile = self.get_profiles()[name]
+
+        olgid = profile['olgid'] if profile['olgid'] else 0
+
+        logging.info('*** Profile   : %s ***', name)
+        logging.info('  Collection 1: ')
+        logging.info('    DB ID     : %s', profile['coll_1']['dbid'])
+        logging.info('    Store ID  : %s', profile['coll_1']['stid'])
+        logging.info('    Folder ID : %s', profile['coll_1']['foid'])
+
+        logging.info('  Collection 2: ')
+        logging.info('    DB ID     : %s', profile['coll_2']['dbid'])
+        logging.info('    Store ID  : %s', profile['coll_2']['stid'])
+        logging.info('    Folder ID : %s', profile['coll_2']['foid'])
+
+        logging.info('  sync_start  : %s', profile['last_sync_start'])
+        logging.info('  sync_stop   : %s', profile['last_sync_stop'])
+        logging.info('  sync_dir    : %s', profile['sync_dir'])
+        logging.info('  confl_res   : %s', profile['conflict_resolve'])
+        logging.info('  olgid       : 0x%x', olgid)
 
     def profile_exists (self, pname):
         return pname in self.get_profiles()
@@ -651,18 +664,25 @@ class Config:
     def find_matching_pname (self, db1, st1, fo1, db2, st2, fo2):
         """Return the name(s) of any existing profile for the matching tuples
         of db, store, and folder specified. Returns None if there is nothing
-        matching found. As always the order matters."""
+        matching found. As always the order matters.
+
+        If a store id or a folder id is None, then it is used to match any
+        value in those fields. If they are 'default' then the appropriate
+        deafult values are matched."""
 
         ret = []
-        st1 = None if st1 == "default" else st1
-        st2 = None if st2 == "default" else st2
-        fo1 = None if fo1 == "default" else fo1
-        fo2 = None if fo2 == "default" else fo2
+
+        ## FIXME: This is a hack. Needs to be fixed. Basically None and
+        ## default are treated the same. This should not be the case.
+        st1 = None if st1 in ["default", "None"] else st1
+        st2 = None if st2 in ["default", "None"] else st2
+        fo1 = None if fo1 in ["default", "None"] else fo1
+        fo2 = None if fo2 in ["default", "None"] else fo2
 
         pnames = self.get_profile_names()
         for p in pnames:
-            if (self.get_profile_db1(p) == db1 and
-                self.get_profile_db2(p) == db2 and
+            if (db1 == self.get_profile_db1(p) and
+                db2 == self.get_profile_db2(p) and
                 (not st1 or st1 == self.get_stid1(p)) and
                 (not st2 or st2 == self.get_stid2(p)) and
                 (not fo1 or fo1 == self.get_fid1(p))  and

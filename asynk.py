@@ -128,7 +128,7 @@ def clear_old_log_files (config):
     logging.info('Deleting log files older than %d days, if any...', period)
     utils.del_files_older_than(logdir, period)
     logging.info('Deleting log files older than %d days, if any...done',
-                 period)    
+                 period)
 
 def setup_parser ():
     p = argparse.ArgumentParser(description='ASynK: PIM Awesome Sync by Karra')
@@ -147,8 +147,10 @@ def setup_parser ():
                             'show-folder',
                             'del-folder',
                             'list-profiles',
+                            'list-profile-names',
+                            'find-profile',
                             'create-profile',
-                            # 'show-profile',
+                            'show-profile',
                             'del-profile',
                             # 'print-item',
                             # 'del-item',
@@ -411,8 +413,8 @@ class Asynk:
         self.set_store_ids(temp)
 
     def _snarf_gcauth (self, uinps):
-        self.set_gcuser(uinps.gcuser)
-        self.set_gcpw(uinps.gcpwd)
+        # self.set_gcuser(uinps.gcuser if uinps.gcuser else None)
+        self.set_gcpw(uinps.pwd)
 
     def _snarf_pname (self, uinps):
         if uinps.name:
@@ -568,6 +570,46 @@ class Asynk:
     def op_list_profiles (self):
         self.get_config().list_profiles()
 
+    def op_list_profile_names (self):
+        self.get_config().list_profile_names()
+
+    def op_find_profile (self):
+        """For a give set of two [db,st,fo], this will print the name of a
+        matching profile. If there is no match, then None is printed."""
+
+        conf = self.get_config()
+        ## Do some checking to ensure the user provided all the inputs we need
+        ## to process a create-profile operation
+        db1 = self.get_db1()
+        db2 = self.get_db2()
+        if None in [db1, db2]:
+            raise AsynkParserError('--op=find-profile needs two PIMDB IDs '
+                                   'to be specified.')
+        
+        sid1 = self.get_store_id(db1)
+        sid2 = self.get_store_id(db2)
+        # if None in [sid1, sid2]:
+        #     raise AsynkParserError('--op=find-profile needs two Store IDs '
+        #                            'to be specified.')
+
+        fid1 = self.get_folder_id(db1)
+        fid2 = self.get_folder_id(db2)
+
+        if db1 == 'cd' and fid1[-1] != '/':
+            fid1 += '/'
+
+        if db2 == 'cd' and fid2[-1] != '/':
+            fid2 += '/'
+
+        if None in [fid1, fid2]:
+            raise AsynkParserError('--create-folder needs two Folders IDs to be '
+                                   'specified with --folder-id.')
+
+        pname = conf.find_matching_pname(db1, sid1, fid1,
+                                         db2, sid2, fid2)
+
+        logging.info('Matched profile name: %s', pname)
+
     def op_create_profile (self):
         conf = self.get_config()
 
@@ -650,7 +692,7 @@ class Asynk:
         ## For now there is no need for something separate from list_profiles
         ## above(). This will eventually show sync statistics, what has
         ## changed in each folder, and so on.
-        logging.info('%s: Not Implemented', 'show_profile')
+        self.get_config().show_profile(self.get_name())
 
     def op_del_profile (self):
         """This deletes the sync profile from the system, and clears up the
