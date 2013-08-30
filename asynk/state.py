@@ -634,7 +634,7 @@ class Config:
 
     def list_profile_names (self):
         for key in self.get_profiles().keys():
-            logging.info('%s', key)
+            logging.info('Profile: %s', key)
 
     def show_profile (self, name):
         profile = self.get_profiles()[name]
