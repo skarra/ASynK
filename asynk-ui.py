@@ -22,7 +22,7 @@ from subprocess import check_output, Popen, STDOUT, PIPE
 from tornado    import ioloop, web, websocket
 from tempfile   import gettempdir
 from time       import sleep
-import webbrowser, json, os
+import logging, json, os, webbrowser
 
 INDEX_HTML = os.path.join("ui", "static", "index.html")
 CUR_DIR = os.path.dirname(__file__)
@@ -86,6 +86,7 @@ class AppWebSocket(websocket.WebSocketHandler):
 
 
 static_path = os.path.join(CUR_DIR, 'ui', 'static')
+settings = {'debug': True}
 
 application = web.Application([
     (r"/", MainHandler),
@@ -94,9 +95,11 @@ application = web.Application([
     (r"/appresponse", AppWebSocket),
     (r"/static/(.*)",web.StaticFileHandler,
      {'path' : static_path})
-])
+], debug=True)
 
 if __name__ == "__main__":
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
     webbrowser.open("http://localhost:8888")
     application.listen(8888)
     ioloop.IOLoop.instance().start()
