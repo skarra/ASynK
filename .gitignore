@@ -37,3 +37,4 @@ gc.pwd
 *.dvi
 asynk.xml
 asynk.txt
+!index.html
