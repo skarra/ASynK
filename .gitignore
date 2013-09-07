@@ -42,3 +42,5 @@ asynk.txt
 asynk.sublime-project
 asynk.sublime-workspace
 !index.html
+.asynk.sublime-project
+.asynk.sublime-workspace
