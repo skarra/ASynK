@@ -24,12 +24,16 @@ from tempfile   import gettempdir
 from time       import sleep
 import logging, json, os, webbrowser
 
-INDEX_HTML = os.path.join("ui", "static", "index.html")
 CUR_DIR = os.path.dirname(__file__)
+TEMPLATES_DIR = os.path.join(CUR_DIR, "ui", "templates")
 
 class MainHandler(web.RequestHandler):
     def get (self):
-        self.render(INDEX_HTML)
+        self.render(os.path.join(TEMPLATES_DIR, "index.html"))
+
+class AdvancedHandler(web.RequestHandler):
+    def get (self):
+        self.render(os.path.join(TEMPLATES_DIR, "advanced.html"))
 
 class Profiles(web.RequestHandler):
     def get (self):
@@ -90,6 +94,7 @@ settings = {'debug': True}
 
 application = web.Application([
     (r"/", MainHandler),
+    (r"/advanced", AdvancedHandler),
     (r"/profiles",Profiles),
     (r"/pdata/([^/]+)", ProfileData),
     (r"/appresponse", AppWebSocket),

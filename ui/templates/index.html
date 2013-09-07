@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+  <div class="row">
+  <!--
+      <div class="col-lg-4">
+        <div  id="adv_toggle" class="make-switch switch-large mar10" 
+                data-on-label="Basic" data-off-label="Advanced"
+                data-on-"primary" data-off="warning">
+            <input type="checkbox" class="hidden" checked>
+        </div>
+        </div>
+      </div>
+
+      <div class="row">
+      <p>
+      -->
+
+        <div class="col-lg-4">
+            <table style="text-align: left;" cellpadding="2" cellspacing="2" width="100%">
+            <tbody>
+            <tr>
+              <td>DB 1:
+                <select id="db1" name="db1">
+                    <option value="bb">BBDB</option>
+                    <option value="gc">Google</option>
+                    <option value="ol">Outlook</option>
+                    <option value="cd">CardDAV</option>
+                </select>
+                <br>
+                <br>
+                Username: <input id="uname1" name="uname1"><br>
+                Password: <input id="pass1" name="pass1" type="password"><br>
+                <br>
+              </td>
+              <td>DB 2:
+                <select id="db2" name="db2">
+                    <option value="bb">BBDB</option>
+                    <option value="gc">Google</option>
+                    <option value="ol">Outlook</option>
+                    <option value="cd">CardDAV</option>
+                </select>
+                <br>
+                <br/>
+                Username: <input id="uname2" name="uname2"><br>
+                ]Password:<input id="pass2" name="pass2" type="password"><br><br>
+              </td>
+              <td>
+                <input id="sync" name="btnSync" value="Sync " type="button"><br>
+                <input value="Dry Run" name="dryrun" type="button">
+              </td>
+            </tr>
+            </tbody>
+            </table>
+        </div> <!-- .col-lg-4 -->
+  </div>
+{% end block %}
+
+
+<!--
+            <div id="adv_sync" class="hidden">
+                <select id="profile" name="db1" 
+                        class="selectpicker show-tick" data-live-search="true"
+                        title="Choose a profile for sync"
+                        data-header="Select a profile name">
+                </select>
+            </div>
+        </div>
+        </p>
+      </div>
+
+      -->
