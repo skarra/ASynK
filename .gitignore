@@ -38,3 +38,5 @@ gc.pwd
 asynk.xml
 asynk.txt
 !index.html
+.asynk.sublime-project
+.asynk.sublime-workspace
