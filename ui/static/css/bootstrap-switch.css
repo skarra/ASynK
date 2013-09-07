@@ -47,7 +47,7 @@
   min-width: 80px;
 }
 .has-switch.switch-large {
-  min-width: 240px;
+  min-width: 200px;
 }
 .has-switch.deactivate {
   opacity: 0.5;

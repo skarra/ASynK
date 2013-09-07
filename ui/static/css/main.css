@@ -9,6 +9,10 @@
 	padding: 10px;
 }
 
+.pad15 {
+	padding: 15px;
+}
+
 .pad20 {
 	padding: 20px;
 }
@@ -19,4 +23,8 @@
 
 .padt20 {
 	padding-top: 20px;
+}
+
+.mar10 {
+	margin: 10px;
 }

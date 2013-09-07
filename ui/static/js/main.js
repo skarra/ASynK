@@ -36,6 +36,7 @@ function setUpWebSocket() {
         function(data){
             for (x in data){
                 $("#profile").append("<option>" + data[x] + "</option>");
+                $('#profile').selectpicker('refresh');
             }
         });
 
