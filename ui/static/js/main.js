@@ -1,4 +1,4 @@
-function onLoad () {
+function setUpWebSocket() {
     var ws;
 
     if (!('WebSocket' in window)) {
@@ -35,7 +35,7 @@ function onLoad () {
     $.getJSON("/profiles",
         function(data){
             for (x in data){
-                $("#profile").append("<option value=\""+data[x]+"\">"+data[x]+"</option>");
+                $("#profile").append("<option>" + data[x] + "</option>");
             }
         });
 
@@ -71,8 +71,31 @@ function onLoad () {
         ws.send("python asynk.py --op=sync --name="+$("#profile").val()+opts1+opts2);
         //ws.send ("python asynk.py --op=sync --name="+$("#profile").val());
     });
+}
 
+function setUpMainToggle () {
+    $('#adv_toggle').on('switch-change', function (e, data) {
+        var $el = $(data.el), value = data.value;
+        console.log(e, $el, value);
 
+        if (value == true) {
+            $("#adv_sync").addClass("hidden");
+            $("#basic_sync").removeClass("hidden");
+        } else {
+            $("#basic_sync").addClass("hidden");
+            $("#adv_sync").removeClass("hidden");
+        }
+    });
+}
+
+function setUpSelectPicker () {
+    $('.selectpicker').selectpicker({
+    });
+}
+function onLoad () {
+    setUpWebSocket();
+    setUpMainToggle();
+    setUpSelectPicker();
 }
 
 $(onLoad);
