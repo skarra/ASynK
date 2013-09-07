@@ -21,12 +21,6 @@ branch out to experiment this.
 
 ** Features
 
-*** BBDB Support
-
-    As of April 2012, significant rewrite has happened on the f_tasks branch
-    setting the ground for supporting BBDB as a third database
-    provider. Interesting times lie ahead.
-
 *** Support more than one message store
 
     We need to iterate and grab all the message store contents
@@ -37,6 +31,12 @@ branch out to experiment this.
     some preliminary support is now implemented. Not really user visible.
 
 * Done
+
+*** BBDB Support
+
+    As of April 2012, significant rewrite has happened on the f_tasks branch
+    setting the ground for supporting BBDB as a third database
+    provider. Interesting times lie ahead.
 
 ** Sync tag is lost on OL side aftear a mod update from GC
 
@@ -51,7 +51,6 @@ branch out to experiment this.
     More contact fields need to get synched, including: 
 
     - IM ... done
-
 
 ** Many key changes related to Gmail -> OL are missing
 
