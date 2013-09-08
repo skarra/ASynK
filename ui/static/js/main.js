@@ -1,16 +1,16 @@
-function setUpWebSocket() {
+function setUpWebSocket () {
     var ws;
 
     if (!('WebSocket' in window)) {
-	alert('Your browser does not have a key feature (WebSockets) needed ' +
-	      'to run this. Cannot continue.');
-	return;
+        alert('Your browser does not have a key feature (WebSockets) needed ' +
+              'to run this. Cannot continue.');
+        return;
     }
 
     try {
-	ws = new WebSocket("ws://localhost:8888/appresponse");
+        ws = new WebSocket("ws://localhost:8888/appresponse");
     } catch (err) {
-	alert('Exception: ' + err);
+        alert('Exception: ' + err);
     }
 
     ws.onopen = function() {
@@ -23,17 +23,17 @@ function setUpWebSocket() {
     };
 
     ws. onerror = function(error){
-	alert('Error Detected: ' + error);
-	console.log('Error detected: ' + error);
+        alert('Error Detected: ' + error);
+        console.log('Error detected: ' + error);
     }
 
     ws.onclose = function() {
-	alert('Connection closed to server');
+        alert('Connection closed to server');
     };
 
     //load profile names
     $.getJSON("/profiles",
-        function(data){
+        function (data) {
             for (x in data){
                 $("#profile").append("<option>" + data[x] + "</option>");
                 $('#profile').selectpicker('refresh');
@@ -41,35 +41,35 @@ function setUpWebSocket() {
         });
 
     //load profile variables on choosing a profile
-    $("#profile").change(function(){
-        if ($("#profile").val()!=0){
+    $("#profile").change(function () {
+        if ($("#profile").val()!=0) {
             $.getJSON("/pdata/"+$("#profile").val(),
-            function(data){
-                $("#db1").val(data["db1"]);
-                $("#uname1").val(data["uname1"]);
-                $("#db2").val(data["db2"]);
-                $("#uname2").val(data["uname2"]);
-            });
+                function (data) {
+                    $("#adv_dbid1").val(data["db1"]);
+                    $("#adv_stid1").val(data["uname1"]);
+                    $("#adv_dbid2").val(data["db2"]);
+                    $("#adv_stid2").val(data["uname2"]);
+                });
         }
     });
 
-    //preparing the sync command
-    $("input#sync").click(function(evt){
+    // preparing the sync command - in the advanced template
+    $("input#adv_dryrun").click(function (evt){
         opts1=opts2="";
-        if ($("#db1").val()=='cd') {
-            opts1+=" --cduser="+$("#uname1").val()+" cdpwd="+$("#pass1").val();
+        if ($("#adv_dbid1").val()=='cd') {
+            opts1+=" --cduser="+$("#adv_stid1").val()+" cdpwd="+$("#adv_pwd1").val();
         }
-        else if ($("#db1").val()=='gc') {
-            opts1+=" --pwd="+$("#pass1").val();
+        else if ($("#adv_dbid1").val()=='gc') {
+            opts1+=" --pwd="+$("#adv_pwd1").val();
         }
-        if ($("#db2").val()=='cd') {
-            opts2+=" --cduser="+$("#uname2").val()+" cdpwd="+$("#pass2").val();
+        if ($("#adv_dbid2").val()=='cd') {
+            opts2+=" --cduser="+$("#adv_stid2").val()+" cdpwd="+$("#adv_pwd2").val();
         }
-        else if ($("#db2").val()=='gc') {
-            opts1+=" --pwd="+$("#pass2").val();
+        else if ($("#adv_dbid2").val()=='gc') {
+            opts1+=" --pwd="+$("#adv_pwd2").val();
         }
-        opts1=opts2="";
-        ws.send("python asynk.py --op=sync --name="+$("#profile").val()+opts1+opts2);
+        // opts1=opts2="";
+        ws.send("python asynk.py --op=sync --dry-run --name="+$("#profile").val()+opts1+opts2);
         //ws.send ("python asynk.py --op=sync --name="+$("#profile").val());
     });
 }
@@ -93,6 +93,7 @@ function setUpSelectPicker () {
     $('.selectpicker').selectpicker({
     });
 }
+
 function onLoad () {
     setUpWebSocket();
     setUpMainToggle();

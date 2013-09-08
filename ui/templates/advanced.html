@@ -2,17 +2,37 @@
 
 {% block content %}
 
+  <div class="row" id="adv_sync">
+      <select id="profile" name="db1" 
+              class="selectpicker show-tick" data-live-search="true"
+              title="Choose a profile for sync"
+              data-header="Select a profile name">
+          <option>Choose a profile for sync </option>
+      </select>
+  </div>
+
   <div class="row">
-        <div class="col-lg-4">
-          <div id="adv_sync">
-                <select id="profile" name="db1" 
-                        class="selectpicker show-tick" data-live-search="true"
-                        title="Choose a profile for sync"
-                        data-header="Select a profile name">
-                <option>Choose a profile for sync </option>
-                </select>
-            </div>
-        </div>
-   </div>
+      <div class="col-lg-4">
+            Collection 1:  <br/>
+
+            DB ID :     <input id="adv_dbid1" name="adv_dbid1"> <br>
+            Store ID :  <input id="adv_stid1" name="adv_stid1"> <br>
+            Folder ID : <input id="adv_foid1" name="adv_foid1"> <br>
+            Password :  <input id="adv_pwd1"  name="adv_pwd1" type="password"> <br>
+      </div>
+
+      <div class="col-lg-4">
+            Collection 2:  <br/>
+            DB ID :     <input id="adv_dbid2" name="adv_dbid2"> <br>
+            Store ID :  <input id="adv_stid2" name="adv_stid2"> <br>
+            Folder ID : <input id="adv_foid2" name="adv_foid2"> <br>
+            Password :  <input id="adv_pwd2"  name="adv_pwd2" type="password"> <br>
+      </div>
+
+  </div> <!-- .row -->
+
+  <div class="row">
+      <input id="adv_dryrun" value="Dry Run" name="dryrun" type="button">
+  </div>
 
 {% end block %}
