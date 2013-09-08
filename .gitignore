@@ -30,13 +30,14 @@ cd.pwd
 gc.pwd
 
 # Doc related stuff.
-
-*.html
+gae/intro.html
+doc/*.html
+doc/asynk/*.html
 *.info
 *.pdf
 *.dvi
 asynk.xml
 asynk.txt
-!index.html
+
 asynk.sublime-project
 asynk.sublime-workspace

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block styles %}
+        <style>
+            ::-moz-selection {
+                background: #b3d4fc;
+                text-shadow: none;
+            }
+
+            ::selection {
+                background: #b3d4fc;
+                text-shadow: none;
+            }
+
+            h1 span {
+                color: #bbb;
+            }
+
+            p {
+                margin: 1em 0;
+            }
+
+            .container {
+                margin: 0 auto;
+            }
+        </style>
+{% end block %}
+
+{% block content %}
+        <div class="container">
+            <h1>Not found <span>:(</span></h1>
+            <p>Sorry, but the page you were trying to view does not exist.</p>
+        </div>
+{% end block %}

@@ -22,7 +22,7 @@ from subprocess import check_output, Popen, STDOUT, PIPE
 from tornado    import ioloop, web, websocket
 from tempfile   import gettempdir
 from time       import sleep
-import logging, json, os, webbrowser
+import logging, json, os, tornado, webbrowser
 
 CUR_DIR = os.path.dirname(__file__)
 TEMPLATES_DIR = os.path.join(CUR_DIR, "ui", "templates")
@@ -34,6 +34,29 @@ class MainHandler(web.RequestHandler):
 class AdvancedHandler(web.RequestHandler):
     def get (self):
         self.render(os.path.join(TEMPLATES_DIR, "advanced.html"))
+
+class ErrorHandler(tornado.web.RequestHandler):
+    """Generates an error response with status_code for all requests."""
+    def __init__ (self, application, request, status_code):
+        tornado.web.RequestHandler.__init__(self, application, request)
+        self.set_status(status_code)
+
+    def write_error (self, status_code, **kwargs):
+        if status_code in [403, 404, 500, 503]:
+            print 'Error: ', status_code
+            filename = os.path.join(TEMPLATES_DIR, '%d.html' % status_code)
+            self.render(filename)
+        else:
+            self.write("<html><title>%(code)d: %(message)s</title>" \
+            "<body class='bodyErrorPage'>%(code)d: %(message)s</body>"\
+            "</html>" % {
+                "code": status_code,
+                "auto_ver" : auto_ver,
+                "message": httplib.responses[status_code],
+            })
+
+    def prepare (self):
+        raise tornado.web.HTTPError(self._status_code)
 
 class Profiles(web.RequestHandler):
     def get (self):
@@ -101,6 +124,8 @@ application = web.Application([
     (r"/static/(.*)",web.StaticFileHandler,
      {'path' : static_path})
 ], debug=True)
+
+tornado.web.ErrorHandler = ErrorHandler
 
 if __name__ == "__main__":
     logger = logging.getLogger()
