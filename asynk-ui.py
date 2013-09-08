@@ -60,7 +60,7 @@ class ErrorHandler(tornado.web.RequestHandler):
 
 class Profiles(web.RequestHandler):
     def get (self):
-        res=check_output(["python","asynk.py","--op=list-profile-names"],
+        res = check_output(["python","asynk.py","--op=list-profile-names"],
                          stderr=STDOUT).split()
         pos = 0
         profile = []
@@ -79,15 +79,15 @@ class ProfileData(web.RequestHandler):
         detail['db1'] = res[posdb1+3]
 
         if detail['db1'] in ["gc","cd"]:
-            detail['uname1']=res[res.index("Store",posdb1)+3]
+            detail['uname1'] = res[res.index("Store",posdb1)+3]
 
         posdb2 = res.index("DB",posdb1+1)
         detail['db2'] = res[posdb2+3]
 
         if detail['db2'] in ["gc","cd"]:
-            detail['uname2']=res[res.index("Store",posdb2)+3]
+            detail['uname2'] = res[res.index("Store",posdb2)+3]
 
-        self.write (json.dumps(detail))
+        self.write(json.dumps(detail))
 
 
 class AppWebSocket(websocket.WebSocketHandler):
