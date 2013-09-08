@@ -77,7 +77,7 @@ endif
 	@echo
 	@echo ==== Cloning temp repository for ${REL}
 	rm -rf /tmp/asynk-${REL}
-	cd .. && git clone -r . /tmp/asynk-${REL}
+	cd .. && git clone --recursive  . /tmp/asynk-${REL}
 	rm -rf /tmp/asynk-${REL}/.git
 
 	@echo
