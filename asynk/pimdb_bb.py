@@ -204,7 +204,7 @@ class MessageStore:
             ff = ff.strip()
             if re.search('coding:', ff):
                 # Ignore first line if such: ;; -*-coding: utf-8-emacs;-*-
-                self.append_preamble(ff)
+                self.append_preamble(ff + "\n")
                 continue
 
             if re.search('^\s*$', ff):
@@ -219,7 +219,7 @@ class MessageStore:
                 bbf.close()
                 raise BBDBFileFormatError('Unrecognizable format line: "%s"' % ff)
     
-            self.append_preamble(ff)
+            self.append_preamble(ff + "\n")
             ver = res.group(2)
             self.set_file_format(ver)
     
@@ -276,7 +276,7 @@ class MessageStore:
                     break
 
                 if re.search('^;', ff):
-                    self.append_preamble(ff)
+                    self.append_preamble(ff + "\n")
                     continue
 
                 try:
