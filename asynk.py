@@ -419,6 +419,8 @@ class Asynk:
     def _snarf_pname (self, uinps):
         if uinps.name:
             self.set_name(uinps.name)
+        else:
+            self.set_name(None)
 
     def _snarf_folder_ids (self, uinps):
         if uinps.folder:
