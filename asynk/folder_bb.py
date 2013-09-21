@@ -301,26 +301,36 @@ class BBContactsFolder(Folder):
     def get_contacts (self):
         return self.contacts
 
-    def print_contacts (self, cnt=0, name=None):
-        i = 0
-        j = 0
+    def find_contacts_by_name (self, cnt=0, name=None):
+        """Return the list of contact objects in current folder that
+        have a matching name. If name is None, all contacts objects
+        are returned. If cnt is non-zero value then the first cnt 
+        matching records are returned."""
 
-        print 'name: ', name
+        logging.debug('Looking for name %s in folder: %s ',
+                        name, self.get_name())
+        i = 0
+        ret = []
 
         for iid, con in self.get_contacts().iteritems():
             if not name:
-                logging.debug('%s', unicode(con))
-                j += 1
+                ret.append(con)
             else:
                 if (re.search(name, unicode(con.get_firstname()))
                     or re.search(name, unicode(con.get_name()))
                     or re.search(name, unicode(con.get_lastname()))):
-                    logging.debug('%s', unicode(con))
-                    j += 1
+                    ret.append(con)
             i += 1
 
             if cnt == i:
                 break
 
-        logging.debug('Printed %d contacts from folder %s', j,
+        return ret
+
+    def print_contacts (self, cnt=0, name=None):
+        cons = self.find_contacts_by_name(cnt, name)
+        for con in cons:
+            logging.debug('%s', unicode(con))
+
+        logging.debug('Printed %d contacts from folder %s', len(cons),
                       self.get_name())
