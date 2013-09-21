@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ##
 ## Created : Sat Apr 07 20:03:04 IST 2012
 ##
@@ -74,20 +75,23 @@ class TestBBDBWrite(unittest.TestCase):
     def setUp (self):
         self.config = config
         self.bbdbfn = os.path.join(CUR_DIR, "temp.bbdb")
-        self.bb     = BBPIMDB(self.config, self.bbdbfn)
-        ms   = self.bb.get_def_msgstore()
-        self.deff = ms.get_folder(ms.get_def_folder_name())
+        self.reparse(self.bbdbfn)
 
     def tearDown (self):
         os.remove(self.bbdbfn)
+        pass
         
-    def parse (self, bbfn):
-        ## Just open and parse the file. Any exceptions will be thrown up any way.
-        bb = BBPIMDB(self.config, self.bbdbfn)
+    def reparse (self, bbfn=None):
+        if not bbfn:
+            bbfn = self.bbdbfn
+
+        self.bb = BBPIMDB(self.config, bbfn)
+        ms   = self.bb.get_def_msgstore()
+        self.deff = ms.get_folder(ms.get_def_folder_name())
 
     def test_basic (self):
         con = BBContact(self.deff)
-        con.set_name('Sri Venkata Sri Rama Subramanya Anjeneya Annapurna Sharma')
+        con.set_firstname('Test Basic Sri Venkata Sri Rama Subramanya Anjeneya Annapurna Sharma')
         con.set_prefix('Mr.')
         con.set_nickname('Karra')
         con.set_gender('Male')
@@ -95,11 +99,72 @@ class TestBBDBWrite(unittest.TestCase):
         con.add_notes('And so it goes...')
 
         self.deff.add_contact(con)
-        self.deff.set_dirty()
         self.deff.save()
-        self.parse(self.bbdbfn)
+        self.reparse(self.bbdbfn)
 
-        # self.deff.print_contacts(name='Sri')
+        cons = self.deff.find_contacts_by_name(name='Venkata')
+        assert(len(cons) == 1)
+        con = cons[0]
+        assert(con.get_prefix() == "Mr.")
+        assert(con.get_gender() == "Male")
+
+    def test_nonexistent_contact (self):
+        cons = self.deff.find_contacts_by_name(name='Goof Ball')
+        assert(len(cons) == 0)
+
+    def test_unicode (self):
+        con = BBContact(self.deff)
+        con.set_firstname(u'Héctor')
+        con.set_lastname(r'Tarrido-Picart')
+
+        self.deff.add_contact(con)
+        self.deff.save()
+        self.reparse(self.bbdbfn)
+
+    def test_quotes_1 (self):
+        con = BBContact(self.deff)
+        con.set_firstname(r'Test Quotes 1')
+        con.set_lastname(r'"Karra"')
+
+        self.deff.add_contact(con)
+        self.deff.save()
+        self.reparse(self.bbdbfn)
+
+    def test_quotes_2 (self):
+        con = BBContact(self.deff)
+        con.set_firstname('Test Quotes 2')
+        con.set_lastname("Ka\\\nrra")
+
+        self.deff.add_contact(con)
+        self.deff.save()
+        self.reparse(self.bbdbfn)
+
+    def test_quotes_3 (self):
+        con = BBContact(self.deff)
+        con.set_firstname('Test Quotes 3')
+        con.set_lastname("\"Karra")
+
+        self.deff.add_contact(con)
+        self.deff.save()
+        self.reparse(self.bbdbfn)
+
+    def test_quotes_4 (self):
+        con = BBContact(self.deff)
+        con.set_firstname('Test Quotes 4')
+        con.set_lastname("\\Karra")
+
+        self.deff.add_contact(con)
+        self.deff.save()
+        self.reparse(self.bbdbfn)
+
+    def test_quotes_terminating_backslash (self):
+        con = BBContact(self.deff)
+        con.set_firstname('Test Quotes TB')
+        con.set_lastname('Karra\\')
+
+        self.deff.add_contact(con)
+        self.deff.save()
+        self.reparse(self.bbdbfn)
 
 if __name__ == '__main__':
     if '--debug' in sys.argv:
