@@ -238,6 +238,7 @@ class MessageStore:
         ver = '7'
         self.append_preamble(';; -*-coding: utf-8-emacs;-*-\n')
         self.append_preamble(';;; file-format: %s\n' % ver)
+        self.set_file_format(ver)
 
         return ver
 
