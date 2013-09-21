@@ -272,6 +272,7 @@ class BBContactsFolder(Folder):
         return self._set_prop('dirty', True)
 
     def add_contact (self, bbc):
+        self.set_dirty()
         self.contacts.update({bbc.get_itemid() : bbc})
 
     def del_itemids (self, itemids):
