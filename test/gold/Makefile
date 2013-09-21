@@ -29,4 +29,5 @@ state:
 	python test_state.py
 
 bb:
-	python test_bb.py
+	python test_bb_read.py
+	python test_bb_write.py
