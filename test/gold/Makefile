@@ -23,7 +23,7 @@
 all: state bb
 
 clean:
-	rm -rf user_dir *~ *.bak
+	rm -rf user_dir *~ *.bak temp.bbdb
 
 state:
 	python test_state.py
