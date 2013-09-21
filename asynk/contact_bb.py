@@ -36,6 +36,7 @@ def esc_str (x):
     if not x:
         return x
 
+    x = x.replace('\\', '\\\\')
     x = x.replace('\r\n', '\\n')
     x = x.replace('\n', '\\n')
     return x.replace('"', r'\"')
@@ -49,7 +50,9 @@ def unesc_str (x):
         return x
 
     x = x.replace('\\n', '\n')
-    return x.replace(r'\"', '"')
+    x = x.replace(r'\"', '"')
+    x = x.replace('\\\\', '\\')
+    return x
 
 class BBDBParseError(Exception):
     pass
