@@ -37,3 +37,6 @@ gc.pwd
 *.dvi
 asynk.xml
 asynk.txt
+
+asynk.sublime-project
+asynk.sublime-workspace
