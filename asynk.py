@@ -630,10 +630,10 @@ class Asynk:
         fid1 = self.get_folder_id(db1)
         fid2 = self.get_folder_id(db2)
 
-        if db1 == 'cd' and fid1[-1] != '/':
+        if db1 == 'cd' and fid1 != 'default' and fid1[-1] != '/':
             fid1 += '/'
 
-        if db2 == 'cd' and fid2[-1] != '/':
+        if db2 == 'cd' and fid2 != 'default' and fid2[-1] != '/':
             fid2 += '/'
 
         if None in [fid1, fid2]:
