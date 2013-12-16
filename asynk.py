@@ -621,7 +621,7 @@ class Asynk:
         db2 = self.get_db2()
                            
         if None in [db1, db2]:
-            raise AsynkParserError('--create-folder needs two PIMDB IDs to be '
+            raise AsynkParserError('--create-profile needs two PIMDB IDs to be '
                                    'specified.')
         
         sid1 = self.get_store_id(db1)
@@ -652,6 +652,12 @@ class Asynk:
             raise AsynkParserError('There already exists a profile with name '
                                    '%s. Kindly retry with a different name'
                                    % pname)
+
+        pname_re = conf.get_profile_name_re()
+        res = re.search('^'+pname_re+'$', pname)
+        if not res:
+            raise AsynkParserError('Illegal profile name %s. Valid names should satisfy '
+                                   'this regex: %s' % (pname, pname_re))
 
         cr = self.get_conflict_resolve()
         if (not cr):
