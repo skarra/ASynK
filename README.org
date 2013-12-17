@@ -50,25 +50,6 @@ that website.
 
    - The dateutil package available from http://labix.org/python-dateutil or
      https://pypi.python.org/pypi/python-dateutil
-        
-** Building Documentation
-
-   There is no build or installation required to use the main program. You can
-   go the section on Usage in the documentation
-
-   If you wish to build the documentation from source, you can try one of the
-   following: 
-
-   - $ cd doc
-   - $ make pdf
-   - $ make 			# Builds all the targets
-   - $ make clean
-   - $ make distclean
-
-   The supported doc types are: 'pdf', 'html', 'info', 'docbook', and 'text' 
-
-   You may have to install additional programs like makeinfo, texi2html
-   etc. See the "Dependencies" section in the documentation
 
 ** Usage
 

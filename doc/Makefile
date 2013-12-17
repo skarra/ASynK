@@ -43,7 +43,7 @@ makeinfo = makeinfo
 makeinfo_flags = 
 
 texi2html = texi2html
-texi2html_flags = --css-include=${doc_css} --split chapter --l2h-clean
+texi2html_flags = --css-include=${doc_css} --split chapter --l2h-clean --output=${html_dirname}
 
 texi2pdf = texi2pdf
 texi2pdf_flags = --clean --quiet

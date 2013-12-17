@@ -143,19 +143,7 @@ bugs could potentially lead to loss of information for you. So please take
 your own precautions before you deploy this on your live data. The user of the
 @kbd{--user-dir=} option is also high encouraged.
 
-In other words, the following flow is recommended while you give carddav
-support a try:
-
-@verbatim
-   $ ./asynk.py --op=create-profile --name testbbcd --user-dir=~/.asynk.carddav --db bb cd --folder default default --store <opath-to-bbdb-file> 'https:localhost:8443'
-   $ ./asynk.py --op=sync --user-dir=~/.asynk.carddav --name testbbcd --dry-run
-
-   # Ensure you are able to login to your account properly.
-
-   $ ./asynk.py --op=sync --user-dir=~/.asynk.carddav --name testbbcd
-@end verbatim
-
-At the moment the follwing fields are synched in both ways. All other fields
+At the moment the following fields are synched in both ways. All other fields
 will be lost in transit. More may be supported over time.
 
 @enumerate  
@@ -341,8 +329,30 @@ index cc12045..dabbf05 100644
  (defalias 'bbdb-format-record-creation-date 'bbdb-time-convert)
 
 @end verbatim
-
 @end enumerate
+
+@section Building & Installing Documentation
+
+   The user documentation is in the directory called doc/ in the root of
+   the ASynK source tree. The main source file is asynk.texi in TexInfo
+   format. HTML, PDF and Info files are available on the project 
+   home page at: http://karra-asynk.appspot.com/
+
+   If you wish to build the documentation from source, you can try the 
+   Makefile in the documentation directory, like so: 
+
+@verbatim
+   $ cd doc
+   $ make pdf
+   $ make       # Builds all the targets
+   $ make clean
+   $ make distclean
+@end verbatim
+
+   The supported doc types are: 'pdf', 'html', 'info', 'docbook', and 'text'. You may 
+   have to install additional programs like makeinfo, texi2html etc. See the 
+   "Dependencies" section above.
+
 @cindex BBDB, Dependencies
 
 @node Concepts, Using ASynK, Installation, Top
@@ -1142,6 +1152,49 @@ let's study the problem in the field and take a call on how to tackle it.
 @end enumerate
 
 @end enumerate
+
+@section Synching to CardDAV
+Setting up a profile to sync with a CardDAV profile may be a bit confusing at
+best, and downright intimidating at worst. Part of the problem is the Store ID
+itself is a URL, and it is not a standard - varying from one software to another.
+
+A reminder - CardDAV support is the newest feature in ASynK, and there may be some
+rough edges. Also most CardDAV servers do not allow a roll back - like Gmail does - 
+to recover any lost data. So convince yourself that ASynK will work for you before
+you start using it.
+
+@subsection Creating a profile with CardDAV
+@verbatim
+   $ ./asynk.py --op=create-profile --name testbbcd --user-dir=~/.asynk.cd --db bb cd --folder default default --store <opath-to-bbdb-file> <CardDAV URL> --cduser=<username>
+@end verbatim
+
+Ensure you are able to login to your account properly.
+@verbatim
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.cd --name testbbcd --dry-run
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.cd --name testbbcd
+@end verbatim
+
+The thing that confuses most people is the CardDAV url which is not in
+any standard format. Here are some of the known CardDAV servers, and
+the URL that usually works with them. Replace server.org with the name of
+your CardDAV server. If your server is not to be found here, a good
+way to search the internet for the URL to use is to use a software
+like Addressbook in OS X; the same URL will work with ASynK as well.
+
+@enumerate
+@item
+Apple CalendarServer: https://server.org:8443/ or http://server.org/
+
+@item
+OwnCloud: https://server.org/owncloud/remote.php/carddav
+
+@item
+Baikal Server: http://server.org/card.php
+@end enumerate
+
+Note that for the port number may be optional. If Apple CalendarServer is configured
+to respond to both http and https the a port number will be required. Check your 
+server documentation.
 
 @section Misc Housekeeping Activities
 @enumerate
