@@ -34,7 +34,11 @@ that website.
   - It is free software, and released under the GNU AGPL (Affero GPL) version
     3
 
-* Installation
+* Installation & Usage
+
+As you are reading this file, the most efficient installation is to clone this
+git repository to your machine. Then see the section titled Usage below to 
+invoke ASynK.
 
 ** Dependencies
 
