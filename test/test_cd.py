@@ -72,12 +72,12 @@ def show_def_folder (cd, details=False):
 
 def create_contact (cd):
     c = CDContact(cd.get_def_folder())
-    c.set_firstname('Nalini')
-    c.set_lastname('Bharatula')
+    c.set_firstname('Chalini')
+    c.set_lastname('Tarantula')
     c.set_prefix('Dr.')
     c.set_suffix('Jr.')
     c.set_gender('Female')
-    c.add_email_home('nalinib22@gmail.com')
+    c.add_email_home('abcd1234@gmail.com')
 
     c.save()
     print c
