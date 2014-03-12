@@ -137,17 +137,27 @@ class CDContactsFolder(Folder):
                 logging.error('Could not delete itemid: %s (%s)', href, e)
 
 
+    def item_path (self, itemid):
+        if itemid[0] != '/':
+            iid = self.get_itemid()
+            if iid[-1] != '/':
+                iid += '/'
+            itemid = iid + itemid + '.vcf'
+
+        return itemid
+
     def find_item (self, itemid):
         """See the documentation in folder.Folder"""
 
         sess = self.get_db().session()
-        result = sess.readData(URL(path=itemid))
+        result = sess.readData(URL(path=self.item_path(itemid)))
         if not result:
             return None
 
         data, _ignore_etag = result
 
         try:
+            itemid = CDContact.normalize_cdid(itemid)
             return CDContact(self, vco=vobject.readOne(data), itemid=itemid)
         except Exception, e:
             logging.error('Error (%s) parsing vCard object for %s',
@@ -158,7 +168,8 @@ class CDContactsFolder(Folder):
         """See the documentation in folder.Folder"""
 
         sess = self.get_db().session()
-        results = sess.multiGet(URL(path=self.get_itemid()), itemids,
+        ids = [self.item_path(x) for x in itemids]
+        results = sess.multiGet(URL(path=self.get_itemid()), ids,
                                 (davxml.getetag, carddavxml.address_data))
 
         ret = []
@@ -167,6 +178,7 @@ class CDContactsFolder(Folder):
             vcf  = item.getNodeProperties()[carddavxml.address_data]
 
             try:
+                key = CDContact.normalize_cdid(key)
                 cd = CDContact(self, vco=vobject.readOne(vcf.text), itemid=key)
             except Exception, e:
                 logging.error('Error (%s) parsing vCard object for %s',

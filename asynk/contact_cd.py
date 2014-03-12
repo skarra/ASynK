@@ -1,7 +1,7 @@
 ##
 ## Created : Wed Apr 03 19:02:15 IST 2013
 ##
-## Copyright (C) 2013 Sriram Karra <karra.etc@gmail.com>
+## Copyright (C) 2013, 2014 Sriram Karra <karra.etc@gmail.com>
 ##
 ## This file is part of ASynK
 ##
@@ -32,7 +32,7 @@ from   vobject    import vobject
 import demjson, pimdb_cd, utils
 from   caldavclientlibrary.protocol.http.util import HTTPError
 
-import copy, datetime, logging, md5, re, string, uuid
+import copy, datetime, logging, md5, os, re, string, uuid
 
 def l (s):
     return s.lower()
@@ -94,20 +94,11 @@ class CDContact(Contact):
         conf = self.get_config()
         if con:
             try:
-                ## FIXME: The code below works for other DBs quite
-                ## well. However with CardDAV there is a problem when the same
-                ## item is synched to more than one server. This happens
-                ## because the itemid is picked up from the first sync tag,
-                ## and the itemid is also assumed to be the full path of the
-                ## file on the server. For now we will assume that you will
-                ## sync your contacts to a single carddav server... The proper
-                ## solution is to pick out the sync tag corresponding to the
-                ## profile being synched... That is itself a problem because
-                ## this class is not as 'state-less' as it can/should be. WTF.
                 pname_re = conf.get_profile_name_re()
                 label    = conf.make_sync_label(pname_re, self.get_dbid())
-                tag, itemid = con.get_sync_tags(label)[0]              
-                self.set_itemid(itemid)
+                tag, itemid = con.get_sync_tags(label)[0]
+
+                self.set_itemid(self.normalize_cdid(itemid))
             except Exception, e:
                 logging.debug('Potential new CDContact: %s', con.get_name())
 
@@ -121,6 +112,14 @@ class CDContact(Contact):
         if not self.get_uid():
             self.set_uid(str(uuid.uuid1()))
 
+    @classmethod
+    def normalize_cdid (self, itemid):
+        """If the itemid is the fully qualified pathname in the carddav
+        filesystem, then strip out the path details and return just the base
+        filename."""
+
+        return os.path.splitext(os.path.basename(itemid))[0]
+
     ##
     ## First the inherited abstract methods from the base classes
     ##
@@ -133,17 +132,20 @@ class CDContact(Contact):
         vcf_data = vco.serialize()
         success  = True
 
+        fn =  fo.get_itemid()
+        if fn[-1] != '/':
+            fn += "/"
+
         if self.get_itemid():
-            fo.put_item(self.get_itemid(), vcf_data, 'text/vcard', etag=etag)
+            fn += self.get_itemid() + '.vcf'
+            fo.put_item(fn, vcf_data, 'text/vcard', etag=etag)
         else:
             assert(not etag)
-            fn =  fo.get_itemid()
-            if fn[-1] != '/':
-                fn += "/"
-            fn += md5.new(vcf_data).hexdigest() + '.vcf'
+            cdid = md5.new(vcf_data).hexdigest() 
+            fn += cdid + '.vcf'
 
             ## FIXME: Handle errors and all that good stuff.
-            self.set_itemid(fn)
+            self.set_itemid(cdid)
             try:
                 fo.put_item(fn, vcf_data, 'text/vcard')
             except HTTPError, e:
