@@ -32,6 +32,9 @@ from   caldavclientlibrary.client.account import CalDAVAccount
 
 import datetime, logging, os, re, sys, urllib, urlparse
 
+class CardDAVPrincipalNotFoundError(Exception):
+    pass
+
 class CDPIMDB(PIMDB):
     """A wrapper over a connection to a CardDAV server with methods for common
     server operations"""
@@ -280,14 +283,23 @@ class CDPIMDB(PIMDB):
             sys.exit(-1)
             
         self.set_account(account)
+        if not account.principal:
+            e = 'Principal not found for this account'
+            raise CardDAVPrincipalNotFoundError(e)
+
+        logging.debug('Found principal: %s', account.principal.displayname)
 
     def get_contacts_folders_roots (self):
-        return self.get_account().getPrincipal().adbkhomeset
+        if self.get_account().getPrincipal():
+            return self.get_account().getPrincipal().adbkhomeset
+        else:
+            return None
 
     def get_def_root_folder_path (self):
         homeset = self.get_contacts_folders_roots()
         if not homeset:
-            raise Exception('Principal does not have any addressbook home')
+            e = 'Principal does not have any addressbook home'
+            raise CardDAVPrincipalNotFoundError(e)
 
         ## FIXME: What does it mean to have multiple paths in adbkhomeset?
         return homeset[0].path
