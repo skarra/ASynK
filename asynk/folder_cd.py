@@ -260,10 +260,12 @@ class CDContactsFolder(Folder):
     def writeback_sync_tags (self, pname, items):
         """See the documentation in folder.Folder"""
 
+        logging.info('Writing sync state to CardDAV server...')
         success = True
         for item in items:
             success = success and item.save()
 
+        logging.info('Writing sync state to CardDAV server...done')
         return success
 
     def bulk_clear_sync_flags (self, label_re=None):

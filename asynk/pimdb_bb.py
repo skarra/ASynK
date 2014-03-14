@@ -375,6 +375,8 @@ class MessageStore:
             for name, f in self.get_folders().iteritems():
                 f.write_to_file(bbf)
 
+        logging.info('Saving BBDB File %s...done', fn)
+
     def prep_for_sync (self, pname):
         self.create_backup(pname)
 
