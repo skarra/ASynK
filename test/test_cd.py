@@ -23,33 +23,66 @@
 ## unit tests. code often moves from here to the unittest directory (gold/)
 ## after a while
 
-import logging, os, sys
+import logging, os, shutil, sys
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
-CUR_DIR           = os.path.abspath('')
-ASYNK_BASE_DIR    = os.path.abspath('..')
-EXTRA_PATHS       = [os.path.join(ASYNK_BASE_DIR, 'lib'),
-                     os.path.join(ASYNK_BASE_DIR, 'asynk'),]
-sys.path          = EXTRA_PATHS + sys.path
+DIR_PATH    = os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath('__file__')), '..'))
+EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
+sys.path = EXTRA_PATHS + sys.path
 
 from state         import Config
 from pimdb_cd      import CDPIMDB
 from contact_cd    import CDContact
 
+user_dir   = os.path.abspath('user_dir')
+state_src  = os.path.join('.', 'state.test.json')
+state_dest = os.path.join(user_dir, 'state.json')
+
+confv6_src = os.path.join('..', 'config', 'config_v6.json')
+conf_src   = confv6_src
+confn_dest  = os.path.join(user_dir, 'config.json')
+confnv4_src_dirty = os.path.join('.', 'config_v4.dirty.json')
+
+config = None
+
+def setup_config ():
+    if os.path.exists(user_dir):
+        logging.debug('Clearing user directory: %s', user_dir)
+        shutil.rmtree(user_dir)
+    else:
+        logging.debug('Creating user directory: %s', user_dir)
+
+    os.makedirs(user_dir)
+
+    shutil.copyfile(state_src, state_dest)
+    shutil.copyfile(conf_src, confn_dest)
+
+    global config
+    config = Config(asynk_base_dir='../', user_dir=user_dir)
+
 def new_folder (cd, name=None):
     cd.new_folder(fname=name if name else 'goofy')
 
+def clear_def_folder (cd):
+    itemid = cd.get_def_folder().get_itemid()
+    cd.del_folder(itemid)
+
 def main (argv=None):
-    conf = Config(os.path.join('..', 'config.json'), 'state.test.json')
+    setup_config()
     user = raw_input('Enter Username:')
     pw   = raw_input('Password:')
-    cd   = CDPIMDB(conf, 'https://localhost:8443', user, pw)
+    #url = 'https://localhost:8443'
+    url = 'https://dav.brewster.com/sriramkarra'
+    cd   = CDPIMDB(config, url, user, pw)
 
-    root = '/addressbooks/__uids__/skarrag/addressbook/'
+    #root = '/addressbooks/__uids__/skarrag/addressbook/'
+    root = 'default'
 
     # create_contact(cd)
     show_def_folder(cd, True)
+    # clear_def_folder(cd)
     # multi_get(cd, root)
     # get(cd, root)
 
