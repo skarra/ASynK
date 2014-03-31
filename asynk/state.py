@@ -27,7 +27,7 @@
 ## and we are continuing to use the same handling framework...
 
 import iso8601, demjson
-import logging, os, re, shutil, sys, time
+import glob, logging, os, re, shutil, sys, time
 
 sync_dirs = ['SYNC1WAY', 'SYNC2WAY']
 
@@ -126,7 +126,12 @@ class Config:
         ## from that list. For now hard coding this stuff as we need to
         ## implement the migration stuff at priority.
 
-        return 6
+        d = os.path.join(self.get_app_root(), 'config')
+        files = glob.glob(os.path.join(d, 'config_*.json'))
+        vers = [int(re.search('_v(\d+).json$', x).group(1)) for x in files]
+        vers.sort(reverse=True)
+
+        return vers[0]
 
     def _setup_state_json (self):
         user_dir = self.get_user_dir()
