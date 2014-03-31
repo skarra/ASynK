@@ -80,7 +80,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_get_conf_file_version (self):
         val = self.config.get_conf_file_version()
-        self.assertEqual(val, 6)
+        self.assertEqual(val, 7)
 
     def test_read_label_prefix (self):
         val = self.config.get_label_prefix()
