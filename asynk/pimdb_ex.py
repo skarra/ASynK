@@ -59,8 +59,16 @@ class EXPIMDB(PIMDB):
 
         return 'ex'
 
-    def list_folders (self, gid):
-        logging.info('%s: Not Implemented', 'pimdb_ex:list_folders()')
+    def list_folders (self, silent=False, recursive=True):
+        logging.info('pimdb_ex:list_folders()... Begin')
+        root = self.get_ews().get_root_folder()
+        ews_folders = root.FindFolders(recursive=recursive)
+
+        for i, f in enumerate(ews_folders):
+            if not silent:
+                logging.info(' %2d: Folder Name: %-25s ID: %s',
+                             i, f.DisplayName, f.Id)
+        logging.info('pimdb_ex:list_folders()... End')
 
     def new_folder (self, fname, ftype=Folder.CONTACT_t, storeid=None):
         """Create a new folder of specified type and return an id. The folder
@@ -84,11 +92,16 @@ class EXPIMDB(PIMDB):
         except EWSCreateFolderError as e:
             logging.error('Could not create folder (%s): %s', fname, e)
 
+        return res
+
     def show_folder (self, gid):
         logging.info('%s: Not Implemented', 'pimdb_ex:show_folder()')
 
-    def del_folder (self, gid):
-        logging.info('%s: Not Implemented', 'pimdb_ex:del_folder()')
+    def del_folder (self, fid):
+        try:
+            res = self.get_ews().DeleteFolder([fid])
+        except EWSCreateFolderError as e:
+            logging.error('Could not delete folder (%s): %s', fid, e)
 
     def set_folders (self):
         """See the documentation in class PIMDB"""
