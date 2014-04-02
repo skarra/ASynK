@@ -354,6 +354,8 @@ class OLFolder(Folder):
     def get_def_cols (self):
         return self.def_cols
 
+    ## fobj is a pointer to the folder object that is returned by the MAPI
+    ## library on opening this folder object.
     def get_fobj (self):
         return self._get_prop('fobj')
 

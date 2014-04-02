@@ -39,14 +39,17 @@ def main ():
     ex = init()
 
 def init ():
-    with open('auth.txt', 'r') as inf:
+    with open('auth.pwd', 'r') as inf:
         user = inf.readline().strip()
         pw   = inf.readline().strip()
         url  = inf.readline().strip()
 
     conf = Config(asynk_base_dir=ASYNK_BASE_DIR, user_dir='./')
     ex = EXPIMDB(conf, user, pw, url)
-    ex.new_folder("ASynK Contacts 1")
+    # ex.new_folder("ASynK Contacts 1")
+
+    ex.list_folders(recursive=False)
+    # ex.del_folder('AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHsAwAA')
 
     return ex
 
