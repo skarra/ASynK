@@ -29,14 +29,8 @@ from   pyews.ews.data       import FolderClass, EWSCreateFolderError
 from   pyews.pyews    import WebCredentials, ExchangeService
 from   pyews.ews.autodiscover import EWSAutoDiscover, ExchangeAutoDiscoverError
 from   folder         import Folder
+from   folder_ex      import EXContactsFolder, folder_class_map
 from   pimdb          import PIMDB
-
-folder_class_map = {
-    Folder.CONTACT_t : FolderClass.Contacts,
-    Folder.TASK_t    : FolderClass.Tasks,
-    Folder.APPT_t    : FolderClass.Calendars,
-    Folder.NOTE_t    : FolderClass.Notes
-    }
 
 class EXPIMDB(PIMDB):
 
@@ -69,6 +63,8 @@ class EXPIMDB(PIMDB):
                 logging.info(' %2d: Folder Name: %-25s ID: %s',
                              i, f.DisplayName, f.Id)
         logging.info('pimdb_ex:list_folders()... End')
+
+        return ews_folders
 
     def new_folder (self, fname, ftype=Folder.CONTACT_t, storeid=None):
         """Create a new folder of specified type and return an id. The folder
@@ -108,13 +104,17 @@ class EXPIMDB(PIMDB):
 
         ## This copies all the folders from the underlying message stores into
         ## the current object for easy referencing
-        logging.debug('EXPIMDB.set_folders(): Not implemented')
+        logging.debug('EXPIMDB.set_folders(): Begin')
+        ews_folders = self.list_folders(silent=True, recursive=False)
+
+        for ewsf in ews_folders:
+            f = EXContactsFolder(self, ewsf)
+            self.add_to_folders(f)
 
     def set_def_folders (self):
         """See the documentation in class PIMDB"""
 
-        # self.def_folder['contacts'] = self.folders['contacts'][0]
-        pass
+        self.def_folder['contacts'] = self.folders['contacts'][0]
 
     def set_sync_folders (self):
         """See the documentation in class PIMDB"""
