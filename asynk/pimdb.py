@@ -367,14 +367,11 @@ class PIMDB:
         """Returns the default Appts folder object."""
         return self.def_folder['appts']
 
-    def get_def_folder (self, ftype=None):
+    def get_def_folder (self, ftype=Folder.CONTACT_t):
         """Return the default folder for the  message store. ftype has to be
         oneo f the values from Folder.valid_types. If it is none, the default
         contacts folder is returned"""
         
-        if not ftype:
-           ftype = Folder.CONTACT_t
-
         return self.def_folder[Folder.type_names[ftype]]
 
     def set_def_folder (self, key, value):
