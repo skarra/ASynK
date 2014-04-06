@@ -20,7 +20,8 @@
 
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
-from   pyews.ews.data import FolderClass
+from   contact_ex     import EXContact
+from   pyews.ews.data import FolderClass, EWSMessageError
 
 folder_class_map = {
     Folder.CONTACT_t : FolderClass.Contacts,
@@ -68,10 +69,28 @@ class EXFolder(Folder):
         raise NotImplementedError
 
     def find_item (self, itemid):
-        raise NotImplementedError
+        """
+        Fetch specified item from the server. The Exchange service searches
+        and returns this from anywhere so items need to be
+        """
 
-    def find_items (self, iids):
-        raise NotImplementedError
+        cons = self.find_items([itemid])
+        return cons[0] if cons is not None else None
+
+    def find_items (self, itemids):
+        try:
+            ews_cons = self.get_ews().GetItems(itemids)
+        except EWSMessageError as e:
+            logging.info('Error from Server looking for items: %s', e)
+            return None
+
+        fid = self.get_itemid()
+        if ews_cons is not None and len(ews_cons) > 0:
+            cons = [EXContact(self, x) for x in ews_cons]
+            ret =  [x for x in cons if x.get_parent_folder_id() == fid]
+            return ret
+        else:
+            return None
 
     def batch_create (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
@@ -125,6 +144,9 @@ class EXFolder(Folder):
 
     def set_fobj (self, fobj):
         self._set_prop('fobj', fobj)
+
+    def get_ews (self):
+        return self.get_db().get_ews()
 
 class EXContactsFolder(EXFolder):
     def __init__ (self, db, fobj):
