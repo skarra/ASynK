@@ -108,8 +108,12 @@ class EXPIMDB(PIMDB):
         ews_folders = self.list_folders(silent=True, recursive=False)
 
         for ewsf in ews_folders:
-            f = EXContactsFolder(self, ewsf)
-            self.add_to_folders(f)
+            if ewsf.FolderClass == FolderClass.Contacts:
+                f = EXContactsFolder(self, ewsf)
+                self.add_to_folders(f)
+            else:
+                logging.info('Skipping Exchnage folder %s of type %s',
+                             ewsf.DisplayName, ewsf.FolderClass)
 
     def set_def_folders (self):
         """See the documentation in class PIMDB"""
