@@ -48,8 +48,14 @@ def init ():
     ex = EXPIMDB(conf, user, pw, url)
     # ex.new_folder("ASynK Contacts 1")
 
-    ex.list_folders(recursive=False)
+    # ex.list_folders(recursive=False)
     # ex.del_folder('AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHsAwAA')
+
+    f = ex.get_def_folder()
+    cons = f.find_items(['AQAcAHNrYXJyAGFAYXN5bmsub25taWNyb3NvZnQuY29tAEYAAAPq28rfw0yASI+t3PJx5xi8BwAJ//qJAdi9TI3OuVBfNRA2AAACAQ8AAAAJ//qJAdi9TI3OuVBfNRA2AAACEMsAAAA='])
+    print 'Found %d contacts' % len(cons)
+    for con in cons:
+        print con
 
     return ex
 
