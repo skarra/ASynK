@@ -26,7 +26,7 @@
 
 import copy, logging, re, string, uuid
 from   contact    import Contact
-from   utils      import chompq, unchompq
+from   utils      import chompq, unchompq, classify_email_addr
 import demjson, pimdb_bb, folder_bb
 
 def esc_str (x):
@@ -255,13 +255,7 @@ class BBContact(Contact):
                 if em == 'nil':
                     continue
 
-                home, work, other = self._classify_email_addr(em, domains)
-
-                ## Note that the following implementation means if the same
-                ## domain is specified in more than one category, it ends up
-                ## being copied to every category. In effect this means when
-                ## this is synched to google contacts, say, the GC entry will
-                ## have the same email address twice for the record
+                home, work, other = classify_email_addr(em, domains)
 
                 if home:
                     self.add_email_home(em)
@@ -274,22 +268,6 @@ class BBContact(Contact):
 
                 if not self.get_email_prim():
                     self.set_email_prim(em)
-
-    def _classify_email_addr (self, addr, domains):
-        """Return a tuple of (home, work, other) booleans classifying if the
-        specified address falls within one of the domains."""
-
-        res = {'home' : False, 'work' : False, 'other' : False}
-
-        for cat in res.keys():
-            try:
-                for domain in domains[cat]:
-                    if re.search((domain + '$'), addr):
-                        res[cat] = True
-            except KeyError, e:
-                logging.warning('Invalid email_domains specification.')
-
-        return (res['home'], res['work'], res['other'])
 
     def _snarf_postal_from_parse_res (self, pr):
         adr_re = self.get_store().get_adr_re()

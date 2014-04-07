@@ -223,3 +223,19 @@ def utc_time_to_local_ts (t, ret_dt=False):
         return d
     else:
         return _time.mktime(d.timetuple())
+
+def classify_email_addr (addr, domains):
+    """Return a tuple of (home, work, other) booleans classifying if the
+    specified address falls within one of the domains."""
+
+    res = {'home' : False, 'work' : False, 'other' : False}
+
+    for cat in res.keys():
+        try:
+            for domain in domains[cat]:
+                if re.search((domain + '$'), addr):
+                    res[cat] = True
+        except KeyError, e:
+            logging.warning('Invalid email_domains specification.')
+
+    return (res['home'], res['work'], res['other'])

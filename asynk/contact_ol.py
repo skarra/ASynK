@@ -430,13 +430,7 @@ class OLContact(Contact):
         if not addr:
             return
 
-        home, work, other = self._classify_email_addr(addr, domains)
-
-        ## Note that the following implementation means if the same domain is
-        ## specified in more than one category, it ends up being copied to
-        ## every category. In effect this means when this is synched to google
-        ## contacts, the GC entry will have the same email address twice for
-        ## the record
+        home, work, other = utils.classify_email_addr(addr, domains)
 
         if home:
             self.add_email_home(addr)
@@ -446,23 +440,6 @@ class OLContact(Contact):
             self.add_email_other(addr)
         else:
             self.add_email_work(addr)
-
-    def _classify_email_addr (self, addr, domains):
-        """Return a tuple of (home, work, other) booleans classifying if the
-        specified address falls within one of the domains."""
-
-        res = {'home' : False, 'work' : False, 'other' : False}
-
-        for cat in res.keys():
-            try:
-                for domain in domains[cat]:
-                    if re.search((domain + '$'), addr):
-                        res[cat] = True
-            except KeyError, e:
-                logging.warning('Invalid email_domains specification.')
-
-        return (res['home'], res['work'], res['other'])
-
 
     ## Outlook does not have a concept of labelled addresses. There is one
     ## address each for home, work, and other. Othere databases support any
