@@ -92,7 +92,78 @@ class EXContact(Contact):
 
     def _init_props_from_ews_con (self, ews_con):
         self.set_parent_folder_id(ews_con.ParentFolderId)
+        self.set_itemid(ews_con.ItemId)
+        self.set_changekey(ews_con.ChangeKey)
+
+        fn = ews_con.FirstName if ews_con.FirstName else ews_con.GivenName
+        ln = ews_con.LasttName if ews_con.FirstName else ews_con.Surname
+        self.set_prefix(ews_con.Title)
+        self.set_firstname(fn)
+        self.set_lastname(ln)
+        self.set_middlename(ews_con.MiddleName)
+        self.set_suffix(ews_con.Suffix)
+        self.set_nickname(ews_con.Nickname)
+        self.set_fileas(ews_con.FileAs)
+        self.add_custom('alias', ews_con.Alias)
+
+        self.add_notes(ews_con.Notes)
+
+        self._snarf_emails(ews_con)
+        self._snarf_phones(ews_con)
+
+        ## FIXME: This will be some of the extended property. Need to
+        ## understand that a bit more
+        self.set_gender(None)
+
+    def _snarf_emails (self, ews_con):
+        """Classify each email address in ews_con as home/work/other and store
+        them away. Classification is done based on the domain of the address
+        as set in the config file."""
+
+        domains = self.get_email_domains()
+
+        for email in ews_con.Emails.entries:
+            addr = email.Address
+            home, work, other = utils.classify_email_addr(addr, domains)
+
+            if home:
+                self.add_email_home(addr)
+            elif work:
+                self.add_email_work(addr)
+            elif other:
+                self.add_email_other(addr)
+            else:
+                self.add_email_work(addr)
+
+    def _snarf_phones (self, ews_con):
+        for phone in ews_con.Phones.entries:
+            if phone.Key == 'PrimaryPhone':
+                self.add_phone_prim(phone.Number)
+            elif phone.Key == 'MobilePhone':
+                self.add_phone_mob(('Mobile', phone.Number))
+            elif phone.Key == 'HomePhone':
+                self.add_phone_home(('Home', phone.Number))
+            elif phone.Key == 'HomePhone2':
+                self.add_phone_home(('Home2', phone.Number))
+            elif phone.Key == 'BusinessPhone':
+                self.add_phone_work(('Work', phone.Number))
+            elif phone.Key == 'BusinessPhone2':
+                self.add_phone_work(('Work2', phone.Number))
+            elif phone.Key == 'OtherTelephone':
+                self.add_phone_other(('Other', phone.Number))
+            elif phone.Key == 'HomeFax':
+                self.add_fax_home(('Home', phone.Number))
+            elif phone.Key == 'BusinessFax':
+                self.add_fax_work(('Work', phone.Number))
+            else:
+                self.add_phone_other((phone.Key, phone.Number))
 
     ##
     ## some additional get and set methods
     ##
+
+    def get_changekey (self):
+        return self._get_att('ck')
+
+    def set_changekey (self, ck):
+        return self._set_att('ck', ck)
