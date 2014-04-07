@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Mon Mar 31 16:40:25 IST 2014
+// Last Modified : Mon Apr 07 06:46:43 IST 2014
 //
 // Copyright (C) 2011, 2012, 2013, 2014 Sriram Karra <karra.etc@gmail.com>
 //
@@ -325,6 +325,13 @@
         },
 
         'ex' : {
+            // See above in 'ol'. this is the same stuff.
+            "email_domains" : {
+                "home"  : ['hotmail.com', 'gmail.com',
+                          'yahoo.com', 'yahoo.co.uk', 'yahoo.co.in',],
+                "work"  : [],
+                "other" : [],
+            }, // db_config['email_domains']
         },
     }, // 'db_config'
 }
