@@ -24,6 +24,8 @@
 ##
 
 from   contact    import Contact
+from   pyews.ews  import contact as ews_c
+from   pyews.ews.contact import Contact as EWSContact
 import utils
 
 class EXContactError(Exception):
@@ -67,7 +69,12 @@ class EXContact(Contact):
     ##
 
     def save (self):
-        pass
+        """Saves the current contact on the server. For now we are only
+        handling a new contact creation scneario. The protocol for updates is
+        different"""
+
+        ews_con = self._init_ews_con_from_props(ews_con)
+        ews_con.save()
 
     ##
     ## Now onto the non-abstract methods.
@@ -91,22 +98,23 @@ class EXContact(Contact):
     ##
 
     def _init_props_from_ews_con (self, ews_con):
-        self.set_parent_folder_id(ews_con.ParentFolderId)
-        self.set_itemid(ews_con.ItemId)
-        self.set_changekey(ews_con.ChangeKey)
+        self.set_parent_folder_id(ews_con.parent_fid.text)
+        self.set_itemid(ews_con.itemid.text)
+        self.set_changekey(ews_con.change_key.text)
 
-        fn = ews_con.FirstName if ews_con.FirstName else ews_con.GivenName
-        ln = ews_con.LasttName if ews_con.FirstName else ews_con.Surname
-        self.set_prefix(ews_con.Title)
+        fn = ews_con._firstname
+        ln = ews_con._lastname
+        self.set_prefix(ews_con.title.text)
         self.set_firstname(fn)
         self.set_lastname(ln)
-        self.set_middlename(ews_con.MiddleName)
-        self.set_suffix(ews_con.Suffix)
-        self.set_nickname(ews_con.Nickname)
-        self.set_fileas(ews_con.FileAs)
-        self.add_custom('alias', ews_con.Alias)
+        self.set_middlename(ews_con.middle_name.text)
+        self.set_name(ews_con._displayname)
+        self.set_suffix(ews_con.suffix.text)
+        self.set_nickname(ews_con.nickname.text)
+        self.set_fileas(ews_con.file_as.text)
+        self.add_custom('alias', ews_con.alias.text)
 
-        self.add_notes(ews_con.Notes)
+        self.add_notes(ews_con.notes.text)
 
         self._snarf_emails(ews_con)
         self._snarf_phones(ews_con)
@@ -122,8 +130,8 @@ class EXContact(Contact):
 
         domains = self.get_email_domains()
 
-        for email in ews_con.Emails.entries:
-            addr = email.Address
+        for email in ews_con.emails.entries:
+            addr = email.text
             home, work, other = utils.classify_email_addr(addr, domains)
 
             if home:
@@ -136,27 +144,54 @@ class EXContact(Contact):
                 self.add_email_work(addr)
 
     def _snarf_phones (self, ews_con):
-        for phone in ews_con.Phones.entries:
-            if phone.Key == 'PrimaryPhone':
-                self.add_phone_prim(phone.Number)
-            elif phone.Key == 'MobilePhone':
-                self.add_phone_mob(('Mobile', phone.Number))
-            elif phone.Key == 'HomePhone':
-                self.add_phone_home(('Home', phone.Number))
-            elif phone.Key == 'HomePhone2':
-                self.add_phone_home(('Home2', phone.Number))
-            elif phone.Key == 'BusinessPhone':
-                self.add_phone_work(('Work', phone.Number))
-            elif phone.Key == 'BusinessPhone2':
-                self.add_phone_work(('Work2', phone.Number))
-            elif phone.Key == 'OtherTelephone':
-                self.add_phone_other(('Other', phone.Number))
-            elif phone.Key == 'HomeFax':
-                self.add_fax_home(('Home', phone.Number))
-            elif phone.Key == 'BusinessFax':
-                self.add_fax_work(('Work', phone.Number))
+        for phone in ews_con.phones.entries:
+            key = phone.attrib['Key']
+
+            if key == 'PrimaryPhone':
+                self.add_phone_prim(phone.text)
+            elif key == 'MobilePhone':
+                self.add_phone_mob(('Mobile', phone.text))
+            elif key == 'HomePhone':
+                self.add_phone_home(('Home', phone.text))
+            elif key == 'HomePhone2':
+                self.add_phone_home(('Home2', phone.text))
+            elif key == 'BusinessPhone':
+                self.add_phone_work(('Work', phone.text))
+            elif key == 'BusinessPhone2':
+                self.add_phone_work(('Work2', phone.text))
+            elif key == 'OtherTelephone':
+                self.add_phone_other(('Other', phone.text))
+            elif key == 'HomeFax':
+                self.add_fax_home(('Home', phone.text))
+            elif key == 'BusinessFax':
+                self.add_fax_work(('Work', phone.text))
             else:
-                self.add_phone_other((phone.Key, phone.Number))
+                self.add_phone_other((key, phone.text))
+
+    ##
+    ## Fetch ews_con from EXContact
+    ##
+
+    def _init_ews_con_from_props (self):
+        """Return a newly populated object of type pyews.ews.contact.Contact
+        withthe data fields of the present contact."""
+
+        ews = self.get_db().get_service()
+        parent_fid = self.get_folder().get_itemid()
+        ews_con = EWSContact(ews, parent_fid)
+
+        ews_con.first_name = ews_c.FirstName(self.get_firsname())
+        ews_con.given_name = ews_c.GivenName(self.get_firsname())
+        ews_con.surname = ews_c.Surname(self.get_lastname())
+        ews_con.last_name = ews_c.LastName(self.get_lastname())
+        ews_con.middle_name = ews_c.MiddleName(self.get_middlename())
+        ews_con.suffix = ews_c.Suffix(self.get_suffix())
+        ews_con.nickname = ews_c.Nickname(self.get_nickname())
+        ews_con.file_as = ews_c.FileAs(self.get_fileas())
+        ews_con.alias = ews_c.Alias(self.get_custom('alias'))
+        ews_con.notes = ews_c.Notes(self.get_notes()[0])
+
+        return ews_con
 
     ##
     ## some additional get and set methods
