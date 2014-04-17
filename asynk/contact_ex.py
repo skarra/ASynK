@@ -98,30 +98,63 @@ class EXContact(Contact):
     ##
 
     def _init_props_from_ews_con (self, ews_con):
+        ## ItemID and related identification information
+
         self.set_parent_folder_id(ews_con.parent_fid.text)
         self.set_itemid(ews_con.itemid.text)
         self.set_changekey(ews_con.change_key.text)
 
+        ## Name / Complete Name related fields
+
+        self.set_fileas(ews_con.file_as.text)
+        if ews_con.alias.text is not None:
+            self.add_custom('alias', ews_con.alias.text)
+        self.set_name(ews_con._displayname)
+        # Ignore ews_con.spouse_name
+        cn = ews_con.complete_name
         fn = ews_con._firstname
         ln = ews_con._lastname
-        self.set_prefix(ews_con.title.text)
+        self.set_prefix(cn.title.text)
         self.set_firstname(fn)
         self.set_lastname(ln)
-        self.set_middlename(ews_con.middle_name.text)
-        self.set_name(ews_con._displayname)
-        self.set_suffix(ews_con.suffix.text)
-        self.set_nickname(ews_con.nickname.text)
-        self.set_fileas(ews_con.file_as.text)
-        self.add_custom('alias', ews_con.alias.text)
+        self.set_middlename(cn.middle_name.text)
+        self.set_suffix(cn.suffix.text)
+        self.set_nickname(cn.nickname.text)
+        # Skipping gender
+
+        ## Notes and related fields
 
         self.add_notes(ews_con.notes.text)
 
+        ## Emails
+
         self._snarf_emails(ews_con)
+
+        ## Postal Addresses
+
+        ## Org Details
+
+        self.set_title(ews_con.job_title.text)
+        self.set_company(ews_con.company_name.text)
+        self.set_dept(ews_con.department.text)
+        # Ignoring manager_name and assistant_name
+
+        ## Phones and faxes
+
         self._snarf_phones(ews_con)
 
-        ## FIXME: This will be some of the extended property. Need to
-        ## understand that a bit more
-        self.set_gender(None)
+        ## Dates & Anniversaries
+
+        self.set_created(ews_con.created_time.text)
+        # Need to parse Last Modified Time
+        self.set_birthday(ews_con.birthday.text)
+        self.set_anniv(ews_con.anniversary.text)
+
+        ## Websites
+
+        ## IM Addresses
+
+        ## Sync Tags
 
     def _snarf_emails (self, ews_con):
         """Classify each email address in ews_con as home/work/other and store
