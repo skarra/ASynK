@@ -45,6 +45,7 @@ class EXFolder(Folder):
         self.set_entryid(entryid)
         self.set_name(name)
         self.set_fobj(fobj)
+        self.reset_items()
 
     ##
     ## Implementation of some abstract methods inherted from Folder
@@ -79,15 +80,18 @@ class EXFolder(Folder):
 
     def find_items (self, itemids):
         try:
-            ews_cons = self.get_ews().GetItems(itemids)
+            ews_items = self.get_ews().GetItems(itemids)
         except EWSMessageError as e:
             logging.info('Error from Server looking for items: %s', e)
             return None
 
         fid = self.get_itemid()
-        if ews_cons is not None and len(ews_cons) > 0:
-            cons = [EXContact(self, x) for x in ews_cons]
-            ret =  [x for x in cons if x.get_parent_folder_id() == fid]
+        if ews_items is not None and len(ews_items) > 0:
+            ## FIXME: Need to fix this when we add suppport for additional
+            ## item types. For now we just assume we only get back contact
+            ## types - which is true as of April 2014
+            items = [EXContact(self, x) for x in ews_items]
+            ret =  [x for x in items if x.get_parent_folder_id() == fid]
             return ret
         else:
             return None
@@ -112,6 +116,19 @@ class EXFolder(Folder):
         entries after a table lookup.
         """
         raise NotImplementedError
+
+    def _refresh_items (self):
+        self.reset_items()
+
+        ews = self.get_ews()
+        fobj = self.get_fobj()
+        ews_cons = ews.FindItems(fobj)
+
+        for econ in ews_cons:
+            ## FIXME: This needs to be fixed if and when we support additional
+            ## Item types.
+            con = EXContact(folder=self, ews_con=econ)
+            self.add_item(con)
 
     def __str__ (self):
         if self.get_type() == Folder.CONTACT_t:
@@ -148,10 +165,23 @@ class EXFolder(Folder):
     def get_ews (self):
         return self.get_db().get_ews()
 
+    def reset_items (self):
+        self.items = {}
+
+    def get_items (self):
+        return self.items
+
+    def add_item (self, item):
+        self.items.update({item.get_itemid() : item})
+
 class EXContactsFolder(EXFolder):
     def __init__ (self, db, fobj):
         EXFolder.__init__(self, db, fobj.Id, fobj.DisplayName, fobj)
         self.set_type(Folder.CONTACT_t)
+
+    ##
+    ## Inherited methods
+    ##
 
     def print_key_stats (self):
         print 'Contacts Folder Name: ', self.get_name()
