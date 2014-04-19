@@ -25,6 +25,7 @@
 
 from   contact    import Contact
 from   pyews.ews  import contact as ews_c
+from   pyews.ews.contact  import CompleteName as ews_cn
 from   pyews.ews.contact import Contact as EWSContact
 import utils
 
@@ -73,7 +74,7 @@ class EXContact(Contact):
         handling a new contact creation scneario. The protocol for updates is
         different"""
 
-        ews_con = self._init_ews_con_from_props(ews_con)
+        ews_con = self._init_ews_con_from_props()
         ews_con.save()
 
     ##
@@ -209,20 +210,31 @@ class EXContact(Contact):
         """Return a newly populated object of type pyews.ews.contact.Contact
         withthe data fields of the present contact."""
 
-        ews = self.get_db().get_service()
+        ews = self.get_db().get_ews()
         parent_fid = self.get_folder().get_itemid()
         ews_con = EWSContact(ews, parent_fid)
 
-        ews_con.first_name = ews_c.FirstName(self.get_firsname())
-        ews_con.given_name = ews_c.GivenName(self.get_firsname())
-        ews_con.surname = ews_c.Surname(self.get_lastname())
-        ews_con.last_name = ews_c.LastName(self.get_lastname())
-        ews_con.middle_name = ews_c.MiddleName(self.get_middlename())
-        ews_con.suffix = ews_c.Suffix(self.get_suffix())
-        ews_con.nickname = ews_c.Nickname(self.get_nickname())
-        ews_con.file_as = ews_c.FileAs(self.get_fileas())
-        ews_con.alias = ews_c.Alias(self.get_custom('alias'))
-        ews_con.notes = ews_c.Notes(self.get_notes()[0])
+        cn = ews_con.complete_name
+        cn.title.text = self.get_prefix()
+        cn.first_name.text = self.get_firstname()
+        cn.given_name.text = self.get_firstname()
+        cn.middle_name.text = self.get_middlename()
+        cn.surname.text = self.get_lastname()
+        cn.last_name.text = self.get_lastname()
+        cn.suffix.text = self.get_suffix()
+        cn.nickname.text = self.get_nickname()
+
+        ews_con.file_as.text = self.get_fileas()
+        ews_con.alias.text = self.get_custom('alias')
+
+        n = self.get_notes()
+        if n is not None and len(n) > 0:
+            ews_con.notes.text = n[0]
+            ## FIXME: Need to take care of the rest like we usually do.
+
+        ews_con.department.text = self.get_dept()
+        ews_con.company_name.text = self.get_company()
+        ews_con.job_title.text = self.get_title()
 
         return ews_con
 
