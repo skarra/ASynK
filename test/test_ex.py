@@ -34,30 +34,50 @@ sys.path = EXTRA_PATHS + sys.path
 
 from state         import Config
 from pimdb_ex      import EXPIMDB
+from contact_ex    import EXContact
 
 def main ():
     ex = init()
 
 def init ():
-    with open('auth.pwd', 'r') as inf:
-        user = inf.readline().strip()
-        pw   = inf.readline().strip()
-        url  = inf.readline().strip()
+    tests = TestEXContact(ASYNK_BASE_DIR, './')
+    tests.new_contact()
 
-    conf = Config(asynk_base_dir=ASYNK_BASE_DIR, user_dir='./')
-    ex = EXPIMDB(conf, user, pw, url)
-    # ex.new_folder("ASynK Contacts 1")
+class TestEXContact:
+    def __init__ (self, asynk_bd, user_d):
+        with open('auth.pwd', 'r') as inf:
+            user = inf.readline().strip()
+            pw   = inf.readline().strip()
+            url  = inf.readline().strip()
 
-    # ex.list_folders(recursive=False)
-    # ex.del_folder('AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHsAwAA')
+        self.conf = Config(asynk_base_dir=asynk_bd, user_dir=user_d)
+        self.ex = EXPIMDB(self.conf, user, pw, url)
+        self.cons_f = self.ex.get_def_folder()
 
-    f = ex.get_def_folder()
-    cons = f.find_items(['AQAcAHNrYXJyAGFAYXN5bmsub25taWNyb3NvZnQuY29tAEYAAAPq28rfw0yASI+t3PJx5xi8BwAJ//qJAdi9TI3OuVBfNRA2AAACAQ8AAAAJ//qJAdi9TI3OuVBfNRA2AAACEMsAAAA='])
-    print 'Found %d contacts' % len(cons)
-    for con in cons:
-        print con
+    def list_folders (self):
+        self.ex.list_folders(recursive=False)
 
-    return ex
+    def new_contact (self):
+        con = EXContact(self.cons_f)
+        con.set_firstname("Atal")
+        con.set_middlename("Bihari")
+        con.set_lastname("Vajpayee")
+        con.set_title("Ex PM")
+        con.set_dept("Prime Minister's Office")
+        con.set_company("Govt. of India")
+        con.save()
+
+    def find_items (self):
+        cons = self.conf_f.find_items(['AQAcAHNrYXJyAGFAYXN5bmsub25taWNyb3NvZnQuY29tAEYAAAPq28rfw0yASI+t3PJx5xi8BwAJ//qJAdi9TI3OuVBfNRA2AAACAQ8AAAAJ//qJAdi9TI3OuVBfNRA2AAACEMsAAAA='])
+
+        print 'Found %d contacts' % len(cons)
+        for con in cons:
+            print con
+
+    def misc (self):
+        self.ex.new_folder("ASynK Contacts 1")
+        self.ex.del_folder('AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHsAwAA')
+
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
