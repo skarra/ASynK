@@ -41,7 +41,8 @@ def main ():
 
 def init ():
     tests = TestEXContact(ASYNK_BASE_DIR, './')
-    tests.new_contact()
+    # tests.new_contact()
+    tests.list_all_contacts()
 
 class TestEXContact:
     def __init__ (self, asynk_bd, user_d):
@@ -67,8 +68,13 @@ class TestEXContact:
         con.set_company("Govt. of India")
         con.save()
 
+    def list_all_contacts (self):
+        self.cons_f._refresh_items()
+        for key, item in self.cons_f.get_items().iteritems():
+            print item
+
     def find_items (self):
-        cons = self.conf_f.find_items(['AQAcAHNrYXJyAGFAYXN5bmsub25taWNyb3NvZnQuY29tAEYAAAPq28rfw0yASI+t3PJx5xi8BwAJ//qJAdi9TI3OuVBfNRA2AAACAQ8AAAAJ//qJAdi9TI3OuVBfNRA2AAACEMsAAAA='])
+        cons = self.cons_f.find_items(['AQAcAHNrYXJyAGFAYXN5bmsub25taWNyb3NvZnQuY29tAEYAAAPq28rfw0yASI+t3PJx5xi8BwAJ//qJAdi9TI3OuVBfNRA2AAACAQ8AAAAJ//qJAdi9TI3OuVBfNRA2AAACEMsAAAA='])
 
         print 'Found %d contacts' % len(cons)
         for con in cons:
