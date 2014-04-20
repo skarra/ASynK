@@ -121,7 +121,8 @@ class EXContact(Contact):
         self.set_middlename(cn.middle_name.text)
         self.set_suffix(cn.suffix.text)
         self.set_nickname(cn.nickname.text)
-        # Skipping gender
+
+        self.set_gender(str(ews_con.gender))
 
         ## Notes and related fields
 
