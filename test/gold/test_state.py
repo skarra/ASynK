@@ -123,6 +123,14 @@ class TestStateFunctions(unittest.TestCase):
         val = self.config.get_ol_gid_base('gc')
         self.assertTrue(val == 0x9001)
 
+    def test_read_ex_guid (self):
+        val = self.config.get_ex_guid()
+        self.assertTrue(val == '{c950b7d3-ca13-43cd-9e78-be65bbdeaf37}')
+
+    def test_read_ex_gid_base (self):
+        val = self.config.get_ex_gid_base('ol')
+        self.assertTrue(val == 0xC001)
+
     def test_read_backup_hold_period (self):
         val = self.config.get_backup_hold_period()
         self.assertEqual(val, 10)
@@ -198,13 +206,37 @@ class TestStateFunctions(unittest.TestCase):
         with self.assertRaises(AsynkConfigError):
             self.config.set_conflict_resolve('defgcbb', 'GUPPY')
 
-    def test_get_gid_next_gc (self):
+    def test_get_ol_gid_next_gc (self):
         val = self.config.get_ol_next_gid('gc')
         self.assertTrue(val == 0x9002)
 
-    def test_get_gid_next_bb (self):
+    def test_get_ol_gid_next_bb (self):
         val = self.config.get_ol_next_gid('bb')
         self.assertTrue(val == 0x8001)
+
+    def test_get_ol_gid_next_cd (self):
+        val = self.config.get_ol_next_gid('cd')
+        self.assertTrue(val == 0xa001)
+
+    def test_get_ol_gid_next_ex (self):
+        val = self.config.get_ol_next_gid('ex')
+        self.assertTrue(val == 0xb001)
+
+    def test_get_ex_gid_next_gc (self):
+        val = self.config.get_ex_next_gid('gc')
+        self.assertTrue(val == 0x9001)
+
+    def test_get_ex_gid_next_bb (self):
+        val = self.config.get_ex_next_gid('bb')
+        self.assertTrue(val == 0x8001)
+
+    def test_get_ex_gid_next_cd (self):
+        val = self.config.get_ex_next_gid('cd')
+        self.assertTrue(val == 0xa001)
+
+    def test_get_ex_gid_next_ol (self):
+        val = self.config.get_ex_next_gid('ol')
+        self.assertTrue(val == 0xc001)
 
     def test_make_sync_label (self):
         val = self.config.make_sync_label('goofy', 'gc')
