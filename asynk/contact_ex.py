@@ -23,6 +23,8 @@
 ## item while implementing the base class methods.
 ##
 
+import logging
+
 from   contact    import Contact
 from   pyews.ews  import contact as ews_c
 from   pyews.ews.contact  import CompleteName as ews_cn
@@ -62,6 +64,7 @@ class EXContact(Contact):
             except Exception, e:
                 logging.debug('Potential new EXContact: %s', con.get_name())
 
+        self.set_ews_con(ews_con)
         if ews_con is not None:
             self.init_props_from_ews_con(ews_con)
 
@@ -117,35 +120,196 @@ class EXContact(Contact):
 
     def init_ews_con_from_props (self):
         """Return a newly populated object of type pyews.ews.contact.Contact
-        withthe data fields of the present contact."""
+        with the data fields of the present contact."""
 
         ews = self.get_db().get_ews()
         parent_fid = self.get_folder().get_itemid()
         ews_con = EWSContact(ews, parent_fid)
 
+        self._add_itemid_to_ews_con(ews_con)
+        self._add_names_gender_to_ews_con(ews_con)
+        self._add_notes_to_ews_con(ews_con)
+        self._add_emails_to_ews_con(ews_con)
+        self._add_postal_to_ews_con(ews_con)
+        self._add_org_details_to_ews_con(ews_con)
+        self._add_phones_and_faxes_to_ews_con(ews_con)
+        self._add_dates_to_ews_con(ews_con)
+        self._add_websites_to_ews_con(ews_con)
+        self._add_ims_to_ews_con(ews_con)
+        self._add_sync_tags_to_ews_con(ews_con)
+        self._add_custom_props_to_ews_con(ews_con)
+
+        return self.set_ews_con(ews_con)
+
+    def _add_itemid_to_ews_con (self, ews_con):
+        itemid = self.get_itemid()
+        if itemid:
+            ews_con.itemid.set(itemid)
+
+        ck = self.get_changekey()
+        if ck:
+            ews_con.change_key.set(ck)
+
+    def _add_names_gender_to_ews_con (self, ews_con):
         cn = ews_con.complete_name
-        cn.title.value = self.get_prefix()
-        cn.first_name.value = self.get_firstname()
-        cn.given_name.value = self.get_firstname()
-        cn.middle_name.value = self.get_middlename()
-        cn.surname.value = self.get_lastname()
-        cn.last_name.value = self.get_lastname()
-        cn.suffix.value = self.get_suffix()
-        cn.nickname.value = self.get_nickname()
+        cn.title.set(self.get_prefix())
+        cn.first_name.set(self.get_firstname())
+        cn.given_name.set(self.get_firstname())
+        cn.middle_name.set(self.get_middlename())
+        cn.surname.set(self.get_lastname())
+        cn.last_name.set(self.get_lastname())
+        cn.suffix.set(self.get_suffix())
+        cn.nickname.set(self.get_nickname())
 
-        ews_con.file_as.value = self.get_fileas()
-        ews_con.alias.value = self.get_custom('alias')
+        ews_con.file_as.set(self.get_fileas())
+        ews_con.alias.set(self.get_custom('alias'))
 
+    def _add_notes_to_ews_con (self, ews_con):
         n = self.get_notes()
         if n is not None and len(n) > 0:
             ews_con.notes.value = n[0]
             ## FIXME: Need to take care of the rest like we usually do.
 
+    def _add_emails_to_ews_con (self, ews_con):
+        """
+        EWS allows only for maximum of 3 email addresses across all typmes. We
+        will keep three addresses
+        """
+
+        i = 0
+        left = 3
+
+        email_prim = self.get_email_prim()
+        if email_prim is not None:
+            ews_con.emails.add_email('EmailAddress1', email_prim)
+            i += 1
+
+        i = self._add_email_helper(ews_con, self.get_email_home(), left-i, i+1)
+        i = self._add_email_helper(ews_con, self.get_email_work(), left-i, i+1)
+        i = self._add_email_helper(ews_con, self.get_email_other(), left-i, i+1)
+
+    def _add_email_helper (self, ews_con, emails, n, key_start):
+        """From the list of emails, add at most n emails to ews_con. Return
+        actual added count.
+
+        n is the max number of emails from the list that can be added"""
+
+        i = 0
+        for email in emails:
+            if i >= n:
+                ## FIXME: we are effetively losing teh remaining
+                ## addresses. These should be put into a custom field
+                break
+
+            ews_con.emails.add('EmailAddress%d' % (key_start+i), email)
+            i += 1
+
+        return i
+
+    def _add_postal_to_ews_con (self, ews_con):
+        pass
+
+    def _add_org_details_to_ews_con (self, ews_con):
         ews_con.department.value = self.get_dept()
         ews_con.company_name.value = self.get_company()
         ews_con.job_title.value = self.get_title()
 
-        return ews_con
+    def _add_phones_and_faxes_to_ews_con (self, ews_con):
+        ## Any left over data will be stored to the custom property with the
+        ## key 'phones'. the structure of that property will be:
+        ##
+        ## { 'work' : { num : label, num : label ... }
+        ##   'home' : { num : label }
+        ##   'other' : { num : label } }
+        ##
+        ## There will be another like this for faxes.
+
+        self._add_phones_to_ews_con(ews_con)
+        self._add_faxes_to_ews_con(ews_con)
+
+    def _add_phones_to_ews_con (self, ews_con):
+        cust = {'mob' : {}, 'home' : {}, 'work' : {}, 'other' : {}}
+
+        prim = self.get_phone_prim()
+        ews_con.phones.add('PrimaryPhone', prim)
+
+        ph =  self.get_phone_mob()
+        if len(ph) >= 1:
+            ews_con.phones.add('MobilePhone', ph[0][1])
+
+        for ph in self.get_phone_home():
+            cust['home'].update({ph[1] : ph[0]})
+
+        ph =  self.get_phone_home()
+        if len(ph) >= 1:
+            ews_con.phones.add('HomePhone', ph[0][1])
+        if len(ph) >= 2:
+            ews_con.phones.add('HomePhone2', ph[1][1])
+
+        for ph in self.get_phone_home():
+            cust['home'].update({ph[1] : ph[0]})
+
+        ph =  self.get_phone_work()
+        if len(ph) >= 1:
+            ews_con.phones.add('BusinessPhone', ph[0][1])
+        if len(ph) >= 2:
+            ews_con.phones.add('BusinessPhone2', ph[1][1])
+
+        for ph in self.get_phone_work():
+            cust['work'].update({ph[1] : ph[0]})
+
+        ph =  self.get_phone_other()
+        if len(ph) >= 1:
+            ews_con.phones.add('OtherTelephone', ph[0][1])
+
+        for ph in self.get_phone_other():
+            cust['other'].update({ph[1] : ph[0]})
+
+        self.add_custom('phones', cust)
+
+        ## FIXME: We should have a generic place in contact.py to handle these
+        ## left overs for all the db types.
+
+    def _add_faxes_to_ews_con (self, ews_con):
+        cust = {'home' : {}, 'work' : {}}
+
+        ph =  self.get_fax_home()
+        if len(ph) >= 1:
+            ews_con.phones.add('HomeFax', ph[0][1])
+
+        for ph in self.get_fax_home():
+            cust['home'].update({ph[1] : ph[0]})
+
+        ph =  self.get_fax_work()
+        if len(ph) >= 1:
+            ews_con.phones.add('BusinessFax', ph[0][1])
+
+        for ph in self.get_phone_work():
+            cust['work'].update({ph[1] : ph[0]})
+
+        self.add_custom('faxes', cust)
+
+        ## FIXME: We should have a generic place in contact.py to handle these
+        ## left overs for all the db types.        
+
+    def _add_dates_to_ews_con (self, ews_con):
+        ## FIXME: Need to test to ensure these values are of the proper types
+        ## for EWS.
+        ews_con.created_time.set(self.get_created())
+        ews_con.birthday.set(self.get_birthday())
+        ews_con.anniversary.set(self.get_anniv())
+
+    def _add_websites_to_ews_con (self, ews_con):
+        pass
+
+    def _add_ims_to_ews_con (self, ews_con):
+        pass
+
+    def _add_sync_tags_to_ews_con (self, ews_con):
+        pass
+
+    def _add_custom_props_to_ews_con (self, ews_con):
+        pass
 
     ##
     ## Internal functions that are not inteded to be called from outside.
@@ -255,7 +419,16 @@ class EXContact(Contact):
     ##
 
     def get_changekey (self):
-        return self._get_att('ck')
+        try:
+            return self._get_att('ck')
+        except KeyError, e:
+            return None
 
     def set_changekey (self, ck):
         return self._set_att('ck', ck)
+
+    def get_ews_con (self):
+        return self._get_att('ews_con')
+
+    def set_ews_con (self, ec):
+        return self._set_att('ews_con', ec)
