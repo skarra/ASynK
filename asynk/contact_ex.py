@@ -63,7 +63,7 @@ class EXContact(Contact):
                 logging.debug('Potential new EXContact: %s', con.get_name())
 
         if ews_con is not None:
-            self._init_props_from_ews_con(ews_con)
+            self.init_props_from_ews_con(ews_con)
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -74,8 +74,10 @@ class EXContact(Contact):
         handling a new contact creation scneario. The protocol for updates is
         different"""
 
-        ews_con = self._init_ews_con_from_props()
-        ews_con.save()
+        logging.debug('Creation Successful!')
+        ews_con = self.init_ews_con_from_props()
+        resp = ews_con.save()
+        # FIXME: Get the contact ID and do something meaningful with it
 
     ##
     ## Now onto the non-abstract methods.
@@ -98,116 +100,22 @@ class EXContact(Contact):
     ## And now, the internal methods
     ##
 
-    def _init_props_from_ews_con (self, ews_con):
-        ## ItemID and related identification information
+    def init_props_from_ews_con (self, ews_con):
+        self._snarf_custom_props_from_ews_con(ews_con)
 
-        self.set_parent_folder_id(ews_con.parent_fid.text)
-        self.set_itemid(ews_con.itemid.text)
-        self.set_changekey(ews_con.change_key.text)
+        self._snarf_itemid_from_ews_con(ews_con)
+        self._snarf_names_gender_from_ews_con(ews_con)
+        self._snarf_notes_from_ews_con(ews_con)
+        self._snarf_emails_from_ews_con(ews_con)
+        self._snarf_postal_from_ews_con(ews_con)
+        self._snarf_org_details_from_ews_con(ews_con)
+        self._snarf_phones_and_faxes_from_ews_con(ews_con)
+        self._snarf_dates_from_ews_con(ews_con)
+        self._snarf_websites_from_ews_con(ews_con)
+        self._snarf_ims_from_ews_con(ews_con)
+        self._snarf_sync_tags_from_ews_con(ews_con)
 
-        ## Name / Complete Name related fields
-
-        self.set_fileas(ews_con.file_as.text)
-        if ews_con.alias.text is not None:
-            self.add_custom('alias', ews_con.alias.text)
-        self.set_name(ews_con._displayname)
-        # Ignore ews_con.spouse_name
-        cn = ews_con.complete_name
-        fn = ews_con._firstname
-        ln = ews_con._lastname
-        self.set_prefix(cn.title.text)
-        self.set_firstname(fn)
-        self.set_lastname(ln)
-        self.set_middlename(cn.middle_name.text)
-        self.set_suffix(cn.suffix.text)
-        self.set_nickname(cn.nickname.text)
-
-        self.set_gender(str(ews_con.gender))
-
-        ## Notes and related fields
-
-        self.add_notes(ews_con.notes.text)
-
-        ## Emails
-
-        self._snarf_emails(ews_con)
-
-        ## Postal Addresses
-
-        ## Org Details
-
-        self.set_title(ews_con.job_title.text)
-        self.set_company(ews_con.company_name.text)
-        self.set_dept(ews_con.department.text)
-        # Ignoring manager_name and assistant_name
-
-        ## Phones and faxes
-
-        self._snarf_phones(ews_con)
-
-        ## Dates & Anniversaries
-
-        self.set_created(ews_con.created_time.text)
-        # Need to parse Last Modified Time
-        self.set_birthday(ews_con.birthday.text)
-        self.set_anniv(ews_con.anniversary.text)
-
-        ## Websites
-
-        ## IM Addresses
-
-        ## Sync Tags
-
-    def _snarf_emails (self, ews_con):
-        """Classify each email address in ews_con as home/work/other and store
-        them away. Classification is done based on the domain of the address
-        as set in the config file."""
-
-        domains = self.get_email_domains()
-
-        for email in ews_con.emails.entries:
-            addr = email.text
-            home, work, other = utils.classify_email_addr(addr, domains)
-
-            if home:
-                self.add_email_home(addr)
-            elif work:
-                self.add_email_work(addr)
-            elif other:
-                self.add_email_other(addr)
-            else:
-                self.add_email_work(addr)
-
-    def _snarf_phones (self, ews_con):
-        for phone in ews_con.phones.entries:
-            key = phone.attrib['Key']
-
-            if key == 'PrimaryPhone':
-                self.add_phone_prim(phone.text)
-            elif key == 'MobilePhone':
-                self.add_phone_mob(('Mobile', phone.text))
-            elif key == 'HomePhone':
-                self.add_phone_home(('Home', phone.text))
-            elif key == 'HomePhone2':
-                self.add_phone_home(('Home2', phone.text))
-            elif key == 'BusinessPhone':
-                self.add_phone_work(('Work', phone.text))
-            elif key == 'BusinessPhone2':
-                self.add_phone_work(('Work2', phone.text))
-            elif key == 'OtherTelephone':
-                self.add_phone_other(('Other', phone.text))
-            elif key == 'HomeFax':
-                self.add_fax_home(('Home', phone.text))
-            elif key == 'BusinessFax':
-                self.add_fax_work(('Work', phone.text))
-            else:
-                self.add_phone_other((key, phone.text))
-
-    ##
-    ## Fetch ews_con from EXContact
-    ##
-
-    def _init_ews_con_from_props (self):
+    def init_ews_con_from_props (self):
         """Return a newly populated object of type pyews.ews.contact.Contact
         withthe data fields of the present contact."""
 
@@ -238,6 +146,109 @@ class EXContact(Contact):
         ews_con.job_title.text = self.get_title()
 
         return ews_con
+
+    ##
+    ## Internal functions that are not inteded to be called from outside.
+    ##
+
+    def _snarf_itemid_from_ews_con (self, ews_con):
+        self.set_parent_folder_id(ews_con.parent_fid.text)
+        self.set_itemid(ews_con.itemid.text)
+        self.set_changekey(ews_con.change_key.text)
+
+    def _snarf_names_gender_from_ews_con (self, ews_con):
+        self.set_fileas(ews_con.file_as.text)
+        if ews_con.alias.text is not None:
+            self.add_custom('alias', ews_con.alias.text)
+        self.set_name(ews_con._displayname)
+        # Ignore ews_con.spouse_name
+        cn = ews_con.complete_name
+        fn = ews_con._firstname
+        ln = ews_con._lastname
+        self.set_prefix(cn.title.text)
+        self.set_firstname(fn)
+        self.set_lastname(ln)
+        self.set_middlename(cn.middle_name.text)
+        self.set_suffix(cn.suffix.text)
+        self.set_nickname(cn.nickname.text)
+
+        g = str(ews_con.gender)
+        self.set_gender(None if g == 'Unspecified' else g)
+
+    def _snarf_notes_from_ews_con (self, ews_con):
+        self.add_notes(ews_con.notes.text)
+
+    def _snarf_emails_from_ews_con (self, ews_con):
+        """Classify each email address in ews_con as home/work/other and store
+        them away. Classification is done based on the domain of the address
+        as set in the config file."""
+
+        domains = self.get_email_domains()
+
+        for email in ews_con.emails.entries:
+            addr = email.text
+            home, work, other = utils.classify_email_addr(addr, domains)
+
+            if home:
+                self.add_email_home(addr)
+            elif work:
+                self.add_email_work(addr)
+            elif other:
+                self.add_email_other(addr)
+            else:
+                self.add_email_work(addr)
+
+    def _snarf_postal_from_ews_con (self, ews_con):
+        pass
+
+    def _snarf_org_details_from_ews_con (self, ews_con):
+        self.set_title(ews_con.job_title.text)
+        self.set_company(ews_con.company_name.text)
+        self.set_dept(ews_con.department.text)
+        # Ignoring manager_name and assistant_name
+
+    def _snarf_phones_and_faxes_from_ews_con (self, ews_con):
+        for phone in ews_con.phones.entries:
+            key = phone.attrib['Key']
+
+            if key == 'PrimaryPhone':
+                self.add_phone_prim(phone.text)
+            elif key == 'MobilePhone':
+                self.add_phone_mob(('Mobile', phone.text))
+            elif key == 'HomePhone':
+                self.add_phone_home(('Home', phone.text))
+            elif key == 'HomePhone2':
+                self.add_phone_home(('Home2', phone.text))
+            elif key == 'BusinessPhone':
+                self.add_phone_work(('Work', phone.text))
+            elif key == 'BusinessPhone2':
+                self.add_phone_work(('Work2', phone.text))
+            elif key == 'OtherTelephone':
+                self.add_phone_other(('Other', phone.text))
+            elif key == 'HomeFax':
+                self.add_fax_home(('Home', phone.text))
+            elif key == 'BusinessFax':
+                self.add_fax_work(('Work', phone.text))
+            else:
+                self.add_phone_other((key, phone.text))
+
+    def _snarf_dates_from_ews_con (self, ews_con):
+        self.set_created(ews_con.created_time.text)
+        # FIXME: Need to parse Last Modified Time
+        self.set_birthday(ews_con.birthday.text)
+        self.set_anniv(ews_con.anniversary.text)
+
+    def _snarf_custom_props_from_ews_con (self, ews_con):
+        pass
+
+    def _snarf_websites_from_ews_con (self, ews_con):
+        pass
+
+    def _snarf_ims_from_ews_con (self, ews_con):
+        pass
+
+    def _snarf_sync_tags_from_ews_con (self, ews_con):
+        pass
 
     ##
     ## some additional get and set methods
