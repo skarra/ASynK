@@ -41,8 +41,9 @@ def main ():
 
 def init ():
     tests = TestEXContact(ASYNK_BASE_DIR, './')
-    # tests.new_contact()
-    tests.list_all_contacts()
+    # tests.new_contact(first='John', last="Doe")
+    # tests.list_all_contacts()
+    tests.print_contacts(name='John')
 
 class TestEXContact:
     def __init__ (self, asynk_bd, user_d):
@@ -58,12 +59,14 @@ class TestEXContact:
     def list_folders (self):
         self.ex.list_folders(recursive=False)
 
-    def new_contact (self):
+    def new_contact (self, first, last):
         con = EXContact(self.cons_f)
-        con.set_firstname("Atal")
+        con.set_firstname(first)
         con.set_middlename("Bihari")
-        con.set_lastname("Vajpayee")
+        con.set_lastname(last)
         con.set_title("Ex PM")
+        con.add_notes("Jolly good fellow")
+        con.add_email_work("atal.vajpayee@gov.in")
         con.set_dept("Prime Minister's Office")
         con.set_company("Govt. of India")
         con.save()
@@ -72,6 +75,10 @@ class TestEXContact:
         self.cons_f._refresh_items()
         for key, item in self.cons_f.get_items().iteritems():
             print item
+
+    def print_contacts (self, cnt=0, name=None):
+        self.cons_f._refresh_items()
+        self.cons_f.print_contacts(cnt=cnt, name=name)
 
     def find_items (self):
         cons = self.cons_f.find_items(['AQAcAHNrYXJyAGFAYXN5bmsub25taWNyb3NvZnQuY29tAEYAAAPq28rfw0yASI+t3PJx5xi8BwAJ//qJAdi9TI3OuVBfNRA2AAACAQ8AAAAJ//qJAdi9TI3OuVBfNRA2AAACEMsAAAA='])
