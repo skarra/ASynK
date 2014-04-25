@@ -827,6 +827,9 @@ class OLContact(Contact):
             olprops.append((mt.PR_DEPARTMENT_NAME, dept))
 
     def _add_phones_and_faxes_to_olprops (self, olprops):
+        ## FIXME: The labels are being ignored. This means if we get a contact
+        ## from Google to Outlook and then write it back we will not retain
+        ## any of the customized labels
         ph  = self.get_phone_home()
         if len(ph) >= 1:
             label, num = ph[0]
