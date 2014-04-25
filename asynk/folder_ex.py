@@ -23,7 +23,10 @@ import logging, re
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
 from   contact_ex     import EXContact
+from   pyews.ews      import mapitags
 from   pyews.ews.data import FolderClass, EWSMessageError
+from   pyews.ews.data import MapiPropertyTypeType as mptt
+from   pyews.ews.item import ExtendedProperty
 
 folder_class_map = {
     Folder.CONTACT_t : FolderClass.Contacts,
@@ -48,6 +51,8 @@ class EXFolder(Folder):
         self.set_name(name)
         self.set_fobj(fobj)
         self.reset_items()
+
+        self.custom_eprops_xml = self._init_custom_eprops_xml()
 
     ##
     ## Implementation of some abstract methods inherted from Folder
@@ -82,7 +87,9 @@ class EXFolder(Folder):
 
     def find_items (self, itemids):
         try:
-            ews_items = self.get_ews().GetItems(itemids)
+            ews = self.get_ews()
+            ews_items = ews.GetItems(itemids,
+                                     eprops_xml=self.custom_eprops_xml)
         except EWSMessageError as e:
             logging.info('Error from Server looking for items: %s', e)
             return None
@@ -118,6 +125,24 @@ class EXFolder(Folder):
         entries after a table lookup.
         """
         raise NotImplementedError
+
+    ##
+    ## Some internal methods
+    ##
+
+    def _init_custom_eprops_xml (self):
+        xmls = []
+
+        guid = self.get_config().get_ex_guid()
+        pid  = self.get_config().get_ex_cus_pid()
+
+        ## The property containing the ASynK Custom data
+        eprop = ExtendedProperty(psetid=guid, pid=pid,
+                                 ptype=mptt[mapitags.PT_UNICODE])
+
+        xmls.append(eprop.write_to_xml_get())
+
+        return xmls
 
     def _refresh_items (self):
         self.reset_items()
