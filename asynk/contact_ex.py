@@ -398,7 +398,7 @@ class EXContact(Contact):
 
     def _snarf_dates_from_ews_con (self, ews_con):
         self.set_created(ews_con.created_time.value)
-        # FIXME: Need to parse Last Modified Time
+        self.set_updated(ews_con.last_modified_time.value)
         self.set_birthday(ews_con.birthday.value)
         self.set_anniv(ews_con.anniversary.value)
 
