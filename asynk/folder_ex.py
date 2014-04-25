@@ -18,6 +18,8 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
+
+import logging, re
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
 from   contact_ex     import EXContact
@@ -185,3 +187,48 @@ class EXContactsFolder(EXFolder):
 
     def print_key_stats (self):
         print 'Contacts Folder Name: ', self.get_name()
+
+    ##
+    ## Others
+    ##
+
+    def reset_contacts (self):
+        self.reset_items()
+
+    def get_contacts (self):
+        return self.get_items()
+
+    def find_contacts_by_name (self, cnt=0, name=None):
+        """Return the list of contact objects in current folder that
+        have a matching name. If name is None, all contacts objects
+        are returned. If cnt is non-zero value then the first cnt
+        matching records are returned."""
+
+        logging.debug('Looking for name %s in folder: %s (%d contacts total)',
+                        name, self.get_name(), len(self.get_contacts()))
+
+        i = 0
+        ret = []
+
+        for iid, con in self.get_contacts().iteritems():
+            if name is None:
+                ret.append(con)
+            else:
+                if (re.search(name, unicode(con.get_firstname()))
+                    or re.search(name, unicode(con.get_name()))
+                    or re.search(name, unicode(con.get_lastname()))):
+                    ret.append(con)
+            i += 1
+
+            if cnt == i:
+                break
+
+        return ret
+
+    def print_contacts (self, cnt=0, name=None):
+        cons = self.find_contacts_by_name(cnt, name)
+        for con in cons:
+            logging.debug('%s', unicode(con))
+
+        logging.debug('Printed %d contacts from folder %s', len(cons),
+                      self.get_name())
