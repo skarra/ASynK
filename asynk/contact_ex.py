@@ -25,11 +25,14 @@
 
 import logging
 
-from   contact    import Contact
-from   pyews.ews  import contact as ews_c
+from   contact            import Contact
+from   pyews.ews          import contact as ews_c
+from   pyews.ews          import mapitags
+from   pyews.ews.data     import MapiPropertyTypeType as mptt
 from   pyews.ews.contact  import CompleteName as ews_cn
-from   pyews.ews.contact import Contact as EWSContact
+from   pyews.ews.contact  import Contact as EWSContact
 import utils
+import demjson
 
 class EXContactError(Exception):
     pass
@@ -233,7 +236,11 @@ class EXContact(Contact):
         self.set_anniv(ews_con.anniversary.value)
 
     def _snarf_custom_props_from_ews_con (self, ews_con):
-        pass
+        guid = self.get_config().get_ex_guid()
+        pid  = self.get_config().get_ex_cus_pid()
+        cus  = ews_con.get_named_int_property(guid, int(pid))
+        if cus is not None:
+            self.update_custom(demjson.decode(str(cus)))
 
     def _snarf_websites_from_ews_con (self, ews_con):
         pass
@@ -412,7 +419,11 @@ class EXContact(Contact):
         pass
 
     def _add_custom_props_to_ews_con (self, ews_con):
-        pass
+        guid = self.get_config().get_ex_guid()
+        pid  = self.get_config().get_ex_cus_pid()
+        val = demjson.encode(self.get_custom())
+        ews_con.add_named_int_property(psetid=guid, pid=pid, value=val,
+                                       ptype=mptt[mapitags.PT_UNICODE])
 
     ##
     ## some additional get and set methods
