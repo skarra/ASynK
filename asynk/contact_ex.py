@@ -209,7 +209,7 @@ class EXContact(Contact):
             key = phone.attrib['Key']
 
             if key == 'PrimaryPhone':
-                self.add_phone_prim(phone.value)
+                self.set_phone_prim(phone.value)
             elif key == 'MobilePhone':
                 self.add_phone_mob(('Mobile', phone.value))
             elif key == 'HomePhone':
