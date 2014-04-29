@@ -86,6 +86,7 @@ class EXFolder(Folder):
         return cons[0] if cons is not None else None
 
     def find_items (self, itemids):
+        logging.info('folder_ex:find_items() - fetching items...')
         try:
             ews = self.get_ews()
             ews_items = ews.GetItems(itemids,
@@ -135,11 +136,16 @@ class EXFolder(Folder):
 
         guid = self.get_config().get_ex_guid()
         pid  = self.get_config().get_ex_cus_pid()
+        pname = self.get_config().get_ex_stags_pname()
 
         ## The property containing the ASynK Custom data
         eprop = ExtendedProperty(psetid=guid, pid=pid,
                                  ptype=mptt[mapitags.PT_UNICODE])
+        xmls.append(eprop.write_to_xml_get())
 
+        ## The property containing the ASynK sync tags data
+        eprop = ExtendedProperty(psetid=guid, pname=pname,
+                                 ptype=mptt[mapitags.PT_UNICODE])
         xmls.append(eprop.write_to_xml_get())
 
         return xmls
@@ -149,7 +155,7 @@ class EXFolder(Folder):
 
         ews = self.get_ews()
         fobj = self.get_fobj()
-        ews_cons = ews.FindItems(fobj)
+        ews_cons = ews.FindItems(fobj, eprops_xml=self.custom_eprops_xml)
 
         for econ in ews_cons:
             ## FIXME: This needs to be fixed if and when we support additional
