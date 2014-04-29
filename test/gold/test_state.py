@@ -123,13 +123,25 @@ class TestStateFunctions(unittest.TestCase):
         val = self.config.get_ol_gid_base('gc')
         self.assertTrue(val == 0x9001)
 
+    def test_read_ol_cus_pid (self):
+        val = self.config.get_ol_cus_pid()
+        self.assertTrue(val == 0x6501)
+
     def test_read_ex_guid (self):
         val = self.config.get_ex_guid()
-        self.assertTrue(val == '{c950b7d3-ca13-43cd-9e78-be65bbdeaf37}')
+        self.assertTrue(val == 'c950b7d3-ca13-43cd-9e78-be65bbdeaf37')
 
     def test_read_ex_gid_base (self):
         val = self.config.get_ex_gid_base('ol')
         self.assertTrue(val == 0xC001)
+
+    def test_read_ex_cus_pid (self):
+        val = self.config.get_ex_cus_pid()
+        self.assertTrue(val == 0x6501)
+
+    def test_read_ex_stags_pname (self):
+        val = self.config.get_ex_stags_pname()
+        self.assertTrue(val == 'sync_tags')
 
     def test_read_backup_hold_period (self):
         val = self.config.get_backup_hold_period()
