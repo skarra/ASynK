@@ -80,9 +80,10 @@ class EXContact(Contact):
         handling a new contact creation scneario. The protocol for updates is
         different"""
 
-        logging.debug('Creation Successful!')
+        logging.debug('Saving contact (%s) to server...', self.get_disp_name())
         ews_con = self.init_ews_con_from_props()
         resp = ews_con.save()
+        logging.debug('Saving contact to server...done')
         # FIXME: Get the contact ID and do something meaningful with it
 
     ##
@@ -249,7 +250,16 @@ class EXContact(Contact):
         pass
 
     def _snarf_sync_tags_from_ews_con (self, ews_con):
-        pass
+        conf  = self.get_config()
+        guid  = conf.get_ex_guid()
+        prop_name = conf.get_ex_stags_pname()
+
+        eprop = ews_con.get_named_str_property(guid, prop_name)
+        print eprop
+        if eprop is not None:
+            stags = demjson.decode(eprop.value)
+            for name, val in stags.iteritems():
+                self.update_sync_tags(name, val)
 
     def _add_itemid_to_ews_con (self, ews_con):
         itemid = self.get_itemid()
@@ -416,7 +426,20 @@ class EXContact(Contact):
         pass
 
     def _add_sync_tags_to_ews_con (self, ews_con):
-        pass
+        ## We use Named String identified extended properites to store sync
+        ## tags. Note that this is different from the way we handle this stuff
+        ## in the Outlook store.
+        conf  = self.get_config()
+        guid  = conf.get_ex_guid()
+        prop_name = conf.get_ex_stags_pname()
+
+        ## Note also that in Outlook each sync tag is a separate field. Here
+        ## it is all a single json encoded dictionary.
+        val = demjson.encode(self.get_sync_tags())
+
+        ews_con.add_named_str_property(psetid=guid, pname=prop_name,
+                                       ptype=mptt[mapitags.PT_UNICODE],
+                                       value=val)
 
     def _add_custom_props_to_ews_con (self, ews_con):
         guid = self.get_config().get_ex_guid()
