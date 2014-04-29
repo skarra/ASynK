@@ -368,6 +368,9 @@ class Config:
     def get_ex_cus_pid (self):
         return self.get_db_config('ex')['cus_pid']
 
+    def get_ex_stags_pname (self):
+        return self.get_db_config('ex')['stags_pname']
+
     ##
     ## get-set pairs for sync state parameters in state.json
     ##
