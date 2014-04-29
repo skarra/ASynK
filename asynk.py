@@ -29,6 +29,7 @@ ASYNK_BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
                os.path.join(ASYNK_BASE_DIR, 'asynk'),]
 sys.path = EXTRA_PATHS + sys.path
+print sys.path
 
 try:
     from   pimdb_ol         import OLPIMDB
@@ -164,7 +165,7 @@ def setup_parser ():
                    default=os.path.expanduser('~/.asynk'),
                    help=('Directory to store ASynK config files, logs ' +
                          'directory, BBDB backups directory, etc.'))
-    p.add_argument('--db',  action='store', choices=('bb', 'gc', 'ol', 'cd'),
+    p.add_argument('--db',  action='store', choices=('bb', 'gc', 'ol', 'cd', 'ex'),
                    nargs='+',
                    help=('DB IDs required for most actions. ' +
                          'Some actions need two DB IDs - do it with two --db ' +
@@ -279,45 +280,18 @@ class Asynk:
         netrc_user = None
         netrc_pass = None
 
-        ## FIXME: The code block that follows can be refactored and reduced to
-        ## a variant of self._init_cd_user_pw()
-        if 'gc' in [self.get_db1(), self.get_db2()]:
-            # Use the netrc as a backup in case userid / pwd are not provided
-            try:
-                n = netrc.netrc()
-                if mach in n.hosts.keys():
-                    netrc_user, netrc_a, netrc_pass = n.authenticators(mach)
-            except IOError, e:
-                logging.debug('~/.netrc not found.')
-
-            gcuser = self.get_store_id('gc')
-            if not gcuser:
-                if netrc_user:
-                    gcuser = netrc_user
-                while not gcuser:
-                    gcuser = raw_input('Please enter your username: ')
-                self.add_store_id('gc', gcuser)
-
-            self.set_gcuser(gcuser)
-
-            if self.get_gcpw():
-                logging.debug('Using command line gmail password for logging in')
-
-            while not self.get_gcpw():
-                if netrc_pass and self.get_gcuser() == netrc_user:
-                    self.set_gcpw(netrc_pass)
-                else:
-                    logging.debug('Either netrc did not have credentials for '
-                                  ' User (%s) or has different login', gcuser)
-                    self.set_gcpw(raw_input('Password: '))
-                    if not self.get_gcpw():
-                        print 'Password cannot be blank'
-
         ## FIXME: All of this stuff constrains the use of same type of db for
         ## source and destination. The more code we put in here the harder it
         ## will get to support such a scenario.
+
+        if 'gc' in [self.get_db1(), self.get_db2()]:
+            self._init_gc_user_pw(pname)
+
         if 'cd' in [self.get_db1(), self.get_db2()]:
             self._init_cd_user_pw(pname)
+
+        if 'ex' in [self.get_db1(), self.get_db2()]:
+            self._init_ex_user_pw(pname)
 
         db1id = self.get_db1()
         db2id = self.get_db2()
@@ -348,10 +322,10 @@ class Asynk:
 
         self.logged_in = True
             
-    def _init_cd_user_pw (self, pname):
+    def auth_lookup_netrc (self, mach):
         netrc_user = None
+        netrc_a    = None
         netrc_pass = None
-        mach = 'cd_%s' % pname
 
         # Use the netrc as a backup in case userid / pwd are not provided
         try:
@@ -363,27 +337,64 @@ class Asynk:
         except netrc.NetrcParseError, e:
             logging.warning('Ignoring ~/.netrc as it could not be parsed (%s)', e)
 
-        if not self.get_cduser():
-            cduser = None
+        return netrc_user, netrc_a, netrc_pass
+
+    def auth_get_creds (self, dbid, pname, cmdl_user, cmdl_pwd):
+        """
+        For a given profile name and any username / pwd specfiied on the
+        command line, apply all the rules of looking up a username / pwd.
+        Method returns a (username, pwd) tuple.
+
+        The rules are as follows:
+
+        - Highest priority for cmdline username / password
+        - Next comes anything specified in netrc
+        - If neither of the above are set, then get them from stdin
+        """
+
+        mach = '%s_%s' % (dbid, pname)
+        netrc_user, netrc_a, netrc_pass = self.auth_lookup_netrc(mach)
+        user = None
+        pwd  = None
+
+        if cmdl_user is not None:
+            user = cmdl_user
+        else:
             if netrc_user:
-                cduser = netrc_user
-            while not cduser:
-                cduser = raw_input('Please enter your username: ')
+                user = netrc_user
+            while not user:
+                user = raw_input('Please enter your username: ')
 
-            self.set_cduser(cduser)
+        if cmdl_pwd is not None:
+            logging.debug('Using cmdline password for logging in to profile %s')
+            pwd = cmdl_pwd
 
-        if self.get_cdpw():
-            logging.debug('Using command line gmail password for logging in')
-
-        while not self.get_cdpw():
-            if netrc_pass and self.get_cduser() == netrc_user:
-                self.set_cdpw(netrc_pass)
+        while not pwd:
+            if netrc_pass and user == netrc_user:
+                pwd = netrc_pass
             else:
                 logging.debug('Either netrc did not have credentials for '
-                              ' User (%s) or has different login', cduser)
-                self.set_cdpw(raw_input('Password: '))
-                if not self.get_cdpw():
+                              ' User (%s) or has different login', user)
+                pwd = raw_input('Password: ')
+                if not pwd:
                     print 'Password cannot be blank'
+
+        return user, pwd
+
+    def _init_gc_user_pw (self, pname):
+        u, p = self.auth_get_creds('gc', pname, self.get_gcuser(), self.get_gcpw())
+        self.set_gcuser(u)
+        self.set_gcpw(p)
+
+    def _init_cd_user_pw (self, pname):
+        u, p = self.auth_get_creds('cd', pname, self.get_cduser(), self.get_cdpw())
+        self.set_cduser(u)
+        self.set_cdpw(p)
+
+    def _init_ex_user_pw (self, pname):
+        u, p = self.auth_get_creds('ex', pname, self.get_exuser(), self.get_expw())
+        self.set_exuser(u)
+        self.set_expw(p)
 
     def reset_fields (self):
         self.atts = {}
@@ -392,12 +403,20 @@ class Asynk:
         self.set_db('bb', None)
         self.set_db('gc', None)
         self.set_db('ol', None)
+        # FIXME: Not sure why 'cd' is missing here
+        self.set_db('ex', None)
 
         self.set_db1(None)
         self.set_db2(None)
 
+        self.set_gcuser(None)
+        self.set_gcpw(None)
+
         self.set_cduser(None)
         self.set_cdpw(None)
+
+        self.set_exuser(None)
+        self.set_expw(None)
 
         ## More to come here...
 
@@ -971,6 +990,18 @@ class Asynk:
     def set_cdpw (self, val):
         return self._set_att('cdpw', val)
 
+    def get_exuser (self):
+        return self._get_att('exuser')
+
+    def set_exuser (self, val):
+        return self._set_att('exuser', val)
+
+    def get_expw (self):
+        return self._get_att('expw')
+
+    def set_expw (self, val):
+        return self._set_att('expw', val)
+
     def get_port (self):
         return self._get_att('port')
 
@@ -1033,6 +1064,13 @@ class Asynk:
             raise AsynkError('Invalid CardDAV auth credentials. Cannot proceed.')
 
         return pimcd
+
+    def login_ex (self):
+        from pimdb_ex import EXPIMDB
+        pimex = EXPIMDB(self.get_config(), self.get_exuser(), self.get_expw(),
+                        self.get_store_id('ex'))
+
+        return pimex
 
     def _get_validated_pname (self):
         conf  = self.get_config()
