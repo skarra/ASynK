@@ -20,6 +20,8 @@
 
 import iso8601, logging, os, re
 
+time_start = "1980-01-01T00:00:00.00+00:00"
+
 def yyyy_mm_dd_to_pytime (date_str):
     ## FIXME: Temporary hack to ensure we have a yyyy-mm-dd format. Google
     ## allows the year to be skipped. Outlook crates a problem. We bridge the

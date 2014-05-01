@@ -29,7 +29,6 @@ ASYNK_BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
                os.path.join(ASYNK_BASE_DIR, 'asynk'),]
 sys.path = EXTRA_PATHS + sys.path
-print sys.path
 
 try:
     from   pimdb_ol         import OLPIMDB
@@ -788,8 +787,8 @@ class Asynk:
             # will restore his earlier times dutifully.
             if self.is_dry_run():
                 logging.debug('Temporarily resetting last sync times...')
-            conf.set_last_sync_start(pname, val="1980-01-01T00:00:00.00+00:00")
-            conf.set_last_sync_stop(pname, val="1980-01-01T00:00:00.00+00:00")
+            conf.set_last_sync_start(pname, val=utils.time_start)
+            conf.set_last_sync_stop(pname, val=utils.time_start)
 
         sync = Sync(conf, pname, self.get_db(), dr=self.is_dry_run())
         if self.is_dry_run():
