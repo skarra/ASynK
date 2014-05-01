@@ -26,6 +26,7 @@ EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
 from   state import Config, AsynkConfigError
+import utils
 
 user_dir   = os.path.abspath('user_dir')
 state_src  = os.path.join('.', 'state.test.json')
@@ -111,8 +112,8 @@ class TestStateFunctions(unittest.TestCase):
         self.assertTrue(val['coll_2']['stid'] == None)
         self.assertTrue(val['coll_2']['foid'] == None)
 
-        self.assertTrue(val['last_sync_start'] == "1980-01-01T00:00:00.00+00:00")
-        self.assertTrue(val['last_sync_stop'] == "1980-01-01T00:00:00.00+00:00")
+        self.assertTrue(val['last_sync_start'] == utils.time_start)
+        self.assertTrue(val['last_sync_stop'] == utils.time_start)
         self.assertTrue(val['sync_dir'] == 'SYNC2WAY')
 
     def test_read_ol_guid (self):
@@ -170,7 +171,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_read_sync_start (self):
         val = self.config.get_last_sync_start('defgcol')
-        self.assertTrue(val == "1980-01-01T00:00:00.00+00:00")
+        self.assertTrue(val == utils.time_start)
 
     def test_write_sync_start (self):
         t =  self.config.get_curr_time()
@@ -180,7 +181,7 @@ class TestStateFunctions(unittest.TestCase):
         
     def test_read_sync_stop (self):
         val = self.config.get_last_sync_stop('defgcol')
-        self.assertTrue(val =="1980-01-01T00:00:00.00+00:00")
+        self.assertTrue(val == utils.time_start)
 
     def test_write_sync_stop (self):
         t =  self.config.get_curr_time()
