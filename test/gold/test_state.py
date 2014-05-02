@@ -132,10 +132,6 @@ class TestStateFunctions(unittest.TestCase):
         val = self.config.get_ex_guid()
         self.assertTrue(val == 'c950b7d3-ca13-43cd-9e78-be65bbdeaf37')
 
-    def test_read_ex_gid_base (self):
-        val = self.config.get_ex_gid_base('ol')
-        self.assertTrue(val == 0xC001)
-
     def test_read_ex_cus_pid (self):
         val = self.config.get_ex_cus_pid()
         self.assertTrue(val == 0x6501)
@@ -163,7 +159,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_read_profile_names_cnt (self):
         ps = self.config.get_profile_names()
-        self.assertEqual(len(ps), 2)
+        self.assertEqual(len(ps), 3)
 
     def test_read_profile_names_vals (self):
         ps = self.config.get_profile_names()
@@ -235,21 +231,23 @@ class TestStateFunctions(unittest.TestCase):
         val = self.config.get_ol_next_gid('ex')
         self.assertTrue(val == 0xb001)
 
-    def test_get_ex_gid_next_gc (self):
-        val = self.config.get_ex_next_gid('gc')
-        self.assertTrue(val == 0x9001)
+    def test_read_ex_sync_state (self):
+        val = self.config.get_ex_sync_state('defgcex')
 
-    def test_get_ex_gid_next_bb (self):
-        val = self.config.get_ex_next_gid('bb')
-        self.assertTrue(val == 0x8001)
+    def test_read_ex_sync_state_err (self):
+        with self.assertRaises(AsynkConfigError):
+            val = self.config.get_ex_sync_state('defgcbb')
 
-    def test_get_ex_gid_next_cd (self):
-        val = self.config.get_ex_next_gid('cd')
-        self.assertTrue(val == 0xa001)
+    def test_write_ex_sync_state (self):
+        val = 'abcdefgh'
+        self.config.set_ex_sync_state('defgcex', val)
+        out = self.config.get_ex_sync_state('defgcex')
+        self.assertTrue(val == out)
 
-    def test_get_ex_gid_next_ol (self):
-        val = self.config.get_ex_next_gid('ol')
-        self.assertTrue(val == 0xc001)
+    def test_write_ex_sync_state_err (self):
+        val = 'abcdefgh'
+        with self.assertRaises(AsynkConfigError):
+            self.config.set_ex_sync_state('defgcbb', val)
 
     def test_make_sync_label (self):
         val = self.config.make_sync_label('goofy', 'gc')
@@ -307,7 +305,7 @@ class TestStateFunctions(unittest.TestCase):
     def test_get_store_pnames_1 (self):
         ps = self.config.get_store_pnames('gc')
         self.assertEqual(True, not not ps)
-        self.assertEqual(True, len(ps) == 2)
+        self.assertEqual(True, len(ps) == 3)
         self.assertEqual(True, 'defgcol' in ps and 'defgcbb' in ps)
 
     def test_get_store_pnames_2 (self):

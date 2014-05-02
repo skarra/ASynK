@@ -1,6 +1,6 @@
 // -*- javascript -*-
 
-// Last Modified : Tue Apr 29 13:30:48 IST 2014
+// Last Modified : Thu May 01 09:15:52 IST 2014
 //
 // Copyright (C) 2011, 2012, 2013, 2014 Sriram Karra <karra.etc@gmail.com>
 //
@@ -337,13 +337,14 @@
             // You definitely don't want to change these values.
             // Note this guy is missing braces
             'guid'     : 'c950b7d3-ca13-43cd-9e78-be65bbdeaf37',
-            'gid_base' : {'bb' : 0x8001,
-                          'gc' : 0x9001,
-                          'cd' : 0xA001,
-                          'ol' : 0xC001,
-                         },
+            // 'gid_base' : {'bb' : 0x8001,
+            //               'gc' : 0x9001,
+            //               'cd' : 0xA001,
+            //               'ol' : 0xC001,
+            //              },
             'cus_pid'  : 0x6501,
             'stags_pname' : 'sync_tags',
+	    'sync_state'  : null, // base64 encoded EWS sync_state ID
 
             // You can customize what follows
             "email_domains" : {

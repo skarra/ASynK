@@ -276,11 +276,7 @@ class Config:
             raise AsynkConfigError('Profile %s not found in state.json'
                                    % profile) 
 
-        try:
-            self.state['state']['profiles'][profile].update({key : val})
-        except KeyError, e:
-            raise AsynkConfigError(('Property %s not found in profile %s'
-                                    % (key, profile)))
+        self.state['state']['profiles'][profile].update({key : val})
 
         if self.sync_through and sync:
             self.save_state()
@@ -355,15 +351,6 @@ class Config:
 
     def get_ex_guid (self):
         return self.get_db_config('ex')['guid']
-
-    def get_ex_gid_base (self, which=None):
-        dbc = self.get_db_config('ex')
-        gid = dbc['gid_base']
-
-        if not which:
-            return gid
-
-        return gid[which]
 
     def get_ex_cus_pid (self):
         return self.get_db_config('ex')['cus_pid']
@@ -529,12 +516,6 @@ class Config:
     def set_ol_gid (self, profile, val, sync=True):
         return self._set_profile_prop(profile, 'olgid', val, sync)
 
-    def get_ex_gid (self, profile):
-        return self._get_profile_prop(profile, 'exgid')
-
-    def set_ex_gid (self, profile, val, sync=True):
-        return self._set_profile_prop(profile, 'exgid', val, sync)
-
     def get_itemids (self, pname):
         """Returns a dictionary of itemid mappsing from coll_1 to coll_2 as of
         the last successful sync """
@@ -550,6 +531,18 @@ class Config:
     def set_itemids (self, pname, itemids, sync=True):
         self._set_profile_prop(pname, 'items', itemids, sync)
         return itemids
+
+    def get_ex_sync_state (self, pname):
+        return self._get_profile_prop(pname, 'sync_state')
+
+    ## Throws an exception if the profile name does not support the sync_state
+    ## flag, IOW - it if it is not an exchange profile.
+    ## On success retuns sync_state input parameter
+    def set_ex_sync_state (self, pname, sync_state, sync=True):
+        ## Fetch the old one to force an exception if the prop is not there
+        old = self.get_ex_sync_state(pname)
+        self._set_profile_prop(pname, 'sync_state', sync_state, sync)
+        return sync_state
 
     ##
     ## Finally the two save routines.
@@ -615,13 +608,6 @@ class Config:
 
         return self._get_gid_lists('ol', get_fn=self.get_ol_gid)
 
-    def _get_ex_gid_lists (self):
-        """Returns all the exgids used in the existing profiles. The returned
-        value is organized as a dictionary, with the destination dbid as the
-        key, and an array of exgids as the value."""
-
-        return self._get_gid_lists('ex', get_fn=self.get_ex_gid)
-
     def _get_next_gid (self, destid, base_fn, gid_lists_fn):
         base     = base_fn(destid)
         try:
@@ -632,24 +618,18 @@ class Config:
         cnt   = len(gid_list)
         gid_c = base + cnt
         i     = 0
-        print 'base: ', base
-        print 'cnt : ', cnt
 
         while gid_c in gid_list:
             gid_c += 1
             i +=1
             if i > 5000:
-                logging.info('state:get_ol_next_gid: more than 5000 iters!')
+                logging.info('state:get_next_gid: more than 5000 iters!')
 
         return gid_c
 
     def get_ol_next_gid (self, destid):
         return self._get_next_gid(destid=destid, base_fn=self.get_ol_gid_base,
                                   gid_lists_fn=self._get_ol_gid_lists)
-
-    def get_ex_next_gid (self, destid):
-        return self._get_next_gid(destid=destid, base_fn=self.get_ex_gid_base,
-                                  gid_lists_fn=self._get_ex_gid_lists)
 
     def make_sync_label (self, profile, dbid):
         """A sync label that is used in GC and BB to store the remote ID of a
