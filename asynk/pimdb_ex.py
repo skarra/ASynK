@@ -24,10 +24,11 @@
 
 import logging
 
-from   pyews.ews.data import FolderClass
-from   pyews.ews.data       import FolderClass, EWSCreateFolderError
-from   pyews.pyews    import WebCredentials, ExchangeService
+from   pyews.ews.data         import FolderClass
+from   pyews.ews.errors       import EWSCreateFolderError
+from   pyews.pyews            import WebCredentials, ExchangeService
 from   pyews.ews.autodiscover import EWSAutoDiscover, ExchangeAutoDiscoverError
+
 from   folder         import Folder
 from   folder_ex      import EXContactsFolder, folder_class_map
 from   pimdb          import PIMDB
@@ -111,6 +112,8 @@ class EXPIMDB(PIMDB):
             if ewsf.FolderClass == FolderClass.Contacts:
                 f = EXContactsFolder(self, ewsf)
                 self.add_to_folders(f)
+                logging.info('Added Exchnage folder %s of type %s',
+                             ewsf.DisplayName, ewsf.FolderClass)
             else:
                 logging.info('Skipping Exchnage folder %s of type %s',
                              ewsf.DisplayName, ewsf.FolderClass)
