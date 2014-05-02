@@ -708,6 +708,7 @@ class Asynk:
                 },
              'olgid'            : olgid,
              'sync_dir'         : sync_dir,
+             'sync_state'       : None,
              'conflict_resolve' : cr,
              })
 
