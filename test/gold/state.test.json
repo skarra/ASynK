@@ -95,5 +95,33 @@
             // used to store the sync tag.
             'olgid' : null,
 	}, // profiles['defgcbb']
+
+	'defgcex' : {
+	    "coll_1" : {
+		"dbid" : "gc",
+		"stid" : null,
+		"foid" : null,
+	    },
+
+	    "coll_2" : {
+		"dbid" : "ex",
+		"stid" : "https://outlook.office365.com/EWS/Exchange.asmx",
+		"foid" : "default",
+	    },
+
+	    'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
+	    'last_sync_stop'  : "1980-01-01T00:00:00.00+00:00",
+
+	    // Default direction in which to perform Sync. Values can
+	    // be one of ['SYNC1WAY' or 'SYCN2WAY'].
+            'sync_dir'        : "SYNC2WAY",
+
+            // Direction in which to resolve conflicts if the same
+            // entry is modified both locally and in the google
+            // cloud. Value should be one of the two dbids (in this
+            // instance, either 'gc' or 'ex')
+	    'conflict_resolve' : 'gc',
+	    'sync_state' : null,
+	}, // profiles['defgcex']
     }, // 'profiles'
 }
