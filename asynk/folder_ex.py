@@ -24,9 +24,10 @@ from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
 from   contact_ex     import EXContact
 from   pyews.ews      import mapitags
-from   pyews.ews.data import FolderClass, EWSMessageError
+from   pyews.ews.data import FolderClass
 from   pyews.ews.data import MapiPropertyTypeType as mptt
 from   pyews.ews.item import ExtendedProperty
+from   pyews.ews.errors import EWSMessageError
 
 folder_class_map = {
     Folder.CONTACT_t : FolderClass.Contacts,
@@ -61,13 +62,48 @@ class EXFolder(Folder):
     def get_batch_size (self):
         return 100
 
-    def prep_sync_lists (self, destid, sl, synct_sto=None, cnt=0):
+    def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        pname = sl.get_pname()
+        conf  = self.get_config()
+        oldi  = conf.get_itemids(pname)
+
+        db1id = conf.get_profile_db1(pname)
+        if db1id == self.get_dbid():
+            oldi = {v:k for k, v in oldi.iteritems()}
+
+        logging.info('Querying Exchange for status of Contact Entries...')
+        stag = conf.make_sync_label(pname, destid)
+
+        ## Note that we are doing far less processing here than with
+        ## other stores. Trust in Microsoft. What can go wrong, really? :)
+        ex_sync_state = conf.get_ex_sync_state(pname)
+        ex_new, ex_mod, ex_del = self.get_fobj().get_updates(ex_sync_state)
+
+        for con in ex_new:
+            sl.add_new(con.itemid.value)
+
+        for con in ex_mod:
+            assert con.itemid.value in oldi
+            sl.add_mod(con.itemid.value, oldi[con.itemid.value])
+
+        for con in ex_del:
+            sl.add_del(con.itemid.value, oldi[con.itemid.value])
+
+        logging.debug('Total New : %5d', len(sl.news))
+        logging.debug('Total Mod : %5d', len(sl.mods))
+        logging.debug('Total Del : %5d', len(sl.dels))
 
     def get_itemids (self, pname, destid):
-        raise NotImplementedError
+        ret = {}
+        stag = self.get_config().make_sync_label(pname, destid)
+        for locid, con in self.get_items().iteritems():
+            if stag in con.get_sync_tags():
+                t, remid = con.get_sync_tags(stag)[0]
+                ret.update({locid : remid})
+
+        return ret
 
     def del_itemids (self, itemids):
         """Delete the specified contacts from this folder if they exist. The
@@ -109,7 +145,24 @@ class EXFolder(Folder):
     def batch_create (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        my_dbid = self.get_dbid()
+        c       = self.get_config()
+        pname   = sync_list.get_pname()
+
+        src_sync_tag = c.make_sync_label(pname, src_dbid)
+        dst_sync_tag = c.make_sync_label(pname, my_dbid)
+
+        ex_cons = []
+        for item in items:
+            exc = EXContact(self, con=item)
+            rid = item.get_itemid()
+            exc.update_sync_tags(src_sync_tag, rid)
+            ex_cons.append(exc)
+
+        self.get_ews().CreateItems(self.get_fobj().get_itemid(), ex_cons)
+
+        ## FIXME: need to get error and fix it
+        return True
 
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
