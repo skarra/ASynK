@@ -1,5 +1,45 @@
 
-* Log
+* MS Exchange support
+
+** Status
+
+** Sun Apr 20 01:09:38 IST 2014
+
+   Started implementing the gid and other sorts of support. I am not really
+   sure if all of that is required. Perhaps it is required.
+
+** Time Tracker
+
+#+BEGIN: clocktable :maxlevel 3 :scope subtree
+Clock summary at [2014-04-21 Mon 09:03]
+
+| Headline         | Time    |       |       |
+|------------------+---------+-------+-------|
+| *Total time*     | *16:33* |       |       |
+|------------------+---------+-------+-------|
+| \__ Time Tracker |         | 16:33 |       |
+| \_____ Apr 2014  |         |       | 15:23 |
+| \_____ Mar 2014  |         |       |  1:10 |
+#+END:
+
+*** Apr 2014
+   CLOCK: [2014-04-21 Mon 06:41]--[2014-04-21 Mon 09:01] =>  2:20
+   CLOCK: [2014-04-20 Sun 11:01]--[2014-04-20 Sun 12:42] =>  1:41
+   CLOCK: [2014-04-07 Mon 06:34]--[2014-04-07 Mon 07:10] =>  0:36
+   CLOCK: [2014-04-06 Sun 16:03]--[2014-04-06 Sun 18:04] =>  2:01
+   CLOCK: [2014-04-05 Sat 18:17]--[2014-04-05 Sat 21:36] =>  3:19
+   CLOCK: [2014-04-02 Wed 18:15]--[2014-04-02 Wed 22:56] =>  4:41
+   CLOCK: [2014-04-01 Tue 15:06]--[2014-04-01 Tue 15:17] =>  0:11
+   CLOCK: [2014-04-01 Tue 14:48]--[2014-04-01 Tue 14:50] =>  0:02
+   CLOCK: [2014-04-01 Tue 08:47]--[2014-04-01 Tue 09:19] =>  0:32
+
+*** Mar 2014
+   CLOCK: [2014-03-31 Mon 16:33]--[2014-03-31 Mon 17:03] =>  0:30
+   CLOCK: [2014-03-31 Mon 16:00]--[2014-03-31 Mon 16:30] =>  0:30
+   CLOCK: [2014-03-31 Mon 15:45]--[2014-03-31 Mon 15:55] =>  0:10
+
+
+* Old Log
 
 ** Fri Aug 09 18:29:39 IST 2013
 
