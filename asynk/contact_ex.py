@@ -28,6 +28,7 @@ import logging
 from   contact            import Contact
 from   pyews.ews          import contact as ews_c
 from   pyews.ews          import mapitags
+from   pyews.ews.data     import ews_pt, ews_pid
 from   pyews.ews.data     import MapiPropertyTypeType as mptt
 from   pyews.ews.contact  import CompleteName as ews_cn
 from   pyews.ews.contact  import Contact as EWSContact
@@ -282,7 +283,22 @@ class EXContact(Contact):
             self.update_custom(demjson.decode(str(cus)))
 
     def _snarf_websites_from_ews_con (self, ews_con):
-        pass
+        self.add_web_home(ews_con.personal_home_page.value)
+        self.add_web_work(ews_con.business_home_page.value)
+
+        ## If a contact has additional web addresses they would be stashed
+        ## away in a custom property.
+        webs = self.get_custom('webs')
+        if webs is None:
+            return
+
+        for home in webs['home']:
+            self.add_web_home(home)
+
+        for work in webs['work']:
+            self.add_web_work(work)
+
+        self.del_custom('webs')
 
     def _snarf_ims_from_ews_con (self, ews_con):
         pass
@@ -293,7 +309,6 @@ class EXContact(Contact):
         prop_name = conf.get_ex_stags_pname()
 
         eprop = ews_con.get_named_str_property(guid, prop_name)
-        print eprop
         if eprop is not None:
             stags = demjson.decode(eprop.value)
             for name, val in stags.iteritems():
@@ -458,7 +473,24 @@ class EXContact(Contact):
         ews_con.anniversary.set(self.get_anniv())
 
     def _add_websites_to_ews_con (self, ews_con):
-        pass
+        cus_web = {'home' : [], 'work' : []}
+
+        web = self.get_web_home()
+        if web is not None:
+            if len(web) > 0:
+                ews_con.add_tagged_property(tag=mapitags.PR_PERSONAL_HOME_PAGE,
+                                            value=web[0])
+            if len(web) > 1:
+                cus_web['home'] += web[1:]
+
+        web = self.get_web_work()
+        if web is not None:
+            if len(web) > 0:
+                ews_con.business_home_page.value = web[0]
+            if len(web) > 1:
+                cus_web['work'] += web[1:]
+
+        self.add_custom('webs', cus_web)
 
     def _add_ims_to_ews_con (self, ews_con):
         pass
@@ -474,7 +506,6 @@ class EXContact(Contact):
         ## Note also that in Outlook each sync tag is a separate field. Here
         ## it is all a single json encoded dictionary.
         val = demjson.encode(self.get_sync_tags())
-
         ews_con.add_named_str_property(psetid=guid, pname=prop_name,
                                        ptype=mptt[mapitags.PT_UNICODE],
                                        value=val)

@@ -41,11 +41,11 @@ def main ():
 
 def init ():
     tests = TestEXContact(ASYNK_BASE_DIR, './')
-    # tests.new_contact(first='Chellam', last="Narasimham")
+    # tests.new_contact(first='Sahodara', last="Tripati")
     # tests.list_all_contacts()
     # tests.print_contacts(name='Chellam')
-    # tests.find_items(['AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ARgAAAAAA6tvK38NMgEiPrdzycecYvAcACf/6iQHYvUyNzrlQXzUQNgAAAAABDwAACf/6iQHYvUyNzrlQXzUQNgAAHykxJQAA'])
-    tests.clear_folder("AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHqDwAA")
+    tests.find_items(["AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ARgAAAAAA6tvK38NMgEiPrdzycecYvAcACf/6iQHYvUyNzrlQXzUQNgAAAAABDwAACf/6iQHYvUyNzrlQXzUQNgAAKGB2TQAA"])
+    # tests.clear_folder("AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHqDwAA")
 
 class TestEXContact:
     def __init__ (self, asynk_bd, user_d):
@@ -69,10 +69,10 @@ class TestEXContact:
         con.set_title("Ex PM")
         con.add_notes("Jolly good fellow")
         con.add_email_work("atal.vajpayee@gov.in")
-        con.set_dept("Prime Minister's Office")
-        con.set_company("Govt. of India")
-        con.add_custom('phones', 'WTF is this man.')
-        con.update_sync_tags('asynk:pname:ol', 'abcdef')
+        con.add_web_home('http://asynk.io')
+        con.add_web_home('http://karra-asynk.appspot.com')
+        con.add_web_work('http://www.cleartrip.com')
+        con.add_web_work('http://www.hackerrank.com')
         con.save()
 
     def list_all_contacts (self):
