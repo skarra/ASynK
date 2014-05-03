@@ -182,10 +182,12 @@ class EXFolder(Folder):
             exc.update_sync_tags(src_sync_tag, rid)
             item.update_sync_tags(dst_sync_tag, exc.get_itemid())
 
-            self.add_contact(exc)
-            ex_cons.append(exc)
+            self.add_item(exc)
 
-        self.get_ews().CreateItems(self.get_fobj().get_itemid(), ex_cons)
+            ews_con = exc.init_ews_con_from_props()
+            ex_cons.append(ews_con)
+
+        self.get_ews().CreateItems(self.get_fobj().Id, ex_cons)
 
         ## FIXME: need to get error and fix it
         return True
