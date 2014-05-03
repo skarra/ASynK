@@ -31,7 +31,6 @@ ASYNK_BASE_DIR    = os.path.abspath('..')
 EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
                os.path.join(ASYNK_BASE_DIR, 'asynk'),]
 sys.path = EXTRA_PATHS + sys.path
-print sys.path
 
 from state         import Config
 from pimdb_ex      import EXPIMDB
@@ -44,8 +43,9 @@ def init ():
     tests = TestEXContact(ASYNK_BASE_DIR, './')
     # tests.new_contact(first='Chellam', last="Narasimham")
     # tests.list_all_contacts()
-    tests.print_contacts(name='Chellam')
+    # tests.print_contacts(name='Chellam')
     # tests.find_items(['AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ARgAAAAAA6tvK38NMgEiPrdzycecYvAcACf/6iQHYvUyNzrlQXzUQNgAAAAABDwAACf/6iQHYvUyNzrlQXzUQNgAAHykxJQAA'])
+    tests.clear_folder("AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHqDwAA")
 
 class TestEXContact:
     def __init__ (self, asynk_bd, user_d):
@@ -93,6 +93,10 @@ class TestEXContact:
 
         for con in cons:
             print con
+
+    def clear_folder (self, folder_id):
+        fobj, ign = self.ex.find_folder(folder_id)
+        fobj.del_all_entries()
 
     def misc (self):
         self.ex.new_folder("ASynK Contacts 1")
