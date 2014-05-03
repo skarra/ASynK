@@ -24,6 +24,7 @@ from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
 from   contact_ex     import EXContact
 from   pyews.ews      import mapitags
+from   pyews.utils    import pretty_eid
 from   pyews.ews.data import FolderClass
 from   pyews.ews.data import MapiPropertyTypeType as mptt
 from   pyews.ews.item import ExtendedProperty
@@ -70,34 +71,48 @@ class EXFolder(Folder):
         oldi  = conf.get_itemids(pname)
 
         db1id = conf.get_profile_db1(pname)
-        if db1id == self.get_dbid():
-            ex_sync_state = conf.get_db_sync_state1(pname)
-        else:
+        if db1id != self.get_dbid():
             oldi = {v:k for k, v in oldi.iteritems()}
-            ex_sync_state = conf.get_db_sync_state2(pname)
 
         logging.info('Querying Exchange for status of Contact Entries...')
         stag = conf.make_sync_label(pname, destid)
 
-        ## Note that we are doing far less processing here than with
-        ## other stores. Trust in Microsoft. What can go wrong, really? :)
-        ex_new, ex_mod, ex_del, ss = self.get_fobj().get_updates(ex_sync_state)
+        if not updated_min:
+            updated_min = conf.get_last_sync_stop(pname)
+            ## The updated_min timestamp is of the form
+            ## 2014-05-03T09:58:34.20Z; Exchange does not use such a granual
+            ## timestamp. So we will strip the .20 from this string
+            updated_min = updated_min[0:19] + 'Z'
 
-        for con in ex_new:
-            sl.add_new(con.itemid.value)
+        ex_items = self.get_ews().FindItems(self.get_fobj(), ids_only=True)
+        ex_itemids = [x.itemid.value for x in ex_items]
 
-        for con in ex_mod:
-            assert con.itemid.value in oldi
-            sl.add_mod(con.itemid.value, oldi[con.itemid.value])
+        for ex_item in ex_items:
+            eid = ex_item.itemid.value
+            if eid in oldi:
+                if ex_item.last_modified_time.value > updated_min:
+                    logging.debug('Modified Exchange Contact: %20s %s',
+                                  ex_item.display_name.value, pretty_eid(eid))
+                    sl.add_mod(eid, oldi[eid])
+                else:
+                    logging.debug('Unmod   Exchange Contact: %20s %s',
+                                  ex_item.display_name.value, pretty_eid(eid))
+                    sl.add_unmod(eid)
+            else:
+                logging.debug('New      Exchange Contact: %20s %s',
+                              ex_item.display_name.value, pretty_eid(eid))
+                sl.add_new(eid)
 
-        for con in ex_del:
-            sl.add_del(con.itemid.value, oldi[con.itemid.value])
+        for oldid in oldi.keys():
+            if not oldid in ex_itemids:
+                logging.debug('Del      Exchange Contact: %s',
+                              pretty_eid(oldid))
+                sl.add_del(oldid, oldi[oldid])
 
-        sl.set_sync_state(ss)
-
-        logging.debug('Total New : %5d', len(sl.news))
-        logging.debug('Total Mod : %5d', len(sl.mods))
-        logging.debug('Total Del : %5d', len(sl.dels))
+        logging.debug('Total New   : %5d', len(sl.news))
+        logging.debug('Total Mod   : %5d', len(sl.mods))
+        logging.debug('Total Del   : %5d', len(sl.dels))
+        logging.debug('Total Unmod : %5d', len(sl.unmods))
 
     def get_itemids (self, pname, destid):
         ret = {}
