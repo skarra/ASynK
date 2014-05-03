@@ -180,7 +180,6 @@ class EXFolder(Folder):
             exc = EXContact(self, con=item)
             rid = item.get_itemid()
             exc.update_sync_tags(src_sync_tag, rid)
-            item.update_sync_tags(dst_sync_tag, exc.get_itemid())
 
             self.add_item(exc)
 
@@ -188,6 +187,10 @@ class EXFolder(Folder):
             ex_cons.append(ews_con)
 
         self.get_ews().CreateItems(self.get_fobj().Id, ex_cons)
+
+        for i, item in enumerate(items):
+            exc = ex_cons[i]
+            item.update_sync_tags(dst_sync_tag, exc.itemid.value)
 
         ## FIXME: need to get error and fix it
         return True
