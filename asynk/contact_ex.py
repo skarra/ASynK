@@ -65,7 +65,7 @@ class EXContact(Contact):
                 tag, itemid = con.get_sync_tags(label)[0]              
                 self.set_itemid(itemid)
             except Exception, e:
-                logging.debug('Potential new EXContact: %s', con.get_name())
+                logging.debug('Potential new EXContact: %s', con.get_disp_name())
 
         self.set_ews_con(ews_con)
         if ews_con is not None:
@@ -339,7 +339,7 @@ class EXContact(Contact):
 
         email_prim = self.get_email_prim()
         if email_prim is not None:
-            ews_con.emails.add_email('EmailAddress1', email_prim)
+            ews_con.emails.add('EmailAddress1', email_prim)
             i += 1
 
         i = self._add_email_helper(ews_con, self.get_email_home(), left-i, i+1)
