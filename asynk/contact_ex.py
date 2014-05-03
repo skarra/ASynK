@@ -206,29 +206,67 @@ class EXContact(Contact):
         # Ignoring manager_name and assistant_name
 
     def _snarf_phones_and_faxes_from_ews_con (self, ews_con):
+        ph_labels = self.get_custom('phones')
+        fa_labels = self.get_custom('faxes')
+
         for phone in ews_con.phones.entries:
             key = phone.attrib['Key']
 
             if key == 'PrimaryPhone':
                 self.set_phone_prim(phone.value)
             elif key == 'MobilePhone':
-                self.add_phone_mob(('Mobile', phone.value))
+                if ph_labels and phone.value in ph_labels['mob']:
+                    label = ph_labels['mob'][phone.value]
+                else:
+                    label = 'Mobile'
+                self.add_phone_mob((label, phone.value))
             elif key == 'HomePhone':
-                self.add_phone_home(('Home', phone.value))
+                if ph_labels and phone.value in ph_labels['home']:
+                    label = ph_labels['home'][phone.value]
+                else:
+                    label = 'Home'
+                self.add_phone_home((label, phone.value))
             elif key == 'HomePhone2':
-                self.add_phone_home(('Home2', phone.value))
+                if ph_labels and phone.value in ph_labels['home']:
+                    label = ph_labels['home'][phone.value]
+                else:
+                    label = 'Home2'
+                self.add_phone_home((label, phone.value))
             elif key == 'BusinessPhone':
+                if ph_labels and phone.value in ph_labels['work']:
+                    label = ph_labels['work'][phone.value]
+                else:
+                    label = 'Work'
                 self.add_phone_work(('Work', phone.value))
             elif key == 'BusinessPhone2':
-                self.add_phone_work(('Work2', phone.value))
+                if ph_labels and phone.value in ph_labels['work']:
+                    label = ph_labels['work'][phone.value]
+                else:
+                    label = 'Work2'
+                self.add_phone_work((label, phone.value))
             elif key == 'OtherTelephone':
+                if ph_labels and phone.value in ph_labels['other']:
+                    label = ph_labels['other'][phone.value]
+                else:
+                    label = 'Other'
                 self.add_phone_other(('Other', phone.value))
             elif key == 'HomeFax':
-                self.add_fax_home(('Home', phone.value))
+                if fa_labels and phone.value in fa_labels['other']:
+                    label = fa_labels['home'][phone.value]
+                else:
+                    label = 'Other'
+                self.add_fax_home((label, phone.value))
             elif key == 'BusinessFax':
-                self.add_fax_work(('Work', phone.value))
+                if fa_labels and phone.value in fa_labels['other']:
+                    label = fa_labels['work'][phone.value]
+                else:
+                    label = 'Other'
+                self.add_fax_work((label, phone.value))
             else:
                 self.add_phone_other((key, phone.value))
+
+        self.del_custom('phones')
+        self.del_custom('faxes')
 
     def _snarf_dates_from_ews_con (self, ews_con):
         self.set_created(ews_con.created_time.value)
