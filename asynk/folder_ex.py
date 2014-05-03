@@ -25,6 +25,7 @@ from   folder         import Folder
 from   contact_ex     import EXContact
 from   pyews.ews      import mapitags
 from   pyews.utils    import pretty_eid
+from   pyews.ews.data import ews_pt, ews_pid
 from   pyews.ews.data import FolderClass
 from   pyews.ews.data import MapiPropertyTypeType as mptt
 from   pyews.ews.item import ExtendedProperty
@@ -261,6 +262,13 @@ class EXFolder(Folder):
         ## The property containing the ASynK sync tags data
         eprop = ExtendedProperty(psetid=guid, pname=pname,
                                  ptype=mptt[mapitags.PT_UNICODE])
+        xmls.append(eprop.write_to_xml_get())
+
+        ## This property is not returned by default with older exchange
+        ## versions ...
+        ptag  = ews_pid(mapitags.PR_PERSONAL_HOME_PAGE)
+        ptype = ews_pt(mapitags.PR_PERSONAL_HOME_PAGE)
+        eprop = ExtendedProperty(ptag=ptag, ptype=ptype)
         xmls.append(eprop.write_to_xml_get())
 
         return xmls
