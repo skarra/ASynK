@@ -71,15 +71,17 @@ class EXFolder(Folder):
 
         db1id = conf.get_profile_db1(pname)
         if db1id == self.get_dbid():
+            ex_sync_state = conf.get_db_sync_state1(pname)
+        else:
             oldi = {v:k for k, v in oldi.iteritems()}
+            ex_sync_state = conf.get_db_sync_state2(pname)
 
         logging.info('Querying Exchange for status of Contact Entries...')
         stag = conf.make_sync_label(pname, destid)
 
         ## Note that we are doing far less processing here than with
         ## other stores. Trust in Microsoft. What can go wrong, really? :)
-        ex_sync_state = conf.get_ex_sync_state(pname)
-        ex_new, ex_mod, ex_del = self.get_fobj().get_updates(ex_sync_state)
+        ex_new, ex_mod, ex_del, ss = self.get_fobj().get_updates(ex_sync_state)
 
         for con in ex_new:
             sl.add_new(con.itemid.value)
@@ -90,6 +92,8 @@ class EXFolder(Folder):
 
         for con in ex_del:
             sl.add_del(con.itemid.value, oldi[con.itemid.value])
+
+        sl.set_sync_state(ss)
 
         logging.debug('Total New : %5d', len(sl.news))
         logging.debug('Total Mod : %5d', len(sl.mods))
