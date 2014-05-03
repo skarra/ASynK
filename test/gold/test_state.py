@@ -231,24 +231,6 @@ class TestStateFunctions(unittest.TestCase):
         val = self.config.get_ol_next_gid('ex')
         self.assertTrue(val == 0xb001)
 
-    def test_read_ex_sync_state (self):
-        val = self.config.get_ex_sync_state('defgcex')
-
-    def test_read_ex_sync_state_err (self):
-        with self.assertRaises(AsynkConfigError):
-            val = self.config.get_ex_sync_state('defgcbb')
-
-    def test_write_ex_sync_state (self):
-        val = 'abcdefgh'
-        self.config.set_ex_sync_state('defgcex', val)
-        out = self.config.get_ex_sync_state('defgcex')
-        self.assertTrue(val == out)
-
-    def test_write_ex_sync_state_err (self):
-        val = 'abcdefgh'
-        with self.assertRaises(AsynkConfigError):
-            self.config.set_ex_sync_state('defgcbb', val)
-
     def test_make_sync_label (self):
         val = self.config.make_sync_label('goofy', 'gc')
         self.assertTrue(val == 'asynk:goofy:gc')
