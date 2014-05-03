@@ -31,6 +31,7 @@ ASYNK_BASE_DIR    = os.path.abspath('..')
 EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
                os.path.join(ASYNK_BASE_DIR, 'asynk'),]
 sys.path = EXTRA_PATHS + sys.path
+print sys.path
 
 from state         import Config
 from pimdb_ex      import EXPIMDB
@@ -41,9 +42,10 @@ def main ():
 
 def init ():
     tests = TestEXContact(ASYNK_BASE_DIR, './')
-    # tests.new_contact(first='John', last="Doe")
+    # tests.new_contact(first='Chellam', last="Narasimham")
     # tests.list_all_contacts()
-    tests.print_contacts(name='John')
+    tests.print_contacts(name='Chellam')
+    # tests.find_items(['AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ARgAAAAAA6tvK38NMgEiPrdzycecYvAcACf/6iQHYvUyNzrlQXzUQNgAAAAABDwAACf/6iQHYvUyNzrlQXzUQNgAAHykxJQAA'])
 
 class TestEXContact:
     def __init__ (self, asynk_bd, user_d):
@@ -69,6 +71,8 @@ class TestEXContact:
         con.add_email_work("atal.vajpayee@gov.in")
         con.set_dept("Prime Minister's Office")
         con.set_company("Govt. of India")
+        con.add_custom('phones', 'WTF is this man.')
+        con.update_sync_tags('asynk:pname:ol', 'abcdef')
         con.save()
 
     def list_all_contacts (self):
@@ -80,10 +84,13 @@ class TestEXContact:
         self.cons_f._refresh_items()
         self.cons_f.print_contacts(cnt=cnt, name=name)
 
-    def find_items (self):
-        cons = self.cons_f.find_items(['AQAcAHNrYXJyAGFAYXN5bmsub25taWNyb3NvZnQuY29tAEYAAAPq28rfw0yASI+t3PJx5xi8BwAJ//qJAdi9TI3OuVBfNRA2AAACAQ8AAAAJ//qJAdi9TI3OuVBfNRA2AAACEMsAAAA='])
+    def find_items (self, iids):
+        cons = self.cons_f.find_items(iids)
 
+        if cons is None:
+            cons = []
         print 'Found %d contacts' % len(cons)
+
         for con in cons:
             print con
 
