@@ -299,24 +299,7 @@ class Sync:
         if dirn == 'SYNC2WAY':
             ret2 = sl2.sync_to_folder(self.get_f1())
 
-        self.set_db_sync_state1(sl1.get_sync_state())
-        self.set_db_sync_state2(sl2.get_sync_state())
-
         return ret1 and ret2
-
-    def get_db_sync_state1 (self):
-        return self.db_sync_state1
-
-    def set_db_sync_state1 (self, val):
-        self.db_sync_state1 = val
-        return val
-
-    def get_db_sync_state2 (self):
-        return self.db_sync_state2
-
-    def set_db_sync_state2 (self, val):
-        self.db_sync_state2 = val
-        return val
 
     def save_item_lists (self):
         """Write the existing item list to file, so we can identify deletes
@@ -350,7 +333,6 @@ class SyncLists:
         self.mods = {}                    # Hash of f1 id -> f2 id
         self.dels = {}
         self.unmods = []
-        self.sync_state = None
 
         self.pname = pname
 
@@ -444,13 +426,6 @@ class SyncLists:
 
     def set_dels (self, val):
         self.dels = val
-        return val
-
-    def get_sync_state (self):
-        return self.sync_state
-
-    def set_sync_state (self, val):
-        self.sync_state = val
         return val
 
     def send_news_to_folder (self, df):
