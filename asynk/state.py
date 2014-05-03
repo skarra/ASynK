@@ -476,28 +476,6 @@ class Config:
             val = iso8601.tostring(time.time())
         return self._set_profile_prop(profile, 'last_sync_stop', val, sync)
 
-    def get_db_sync_state1 (self, pname):
-        try:
-            return self.get_coll_1(pname)['sync_state']
-        except KeyError, e:
-            return None
-
-    def set_db_sync_state1 (self, pname, val, sync=True):
-        coll_1 = self.get_coll_1(pname)
-        coll_1.update({'sync_state' : val})
-        return self.set_coll_1(pname, coll_1, sync)
-
-    def get_db_sync_state2 (self, pname):
-        try:
-            return self.get_coll_2(pname)['sync_state']
-        except KeyError, e:
-            return None
-
-    def set_db_sync_state2 (self, pname, val, sync=True):
-        coll_2 = self.get_coll_2(pname)
-        coll_2.update({'sync_state' : val})
-        return self.set_coll_2(pname, coll_2, sync)
-
     def get_sync_dir (self, profile):
         val = self._get_profile_prop(profile, 'sync_dir')
         if not val in sync_dirs:
