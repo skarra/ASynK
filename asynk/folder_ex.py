@@ -235,6 +235,10 @@ class EXFolder(Folder):
 
         raise NotImplementedError
 
+    def del_all_entries (self):
+        itemids = self._refresh_itemids()
+        self.get_ews().DeleteItems(itemids)
+
     ##
     ## Some internal methods
     ##
@@ -270,6 +274,18 @@ class EXFolder(Folder):
             ## Item types.
             con = EXContact(folder=self, ews_con=econ)
             self.add_item(con)
+
+    def _refresh_itemids (self):
+        """
+        Get a list of all the Itemids in the folder from the server
+        """
+
+        ews = self.get_ews()
+        fobj = self.get_fobj()
+        ews_cons = ews.FindItems(fobj, eprops_xml=self.custom_eprops_xml,
+                                 ids_only=True)
+
+        return [ews_con.itemid.value for ews_con in ews_cons]
 
     def __str__ (self):
         if self.get_type() == Folder.CONTACT_t:
