@@ -129,7 +129,11 @@ class EXFolder(Folder):
         return value is a pair of (success, [failed entrie]). success is true
         if and only all items were deleted successfully."""
 
-        raise NotImplementedError
+        resp = self.get_ews().DeleteItems(itemids)
+        if resp.has_errors():
+            return False, [itemids[i] for i in resp.errors.keys()]
+
+        return True, []
 
     def find_item (self, itemid):
         """
