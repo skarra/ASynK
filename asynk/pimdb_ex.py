@@ -115,8 +115,8 @@ class EXPIMDB(PIMDB):
                 logging.info('Added Exchnage folder %s of type %s',
                              ewsf.DisplayName, ewsf.FolderClass)
             else:
-                logging.info('Skipping Exchnage folder %s of type %s',
-                             ewsf.DisplayName, ewsf.FolderClass)
+                logging.debug('Skipping Exchnage folder %s of type %s',
+                              ewsf.DisplayName, ewsf.FolderClass)
 
     def set_def_folders (self):
         """See the documentation in class PIMDB"""

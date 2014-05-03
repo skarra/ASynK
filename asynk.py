@@ -774,8 +774,13 @@ class Asynk:
         conf  = self.get_config()
         pname = self._load_profile()
 
+        ## FIXME: This sync state business has become a bit hairy. Need a
+        ## better architecture for this.
+
         startt_old = conf.get_last_sync_start(pname)
         stopt_old  = conf.get_last_sync_stop(pname)
+        db1ss_old  = conf.get_db_sync_state1(pname)
+        db2ss_old  = conf.get_db_sync_state1(pname)
 
         if self.is_sync_all():
             # This is the case the user wants to force a sync ignoring the
@@ -790,7 +795,9 @@ class Asynk:
                 logging.debug('Temporarily resetting last sync times...')
             conf.set_last_sync_start(pname, val=utils.time_start)
             conf.set_last_sync_stop(pname, val=utils.time_start)
-
+            ## FIXME: The below works for Exchange. New dbs ... you are warned.
+            conf.set_db_sync_state1(pname, None)
+            conf.set_db_sync_state2(pname, None)
         sync = Sync(conf, pname, self.get_db(), dr=self.is_dry_run())
         if self.is_dry_run():
             sync.prep_lists(self.get_sync_dir())
@@ -798,6 +805,8 @@ class Asynk:
             # real older sync is sort of called for.
             conf.set_last_sync_start(pname, val=startt_old)
             conf.set_last_sync_stop(pname, val=stopt_old)
+            conf.set_db_sync_state1(pname, db1ss_old)
+            conf.set_db_sync_state2(pname, db2ss_old)
             logging.debug('Reset last sync timestamps to real values')
         else:
             try:
@@ -806,9 +815,12 @@ class Asynk:
                 if result:
                     conf.set_last_sync_start(pname, val=startt)
                     conf.set_last_sync_stop(pname)
-                    logging.info('Updating item inventory...')
+
+                    logging.info('Updating item inventory and state...')
+                    conf.set_db_sync_state1(pname, sync.get_db_sync_state1())
+                    conf.set_db_sync_state2(pname, sync.get_db_sync_state2())
                     sync.save_item_lists()
-                    logging.info('Updating item inventory...done')
+                    logging.info('Updating item inventory and state...done')
                 else:
                     logging.info('timestamps not reset for profile %s due to '
                                  'errors (previously identified).', pname)
