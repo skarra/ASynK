@@ -157,6 +157,9 @@ class EXFolder(Folder):
             exc = EXContact(self, con=item)
             rid = item.get_itemid()
             exc.update_sync_tags(src_sync_tag, rid)
+            item.update_sync_tags(dst_sync_tag, exc.get_itemid())
+
+            self.add_contact(exc)
             ex_cons.append(exc)
 
         self.get_ews().CreateItems(self.get_fobj().get_itemid(), ex_cons)
@@ -167,17 +170,44 @@ class EXFolder(Folder):
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
 
-        raise NotImplementedError
+        ## FIXME: We will assume that the change keys are up to date... for
+        ## now.
+
+        my_dbid = self.get_dbid()
+        c       = self.get_config()
+        pname   = src_sl.get_pname()
+
+        src_sync_tag = c.make_sync_label(pname, src_dbid)
+        dst_sync_tag = c.make_sync_label(pname, my_dbid)
+
+        ## FIXME: Most of this stuff has to do with sync tags and we should be
+        ## doing away with this shit.
+        ews_cons = []
+        for item in items:
+            con = x.init_ews_con_from_props()
+            con.update_sync_tags(src_sync_tag, item.get_itemid())
+
+            ews_cons.append(con)
+
+        self.service.UpdateItems(ews_cons)
+
+        ## FIXME: Need proper error handling
+        return True
 
     def writeback_sync_tags (self, pname, items):
-        raise NotImplementedError
+        logging.info('Writing sync state to Exchange server...')
+
+        ews_cons = [x.init_ews_con_from_props() for x in items]
+        self.get_ews().UpdateItems(ews_cons)
+
+        logging.info('Writing sync state to Exchange server...done')
+
+        ## FIXME: Need proper error handling
+        return True
 
     def bulk_clear_sync_flags (self, label_re=None):
-        """See the documentation in folder.Folder.
+        """See the documentation in folder.Folder."""
 
-        Need to explore if there is a faster way than iterating through
-        entries after a table lookup.
-        """
         raise NotImplementedError
 
     ##
