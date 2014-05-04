@@ -57,9 +57,9 @@ Appendices
 @node Introduction, Installation, Top, Top
 @chapter Introduction
 
-ASynK is a flexible Contacts synchronization program that works with a
-variety of Contacts software such as Microsoft Outlook, Google Contacts,
-CardDAV and Emacs BBDB.
+ASynK is a flexible Contacts synchronization program that works with a variety
+of Contacts software such as Microsoft Outlook, Microsoft Exchange Server,
+Google Contacts, CardDAV and Emacs BBDB.
 
 If you would not read through this documentation from cover to cover, but
 rather learn by looking at examples, head straight to the section titled
@@ -118,17 +118,30 @@ formats. Version 4.8 is known to work with our sources.
 @end enumerate
 @end enumerate
 
+@subsection Microsoft Exchange Specific Notes
+If you want to synchronize to your Exchange Server you could do that from any
+machine or operating system that can access your Exchange server over the
+internet. You will need to ask  your system administrators for:
+
+@enumerate
+@item Your full email address 
+@item Your account password
+@item The exchange mailbox url
+@end enumerate
+
 @subsection Windows / Outlook Specific Notes
-If you want to synchronize to MS Outlook, you will need:
+If you have contacts on your own machine inside a Outlook PST file you can
+sycn them too. But there are a few additional dependencies:
 
 @enumerate
 @item
-@strong{Microsoft Windows}: Any recent version should do
+@strong{Microsoft Windows}: You must run ASynK on a Windows machine. Any
+recent version such as XP onwards will do.
 
 @item 
 @strong{MS Outlook}: Outlook should be installed. Direct read/write of PST
 files is not possible. Any recent version should work. ASynK has been reported
-to work with Office 2008 and Office 2010
+to work with Office 2007, Office 2008, Office 2010, Office 2013
 
 @item
 @strong{Pywin32 for Python 2.7}: It is available for download 
@@ -548,7 +561,7 @@ optional arguments:
                         Specific management operation to be performed.
   --user-dir USER_DIR   Directory to store ASynK config files, logs directory,
                         BBDB backups directory, etc.
-  --db {bb,gc,ol,cd} [{bb,gc,ol,cd} ...]
+  --db {bb,gc,ol,cd} [{bb,gc,ol,cd,ex} ...]
                         DB IDs required for most actions. Some actions need
                         two DB IDs - do it with two --db flags. When doing so
                         remember that order might be important for certain
@@ -633,7 +646,7 @@ directory.
 
 @enumerate
 @item
-Location of directory containing logs. This should the name of a directory
+Location of directory containing logs. This should be the name of a directory
 relative to the ASynK user directory, which is ~/.asynk/ by default.
 @cindex logging
 
@@ -1195,6 +1208,28 @@ Baikal Server: http://server.org/card.php
 Note that for the port number may be optional. If Apple CalendarServer is configured
 to respond to both http and https the a port number will be required. Check your 
 server documentation.
+
+@section Synching to Microsoft Exchange
+A reminder - Exchange support is the newest feature in ASynK, and there may be some
+rough edges. We have taken care to ensure that any deletes from the server
+move the contacts to the Trash Bin from where you can recover items if
+something goes wrong. However convince yourself that ASynK works fine before
+using it with your prodcution data.
+
+@subsection Creating a profile with Exchange
+@verbatim
+   $ ./asynk.py --op=create-profile --name testbbex --db bb ex --folder default Contacts --store <opath-to-bbdb-file> <Exchange URL>
+@end verbatim
+
+The Exchange URL is of the form:
+https://outlook.office365.com/EWS/Exchange.asmx - you should ask your system administrator.
+
+Ensure you are able to login to your account properly.
+@verbatim
+   $ ./asynk.py --op=sync --user-dir=~/.asynk.cd --name testbbcd --dry-run
+@end verbatim
+
+If everything works fine, you can try out without the dry-run option.
 
 @section Misc Housekeeping Activities
 @enumerate
