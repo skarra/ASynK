@@ -1,30 +1,133 @@
 
+* Major activities for asynk.io launch
+
+** Critical
+
+   - API based model for invoking sync
+   - oAuth for Google
+
+   - Export state.json:
+     - Store state.json in Dropbox
+     - Download / upload state.json to local storage
+
+*** Ops
+
+   - AWS provisioning
+   - https certification
+
+** Good to have
+
+   - Ability to sync to same database type 
+   - Autodiscover URLs for Exchange and CardDAV
+   - Get rid of the sync tags stuff completely from all the stores
+
+* API design
+
+  - Each operation we have now will be a POST call
+  - Every post call will take the state.json as input
+  - Client side app will store the state.json to local storage and update it
+  - Prompt user to store it 
+
 * MS Exchange support
 
-** Status
+** Next things to do
 
-** Sun Apr 20 01:09:38 IST 2014
+   - bulk clear sync tags
 
-   Started implementing the gid and other sorts of support. I am not really
-   sure if all of that is required. Perhaps it is required.
+   - support --exuser and --expwd command line flags
+   - support 'default' storeid to get URL through autodisc
+   - support 'default' as foid
+
+*** Fields that are not yet supported
+
+    - postal addresses
+
+** Log
+
+*** Fri May 02 12:53:40 IST 2014
+
+   The whole update items and sync state stuff is a bit messsed up. I think I
+   tried to edit something and messed up the updateitems methods thiknking
+   they are the sync_state method. So some damage needs to be undone.
+
+*** Wed Apr 30 15:18:22 IST 2014
+
+   Stuck with prep sync lists and stuff like that.
+
+*** Fri Apr 18 18:56:34 IST 2014
+
+   Able to create contacts with some of the standard field types. Now on to
+   more complex, or 'Extended' Properties. (Done :)
+
+*** Thu Apr 03 23:44:52 IST 2014
+
+   New classes for Item and Contact to wrap around the EWS XML. Some problems
+   with properly parsing and constructing those objects. Need to look into it.
+
+*** Sun Mar 30 18:35:00 IST 2014
+
+   Able to discover all the contact folders and also create new ones.
+
+*** Thu Mar 27 22:34:10 IST 2014
+
+   After struggling with SUDS and a bunch of random assorted soap clients,
+   decided to just go with direct http, and now I am able to fetch basic
+   details from the server! Next steps - parsing the details as well as
+   fetching more important info.
+
+*** Sat Mar 15 17:17:01 IST 2014
+
+   Developing the autodiscovery service is going to be a very difficult
+   affair. There are many deployment scenaros possible as made clear in the
+   documentation and there's no way to validate the code in all the
+   scenarios. So for now the autodiscover code is incomplete and, well, a bit
+   shoddy. Sorry.
+
 
 ** Time Tracker
 
 #+BEGIN: clocktable :maxlevel 3 :scope subtree
-Clock summary at [2014-04-21 Mon 09:03]
+Clock summary at [2014-05-04 Sun 13:11]
 
 | Headline         | Time    |       |       |
 |------------------+---------+-------+-------|
-| *Total time*     | *16:33* |       |       |
+| *Total time*     | *77:05* |       |       |
 |------------------+---------+-------+-------|
-| \__ Time Tracker |         | 16:33 |       |
-| \_____ Apr 2014  |         |       | 15:23 |
-| \_____ Mar 2014  |         |       |  1:10 |
+| \__ Time Tracker |         | 77:05 |       |
+| \_____ May 2014  |         |       | 10:00 |
+| \_____ Apr 2014  |         |       | 34:05 |
+| \_____ Mar 2014  |         |       | 33:00 |
 #+END:
 
+*** May 2014
+   CLOCK: [2014-05-03 Sat 22:03]--[2014-05-04 Sun 00:12] =>  2:09
+   CLOCK: [2014-05-03 Sat 16:36]--[2014-05-03 Sat 18:33] =>  1:57
+   CLOCK: [2014-05-03 Sat 13:29]--[2014-05-03 Sat 16:29] =>  3:00
+   CLOCK: [2014-05-03 Sat 00:34]--[2014-05-03 Sat 01:53] =>  1:19
+   CLOCK: [2014-05-01 Thu 12:18]--[2014-05-01 Thu 12:27] =>  0:09
+   CLOCK: [2014-05-01 Thu 09:35]--[2014-05-01 Thu 10:47] =>  1:12
+   CLOCK: [2014-05-01 Thu 09:06]--[2014-05-01 Thu 09:20] =>  0:14
+
 *** Apr 2014
+   CLOCK: [2014-04-29 Tue 23:01]--[2014-04-30 Wed 00:28] =>  1:27
+   CLOCK: [2014-04-29 Tue 22:00]--[2014-04-29 Tue 22:42] =>  0:42
+   CLOCK: [2014-04-29 Tue 12:41]--[2014-04-29 Tue 13:35] =>  0:54
+   CLOCK: [2014-04-28 Mon 07:37]--[2014-04-28 Mon 08:31] =>  0:54
+   CLOCK: [2014-04-28 Mon 05:30]--[2014-04-28 Mon 07:37] =>  2:07
+   CLOCK: [2014-04-27 Sun 12:43]--[2014-04-27 Sun 13:43] =>  1:00
+   CLOCK: [2014-04-27 Sun 12:05]--[2014-04-27 Sun 12:28] =>  0:23
+   CLOCK: [2014-04-27 Sun 10:19]--[2014-04-27 Sun 11:25] =>  1:06
+   CLOCK: [2014-04-26 Sat 18:57]--[2014-04-26 Sat 19:24] =>  0:27
+   CLOCK: [2014-04-25 Fri 10:55]--[2014-04-25 Fri 12:33] =>  1:38
+   CLOCK: [2014-04-25 Fri 09:00]--[2014-04-25 Fri 09:03] =>  0:03
+   CLOCK: [2014-04-24 Thu 21:24]--[2014-04-25 Fri 00:01] =>  2:37
+   CLOCK: [2014-04-24 Thu 18:48]--[2014-04-24 Thu 19:07] =>  0:19
+   CLOCK: [2014-04-24 Thu 17:50]--[2014-04-24 Thu 18:45] =>  0:55
+   CLOCK: [2014-04-24 Thu 12:44]--[2014-04-24 Thu 13:38] =>  0:54
    CLOCK: [2014-04-21 Mon 06:41]--[2014-04-21 Mon 09:01] =>  2:20
    CLOCK: [2014-04-20 Sun 11:01]--[2014-04-20 Sun 12:42] =>  1:41
+   CLOCK: [2014-04-19 Sat 23:49]--[2014-04-20 Sun 01:09] =>  1:20
+   CLOCK: [2014-04-18 Fri 16:59]--[2014-04-18 Fri 18:55] =>  1:56
    CLOCK: [2014-04-07 Mon 06:34]--[2014-04-07 Mon 07:10] =>  0:36
    CLOCK: [2014-04-06 Sun 16:03]--[2014-04-06 Sun 18:04] =>  2:01
    CLOCK: [2014-04-05 Sat 18:17]--[2014-04-05 Sat 21:36] =>  3:19
@@ -34,9 +137,54 @@ Clock summary at [2014-04-21 Mon 09:03]
    CLOCK: [2014-04-01 Tue 08:47]--[2014-04-01 Tue 09:19] =>  0:32
 
 *** Mar 2014
+   CLOCK: [2014-03-31 Mon 15:40]--[2014-03-31 Mon 15:44] =>  0:04
    CLOCK: [2014-03-31 Mon 16:33]--[2014-03-31 Mon 17:03] =>  0:30
    CLOCK: [2014-03-31 Mon 16:00]--[2014-03-31 Mon 16:30] =>  0:30
    CLOCK: [2014-03-31 Mon 15:45]--[2014-03-31 Mon 15:55] =>  0:10
+   CLOCK: [2014-03-31 Mon 15:40]--[2014-03-31 Mon 15:44] =>  0:04
+   CLOCK: [2014-03-30 Sun 17:22]--[2014-03-30 Sun 18:35] =>  1:13
+   CLOCK: [2014-03-30 Sun 16:56]--[2014-03-30 Sun 17:16] =>  0:20
+   CLOCK: [2014-03-30 Sun 14:16]--[2014-03-30 Sun 14:23] =>  0:07
+   CLOCK: [2014-03-30 Sun 13:30]--[2014-03-30 Sun 13:36] =>  0:06
+   CLOCK: [2014-03-30 Sun 12:27]--[2014-03-30 Sun 12:29] =>  0:02
+   CLOCK: [2014-03-30 Sun 07:44]--[2014-03-30 Sun 10:22] =>  2:38
+   CLOCK: [2014-03-30 Sun 17:22]--[2014-03-30 Sun 18:35] =>  1:13
+   CLOCK: [2014-03-30 Sun 16:56]--[2014-03-30 Sun 17:16] =>  0:20
+   CLOCK: [2014-03-30 Sun 14:16]--[2014-03-30 Sun 14:23] =>  0:07
+   CLOCK: [2014-03-30 Sun 13:30]--[2014-03-30 Sun 13:36] =>  0:06
+   CLOCK: [2014-03-30 Sun 12:27]--[2014-03-30 Sun 12:29] =>  0:02
+   CLOCK: [2014-03-30 Sun 07:44]--[2014-03-30 Sun 10:22] =>  2:38
+   CLOCK: [2014-03-27 Thu 17:51]--[2014-03-27 Thu 18:01] =>  0:10
+   CLOCK: [2014-03-27 Thu 17:45]--[2014-03-27 Thu 17:47] =>  0:02
+   CLOCK: [2014-03-27 Thu 17:51]--[2014-03-27 Thu 18:01] =>  0:10
+   CLOCK: [2014-03-27 Thu 17:45]--[2014-03-27 Thu 17:47] =>  0:02
+   CLOCK: [2014-03-16 Sun 10:01]--[2014-03-16 Sun 15:53] =>  5:52
+   CLOCK: [2014-03-16 Sun 09:32]--[2014-03-16 Sun 10:01] =>  0:29
+   CLOCK: [2014-03-16 Sun 10:01]--[2014-03-16 Sun 15:53] =>  5:52
+   CLOCK: [2014-03-16 Sun 09:32]--[2014-03-16 Sun 10:01] =>  0:29
+   CLOCK: [2014-03-15 Sat 16:18]--[2014-03-15 Sat 17:16] =>  0:58
+   CLOCK: [2014-03-15 Sat 15:24]--[2014-03-15 Sat 15:26] =>  0:02
+   CLOCK: [2014-03-15 Sat 16:18]--[2014-03-15 Sat 17:16] =>  0:58
+   CLOCK: [2014-03-15 Sat 15:24]--[2014-03-15 Sat 15:26] =>  0:02
+   CLOCK: [2014-03-05 Wed 19:19]--[2014-03-05 Wed 19:39] =>  0:20
+   CLOCK: [2014-03-05 Wed 17:01]--[2014-03-05 Wed 17:43] =>  0:42
+   CLOCK: [2014-03-05 Wed 16:31]--[2014-03-05 Wed 16:51] =>  0:20
+   CLOCK: [2014-03-05 Wed 16:10]--[2014-03-05 Wed 16:30] =>  0:20
+   CLOCK: [2014-03-05 Wed 15:05]--[2014-03-05 Wed 16:00] =>  0:55
+   CLOCK: [2014-03-05 Wed 14:03]--[2014-03-05 Wed 14:23] =>  0:20
+   CLOCK: [2014-03-05 Wed 12:35]--[2014-03-05 Wed 13:03] =>  0:28
+   CLOCK: [2014-03-05 Wed 11:41]--[2014-03-05 Wed 12:01] =>  0:20
+   CLOCK: [2014-03-05 Wed 11:23]--[2014-03-05 Wed 11:30] =>  0:07
+   CLOCK: [2014-03-05 Wed 19:19]--[2014-03-05 Wed 19:39] =>  0:20
+   CLOCK: [2014-03-05 Wed 17:01]--[2014-03-05 Wed 17:43] =>  0:42
+   CLOCK: [2014-03-05 Wed 16:31]--[2014-03-05 Wed 16:51] =>  0:20
+   CLOCK: [2014-03-05 Wed 16:10]--[2014-03-05 Wed 16:30] =>  0:20
+   CLOCK: [2014-03-05 Wed 15:05]--[2014-03-05 Wed 16:00] =>  0:55
+   CLOCK: [2014-03-05 Wed 14:03]--[2014-03-05 Wed 14:23] =>  0:20
+   CLOCK: [2014-03-05 Wed 12:35]--[2014-03-05 Wed 13:03] =>  0:28
+   CLOCK: [2014-03-05 Wed 11:41]--[2014-03-05 Wed 12:01] =>  0:20
+   CLOCK: [2014-03-05 Wed 11:23]--[2014-03-05 Wed 11:30] =>  0:07
+
 
 
 * Old Log
