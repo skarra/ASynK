@@ -567,3 +567,10 @@ p {
 .announce_title {
     color: green;
 }
+
+.rel {
+    display: inline-block;
+    position: relative;
+    margin: 20px;
+    width: 43%;
+}
