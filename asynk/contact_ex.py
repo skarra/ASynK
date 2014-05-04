@@ -301,7 +301,20 @@ class EXContact(Contact):
         self.del_custom('webs')
 
     def _snarf_ims_from_ews_con (self, ews_con):
-        pass
+        im_labels = self.get_custom('ims')
+
+        for i, im in enumerate(ews_con.ims.entries):
+            if im_labels and im.value in im_labels():
+                label = im_labels[im.value]
+            else:
+                label = im.key()
+
+            if i == 0:
+                self.set_im_prim(label)
+
+            self.add_im(label, im.value)
+
+        self.del_custom('ims')
 
     def _snarf_sync_tags_from_ews_con (self, ews_con):
         conf  = self.get_config()
@@ -493,7 +506,24 @@ class EXContact(Contact):
         self.add_custom('webs', cus_web)
 
     def _add_ims_to_ews_con (self, ews_con):
-        pass
+        cust = {}
+        prim = self.get_im_prim()
+
+        i = 1
+        for label, value in self.get_ims().iteritems():
+            cust.update({value : label})
+
+            if i > 3:
+                continue
+
+            ews_label = 'ImAddress%d' % i
+            if prim:
+                continue
+
+            ews_con.ims.add(ews_label, value)
+            i += 1
+
+        self.add_custom('ims', cust)
 
     def _add_sync_tags_to_ews_con (self, ews_con):
         ## We use Named String identified extended properites to store sync
