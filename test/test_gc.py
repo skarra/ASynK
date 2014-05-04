@@ -1,15 +1,27 @@
 import getopt, logging, os, sys, traceback
 
+CUR_DIR           = os.path.abspath('')
+ASYNK_BASE_DIR    = os.path.abspath('..')
+
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
 DIR_PATH    = os.path.abspath('../')
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
+from state         import Config
+import gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
+from   pimdb_gc   import GCPIMDB
+from   contact_gc import GCContact
+from   folder_gc  import BatchState
+import utils
+import xml.etree.ElementTree as ET
+
 def main ():
     tests = TestGCContact()
 
-    tests.test_print_item('https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/5e6d5ad30b0e2008')
+    tests.test_batch_error()
+    # tests.test_print_item('https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/5e6d5ad30b0e2008')
     # tests.test_find_item('https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/4b814c4c8f0c1558')
     #tests.test_sync_status()
     #tests.test_del_item('http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/1fabc8309273c15')
@@ -17,14 +29,13 @@ def main ():
 
 class TestGCContact:
     def __init__ (self):
-        from   pimdb_gc   import GCPIMDB
-        from   state      import Config
-
-        config = Config('../config.json', './state.test.json')
+        self.conf = Config(asynk_base_dir=ASYNK_BASE_DIR, user_dir='./')
 
         # The following is the 'Gout' group on karra.etc@gmail.com
         # self.gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/41baff770f898d85'
-        self.gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/6'
+        # self.gid =
+        # 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/6'
+        self.gid = 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/204eb63b8e2dad8d'
 
         # Parse command line options
         try:
@@ -51,10 +62,60 @@ class TestGCContact:
                 print 'Password cannot be blank'
 
         try:
-            self.pimdb = GCPIMDB(config, user, pw)
+            self.pimdb = GCPIMDB(self.conf, user, pw)
         except gdata.client.BadAuthentication:
             print 'Invalid credentials. WTF.'
             raise
+
+    def test_batch_error (self):
+        fobj = self.find_group(self.gid)
+
+        con0 = GCContact(fobj)
+        con0.set_firstname('Namo Narayananaya')
+        gce0 = con0.get_gce()
+
+        con = GCContact(fobj)
+        con.set_firstname('Ayeshwarya')
+        con.set_birthday('abcd"ef')
+        # con.set_anniv('1978-05-31 %s est n il y a %d ans')
+        # con.set_birthday('1980-08-10')
+        gce = con.get_gce()
+
+        feed = self.pimdb.new_feed()
+        feed.add_insert(entry=gce0, batch_id_string="DeadBeef")
+        feed.add_insert(entry=gce0, batch_id_string="DeadBeef")
+        feed.add_insert(entry=gce, batch_id_string="DeadBeef")
+
+        b = BatchState(1, feed, op='insert', sync_tag="asynk:testgcex:ex")
+
+        print 'Request: ', utils.pretty_xml(str(feed))
+        rr = self.pimdb.exec_batch(feed)
+        print 'Response: ', utils.pretty_xml(str(rr))
+
+        for entry in rr.entry:
+            print entry.batch_status
+            if entry.batch_status:
+                print 'Code: ',entry.batch_status.code
+                print 'Reason: ', entry.batch_status.reason
+            else:
+                self.handle_interrupted_feed(feed, str(rr))
+
+    def handle_interrupted_feed (self, feed, resp_xml):
+        resp = ET.fromstring(resp_xml)
+        ffc = utils.find_first_child
+
+        resp_title = ffc(resp, utils.QName_GNS0('title'), ret='node').text
+        resp_intr  = ffc(resp, utils.QName_GNS3('interrupted'), ret='node')
+
+        parsed = int(resp_intr.attrib['parsed'])
+        reason = resp_intr.attrib['reason']
+
+        entry = feed.entry[parsed]
+        logging.error('The server encountered a %s while processing ' +
+                      'the feed. The reason given is: %s', resp_title,
+                      resp_intr)
+        logging.error('The problematic entry is likely this one: %s',
+                      utils.pretty_xml(str(entry)))
 
     def find_group (self, gid):
         #    sample.print_groups()

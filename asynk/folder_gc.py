@@ -22,6 +22,7 @@ import copy, logging, re
 from   abc            import ABCMeta, abstractmethod
 from   folder         import Folder
 from   contact_gc     import GCContact
+import xml.etree.ElementTree as ET
 
 import utils
 import atom, gdata.contacts.client
@@ -673,6 +674,23 @@ class BatchState:
     def set_operation (self, op):
         self.operation = op
 
+    def handle_interrupted_feed (self, resp_xml):
+        resp = ET.fromstring(resp_xml)
+        ffc = utils.find_first_child
+
+        resp_title = ffc(resp, utils.QName_GNS0('title'), ret='node').text
+        resp_intr  = ffc(resp, utils.QName_GNS3('interrupted'), ret='node')
+
+        parsed = int(resp_intr.attrib['parsed'])
+        reason = resp_intr.attrib['reason']
+
+        entry = self.f.entry[parsed]
+        logging.error('The server encountered a %s while processing ' +
+                      'the feed. The reason given is: %s', resp_title,
+                      resp_intr)
+        logging.error('The problematic entry is likely this one: %s',
+                      utils.pretty_xml(str(entry)))
+
     def process_batch_response (self, resp):
         """resp is the response feed obtained from a batch operation to
         google.
@@ -693,8 +711,7 @@ class BatchState:
             bid    = entry.batch_id.text if entry.batch_id else None
             if not entry.batch_status:
                 # There is something seriously wrong with this request.
-                logging.error('Unknown fatal error in response. Full resp: %s',
-                              entry)
+                self.handle_interrupted_feed(str(resp))
                 success = False
                 continue
     

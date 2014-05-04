@@ -18,13 +18,13 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
-import iso8601, logging, os, re
+import iso8601, logging, os, re, xml.dom.minidom
 
 time_start = "1980-01-01T00:00:00.00+00:00"
 
 def yyyy_mm_dd_to_pytime (date_str):
     ## FIXME: Temporary hack to ensure we have a yyyy-mm-dd format. Google
-    ## allows the year to be skipped. Outlook crates a problem. We bridge the
+    ## allows the year to be skipped. Outlook creates a problem. We bridge the
     ## gap by inserting '1887' (birth year of Srinivasa Ramanujan)
 
     import pywintypes
@@ -241,3 +241,52 @@ def classify_email_addr (addr, domains):
             logging.warning('Invalid email_domains specification.')
 
     return (res['home'], res['work'], res['other'])
+
+##
+## Some XML parsing and manipulation routines
+##
+
+def pretty_xml (x):
+    x = xml.dom.minidom.parseString(x).toprettyxml()
+    lines = x.splitlines()
+    lines = [s for s in lines if not re.match(s.strip(), '^\s*$')]
+    return os.linesep.join(lines)
+
+def find_first_child (root, tag, ret='text'):
+    """
+    Look for the first child of root with specified tag and return it. If
+    ret is 'text' then the value of the node is returned, else, the node
+    is returned as an element.
+    """
+
+    for child in root.iter(tag):
+        if ret == 'text':
+            return child.text
+        else:
+            return child
+
+    return None
+
+GNS0_NAMESPACE="http://www.w3.org/2005/Atom"
+GNS1_NAMESPACE="http://schemas.google.com/g/2005"
+GNS2_NAMESPACE="http://schemas.google.com/contact/2008"
+GNS3_NAMESPACE="http://schemas.google.com/gdata/batch"
+
+def unQName (name):
+    res = re.match('{.*}(.*)', name)
+    return name if res is None else res.group(1)
+
+def QName (namespace, name):
+    return '{%s}%s' % (namespace, name)
+
+def QName_GNS0 (name):
+    return QName(GNS0_NAMESPACE, name)
+
+def QName_GNS1 (name):
+    return QName(GNS1_NAMESPACE, name)
+
+def QName_GNS2 (name):
+    return QName(GNS2_NAMESPACE, name)
+
+def QName_GNS3 (name):
+    return QName(GNS3_NAMESPACE, name)
