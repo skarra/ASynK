@@ -4,3 +4,6 @@
 [submodule "lib/.CalDAVClientLibrary"]
 	path = lib/.CalDAVClientLibrary
 	url = https://github.com/skarra/CalDAVClientLibrary.git
+[submodule "lib/.pyews"]
+	path = lib/.pyews
+	url = git@github.com:skarra/pyews.git
