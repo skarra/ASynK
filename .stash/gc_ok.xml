@@ -1,0 +1,67 @@
+Request:  <?xml version="1.0" ?>
+<ns0:feed xmlns:ns0="http://www.w3.org/2005/Atom" xmlns:ns1="http://schemas.google.com/g/2005" xmlns:ns2="http://schemas.google.com/contact/2008" xmlns:ns3="http://schemas.google.com/gdata/batch">
+	<ns0:entry>
+		<ns1:name>
+			<ns1:givenName>Namo Narayananaya</ns1:givenName>
+		</ns1:name>
+		<ns2:groupMembershipInfo href="http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/204eb63b8e2dad8d"/>
+		<ns1:organization primary="true" rel="http://schemas.google.com/g/2005#work"/>
+		<ns3:id>DeadBeef</ns3:id>
+		<ns3:operation type="insert"/>
+	</ns0:entry>
+	<ns0:entry>
+		<ns1:name>
+			<ns1:givenName>Ayeshwarya</ns1:givenName>
+		</ns1:name>
+		<ns2:groupMembershipInfo href="http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/204eb63b8e2dad8d"/>
+		<ns1:organization primary="true" rel="http://schemas.google.com/g/2005#work"/>
+		<ns2:birthday when="1980-08-10"/>
+		<ns3:id>DeadBeef</ns3:id>
+		<ns3:operation type="insert"/>
+	</ns0:entry>
+</ns0:feed>
+Response:  <?xml version="1.0" ?>
+<ns0:feed xmlns:ns0="http://www.w3.org/2005/Atom" xmlns:ns1="http://schemas.google.com/g/2005" xmlns:ns2="http://schemas.google.com/contact/2008" xmlns:ns3="http://schemas.google.com/gdata/batch" xmlns:ns4="http://www.w3.org/2007/app">
+	<ns0:updated>2014-05-04T15:50:40.960Z</ns0:updated>
+	<ns0:id>https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/batch/1399218640607</ns0:id>
+	<ns0:entry ns1:etag="&quot;QXg_fjVSLit7I2A9Wh9aEkwCQQA.&quot;">
+		<ns0:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/contact/2008#contact"/>
+		<ns0:id>http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/3f9fd5890e04df4d</ns0:id>
+		<ns1:name>
+			<ns1:fullName>Namo Narayananaya</ns1:fullName>
+			<ns1:givenName>Namo Narayananaya</ns1:givenName>
+		</ns1:name>
+		<ns2:groupMembershipInfo deleted="false" href="http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/204eb63b8e2dad8d"/>
+		<ns0:updated>2014-05-04T15:50:40.646Z</ns0:updated>
+		<ns1:organization primary="true" rel="http://schemas.google.com/g/2005#work"/>
+		<ns3:id>DeadBeef</ns3:id>
+		<ns0:title>Namo Narayananaya</ns0:title>
+		<ns3:status code="201" reason="Created"/>
+		<ns3:operation type="insert"/>
+		<ns0:link href="https://www.google.com/m8/feeds/photos/media/karra.etc%40gmail.com/3f9fd5890e04df4d" rel="http://schemas.google.com/contacts/2008/rel#photo" type="image/*"/>
+		<ns0:link href="https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/3f9fd5890e04df4d" rel="self" type="application/atom+xml"/>
+		<ns0:link href="https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/3f9fd5890e04df4d" rel="edit" type="application/atom+xml"/>
+		<ns4:edited>2014-05-04T15:50:40.646Z</ns4:edited>
+	</ns0:entry>
+	<ns0:entry ns1:etag="&quot;QXg_fjVSLit7I2A9Wh9aEkwCQQA.&quot;">
+		<ns0:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/contact/2008#contact"/>
+		<ns0:id>http://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/base/391a58f38d8e6e3e</ns0:id>
+		<ns1:name>
+			<ns1:fullName>Ayeshwarya</ns1:fullName>
+			<ns1:givenName>Ayeshwarya</ns1:givenName>
+		</ns1:name>
+		<ns2:groupMembershipInfo deleted="false" href="http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/204eb63b8e2dad8d"/>
+		<ns0:updated>2014-05-04T15:50:40.646Z</ns0:updated>
+		<ns1:organization primary="true" rel="http://schemas.google.com/g/2005#work"/>
+		<ns2:birthday when="1980-08-10"/>
+		<ns3:id>DeadBeef</ns3:id>
+		<ns0:title>Ayeshwarya</ns0:title>
+		<ns3:status code="201" reason="Created"/>
+		<ns3:operation type="insert"/>
+		<ns0:link href="https://www.google.com/m8/feeds/photos/media/karra.etc%40gmail.com/391a58f38d8e6e3e" rel="http://schemas.google.com/contacts/2008/rel#photo" type="image/*"/>
+		<ns0:link href="https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/391a58f38d8e6e3e" rel="self" type="application/atom+xml"/>
+		<ns0:link href="https://www.google.com/m8/feeds/contacts/karra.etc%40gmail.com/full/391a58f38d8e6e3e" rel="edit" type="application/atom+xml"/>
+		<ns4:edited>2014-05-04T15:50:40.646Z</ns4:edited>
+	</ns0:entry>
+	<ns0:title>Batch Feed</ns0:title>
+</ns0:feed>
