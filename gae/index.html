@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 // Created       : Sat May 05 13:15:20 IST 2012
-// Last Modified : Sun May 04 11:16:20 IST 2014
+// Last Modified : Sun May 04 12:46:02 IST 2014
 //
 // Copyright (C) 2012, Sriram Karra <karra.etc@gmail.com>
 // All Rights Reserved
@@ -88,6 +88,55 @@
 
       <div id="announce_text" class="section" style="display:none">
 	<h2>Announcements</h2>
+
+	<h3>
+	<span class="announce_title">Sun May 04 12:13:29 IST 2014</span>
+	</h3>
+
+	<div class="announce_text">
+	  v2.0.0-rc1 with Experimental support for Microsoft Exchange server
+	  has been added to ASynK and just released.
+
+	  Key notes for this work:
+	  <ol>
+	    <li>It has been tested with Exchange Online / Office 365. However
+	    it should work with Exchange Servers 2007_SP1 onwards.</li>
+
+	    <li>This release incudes a new submoduel. Ensure you fetch the
+	    code for that repo as well.</li>
+
+	    <li>There are some additional python package dependencies that
+	    have been added. Install the dependencies in the requirements.txt
+	    file.</li>
+
+	    <li>The config.json format has changed to accomodate the
+            requirements of a new datastore. Your config will be seamlessly
+            upgraded to the new format </li>
+	  </ol>
+	</div>
+
+	<h3>
+	<span class="announce_title">Sun Sep 04 12:13:29 IST 2013</span>
+	</h3>
+
+	<div class="announce_text">
+	  Release v1.0.0 - With support for CardDAV.
+
+	  Key notes for this work:
+	  <ol>
+	    <li>It has been reported to work with the following servers:
+  	      <ol>
+  	        <li>Apple CalendarServer </li>
+  	        <li>Baikal</li>
+  	        <li>OwnCloud.</li>
+  	      </ol>
+	    </li>
+
+	    <li>The config.json format has changed to accomodate the
+            requirements of a new datastore. Your config will be seamlessly
+            upgraded to the new format </li>
+	  </ol>
+	</div>
 
 	<h3>
 	<span class="announce_title">Mon Apr 22 16:07:32 IST 2013</span>
@@ -292,25 +341,39 @@
       <div id="downloads_text" class="section" style="display:none">
 	<h2>Downloads</h2>
 	<p>
-	  <h3>Download Pre-packaged Bundles</h3>
-   	    Bundles are available in the following formats. 
-	  <ul>
-	    <li>The latest stable release: v0.4.1
+	  <div class="rel">
+	    <strong>The latest experimental release is: <span
+	    class="code">v2.0.0-rc2</span></strong>
 	    <ul>
 	      <li> <a
-	      href="/downloads/asynk-v0.4.1.tar.gz">
+	      href="https://github.com/skarra/ASynK/archive/v2.0.0-rc2.tar.gz">
 	      Gzipped tar archive</a>
 	      </li>
 
 	      <li> <a
-	      href="/downloads/asynk-v0.4.1.zip">
+	      href="https://github.com/skarra/ASynK/archive/v2.0.0-rc2.zip">
 	      Zip File </a>
 	      </li>
 	    </ul>
-	  </li>
 
-	  <li>
-	  Earlier releases:
+	    <p/><p/><p/><p/>
+	    <strong>The latest stable release is: <span
+	    class="code">v1.1.0</span></strong>
+	    <ul>
+	      <li> <a
+	      href="https://github.com/skarra/ASynK/archive/v1.1.0.tar.gz">
+	      Gzipped tar archive</a>
+	      </li>
+
+	      <li> <a
+	      href="https://github.com/skarra/ASynK/archive/v1.1.0.zip">
+	      Zip File </a>
+	      </li>
+	    </ul>
+	  </div>
+
+	  <div class="rel">
+	    <strong> Earlier releases: </strong>
 	    <ul>
 	      <li> v0.3.0 <a
 	      href="https://github.com/downloads/skarra/ASynK/asynk-v0.3.0.tar.gz">
@@ -346,7 +409,7 @@
 	      </li>
 	    </ul>
 	    </li>
-	  </ul>
+	  </div>
 	<p>
 	  <h3>Download Source</h3> The source code for ASynK is available
 	  publicly on github. You can clone the repositiry
@@ -360,7 +423,7 @@
       <div id="doc_text" class="section" style="display:none">
 	<h2>Documentation</h2>
 	<p> 
-	  The current stable released vesion is v0.4.1. Refer to the
+	  The current stable released vesion is v1.1.0. Refer to the
 	  Announcements and FAQ sections to know what's changed between
 	  versions. Please note that version v0.1.0 was significantly
 	  different, and its documentation is available as <a
@@ -460,8 +523,8 @@
 <footer>
 <p/>
   <div id="footer_content">
-    Copyright &copy; 2012 Sriram Karra (karra.etc at gmail dot com)<br/>
-    Last Modified: Mon Apr 22 16:12:34 IST 2013
+    Copyright &copy; 2011, 2012, 2103, 2014 Sriram Karra (karra.etc at gmail dot com)<br/>
+    Last Modified: Sun May 04 12:45:15 IST 2014
 </footer>
 
 </body>
