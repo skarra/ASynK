@@ -13,7 +13,8 @@ that website.
   include:
 
   - ASynK allows two-way sync of Contacts across any two supported sources -
-    Google Contacts, Microsoft Outlook, any CardDAV server and Emacs BBDB.
+    Google Contacts, Microsoft Outlook, Microsoft Exchange Server, any CardDAV
+    server and Emacs BBDB.
   
   - ASynK is the only two-way synchronization option for BBDB known to be in
     existence today. So if you are keen to keep your BBDB content synchronized
@@ -44,6 +45,11 @@ invoke ASynK.
 
    - You need Python (tested with 2.7, try earlier versions at your
      discretion; may not work with Python 3)
+
+   - The following python packages:
+
+     - tornado
+     - requests
 
    - If you wish to sync to Outlook you can do that only on Windows. Further
      you will need MS Outlook installed, along with a third party python
