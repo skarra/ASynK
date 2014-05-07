@@ -51,7 +51,7 @@ confnv4_src_dirty = os.path.join('.', 'config_v4.dirty.json')
 conf_src = confnv6_src
 
 def usage ():
-    print 'Usage: python test_bb.py <bbdb db file>'
+    print 'Usage: python test_bb.py'
 
 def main (argv=None):
     print 'Command line: ', sys.argv

@@ -23,6 +23,9 @@
 ## unit tests. code often moves from here to the unittest directory (gold/)
 ## after a while
 
+## You can use this to quickly check if ASynK can parse your bbdb file. Usage:
+## python test_bb.py <bbdb_file>
+
 import logging, os, os.path, sys, traceback
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
@@ -43,7 +46,7 @@ def main (argv=None):
     print sys.argv
 
     if len(sys.argv) > 1:
-        bbfn = sys.argv[1]
+        bbfn = os.path.abspath(sys.argv[1])
     else:
         bbfn = '/Users/sriramkarra/.bbdb.t'
 
@@ -52,7 +55,7 @@ def main (argv=None):
     if len(sys.argv) > 2:
         name = sys.argv[2]
     else:
-        name = 'Amma'
+        name = None
 
     tests.print_contacts(name=name)
     # tests.write_to_file()
