@@ -628,7 +628,7 @@ class BBPIMDB(PIMDB):
         re_ph_vec = ('\[\s*((?P<phlabel>' + res['string'] + 
                      ')\s*(?P<number>(?P<unstructured>'  +
                      res['string'] + ')|'+
-                     '(?P<structured>\d+\s+\d+\s+\d+\s+\d+)' +
+                     '(?P<structured>\d+\s+\d+\s+\d+\s+.+)' +
                      '\s*))\]')
         re_phs = 'nil|(\(\s*(' + re_ph_vec + '\s*)+)\)'
         res.update({'ph_vec' : re_phs})
@@ -686,7 +686,7 @@ class BBPIMDB(PIMDB):
         re_ph_vec = ('\[\s*((?P<phlabel>' + res['string'] + 
                      ')\s*(?P<number>(?P<unstructured>'  +
                      res['string'] + ')|'+
-                     '(?P<structured>\d+\s+\d+\s+\d+\s+\d+)' +
+                     '(?P<structured>\d+\s+\d+\s+\d+\s+.+)' +
                      '\s*))\]')
         re_phs = 'nil|(\(\s*(' + re_ph_vec + '\s*)+)\)'
         res.update({'ph_vec' : re_phs})

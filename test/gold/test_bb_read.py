@@ -81,6 +81,7 @@ def main (argv=None):
         test_inputs.append(os.path.abspath('data/bb/bbdb.Non-Existent'))
 
         for f in test_inputs:
+            print "Testing against input file: ", f
             run(f)
 
 def run (fn):
