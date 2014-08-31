@@ -7,3 +7,6 @@
 [submodule "lib/.pyews"]
 	path = lib/.pyews
 	url = git@github.com:skarra/pyews.git
+[submodule "lib/.gdata"]
+	path = lib/.gdata
+	url = git@github.com:skarra/Google-Contacts-API.git
