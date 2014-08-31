@@ -27,6 +27,15 @@ import xml.etree.ElementTree as ET
 import utils
 import atom, gdata.contacts.client
 
+class AddHeader:
+    def __init__ (self):
+        pass
+
+    def modify_request (self, http_request):
+        http_request.headers["If-Match"] = "*"
+
+eh = None # AddHeader()
+
 def get_udp_by_key (udps, key):
     """Get the first User Defined Property from the given list that has the
     specified key"""
@@ -381,7 +390,7 @@ class GCContactsFolder(Folder):
                               'Count: %3d. Size: %6.2fK',
                               stats.get_bnum(), stats.get_cnt(),
                               stats.get_size())
-                rf = self.get_db().exec_batch(f)
+                rf = self.get_db().exec_batch(f, extra_headers=eh)
                 succ, cons = stats.process_batch_response(rf)
                 success = success and succ
 
@@ -394,7 +403,7 @@ class GCContactsFolder(Folder):
             logging.debug('Mod Batch # %02d. Count: %3d. Size: %5.2fK',
                           stats.get_bnum(), stats.get_cnt(),
                           stats.get_size())
-            rf = self.get_db().exec_batch(f)
+            rf = self.get_db().exec_batch(f, extra_headers=eh)
             succ, cons = stats.process_batch_response(rf)
             success = success and succ
 
@@ -436,7 +445,7 @@ class GCContactsFolder(Folder):
                               stats.get_bnum(), stats.get_cnt(),
                               stats.get_size())
 
-                rf = self.get_db().exec_batch(f)
+                rf = self.get_db().exec_batch(f, extra_headers=eh)
                 succ, cons = stats.process_batch_response(rf)
                 success = success and succ
 
@@ -451,7 +460,7 @@ class GCContactsFolder(Folder):
                           stats.get_bnum(), stats.get_cnt(),
                           stats.get_size())
 
-            rf = self.get_db().exec_batch(f)
+            rf = self.get_db().exec_batch(f, extra_headers=eh)
             succ, cons = stats.process_batch_response(rf)
             success = success and succ
 

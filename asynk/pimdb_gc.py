@@ -28,6 +28,20 @@ from   pimdb        import PIMDB, GoutInvalidPropValueError
 from   folder       import Folder
 from   folder_gc    import GCContactsFolder
 
+def patched_post(client, entry, uri, auth_token=None, converter=None,
+                 desired_class=None, **kwargs):
+    if converter is None and desired_class is None:
+        desired_class = entry.__class__
+    http_request = atom.http_core.HttpRequest()
+    entry_string = entry.to_string(gdata.client.get_xml_version(client.api_version))
+    entry_string = entry_string.replace('ns1', 'gd')
+    http_request.add_body_part(
+        entry_string,
+        'application/atom+xml')
+    return client.request(method='POST', uri=uri, auth_token=auth_token,
+                          http_request=http_request, converter=converter,
+                          desired_class=desired_class, **kwargs)
+
 class GCPIMDB(PIMDB):
     """GC object is a wrapper for a Google Contacts stream API."""
 
@@ -182,7 +196,7 @@ class GCPIMDB(PIMDB):
     def gc_init (self):
         logging.info('Logging into Google...')
 
-        gdc = gdata.contacts.client.ContactsClient(source='Asynk')
+        gdc = gdata.contacts.client.ContactsClient(source='ASynK')
         gdc.ClientLogin(self.get_user(), self.get_pw(), gdc.source)
         self.set_gdc(gdc)
 
@@ -241,6 +255,15 @@ class GCPIMDB(PIMDB):
     def new_feed (self):
         return gdata.contacts.data.ContactsFeed()
 
-    def exec_batch (self, batch_feed):
-        return self.get_gdc().ExecuteBatch(
-            batch_feed, gdata.contacts.client.DEFAULT_BATCH_URL)
+    def exec_batch (self, batch_feed, extra_headers=None):
+        # return self.get_gdc().ExecuteBatch(
+        #     batch_feed, gdata.contacts.client.DEFAULT_BATCH_URL,
+        #     custom_headers=atom.client.CustomHeaders(**{'If-Match': '*'}))
+
+        # As of May 2014 due to some change at Google's end the above
+        # ExecuteBatch started failing. As usual Google failed to respond to
+        # repeated requests to fix this. Eventually someone suggested a
+        # workaround that worked. The method patched_post is take from here:
+        # https://code.google.com/p/gdata-python-client/issues/detail?id=700#c9
+        return patched_post(self.get_gdc(), batch_feed,
+                            gdata.contacts.client.DEFAULT_BATCH_URL)
