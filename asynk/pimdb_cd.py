@@ -30,6 +30,7 @@ from   caldavclientlibrary.protocol.http.util           import HTTPError
 from   caldavclientlibrary.protocol.url   import URL
 from   caldavclientlibrary.client.account import CalDAVAccount
 
+import iso8601
 import datetime, logging, os, re, sys, urllib, urlparse
 
 class CardDAVPrincipalNotFoundError(Exception):
@@ -128,6 +129,8 @@ class CDPIMDB(PIMDB):
             ## def_adbk_url property request. In this case we will just pick
             ## the first folder. One hopes every addressbook server will have
             ## at least one server
+            logging.debug('Coud not find default adbk Property. Trying to ' +
+                          'use first of the available contacts folders')
             fs = self.get_contacts_folders()
             assert(len(fs) > 0)
             def_f = fs[0]
@@ -194,10 +197,10 @@ class CDPIMDB(PIMDB):
         res = re.search(r'(\d\d\d\d\d\d\d\dT\d\d\d\d\d\dZ).*', t)
         if res:
             t = res.group(1)
+            return datetime.datetime.strptime(t, '%Y%m%dT%H%M%SZ')
         else:
-            return None
-        
-        return datetime.datetime.strptime(t, '%Y%m%dT%H%M%SZ')
+            t = iso8601.parse(t)
+            return datetime.datetime.utcfromtimestamp(t)
 
     ## Note: I learnt of the setter, and @property and @property.setter
     ## decorations well after I started developing ASynK. So for the sake of

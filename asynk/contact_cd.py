@@ -362,6 +362,11 @@ class CDContact(Contact):
         else:
             dt = pimdb_cd.CDPIMDB.parse_vcard_time("19800101T000000Z")
             
+        if dt is None:
+            logging.error(('Could not parse revision string (%s) for %s.' +
+                           'This may result in improper sync.'),
+                          vco.rev.value, self.get_name())
+
         self.set_updated(dt)
 
         ## Date of Birth
