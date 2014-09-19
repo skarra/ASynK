@@ -314,7 +314,19 @@ class CDContact(Contact):
                     continue
 
                 ph_types = phone.params['TYPE']
-                if 'VOICE' in ph_types:
+                if 'FAX' in ph_types:
+                    if 'HOME' in ph_types:
+                        self.add_fax_home(('home', phone.value))
+                    elif 'WORK' in ph_types:
+                        self.add_fax_work(('work', phone.value))
+                    else:
+                        ## FIXME: There is no 'other' fax. Make it home fax.
+                        self.add_fax_home(('other', phone.value))
+                else:
+                    ## Ideally there should be a TYPE=VOICE tag in the
+                    ## element, but some guys just leave it out - for
+                    ## e.g. OwnCloud v7. Oh well, just assume it's a Voice
+                    ## number.
                     if 'HOME' in ph_types:
                         self.add_phone_home(('Home', phone.value))
                     elif 'WORK' in ph_types:
@@ -324,14 +336,6 @@ class CDContact(Contact):
                     else:
                         self.add_phone_other(('Other', phone.value))
 
-                if 'FAX' in ph_types:
-                    if 'HOME' in ph_types:
-                        self.add_fax_home(('home', phone.value))
-                    elif 'WORK' in ph_types:
-                        self.add_fax_work(('work', phone.value))
-                    else:
-                        ## FIXME: There is no 'other' fax. Make it home fax.
-                        self.add_fax_home(('other', phone.value))
 
     def _snarf_org_details_from_vco (self, vco):
         if hasattr(vco, l(self.TITLE)):
@@ -399,7 +403,7 @@ class CDContact(Contact):
 
     def _snarf_sync_tags_from_vco (self, vco):
         conf      = self.get_config()
-        pname_re  = conf.get_profile_name_re()
+        pname_re  = conf.get_profile_name_re() # '([0-9a-zA-Z]+)'
         pname_re  = "^" + l(self.SYNC_TAG_PREFIX) + pname_re + "-"
 
         for label, val in vco.contents.iteritems():
