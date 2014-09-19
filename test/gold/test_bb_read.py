@@ -71,7 +71,7 @@ def main (argv=None):
     config = Config(asynk_base_dir=asynk_base_dir, user_dir=user_dir)
 
     if len(sys.argv) > 1:
-        run(bbfn=sys.argv[1])        
+        run(sys.argv[1])
     else:
         print "Running tests against all BBDB files in data/bb/..."
         bb_data_dir = os.path.join(asynk_base_dir, "test", "gold", "data",
