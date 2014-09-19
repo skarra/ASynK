@@ -58,7 +58,7 @@ class Config:
 
         confi   = None
         statei  = None
-        self.confi_curr_ver = self._get_latest_config_version()
+        self.confi_curr_ver = Config.get_latest_config_version(self.get_app_root())
 
         self.confpy = os.path.abspath(os.path.join(user_dir, 'config.py'))
         self.confn  = 'config_v%d.json' % self.confi_curr_ver
@@ -120,18 +120,20 @@ class Config:
     ## Helper routines
     ##
 
-    def _get_latest_config_version (self):
-        ## FIXME: We need to read the root_dir/config/ directory to list all
-        ## the configuration jsons and pick out the latest file version number
-        ## from that list. For now hard coding this stuff as we need to
-        ## implement the migration stuff at priority.
+    ## First some class methods
 
-        d = os.path.join(self.get_app_root(), 'config')
+    @staticmethod
+    def get_latest_config_version (root):
+        d = os.path.join(root, 'config')
         files = glob.glob(os.path.join(d, 'config_*.json'))
         vers = [int(re.search('_v(\d+).json$', x).group(1)) for x in files]
         vers.sort(reverse=True)
 
         return vers[0]
+
+    @staticmethod
+    def get_latest_config_filen (root):
+        return 'config_v%s.json' % Config.get_latest_config_version(root)
 
     def _setup_state_json (self):
         user_dir = self.get_user_dir()
