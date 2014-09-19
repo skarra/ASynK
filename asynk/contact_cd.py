@@ -74,12 +74,15 @@ class CDContact(Contact):
     CREATED    = 'X-ASYNK-CREATED'
     SYNC_TAG_PREFIX  = 'X-ASYNK-SYNCTAG-'
 
-    def __init__ (self, folder, con=None, vco=None, itemid=None):
+    def __init__ (self, folder, con=None, vco=None, itemid=None,
+                  debug_vcf=False):
         """vco, if not None, should be a valid vCard object (i.e. the contents
         of a vCard file, for e.g. When vco is not None, itemid should also be
         not None"""
 
         Contact.__init__(self, folder, con)
+
+        self.debug_vcf = debug_vcf
 
         self.set_etag(None)
         self.set_uid(None)
@@ -104,7 +107,8 @@ class CDContact(Contact):
 
         elif vco:
             self.init_props_from_vco(vco)
-            assert(itemid)
+            if not self.debug_vcf:
+                assert(itemid)
             self.set_itemid(itemid)
 
         self.in_init(False)
@@ -403,7 +407,10 @@ class CDContact(Contact):
 
     def _snarf_sync_tags_from_vco (self, vco):
         conf      = self.get_config()
-        pname_re  = conf.get_profile_name_re() # '([0-9a-zA-Z]+)'
+        if self.debug_vcf:
+            pname_re = '([0-9a-zA-Z]+)'
+        else:
+            pname_re  = conf.get_profile_name_re()
         pname_re  = "^" + l(self.SYNC_TAG_PREFIX) + pname_re + "-"
 
         for label, val in vco.contents.iteritems():

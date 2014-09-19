@@ -78,9 +78,9 @@ class Item:
         # like any other object attributes
 
         self.set_folder(folder)
-        self.set_db(folder.get_db())
-        self.set_dbid(folder.get_dbid())
-        self.set_config(folder.get_config())
+        self.set_db(folder.get_db() if folder else None)
+        self.set_dbid(folder.get_dbid() if folder else None)
+        self.set_config(folder.get_config() if folder else None)
 
     ##
     ## First the abstract methods
