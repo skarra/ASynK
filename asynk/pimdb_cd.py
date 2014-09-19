@@ -317,15 +317,18 @@ class CDPIMDB(PIMDB):
 
         sess  = self.session()
         roots = self.get_contacts_folders_roots()
+        logging.debug('Exploring following root paths: %s',
+                      [r.path for r in roots])
         props = (davxml.resourcetype, davxml.getlastmodified,)
 
         ret   = []
         for root in roots:
             path = root.path
-            logging.debug('Processing Root path %s in Root.', path)
+            logging.debug('Processing root path %s', path)
             results = sess.getPropertiesOnHierarchy(URL(url=path), props)
             items = results.keys()
             items.sort()
+            logging.debug('  Found following properties: %s.', items)
             for rurl in items:
                 rurl = urllib.unquote(rurl)
                 if rurl == path:
@@ -333,6 +336,7 @@ class CDPIMDB(PIMDB):
 
                 props = results[rurl]
                 rtype = props.get(davxml.resourcetype)
+                logging.debug('    Resource type of prop: %s.', rtype)
                 if not isinstance(rtype, str):
                     for child in rtype.getchildren():
                         if child.tag == carddavxml.addressbook:
