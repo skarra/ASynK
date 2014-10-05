@@ -1,4 +1,3 @@
-#!/usr/bin/python
 ##
 ## Created : Sat Aug 10 06:17:20 IST 2013
 ##
@@ -20,13 +19,16 @@
 
 ## Use this Makefile to drive the automated regression testing of ASynK.
 
-all: state bb
+all: state cmdline bb
 
 clean:
 	rm -rf user_dir *~ *.bak temp.bbdb
 
 state:
 	python test_state.py
+
+cmdline:
+	python test_cmdline.py
 
 bb:
 	python test_bb_read.py

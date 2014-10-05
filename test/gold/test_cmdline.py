@@ -1,5 +1,5 @@
 ##
-## Created : Wed Sep 17 08:45:41 IST 2014
+## Created : Sun Oct 05 18:59:40 IST 2014
 ##
 ## Copyright (C) 2014 Sriram Karra <karra.etc@gmail.com>
 ##
@@ -17,14 +17,9 @@
 ## You should have a copy of the license in the doc/ directory of ASynK.  If
 ## not, see <http://www.gnu.org/licenses/>.
 ##
-#####
-##
-## This unit test file is used to test vCard file parsing and processing
-## functionality in ASynK
-##
-## Usage is: python test_cd.py <VCF file>
 
-import glob, logging, os, re, shutil, sys, traceback, unittest
+import logging, os, os.path, shutil, sys, traceback, unittest
+from   subprocess import call
 
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
@@ -33,10 +28,8 @@ DIR_PATH    = os.path.abspath(os.path.join(
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
+import utils
 from   state          import Config
-from   pimdb_cd       import CDPIMDB
-from   contact_cd     import CDContact
-from   vobject        import vobject
 
 asynk_base_dir = os.path.abspath(os.path.join("..", ".."))
 user_dir   = os.path.abspath('user_dir')
@@ -47,14 +40,7 @@ confn_src = os.path.join('..', '..', 'config',
                          Config.get_latest_config_filen(asynk_base_dir))
 confn_dest  = os.path.join(user_dir, 'config.json')
 
-def usage ():
-    print 'Usage: python test_cd.py'
-
 def main (argv=None):
-    print 'Command line: ', sys.argv
-    print confn_src
-    exit
-
     if os.path.exists(user_dir):
         logging.debug('Clearing user directory: %s', user_dir)
         shutil.rmtree(user_dir)
@@ -66,20 +52,40 @@ def main (argv=None):
     shutil.copyfile(state_src, state_dest)
     shutil.copyfile(confn_src, confn_dest)
 
-    global config
-    config = Config(asynk_base_dir=asynk_base_dir, user_dir=user_dir)
+    # global config
+    # config = Config(asynk_base_dir=asynk_base_dir, user_dir=user_dir)
 
-    data = None
-    with open(sys.argv[1], "r") as f:
-        data = f.read()
-        
-    print data
-    vco = vobject.readOne(data)
-    print vco
-    con = CDContact(None, vco=vobject.readOne(data), debug_vcf=True)
-    print con
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestMethods)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
+class TestMethods(unittest.TestCase):
+
+    ## This module is for quick testing of the Config read/write
+    ## functionality. We will make a quick copy of the main example config
+    ## file into the current directory and start mucking with it.
+
+    def setUp (self):
+        # self.config = config
+        self.prog = '../../asynk_cmdline.py'
+        self.DEVNULL = open(os.devnull, 'wb')
+
+    def test_no_args (self):
+        ret = call([self.prog], stdout=self.DEVNULL, stderr=self.DEVNULL)
+        self.assertEqual(ret, 0)
+
+    def test_help (self):
+        ret = call([self.prog, '--help'], stdout=self.DEVNULL, stderr=self.DEVNULL)
+        self.assertEqual(ret, 0)
+
+    def test_create_profile_ok (self):
+        ret = call([self.prog, '--op=create-profile', '--db', 'cd', 'bb',
+                   '--folder', 'default', 'default',
+                   '--store', 'https://server.org:8443/', 'test/bbdb.olbb',
+                   '--name', 'pname',
+                   '--user-dir=%s' % user_dir],
+                   stdout=self.DEVNULL, stderr=self.DEVNULL)
+        self.assertEqual(ret, 0)
 
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.ERROR)
-    main()
+    logging.getLogger().setLevel(logging.DEBUG)
+    main()  
