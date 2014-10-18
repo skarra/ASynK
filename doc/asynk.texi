@@ -477,7 +477,7 @@ changed after creation.
 required IDs have to be specified by the user at the time of profile
 creation. The IDs are assigned by the PIM DBs when the folders are
 created. ASynK can be used to list the existing folders in a PIMDB and their
-IDs, so the user can user the appropriate IDs at profile creation time.
+IDs, so the user can use the appropriate IDs at profile creation time.
 
 @item
 @strong{DB IDs}: Two DB IDs that hold the folders that are to be synched. This
