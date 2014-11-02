@@ -45,6 +45,7 @@ from   pimdb_gc         import GCPIMDB
 from   pimdb_bb         import BBPIMDB
 from   folder_bb        import BBContactsFolder
 import utils
+from   state_collection import collection_id_to_class as coll_id_class
 
 class AsynkParserError(Exception):
     pass
@@ -85,6 +86,14 @@ class Asynk:
 
         conf = self.get_config()
         pname = self.get_name()
+
+        for coll in self.get_colls():
+            coll.login()
+
+        ## WIP: The stuff beyond the return is all old code that will be
+        ## removed after wemigrate fully to Collection
+        return
+
         mach = 'gc_%s' % pname
 
         ## For gmail authentication credentials, the password can be provided
@@ -214,43 +223,49 @@ class Asynk:
     def reset_fields (self):
         self.atts = {}
 
-        self.set_db()
-        self.set_db('bb', None)
-        self.set_db('gc', None)
-        self.set_db('ol', None)
-        # FIXME: Not sure why 'cd' is missing here
-        self.set_db('ex', None)
-
-        self.set_db1(None)
-        self.set_db2(None)
-
-        self.set_gcuser(None)
-        self.set_gcpw(None)
-
-        self.set_cduser(None)
-        self.set_cdpw(None)
-
-        self.set_exuser(None)
-        self.set_expw(None)
-
         self.set_dry_run(True)
+        self.reset_colls()
 
-        ## More to come here...
+        ## WIP: Made redundant by the Collection initiatialiser. Do be removed
+        # self.set_db()
+        # self.set_db('bb', None)
+        # self.set_db('gc', None)
+        # self.set_db('ol', None)
+        # # FIXME: Not sure why 'cd' is missing here
+        # self.set_db('ex', None)
+
+        # self.set_db1(None)
+        # self.set_db2(None)
+
+        # self.set_gcuser(None)
+        # self.set_gcpw(None)
+
+        # self.set_cduser(None)
+        # self.set_cdpw(None)
+
+        # self.set_exuser(None)
+        # self.set_expw(None)
 
     def _snarf_store_ids (self, uinps):
-        temp = {}
-        if uinps.store:
-            if len(uinps.store) >= 1:
-                temp.update({self.get_db1() : uinps.store[0]})
+        for i, stid in enumerate(uinps.store):
+            coll = self.get_colls()[i]
+            coll.set_stid(stid)
 
-            if len(uinps.store) >= 2:
-                temp.update({self.get_db2() : uinps.store[1]})
+        # temp = {}
+        # if uinps.store:
+        #     if len(uinps.store) >= 1:
+        #         temp.update({self.get_db1() : uinps.store[0]})
 
-        self.set_store_ids(temp)
+        #     if len(uinps.store) >= 2:
+        #         temp.update({self.get_db2() : uinps.store[1]})
+
+        # self.set_store_ids(temp)
 
     def _snarf_gcauth (self, uinps):
+        ## WIP: To be removed once we migrate to collection
         # self.set_gcuser(uinps.gcuser if uinps.gcuser else None)
-        self.set_gcpw(uinps.pwd)
+        # self.set_gcpw(uinps.pwd)
+        pass
 
     def _snarf_pname (self, uinps):
         if uinps.name:
@@ -260,16 +275,20 @@ class Asynk:
 
     def _snarf_folder_ids (self, uinps):
         if uinps.folder:
-            temp = {}
-            if len(uinps.folder) >= 1:
-                temp.update({self.get_db1() : uinps.folder[0]})
+            for i, fid in enumerate(uinps.folder):
+                coll = self.get_colls()[i]
+                coll.set_fid(fid)
 
-            if len(uinps.folder) >= 2:
-                temp.update({self.get_db2() : uinps.folder[1]})
+        #     temp = {}
+        #     if len(uinps.folder) >= 1:
+        #         temp.update({self.get_db1() : uinps.folder[0]})
 
-            self.set_folder_ids(temp)
-        else:
-            self.set_folder_ids(None)
+        #     if len(uinps.folder) >= 2:
+        #         temp.update({self.get_db2() : uinps.folder[1]})
+
+        #     self.set_folder_ids(temp)
+        # else:
+        #     self.set_folder_ids(None)
 
     def _snarf_sync_dir (self, uinps):
         if uinps.direction:
@@ -293,10 +312,15 @@ class Asynk:
             if len(uinps.db) > 2:
                 raise AsynkParserError('--db takes 1 or 2 arguments only')
     
-            self.set_db1(uinps.db[0])
-            self.set_db2(uinps.db[1] if len(uinps.db) > 1 else None)
+            for dbid in uinps.db:
+                coll = coll_id_class[dbid](config=self.get_config())
+                self.add_coll(coll)
+
+            ## WIP: To be remove after migration to Collection
+            # self.set_db1(uinps.db[0])
+            # self.set_db2(uinps.db[1] if len(uinps.db) > 1 else None)
         else:
-            # Only one operation does not need a db. Check for this and move
+            # Only a few operations do not need a db. Check for this and move
             # on.
             if not ((self.get_op() in ['op_startweb', 'op_sync']) or 
                     (re.search('_profile', self.get_op()))):
@@ -326,6 +350,7 @@ class Asynk:
         if not self.is_dry_run():
             self.alogger.clear_old_logs()
 
+        print 'In dispatch(). Op: %s' % self.get_op()
         res = getattr(self, self.get_op())()
         return res
 
@@ -342,12 +367,13 @@ class Asynk:
 
     def op_list_folders (self):
         self._login()
-        for db in [self.get_db1(), self.get_db2()]:
-            if not db:
+        for coll in self.get_colls():
+            if not coll:
                 continue
-            logging.info('Listing all folders in PIMDB %s...', db)
-            self.get_db(db).list_folders()
-            logging.info('Listing all folders in PIMDB %s...done', db)
+            dbid = coll.get_dbid()
+            logging.info('Listing all folders in PIMDB %s...', dbid)
+            coll.get_db().list_folders()
+            logging.info('Listing all folders in PIMDB %s...done', dbid)
 
     def op_create_folder (self):
         ## Let's start with some sanity checking of arguments
@@ -683,6 +709,18 @@ class Asynk:
 
         return ret
 
+    def reset_colls (self):
+        self.colls = []
+
+    def add_coll (self, coll):
+        if not self.colls:
+            self.reset_colls()
+
+        self.colls.append(coll)
+
+    def get_colls (self):
+        return self.colls
+
     def set_db (self, dbid=None, val=None):
         if not dbid:
             self.dbs = {}
@@ -696,18 +734,22 @@ class Asynk:
         if dbid in self.dbs:
             return self.dbs[dbid]
 
+    ## WIP: To be removed after move to Collections
+
     def get_db1 (self):
-        return self._get_att('db1')
+        # return self._get_att('db1')
+        return None
 
     def set_db1 (self, val):
         return self._set_att('db1', val)
 
     def get_db2 (self):
-        return self._get_att('db2')
+        # return self._get_att('db2')
+        return None
 
     def set_db2 (self, val):
         return self._set_att('db2', val)
-        
+
     def get_op (self):
         return self._get_att('op')
 
@@ -726,32 +768,39 @@ class Asynk:
     def is_sync_all (self):
         return self._get_att('sync_all')
 
-    def set_folder_ids (self, val):
-        """val should be a dictionary of dbid : folderid pairs."""
-        return self._set_att('folder_id', val)
+    ## WIP: To be removed after full migration to Collection
 
-    def get_folder_id (self, dbid):
-        try:
-            return self._get_att('folder_id')[dbid]
-        except TypeError, e:
-            return None
-        except KeyError, e:
-            return None
+    # def set_folder_ids (self, val):
+    #     """val should be a dictionary of dbid : folderid pairs."""
+    #     return self._set_att('folder_id', val)
 
-    def set_store_ids (self, val):
-        """val should be a dictionary of dbid : folderid pairs."""
-        return self._set_att('store_id', val)
+    # def get_folder_id (self, dbid):
+    #     try:
+    #         return self._get_att('folder_id')[dbid]
+    #     except TypeError, e:
+    #         return None
+    #     except KeyError, e:
+    #         return None
 
-    def add_store_id (self, dbid, sid):
-        return self._update_att('store_id', dbid, sid)
+    # def set_store_ids (self, val):
+    #     """val should be a dictionary of dbid : folderid pairs."""
+    #     return self._set_att('store_id', val)
 
-    def get_store_id (self, dbid):
-        try:
-            return self._get_att('store_id')[dbid]
-        except TypeError, e:
-            return None
-        except KeyError, e:
-            return None
+    # def add_store_id (self, i, sid):
+    #     try:
+    #         coll = self.get_colls()[i]
+    #     except IndexError, e:
+    #         coll.set_stid(sid)
+
+    #     return sid
+
+    # def get_store_id (self, dbid):
+    #     try:
+    #         return self._get_att('store_id')[dbid]
+    #     except TypeError, e:
+    #         return None
+    #     except KeyError, e:
+    #         return None
 
     def get_item_id (self):
         return self._get_att('item_id')
@@ -783,47 +832,49 @@ class Asynk:
     def set_conflict_resolve (self, val):
         return self._set_att('conflict_resolve', val)
 
-    def get_gcuser (self):
-        return self._get_att('gcuser')
+    ## WIP: To be removed after full migration to Collection
 
-    def set_gcuser (self, val):
-        return self._set_att('gcuser', val)
+    # def get_gcuser (self):
+    #     return self._get_att('gcuser')
 
-    def get_gcpw (self):
-        return self._get_att('gcpw')
+    # def set_gcuser (self, val):
+    #     return self._set_att('gcuser', val)
 
-    def set_gcpw (self, val):
-        return self._set_att('gcpw', val)
+    # def get_gcpw (self):
+    #     return self._get_att('gcpw')
 
-    def get_cduser (self):
-        return self._get_att('cduser')
+    # def set_gcpw (self, val):
+    #     return self._set_att('gcpw', val)
 
-    def set_cduser (self, val):
-        return self._set_att('cduser', val)
+    # def get_cduser (self):
+    #     return self._get_att('cduser')
 
-    def get_cdpw (self):
-        return self._get_att('cdpw')
+    # def set_cduser (self, val):
+    #     return self._set_att('cduser', val)
 
-    def set_cdpw (self, val):
-        return self._set_att('cdpw', val)
+    # def get_cdpw (self):
+    #     return self._get_att('cdpw')
 
-    def get_exuser (self):
-        return self._get_att('exuser')
+    # def set_cdpw (self, val):
+    #     return self._set_att('cdpw', val)
 
-    def set_exuser (self, val):
-        return self._set_att('exuser', val)
+    # def get_exuser (self):
+    #     return self._get_att('exuser')
 
-    def get_expw (self):
-        return self._get_att('expw')
+    # def set_exuser (self, val):
+    #     return self._set_att('exuser', val)
 
-    def set_expw (self, val):
-        return self._set_att('expw', val)
+    # def get_expw (self):
+    #     return self._get_att('expw')
 
-    def get_port (self):
-        return self._get_att('port')
+    # def set_expw (self, val):
+    #     return self._set_att('expw', val)
 
-    def set_port (self, val):
-        return self._set_att('port', val)
+    # def get_port (self):
+    #     return self._get_att('port')
+
+    # def set_port (self, val):
+    #     return self._set_att('port', val)
 
     def get_config (self):
         return self._get_att('config')
@@ -834,27 +885,8 @@ class Asynk:
     ## The login_* routines can assume that _load_profile has been invoked by
     ## this time.
     def login_bb (self):
-        pname = self.get_name()
-        conf = self.get_config()
-
-        if pname:
-            db1 = conf.get_profile_db1(pname)
-            if db1 == 'bb':
-                bbfn = conf.get_stid1(pname)
-            else:
-                bbfn = conf.get_stid2(pname)
-
-        t = self.get_store_id('bb')
-        if t:
-            bbfn = t
-        else:
-            bbfn = '~/.bbdb'
-
-        if not bbfn:
-            raise AsynkError('No BBDB Store provided. Unable to initialize.')
-
-        bb   = BBPIMDB(conf, bbfn)
-        return bb
+        ## WIP: Moved to state_collection.py:BBCollection.login
+        pass
 
     def login_gc (self):
         try:
@@ -920,12 +952,21 @@ class Asynk:
         if pname:
             self.set_name(pname)
             conf  = self.get_config()
-    
-            self.set_db1(conf.get_profile_db1(pname))
-            self.set_db2(conf.get_profile_db2(pname))
-    
-            self.add_store_id(self.get_db1(), conf.get_stid1(pname))
-            self.add_store_id(self.get_db2(), conf.get_stid2(pname))
+
+            db1id = conf.get_profile_db1(pname)
+            db2id = conf.get_profile_db2(pname)
+
+            db1c = coll_id_class[db1id]
+            db1c = coll_id_class[db2id]
+
+            assert len(self.colls) == 0
+
+            ## FIXME: Why were we not setting fid?
+            self.add_coll(db1c(config=conf, dbid=db1id,
+                               stid=conf.get_stid1(pname), pname=pname))
+
+            self.add_coll(db2c(config=conf, dbid=db2id,
+                               stid=conf.get_stid2(pname), pname=pname))
 
             if not self.get_sync_dir():
                 self.set_sync_dir(conf.get_sync_dir(pname))
