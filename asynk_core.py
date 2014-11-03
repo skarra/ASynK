@@ -247,6 +247,9 @@ class Asynk:
         # self.set_expw(None)
 
     def _snarf_store_ids (self, uinps):
+        if uinps.store is None:
+            return
+
         for i, stid in enumerate(uinps.store):
             coll = self.get_colls()[i]
             coll.set_stid(stid)
@@ -355,15 +358,19 @@ class Asynk:
         return res
 
     def op_create_store (self):
-        if self.get_db2() != None or not (self.get_db1() in ['bb']):
+        if len(self.get_colls()) != 1:
+            raise AsynkParserError('--create-store takes exactly one db')
+
+        coll = self.get_colls()[0]
+        if 'bb'!= coll.get_dbid():
             raise AsynkParserError('--create-store only supported for bb now')
 
-        if not self.get_store_id('bb'):
+        if not coll.get_stid():
             raise AsynkParserError('--create-store needs --store option '
                                    'with value with filename of BBDB file '
                                    'to be created.')
 
-        BBPIMDB.new_store(self.get_store_id('bb'))
+        BBPIMDB.new_store(coll.get_stid())
 
     def op_list_folders (self):
         self._login()
