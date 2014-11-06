@@ -572,11 +572,10 @@ class Asynk:
 
         conf     = self.get_config()
         pname    = self._load_profile(login=False)
-        profiles = conf.get_profiles()
-
-        if not pname in profiles:
-            logging.info('Profile %s not in system. Nothing to do.')
+        if pname is None:
             return
+
+        profiles = conf.get_profiles()
 
         self._login()
 
@@ -586,12 +585,13 @@ class Asynk:
 
         label_re = '%s%s%s%s%s' % (prefix, sep, pname, sep, dbid_re)
 
+        colls = self.get_colls()
+        [db1, db2] = [x.get_db() for x in colls]
+
         ## First remove the tags for the profile from both folders
-        db1    = self.get_db(self.get_db1())
         f1, t  = db1.find_folder(conf.get_fid1(pname))
         hr = f1.bulk_clear_sync_flags(label_re=label_re)
 
-        db2 = self.get_db(self.get_db2())
         f2, t  = db2.find_folder(conf.get_fid2(pname))
         hr = hr and f2.bulk_clear_sync_flags(label_re=label_re)
         
@@ -945,25 +945,29 @@ class Asynk:
 
     def _load_profile (self, login=True):
         pname = self._get_validated_pname()
+        conf  = self.get_config()
 
         if pname:
+            if not pname in conf.get_profile_names():
+                logging.error('Profile "%s" not found. Nothing to do.', pname)
+                return None
+
             self.set_name(pname)
-            conf  = self.get_config()
 
             db1id = conf.get_profile_db1(pname)
             db2id = conf.get_profile_db2(pname)
 
             db1c = coll_id_class[db1id]
-            db1c = coll_id_class[db2id]
+            db2c = coll_id_class[db2id]
 
             assert len(self.colls) == 0
 
             ## FIXME: Why were we not setting fid?
-            self.add_coll(db1c(config=conf, dbid=db1id,
-                               stid=conf.get_stid1(pname), pname=pname))
+            self.add_coll(db1c(config=conf, stid=conf.get_stid1(pname),
+                               pname=pname))
 
-            self.add_coll(db2c(config=conf, dbid=db2id,
-                               stid=conf.get_stid2(pname), pname=pname))
+            self.add_coll(db2c(config=conf, stid=conf.get_stid2(pname),
+                               pname=pname))
 
             if not self.get_sync_dir():
                 self.set_sync_dir(conf.get_sync_dir(pname))
