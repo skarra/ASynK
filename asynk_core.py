@@ -554,7 +554,13 @@ class Asynk:
         ## For now there is no need for something separate from list_profiles
         ## above(). This will eventually show sync statistics, what has
         ## changed in each folder, and so on.
-        self.get_config().show_profile(self.get_name())
+        conf = self.get_config()
+        pname = self.get_name()
+
+        if not conf.profile_exists(pname):
+            logging.error("Profile %s not found" % pname)
+        else:
+            conf.show_profile(pname)
 
     def op_del_profile (self):
         """This deletes the sync profile from the system, and clears up the
