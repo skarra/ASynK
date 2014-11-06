@@ -353,7 +353,6 @@ class Asynk:
         if not self.is_dry_run():
             self.alogger.clear_old_logs()
 
-        print 'In dispatch(). Op: %s' % self.get_op()
         res = getattr(self, self.get_op())()
         return res
 
@@ -392,17 +391,16 @@ class Asynk:
                                    'through --name')
 
         # There should only be one DB specified
-        if self.get_db2():
-            raise AsynkParserError('Please specify only 1 db with --db '
-                                   'where new folder is to be created')
+        if len(self.get_colls()) != 1:
+            raise AsynkParserError('Please specify 1 (and only 1) arg with '
+                                   '--db flag where new folder is to be '
+                                   'created')
 
-        storeid = self.get_store_id(self.get_db1())
-
+        coll = self.get_colls()[0]
         self._login()
+        db = coll.get_db()
 
-        db = self.get_db(self.get_db1())
-        fid = db.new_folder(fname, Folder.CONTACT_t, storeid)
-        return fid
+        return db.new_folder(fname, Folder.CONTACT_t, coll.get_stid())
 
     def op_show_folder (self):
         # There should only be one DB specified
