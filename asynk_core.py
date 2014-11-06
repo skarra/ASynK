@@ -419,22 +419,21 @@ class Asynk:
         coll.get_db().show_folder(fid)
 
     def op_del_folder (self):
-        # There should only be one DB specified
-        if self.get_db2():
+        if len(self.get_colls()) != 1:
             raise AsynkParserError('Please specify only 1 db with --db '
                                    'where new folder is to be created')
 
-        dbid = self.get_db1()
-        store = self.get_store_id(dbid)
-        fid  = self.get_folder_id(dbid)
+        coll = self.get_colls()[0]
+        dbid = coll.get_dbid()
+        stid = coll.get_stid()
+        fid  = coll.get_fid()
 
         if not fid and not ('bb' == dbid):
-            raise AsynkParserError('--del-folder needs a --folder-id option')
+            raise AsynkParserError('--del-folder needs a --folder option')
 
         self._login()
 
-        db = self.get_db(dbid)
-        db.del_folder(fid, store)
+        coll.get_db().del_folder(fid, stid)
 
     def op_list_profiles (self):
         self.get_config().list_profiles()
