@@ -569,8 +569,10 @@ class BBPIMDB(PIMDB):
             return
 
         fold = st.get_folder(gid)
+        logging.info('Deleting Entries in folder: %s...', fold.get_name())
         st.remove_folder(fold)
         self.remove_folder(fold)
+        logging.info('Deleting Entries in folder: %s...done', fold.get_name())
 
     def set_folders (self):
         """See the documentation in class PIMDB"""
