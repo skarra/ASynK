@@ -442,39 +442,35 @@ class Asynk:
         self.get_config().list_profile_names()
 
     def op_find_profile (self):
-        """For a give set of two [db,st,fo], this will print the name of a
+        """For a given set of two [db,st,fo], this will print the name of a
         matching profile. If there is no match, then None is printed."""
 
         conf = self.get_config()
         ## Do some checking to ensure the user provided all the inputs we need
         ## to process a create-profile operation
-        db1 = self.get_db1()
-        db2 = self.get_db2()
-        if None in [db1, db2]:
+        colls = self.get_colls()
+        if len(colls) != 2:
             raise AsynkParserError('--op=find-profile needs two PIMDB IDs '
                                    'to be specified.')
-        
-        sid1 = self.get_store_id(db1)
-        sid2 = self.get_store_id(db2)
-        # if None in [sid1, sid2]:
-        #     raise AsynkParserError('--op=find-profile needs two Store IDs '
-        #                            'to be specified.')
 
-        fid1 = self.get_folder_id(db1)
-        fid2 = self.get_folder_id(db2)
+        ## FIXME: Commenting this out as the equivalent old code was commented
+        ## out. There must be some good reason :)
+        # if not colls[0].all_set() or not colls[1].all_set():
+        #     raise AsynkParserError('--op=find-profile needs two sets of PIMDB IDs '
+        #                            'Store IDs and Folder IDs to be specified.')
 
-        if db1 == 'cd' and fid1[-1] != '/':
-            fid1 += '/'
+        coll1 = colls[0]
+        coll2 = colls[1]
 
-        if db2 == 'cd' and fid2[-1] != '/':
-            fid2 += '/'
+        fid1 = coll1.get_fid(cd_fix=True)
+        fid2 = coll2.get_fid(cd_fix=True)
 
         if None in [fid1, fid2]:
-            raise AsynkParserError('--create-folder needs two Folders IDs to be '
-                                   'specified with --folder-id.')
+            raise AsynkParserError('--op=find-profile needs two Folders IDs to be '
+                                   'specified with --folder.')
 
-        pname = conf.find_matching_pname(db1, sid1, fid1,
-                                         db2, sid2, fid2)
+        pname = conf.find_matching_pname(coll1.get_dbid(), coll1.get_stid(), fid1,
+                                         coll2.get_dbid(), coll2.get_stid(), fid2)
 
         logging.info('Matched profile name: %s', pname)
 
