@@ -66,7 +66,8 @@ class Collection:
 
     def get_fid (self, cd_fix=False):
         fid = self.fid
-        if cd_fix and self.get_dbid() == 'cd' and fid[-1] != '/':
+        if (fid is not None and cd_fix and self.get_dbid() == 'cd' and
+            fid[-1] != '/'):
             fid += '/'
         return fid
 
