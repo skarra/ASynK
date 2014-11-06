@@ -403,20 +403,20 @@ class Asynk:
         return db.new_folder(fname, Folder.CONTACT_t, coll.get_stid())
 
     def op_show_folder (self):
-        # There should only be one DB specified
-        if self.get_db2():
-            raise AsynkParserError('Please specify only 1 db with --db ')
+        if len(self.get_colls()) != 1:
+            raise AsynkParserError('Please specify only 1 db with --db '
+                                   'for the show-folder operation')
 
-        dbid = self.get_db1()
-        fid  = self.get_folder_id(dbid)
+        coll = self.get_colls()[0]
+        dbid = coll.get_dbid()
+        fid  = coll.get_fid()
 
         if not fid and not ('bb' == dbid):
             raise AsynkParserError('--show-folder needs a --folder-id option')
 
         self._login()
 
-        db = self.get_db(dbid)
-        db.show_folder(fid)
+        coll.get_db().show_folder(fid)
 
     def op_del_folder (self):
         # There should only be one DB specified
