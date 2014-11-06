@@ -479,28 +479,18 @@ class Asynk:
 
         ## Do some checking to ensure the user provided all the inputs we need
         ## to process a create-profile operation
-        db1 = self.get_db1()
-        db2 = self.get_db2()
-                           
-        if None in [db1, db2]:
+        colls = self.get_colls()
+        if len(colls) != 2:
             raise AsynkParserError('--create-profile needs two PIMDB IDs to be '
                                    'specified.')
         
-        sid1 = self.get_store_id(db1)
-        sid2 = self.get_store_id(db2)
-
-        fid1 = self.get_folder_id(db1)
-        fid2 = self.get_folder_id(db2)
-
-        if db1 == 'cd' and fid1 != 'default' and fid1[-1] != '/':
-            fid1 += '/'
-
-        if db2 == 'cd' and fid2 != 'default' and fid2[-1] != '/':
-            fid2 += '/'
+        [dbid1, dbid2] = [x.get_dbid() for x in colls]
+        [stid1, stid2] = [x.get_stid() for x in colls]
+        [fid1,  fid2]  = [x.get_fid(cd_fix=True)  for x in colls]
 
         if None in [fid1, fid2]:
-            raise AsynkParserError('--create-folder needs two Folders IDs to be '
-                                   'specified with --folder-id.')
+            raise AsynkParserError('--create-profile needs two Folders IDs to be '
+                                   'specified with --folder.')
 
         # FIXME: Perhaps we should validate if the folder ids provided are
         # available in the respective PIMDBs, and raise an error if
@@ -518,14 +508,15 @@ class Asynk:
         pname_re = conf.get_profile_name_re()
         res = re.search('^'+pname_re+'$', pname)
         if not res:
-            raise AsynkParserError('Illegal profile name %s. Valid names should satisfy '
-                                   'this regex: %s' % (pname, pname_re))
+            raise AsynkParserError('Illegal profile name %s. Valid names '
+                                   'should satisfy this regex: %s'
+                                   % (pname, pname_re))
 
         cr = self.get_conflict_resolve()
         if (not cr):
-           cr = db1
+           cr = dbid1
         else:
-           if (not cr in [db1, db2]):
+           if (not cr in [dbid1, dbid2]):
                raise AsynkParserError('--conflict-resolve should be one of '
                                       'the two dbids specified earlier.')
 
@@ -533,21 +524,21 @@ class Asynk:
         if not sync_dir:
             sync_dir = "SYNC2WAY"
 
-        if 'ol' in [db1, db2]:
-            olgid = conf.get_ol_next_gid(db1 if 'ol' == db2 else db2)
+        if 'ol' in [dbid1, dbid2]:
+            olgid = conf.get_ol_next_gid(db1 if 'ol' == dbid2 else dbid2)
         else:
             olgid = None            
 
         profile = conf.get_profile_defaults()
         profile.update(
             {'coll_1' : {
-                'dbid' : db1,
-                'stid' : sid1,
+                'dbid' : dbid1,
+                'stid' : stid1,
                 'foid' : fid1,
                 },
              'coll_2' :  {
-                'dbid' : db2,
-                'stid' : sid2,
+                'dbid' : dbid2,
+                'stid' : stid2,
                 'foid' : fid2,
                 },
              'olgid'            : olgid,
