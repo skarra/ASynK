@@ -64,11 +64,24 @@ class Collection:
     def set_stid (self, stid):
         self.stid = stid
 
-    def get_fid (self):
-        return self.fid
+    def get_fid (self, cd_fix=False):
+        fid = self.fid
+        if cd_fix and self.get_dbid() == 'cd' and fid[-1] != '/':
+            fid += '/'
+        return fid
 
     def set_fid (self, fid):
         self.fid = fid
+
+    def all_set (self):
+        return (self.get_dbid() is not None and
+                self.get_stid() is not None and
+                self.get_fid()  is not None)
+
+    def __eq__ (self, other):
+        return (self.get_dbid() == other.get_dbid() and
+                self.get_stid() == other.get_stid() and
+                self.get_fid()  == other.get_fid())
 
     def repr (self):
         return str({'dbid' : self.dbid,
