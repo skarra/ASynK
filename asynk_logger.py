@@ -36,16 +36,14 @@ class ASynKLogger:
     
         ## First the console logger - the logging level may be changed later after
         ## the command line arguments are parsed properly.
-    
-        global consoleLogger
-    
+
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
     
-        consoleLogger = logging.StreamHandler()
-        consoleLogger.setLevel(logging.INFO)
-        consoleLogger.setFormatter(formatter)
-        logger.addHandler(consoleLogger)
+        self.consoleLogger = logging.StreamHandler()
+        self.consoleLogger.setLevel(logging.INFO)
+        self.consoleLogger.setFormatter(formatter)
+        logger.addHandler(self.consoleLogger)
     
         ## Now the more detailed debug logs which are written to file in a default
         ## logs/ directory. The location of the directory is read from the
