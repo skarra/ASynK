@@ -59,7 +59,7 @@ class Asynk:
         self.alogger = alogger
 
         if level and level != 'INFO':
-            consoleLogger.setLevel(getattr(logging, level))
+            alogger.consoleLogger.setLevel(getattr(logging, level))
 
         self.reset_fields()
         self.set_config(config)
@@ -631,7 +631,8 @@ class Asynk:
                 logging.debug('Temporarily resetting last sync times...')
             conf.set_last_sync_start(pname, val=utils.time_start)
             conf.set_last_sync_stop(pname, val=utils.time_start)
-        sync = Sync(conf, pname, self.get_db(), dr=self.is_dry_run())
+        sync = Sync(conf, pname, [x.get_db() for x in self.get_colls()],
+                    dr=self.is_dry_run())
         if self.is_dry_run():
             sync.prep_lists(self.get_sync_dir())
             # Since it is only a dry run, resetting to the timestamps to the
@@ -717,19 +718,6 @@ class Asynk:
 
     def get_colls (self):
         return self.colls
-
-    def set_db (self, dbid=None, val=None):
-        if not dbid:
-            self.dbs = {}
-        else:
-            self.dbs.update({dbid : val})
-
-    def get_db (self, dbid=None):
-        if not dbid:
-            return self.dbs
-
-        if dbid in self.dbs:
-            return self.dbs[dbid]
 
     ## WIP: To be removed after move to Collections
 
