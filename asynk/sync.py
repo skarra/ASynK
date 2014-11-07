@@ -56,8 +56,8 @@ class Sync:
         logging.debug('fid2  : %s', fid2)
         logging.debug('db1id : %s', self.get_db1id())
 
-        db1 = self.get_db(self.get_db1id())
-        db2 = self.get_db(self.get_db2id())
+        db1 = self.get_db(0)
+        db2 = self.get_db(1)
 
         logging.debug('db    : %s', db1)
 
