@@ -105,8 +105,10 @@ def setup_parser ():
     p.add_argument('--conflict-resolve', action='store',
                    help='Specifies how to deal with conflicts in case of '
                    'a bidirectional sync and an item is modified in both '
-                   'places. value should be one of the two dbids that are '
-                   'already specified.')
+                   'places. It should be set to 1 or 2 to specify the one '
+                   'to be used; in case the dbs are unique. For e.g. if you '
+                   'are synching from BBDB to Google Contacts, then you can '
+                   'also specify the dbid itself (i.e. bb or gc)')
 
     # Google Contacts authentication
     gg = p.add_argument_group('Google Authentication')

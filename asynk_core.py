@@ -514,11 +514,20 @@ class Asynk:
 
         cr = self.get_conflict_resolve()
         if (not cr):
-           cr = dbid1
+           cr = "1"
         else:
-           if (not cr in [dbid1, dbid2]):
+           if (not cr in [dbid1, dbid2, "1", "2"]):
                raise AsynkParserError('--conflict-resolve should be one of '
-                                      'the two dbids specified earlier.')
+                                      'the two dbids specified earlier or '
+                                      'the numbers 1 or 2')
+           if (dbid1 == dbid2 and not cr in ["1", "2"]):
+               raise AsynkParserError('--conflict-resolve should be either 1 '
+                                      'or 2 as both dbs are the same')
+
+           if cr == dbid1:
+               cr = "1"
+           elif cr == dbid2:
+               cr = "2"
 
         sync_dir = self.get_sync_dir()
         if not sync_dir:
