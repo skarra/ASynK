@@ -212,9 +212,9 @@ class Sync:
 
         cr = self.get_config().get_conflict_resolve(pname)
 
-        if cr == db2id:
+        if cr == db2id or cr == "2":
             f1_mod = f1sl.remove_keys_from_mod(coma)
-        elif cr == db1id:
+        elif cr == db1id or cr == "1":
             f2_mod = f2sl.remove_values_from_mod(coma)
         else:
             logging.error('Unknown conflict resolution dir: %s', cr)

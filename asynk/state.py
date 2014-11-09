@@ -505,7 +505,7 @@ class Config:
         db1id = self.get_profile_db1(profile)
         db2id = self.get_profile_db2(profile)
 
-        if not val in [db1id, db2id]:
+        if not val in [db1id, db2id, "1", "2"]:
             raise AsynkConfigError(
                 ('Invalid value for: %s[conflict_resolve]: %s' %
                  (profile, val)))
