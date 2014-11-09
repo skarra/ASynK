@@ -350,6 +350,20 @@ class Item:
 
         return len(arr) > 0
 
+    def get_itemid_from_synctags (self, pname, dbid):
+        """Look in the synctags list to see if there is an itemid already for
+        the given profile and dbid combo. This is needed  when this item has
+        been fetched from a remote db and has already been synched to the
+        destination earlier. """
+
+        conf  = self.get_config()
+        label = conf.make_sync_label(pname, dbid)
+        try:
+            tag, itemid = self.get_sync_tags(label)[0]
+            return itemid
+        except IndexError, e:
+            return None
+
     def __str__ (self):
         ret = '\n%18s: %s\n' % ('itemid', self.get_itemid())
         props = self.get_prop_names()
