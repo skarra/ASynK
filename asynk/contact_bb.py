@@ -61,31 +61,22 @@ class BBContact(Contact):
     """This class extends the Contact abstract base class to wrap a BBDB
     Contact"""
 
-    def __init__ (self, folder, con=None, rec=None):
+    def __init__ (self, folder, con=None, con_itemid=None, rec=None):
         """rec is the native string vector representation of a BBDB contact
         entry on disk."""
 
         Contact.__init__(self, folder, con)
-
         self.atts.update({'bbdb_folder' : None,})
-
-        ## Sometimes we might be creating a contact object from a Google
-        ## contact object or other entry which might have the ID in its sync
-        ## tags field. if that is present, we should use it to initialize the
-        ## itemid field for the current object
 
         conf = self.get_config()
         if con:
-            try:
-                pname_re = conf.get_profile_name_re()
-                label    = conf.make_sync_label(pname_re, self.get_dbid())
-                tag, itemid = con.get_sync_tags(label)[0]              
-                self.set_itemid(itemid)
-            except Exception, e:
+            if con_itemid:
+                self.set_itemid(con_itemid)
+            else:
                 logging.debug('Potential new BBContact: %s', con.get_name())
 
-            if folder.get_name():
-                self.set_bbdb_folder(folder.get_name())
+        if folder.get_name():
+            self.set_bbdb_folder(folder.get_name())
 
         if rec:
             self.set_rec(rec)
@@ -729,9 +720,15 @@ class BBContact(Contact):
         ret = ''
         i = 0
         for key, val in self.get_sync_tags().iteritems():
-            # Skip any sync tag with BBDB IDs as values.
-            if re.search(label, key) or not val:
-                continue
+            ## FIXME: This was put in here for a reason. I think it had
+            ## something to do with "reproducing" sync labels containing the
+            ## ID on the local end itself. This was the easiest fix,
+            ## IIRC. This clearly conflicts with the present need. We need to
+            ## solve this problem - and apply it for all the DBs.
+
+            # # Skip any sync tag with BBDB IDs as values.
+            # if re.search(label, key) or not val:
+            #     continue
 
             if i > 0:
                 ret += ' '

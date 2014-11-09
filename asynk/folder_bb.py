@@ -19,7 +19,7 @@
 
 import codecs, logging, re, string, traceback
 from   folder     import Folder
-from   contact_bb import BBContact
+from   contact_bb import BBContact, BBDBParseError
 import pimdb_bb, utils
 
 class BBContactsFolder(Folder):    
@@ -146,7 +146,8 @@ class BBContactsFolder(Folder):
 
         for item in items:
             try:
-                bbc = BBContact(self, con=item)
+                con_itemid = item.get_itemid_from_synctags(pname, 'bb')
+                bbc = BBContact(self, con=item, con_itemid=con_itemid)
                 bbc.update_sync_tags(src_tag, item.get_itemid())
                 bbc.set_updated(pimdb_bb.BBPIMDB.get_bbdb_time())
                 self.add_contact(bbc)
