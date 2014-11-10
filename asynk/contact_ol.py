@@ -38,7 +38,8 @@ class OLContactError(Exception):
 class OLContact(Contact):
     prop_update_t = utils.enum('PROP_REPLACE', 'PROP_APPEND')
 
-    def __init__ (self, folder, olprops=None, eid=None, con=None):
+    def __init__ (self, folder, olprops=None, eid=None, con=None,
+                  con_itemid=None):
         """Constructor for OLContact. The starting properties of the contact
         can be initialized either from an existing Contact object, or from an
         Outlook item property list. It is an error to provide both.
@@ -57,19 +58,11 @@ class OLContact(Contact):
 
         Contact.__init__(self, folder, con)
 
-        ## Sometimes we might be creating a contact object from GC or other
-        ## entry which might have the Entry ID in its sync tags
-        ## field. if that is present, we should use it to initialize the
-        ## itemid field for the current object
-
         conf = self.get_config()
         if con:
-            try:
-                pname_re = conf.get_profile_name_re()
-                label    = conf.make_sync_label(pname_re, self.get_dbid())
-                tag, itemid = con.get_sync_tags(label)[0]              
-                self.set_entryid(base64.b64decode(itemid))
-            except Exception, e:
+            if con_itemid:
+                self.set_entryid(base64.b64decode(con_itemid))
+            else:
                 logging.debug('Potential new OLContact: %s', con.get_name())
 
         ## Set up some of the basis object attributes and parent folder/db
