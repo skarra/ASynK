@@ -178,7 +178,8 @@ class EXFolder(Folder):
 
         ex_cons = []
         for item in items:
-            exc = EXContact(self, con=item)
+            con_itemid = item.get_itemid_from_synctags(pname, 'ex')
+            exc = EXContact(self, con=item, con_itemid=con_itemid)
             rid = item.get_itemid()
             exc.update_sync_tags(src_sync_tag, rid)
 
