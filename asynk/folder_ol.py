@@ -214,7 +214,8 @@ class OLFolder(Folder):
 
         success = True
         for item in items:
-            olc = OLContact(self, con=item)
+            con_itemid = item.get_itemid_from_synctags(pname, 'ol')
+            olc = OLContact(self, con=item, con_itemid=con_itemid)
             rid = item.get_itemid()
             olc.update_sync_tags(src_sync_tag, rid)
 
