@@ -37,23 +37,14 @@ class GCContact(Contact):
     """This class extends the Contact abstract base class to wrap a Google
     Contact"""
 
-    def __init__ (self, folder, con=None, gce=None):
+    def __init__ (self, folder, con=None, con_itemid=None, gce=None):
         Contact.__init__(self, folder, con)
-
-        ## Sometimes we might be creating a contact object from Outlook or
-        ## other entry which might have the google contact ID in its sync tags
-        ## field. if that is present, we should use it to initialize the
-        ## itemid field for the current object
 
         conf = self.get_config()
         if con:
-            try:
-                pname_re = conf.get_profile_name_re()
-                label    = conf.make_sync_label(pname_re, self.get_dbid())
-                tag, itemid = con.get_sync_tags(label)[0]
-
-                self.set_itemid(self.normalize_gcid(itemid))
-            except Exception, e:
+            if con_itemid:
+                self.set_itemid(self.normalize_gcid(con_itemid))
+            else:
                 logging.debug('Potential new GCContact: %s', con.get_name())
 
         self.set_gce(gce)
