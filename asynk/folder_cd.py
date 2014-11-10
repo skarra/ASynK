@@ -205,7 +205,8 @@ class CDContactsFolder(Folder):
             ## to PUT the damn items one at a time. What kind of a standard is
             ## this, anyway?
 
-            cd = CDContact(self, con=item)
+            con_itemid = item.get_itemid_from_synctags(pname, 'cd')
+            cd = CDContact(self, con=item, con_itemid=con_itemid)
             cd.update_sync_tags(src_sync_tag, item.get_itemid(), save=True)
             self.add_contact(cd)            
 
