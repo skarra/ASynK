@@ -74,7 +74,7 @@ class CDContact(Contact):
     CREATED    = 'X-ASYNK-CREATED'
     SYNC_TAG_PREFIX  = 'X-ASYNK-SYNCTAG-'
 
-    def __init__ (self, folder, con=None, vco=None, itemid=None,
+    def __init__ (self, folder, con=None, con_itemid=None, vco=None, itemid=None,
                   debug_vcf=False):
         """vco, if not None, should be a valid vCard object (i.e. the contents
         of a vCard file, for e.g. When vco is not None, itemid should also be
@@ -89,22 +89,12 @@ class CDContact(Contact):
         self.set_vco(vco)
         self._group_count = 0
 
-        ## Sometimes we might be creating a contact object from a Google
-        ## contact object or other entry which might have the ID in its sync
-        ## tags field. if that is present, we should use it to initialize the
-        ## itemid field for the current object
-
         conf = self.get_config()
         if con:
-            try:
-                pname_re = conf.get_profile_name_re()
-                label    = conf.make_sync_label(pname_re, self.get_dbid())
-                tag, itemid = con.get_sync_tags(label)[0]
-
-                self.set_itemid(self.normalize_cdid(itemid))
-            except Exception, e:
+            if con_itemid:
+                self.set_itemid(self.normalize_cdid(con_itemid))
+            else:
                 logging.debug('Potential new CDContact: %s', con.get_name())
-
         elif vco:
             self.init_props_from_vco(vco)
             if not self.debug_vcf:
