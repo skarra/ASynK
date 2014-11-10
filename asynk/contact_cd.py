@@ -626,9 +626,15 @@ class CDContact(Contact):
         ret = ''
         i = 0
         for key, val in self.get_sync_tags().iteritems():
-            # Skip any sync tag with CardDAV IDs as values.
-            if re.search(label, key) or not val:
-                continue
+            ## FIXME: This was put in here for a reason. I think it had
+            ## something to do with "reproducing" sync labels containing the
+            ## ID on the local end itself. This was the easiest fix,
+            ## IIRC. This clearly conflicts with the present need. We need to
+            ## solve this problem - and apply it for all the DBs.
+
+            # # Skip any sync tag with CardDAV IDs as values.
+            # if re.search(label, key) or not val:
+            #     continue
 
             ## Make the label more vCard friendly
             key = string.replace(key, ':', '-')

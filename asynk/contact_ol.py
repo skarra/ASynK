@@ -936,8 +936,16 @@ class OLContact(Contact):
                 continue
 
             pname, dbid = conf.parse_sync_label(name)
-            if dbid == mydid:
-                continue
+
+            ## FIXME: This was put in here for a reason. I think it had
+            ## something to do with "reproducing" sync labels containing the
+            ## ID on the local end itself. This was the easiest fix,
+            ## IIRC. This clearly conflicts with the present need. We need to
+            ## solve this problem - and apply it for all the DBs.
+
+            # if dbid == mydid:
+            #     continue
+
             if not pname in olps:
                 ## This is an interesting case of a sync tag that is existing
                 ## betwen two non-OL PIM DBs. i.e. we are dealing with a

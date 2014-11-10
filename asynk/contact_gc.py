@@ -751,12 +751,18 @@ class GCContact(Contact):
         label    = conf.make_sync_label(pname_re, self.get_dbid())
 
         ## These will be stored as extended properties. Note that if this
-        ## routine keeps appending the sync_tags tot he user_defined_fields,
+        ## routine keeps appending the sync_tags to the user_defined_fields,
         ## with no regard for whether it already exists or not...
         for key, val in self.get_sync_tags().iteritems():
-            # Skip any sync tag with GCIDs as values.
-            if re.search(label, key):
-                continue
+            ## FIXME: This was put in here for a reason. I think it had
+            ## something to do with "reproducing" sync labels containing the
+            ## ID on the local end itself. This was the easiest fix,
+            ## IIRC. This clearly conflicts with the present need. We need to
+            ## solve this problem - and apply it for all the DBs.
+
+            # # Skip any sync tag with GCIDs as values.
+            # if re.search(label, key):
+            #     continue
 
             ud       = gdata.contacts.data.UserDefinedField()
             ud.key   = key
