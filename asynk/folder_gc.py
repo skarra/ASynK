@@ -256,7 +256,8 @@ class GCContactsFolder(Folder):
 
         success = True
         for item in items:
-            gc  = GCContact(self, con=item)
+            con_itemid = item.get_itemid_from_synctags(pname, 'gc')
+            gc  = GCContact(self, con=item, con_itemid=con_itemid)
             bid = item.get_itemid()
             gc.update_sync_tags(src_sync_tag, bid)
 
