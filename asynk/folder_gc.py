@@ -248,6 +248,8 @@ class GCContactsFolder(Folder):
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
+        pname   = src_sl.get_pname()
+
         src_sync_tag = c.make_sync_label(src_sl.get_pname(), src_dbid)
         dst_sync_tag = c.make_sync_label(src_sl.get_pname(), my_dbid)
 
@@ -776,6 +778,6 @@ class BatchState:
     
                     if t:
                         logging.info('Successfully %s gmail entry for %30s (%s)',
-                                     t, con.get_name(), orig.get_itemid())
+                                     t, con.get_disp_name(), orig.get_itemid())
     
         return success, cons
