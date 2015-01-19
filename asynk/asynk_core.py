@@ -18,7 +18,7 @@
 ## not, see <http://www.gnu.org/licenses/>.
 
 import logging, os, platform
-import netrc, re, string, sys, traceback
+import re, sys, traceback
 
 ## First up we need to fix the sys.path before we can even import stuff we
 ## want... Just some weirdness specific to our code layout...
@@ -50,21 +50,14 @@ from   state_collection import collection_id_to_class as coll_id_class
 class AsynkParserError(Exception):
     pass
 
+class AsynkError(Exception):
+    pass
+
 class Asynk:
-    def __init__ (self, uinps, config, alogger):
-        """uinps is a Namespace object as returned from the parse_args()
-        routine of argparse module."""
-
-        level = string.upper(uinps.log)
+    def __init__ (self, config, alogger):
         self.alogger = alogger
-
-        if level and level != 'INFO':
-            alogger.consoleLogger.setLevel(getattr(logging, level))
-
         self.reset_fields()
         self.set_config(config)
-        self.validate_and_snarf_uinps(uinps)
-
         self.logged_in = False
 
     def _login (self, force=False):
@@ -88,64 +81,10 @@ class Asynk:
         pname = self.get_name()
 
         for coll in self.get_colls():
+            coll.init_username_pwd()
             coll.login()
 
-        ## WIP: The stuff beyond the return is all old code that will be
-        ## removed after wemigrate fully to Collection
-        return
-
-        mach = 'gc_%s' % pname
-
-        ## For gmail authentication credentials, the password can be provided
-        ## in a variety of ways; in the order of priority: a) on the command
-        ## line b) in the ~/.netrc file where the machine name is derived from
-        ## the profile name (more on this later), and finally c) from keyboard
-        n = None
-        netrc_user = None
-        netrc_pass = None
-
-        ## FIXME: All of this stuff constrains the use of same type of db for
-        ## source and destination. The more code we put in here the harder it
-        ## will get to support such a scenario.
-
-        if 'gc' in [self.get_db1(), self.get_db2()]:
-            self._init_gc_user_pw(pname)
-
-        if 'cd' in [self.get_db1(), self.get_db2()]:
-            self._init_cd_user_pw(pname)
-
-        if 'ex' in [self.get_db1(), self.get_db2()]:
-            self._init_ex_user_pw(pname)
-
-        db1id = self.get_db1()
-        db2id = self.get_db2()
-
-        if db1id:
-            login_func = 'login_%s' % db1id
-            self.set_db(db1id, getattr(self, login_func)())
-
-            if pname and conf.profile_exists(pname):
-                if not conf.get_stid1(pname):
-                    conf.set_stid1(pname, self.get_store_id(db1id))
-
-                if not conf.get_fid1(pname):
-                    deff = self.get_db(db1id).get_def_folder()
-                    conf.set_fid1(pname, deff.get_itemid())
-
-        if db2id:
-            login_func = 'login_%s' % db2id
-            self.set_db(db2id, getattr(self, login_func)())
-
-            if pname and conf.profile_exists(pname):
-                if not conf.get_stid2(pname):
-                    conf.set_stid2(pname, self.get_store_id(db2id))
-
-                if not conf.get_fid2(pname):
-                    deff = self.get_db(db2id).get_def_folder()
-                    conf.set_fid2(pname, deff.get_itemid())
-
-        self.logged_in = True
-            
+    ## FIXME: To be removed, after migration to collections
     def auth_lookup_netrc (self, mach):
         netrc_user = None
         netrc_a    = None
@@ -163,6 +102,7 @@ class Asynk:
 
         return netrc_user, netrc_a, netrc_pass
 
+    ## FIXME: To be removed, after migration to collections
     def auth_get_creds (self, dbid, pname, cmdl_user, cmdl_pwd):
         """
         For a given profile name and any username / pwd specfiied on the
@@ -205,16 +145,19 @@ class Asynk:
 
         return user, pwd
 
+    ## FIXME: To be removed, after migration to collections
     def _init_gc_user_pw (self, pname):
         u, p = self.auth_get_creds('gc', pname, self.get_gcuser(), self.get_gcpw())
         self.set_gcuser(u)
         self.set_gcpw(p)
 
+    ## FIXME: To be removed, after migration to collections
     def _init_cd_user_pw (self, pname):
         u, p = self.auth_get_creds('cd', pname, self.get_cduser(), self.get_cdpw())
         self.set_cduser(u)
         self.set_cdpw(p)
 
+    ## FIXME: To be removed, after migration to collections
     def _init_ex_user_pw (self, pname):
         u, p = self.auth_get_creds('ex', pname, self.get_exuser(), self.get_expw())
         self.set_exuser(u)
@@ -225,129 +168,6 @@ class Asynk:
 
         self.set_dry_run(True)
         self.reset_colls()
-
-        ## WIP: Made redundant by the Collection initiatialiser. Do be removed
-        # self.set_db()
-        # self.set_db('bb', None)
-        # self.set_db('gc', None)
-        # self.set_db('ol', None)
-        # # FIXME: Not sure why 'cd' is missing here
-        # self.set_db('ex', None)
-
-        # self.set_db1(None)
-        # self.set_db2(None)
-
-        # self.set_gcuser(None)
-        # self.set_gcpw(None)
-
-        # self.set_cduser(None)
-        # self.set_cdpw(None)
-
-        # self.set_exuser(None)
-        # self.set_expw(None)
-
-    def _snarf_store_ids (self, uinps):
-        if uinps.store is None:
-            return
-
-        for i, stid in enumerate(uinps.store):
-            coll = self.get_colls()[i]
-            coll.set_stid(stid)
-
-        # temp = {}
-        # if uinps.store:
-        #     if len(uinps.store) >= 1:
-        #         temp.update({self.get_db1() : uinps.store[0]})
-
-        #     if len(uinps.store) >= 2:
-        #         temp.update({self.get_db2() : uinps.store[1]})
-
-        # self.set_store_ids(temp)
-
-    def _snarf_gcauth (self, uinps):
-        ## WIP: To be removed once we migrate to collection
-        # self.set_gcuser(uinps.gcuser if uinps.gcuser else None)
-        # self.set_gcpw(uinps.pwd)
-        pass
-
-    def _snarf_pname (self, uinps):
-        if uinps.name:
-            self.set_name(uinps.name)
-        else:
-            self.set_name(None)
-
-    def _snarf_folder_ids (self, uinps):
-        if uinps.folder:
-            for i, fid in enumerate(uinps.folder):
-                coll = self.get_colls()[i]
-                coll.set_fid(fid)
-
-        #     temp = {}
-        #     if len(uinps.folder) >= 1:
-        #         temp.update({self.get_db1() : uinps.folder[0]})
-
-        #     if len(uinps.folder) >= 2:
-        #         temp.update({self.get_db2() : uinps.folder[1]})
-
-        #     self.set_folder_ids(temp)
-        # else:
-        #     self.set_folder_ids(None)
-
-    def _snarf_sync_dir (self, uinps):
-        if uinps.direction:
-            d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYNC2WAY'
-        else:
-            d = None
-
-        self.set_sync_dir(d)
-
-    def validate_and_snarf_uinps (self, uinps):
-        # Most of the validation is already done by argparse. This is where we
-        # will do some additional sanity checking and consistency enforcement,
-        # mutual exclusion and so forth. In addition to this, every command
-        # will do some parsing and validation itself.
-
-        op  = 'op_' + string.replace(uinps.op, '-', '_')
-        self.set_op(op)
-
-        # Let's start with the db flags
-        if uinps.db:
-            if len(uinps.db) > 2:
-                raise AsynkParserError('--db takes 1 or 2 arguments only')
-    
-            for dbid in uinps.db:
-                coll = coll_id_class[dbid](config=self.get_config())
-                self.add_coll(coll)
-
-            ## WIP: To be remove after migration to Collection
-            # self.set_db1(uinps.db[0])
-            # self.set_db2(uinps.db[1] if len(uinps.db) > 1 else None)
-        else:
-            # Only a few operations do not need a db. Check for this and move
-            # on.
-            if not ((self.get_op() in ['op_startweb', 'op_sync']) or 
-                    (re.search('_profile', self.get_op()))):
-                raise AsynkParserError('--db needed for this operation.')
-
-        # The validation that follows is only relevant for command line
-        # usage.
-
-        if self.get_op() == 'op_startweb':
-            return
-
-        self.set_dry_run(uinps.dry_run)
-        self.set_sync_all(uinps.sync_all)
-
-        self._snarf_store_ids(uinps)
-        self._snarf_gcauth(uinps)
-        self._snarf_pname(uinps)
-        self._snarf_folder_ids(uinps)
-        self._snarf_sync_dir(uinps)
-
-        self.set_label_re(uinps.label_regex)
-        self.set_conflict_resolve(uinps.conflict_resolve)
-        self.set_item_id(uinps.item)
-        # self.set_port(uinps.port)
 
     def dispatch (self):
         if not self.is_dry_run():
@@ -728,22 +548,6 @@ class Asynk:
     def get_colls (self):
         return self.colls
 
-    ## WIP: To be removed after move to Collections
-
-    def get_db1 (self):
-        # return self._get_att('db1')
-        return None
-
-    def set_db1 (self, val):
-        return self._set_att('db1', val)
-
-    def get_db2 (self):
-        # return self._get_att('db2')
-        return None
-
-    def set_db2 (self, val):
-        return self._set_att('db2', val)
-
     def get_op (self):
         return self._get_att('op')
 
@@ -761,40 +565,6 @@ class Asynk:
 
     def is_sync_all (self):
         return self._get_att('sync_all')
-
-    ## WIP: To be removed after full migration to Collection
-
-    # def set_folder_ids (self, val):
-    #     """val should be a dictionary of dbid : folderid pairs."""
-    #     return self._set_att('folder_id', val)
-
-    # def get_folder_id (self, dbid):
-    #     try:
-    #         return self._get_att('folder_id')[dbid]
-    #     except TypeError, e:
-    #         return None
-    #     except KeyError, e:
-    #         return None
-
-    # def set_store_ids (self, val):
-    #     """val should be a dictionary of dbid : folderid pairs."""
-    #     return self._set_att('store_id', val)
-
-    # def add_store_id (self, i, sid):
-    #     try:
-    #         coll = self.get_colls()[i]
-    #     except IndexError, e:
-    #         coll.set_stid(sid)
-
-    #     return sid
-
-    # def get_store_id (self, dbid):
-    #     try:
-    #         return self._get_att('store_id')[dbid]
-    #     except TypeError, e:
-    #         return None
-    #     except KeyError, e:
-    #         return None
 
     def get_item_id (self):
         return self._get_att('item_id')
@@ -826,50 +596,6 @@ class Asynk:
     def set_conflict_resolve (self, val):
         return self._set_att('conflict_resolve', val)
 
-    ## WIP: To be removed after full migration to Collection
-
-    # def get_gcuser (self):
-    #     return self._get_att('gcuser')
-
-    # def set_gcuser (self, val):
-    #     return self._set_att('gcuser', val)
-
-    # def get_gcpw (self):
-    #     return self._get_att('gcpw')
-
-    # def set_gcpw (self, val):
-    #     return self._set_att('gcpw', val)
-
-    # def get_cduser (self):
-    #     return self._get_att('cduser')
-
-    # def set_cduser (self, val):
-    #     return self._set_att('cduser', val)
-
-    # def get_cdpw (self):
-    #     return self._get_att('cdpw')
-
-    # def set_cdpw (self, val):
-    #     return self._set_att('cdpw', val)
-
-    # def get_exuser (self):
-    #     return self._get_att('exuser')
-
-    # def set_exuser (self, val):
-    #     return self._set_att('exuser', val)
-
-    # def get_expw (self):
-    #     return self._get_att('expw')
-
-    # def set_expw (self, val):
-    #     return self._set_att('expw', val)
-
-    # def get_port (self):
-    #     return self._get_att('port')
-
-    # def set_port (self, val):
-    #     return self._set_att('port', val)
-
     def get_config (self):
         return self._get_att('config')
 
@@ -877,22 +603,9 @@ class Asynk:
         return self._set_att('config', val)
 
     ## The login_* routines can assume that _load_profile has been invoked by
-    ## this time.
-    def login_bb (self):
-        ## WIP: Moved to state_collection.py:BBCollection.login
-        pass
-
+    ## this time. FIXME: To be moved to collections.
     def login_gc (self):
-        try:
-            pimgc = GCPIMDB(self.get_config(),
-                            self.get_gcuser(), self.get_gcpw())
-        except BadAuthentication:
-            raise AsynkError('Invalid Google credentials. Cannot proceed.')
-
-        return pimgc
-
-    def login_ol (self):
-        return OLPIMDB(self.get_config())
+        pass
 
     def login_cd (self):
         try:
@@ -976,3 +689,19 @@ class Asynk:
             self._login()
 
         return pname
+
+    def __str__ (self):
+        self._load_profile(login=False)
+
+        s = []
+        s.append('Profile name: %s' % self.get_name())
+        s.append('Operation : %s'   % self.get_op())
+        s.append('sync_dir : %s'    % self.get_sync_dir())
+        s.append('dry run : %s'     % self.is_dry_run())
+        s.append('conflict resolve : %s' % self.get_conflict_resolve())
+        colls = self.get_colls()
+        if len(colls) > 0:
+            s.append('Collection 1: %s' % self.get_colls()[0])
+            s.append('Collection 2: %s' % self.get_colls()[1])
+
+        return '\n'.join(s)
