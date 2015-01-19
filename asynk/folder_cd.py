@@ -195,6 +195,8 @@ class CDContactsFolder(Folder):
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
+        pname   = src_sl.get_pname()
+
         src_sync_tag = c.make_sync_label(src_sl.get_pname(), src_dbid)
         dst_sync_tag = c.make_sync_label(src_sl.get_pname(), my_dbid)
 
