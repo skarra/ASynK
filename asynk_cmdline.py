@@ -110,22 +110,34 @@ def setup_parser ():
 
     # Google Contacts authentication
     gg = p.add_argument_group('Google Authentication')
-    gg.add_argument('--pwd', action='store', 
+    gg.add_argument('--gcpwd', action='store', nargs='+',
                    help=('Google password. Relevant only if --db=gc is used. '
+                         'You can specify two if you are operating with 2 gc '
+                         'dbs. You could also specify one from netrc and one '
+                         'on the command line.  First one can optionally be '
+                         '"None" (without the quotes). '
                          'If this option is not specified, user is prompted '
-                         'password from stdin'))
+                         'password from stdin as required.'))
 
     # CardDAV server authentication
     cg = p.add_argument_group('CardDAV Server Authentication')
-    cg.add_argument('--cduser', action='store', 
+    cg.add_argument('--cduser', action='store', nargs='+',
                      help=('CardDAV username. Relevant only if --db=cd is used. '
+                         'You can specify two if you are operating with 2 cd '
+                         'dbs. You could also specify one from netrc and one '
+                         'on the command line.  First one can optionally be '
+                         '"None" (without the quotes). '
                          'If this option is not specified, user is prompted '
-                         'for it from stdin'))
+                         'for it from stdin if required.'))
 
-    cg.add_argument('--cdpwd', action='store', 
+    cg.add_argument('--cdpwd', action='store', nargs='+',
                      help=('CardDAV password. Relevant only if --db=cd is used. '
+                         'You can specify two if you are operating with 2 cd '
+                         'dbs. You could also specify one from netrc and one '
+                         'on the command line.  First one can optionally be '
+                         '"None" (without the quotes). '
                          'If this option is not specified, user is prompted '
-                         'for it from stdin'))
+                         'for it from stdin if required.'))
 
     # gw = p.add_argument_group('Web Parameters')
     # gw.add_argument('--port', action='store', type=int,
