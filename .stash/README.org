@@ -21,12 +21,69 @@
    - Autodiscover URLs for Exchange and CardDAV
    - Get rid of the sync tags stuff completely from all the stores
 
+
+* Branch refactor-a (gc-gc refactor)
+
+** Fri Nov 07 13:12:57 IST 2014
+
+   Updated the main driver for --op=sync. There is one interesting blocker
+   related to storing all sync tags. See the comments in
+   _get_sync_tags_as_str in contact_bb.py for more details.
+
+   Note Nov 10: this was fixed for all the other DBs as well.
+
+** Thu Nov 06 12:22:11 IST 2014
+
+   Still working on the migration of the asynk_core.py so all the ops work
+   with the Collections refactor. Today I migrated many of the operations -
+   mostly the less important ones. 
+
+   Next up - the last of the heavy weight operations - sync
+
+** Sun Nov 02 09:46:43 IST 2014
+
+   The branch is to enable multiple collections on the same type of db. There
+   are some restrictions on that today. This branch is for some much needed
+   refactoring to enable that
+
+   The first goal will be to get a BBDB-BBDB sync going. For the other stuff
+   we will need to work around the authentication stuff.
+
+   Status as of now:
+
+   ./asynk_cmdline.py --help works
+   ./asynk_cmdline.py --op=list-folders --db=bb --store ~/.bbdb needs to be
+   checked
+   Nothing involving any of the other dbs will even work
+
 * API design
 
   - Each operation we have now will be a POST call
   - Every post call will take the state.json as input
   - Client side app will store the state.json to local storage and update it
   - Prompt user to store it 
+
+* Cmdline checks
+
+ ./asynk.py --op=create-profile --db gc gc  --folder \
+ 'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/2fae451c0fe771d5'\
+ 'default' --store karra.etc karra.etc --name gcgctest --user-dir=/tmp
+
+  ./asynk.py --op=sync --dry-run --name gcgctest --user-dir=/tmp
+  ./asynk.py --op=sync --name gcgctest --user-dir=/tmp
+  ./asynk.py --op=sync --dry-run --name gcgctest --user-dir=/tmp --log=debug
+
+* Core code flows documentation
+
+** command line invocation
+
+   asynk_cmdline.py: main()
+   -> parse_args()
+   -> alogger.setup()
+   -> asynk = Asynk()
+      -> self.validate_and_snarf_uinps()
+         -> self._snarf_*
+   -> asynk.dispatch()
 
 * MS Exchange support
 
