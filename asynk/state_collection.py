@@ -24,18 +24,96 @@
 ## (DB ID, Store ID, Folder ID)
 ##
 
-from abc import ABCMeta, abstractmethod
+import netrc
+from   abc              import ABCMeta, abstractmethod
 from   pimdb_bb         import BBPIMDB
+from   gdata.client     import BadAuthentication
+from   pimdb_gc         import GCPIMDB
+try:
+    from   pimdb_ol         import OLPIMDB
+except ImportError, e:
+    ## This could mean one of two things: (a) we are not on Windows, or (b)
+    ## some of th relevant supporting stuff is not installed (like
+    ## pywin32). these error cases are handled elsewhere, so move on.
+    pass
+
+class AsynkCollectionError(Exception):
+    pass
+
+class NetrcAuth:
+    """A helper Singletone class to parse netrc files and to look for the
+    right authentication information for a specified collection."""
+
+    def __init__ (self):
+        try:
+            self.netrc = None
+            self.netrc = netrc.netrc()
+        except IOError, e:
+            logging.info('~/.netrc not found.')
+        except netrc.NetrcParseError, e:
+            logging.warning('Ignoring ~/.netrc: could not parse it (%s)', e)
+
+    def get_auth (self, pname, dbid, coll_n):
+        """Look for the right collection, parsing the netrc for both styles of
+        machine names - the old one which was of the form gc_pname and the new
+        one of the form gc1_pname. Note that this means the caller should know
+        how to use the coll_n parameter and should expect that parameter to be
+        ignored if that suits the netrc data!"""
+
+        tries = ['%s%s_%s' % (dbid, coll_n, pname), '%s_%s' % (dbid, pname)]
+        for mach in tries:
+            res = self.netrc.authenticators(mach)
+            if res is not None:
+                return res[0], res[2]
+
+        return None, None
+
+netrc = NetrcAuth()
+
+## FIXME: The Profile class needs a little more work; It really calls for a
+## refactor of state.py and this class perhaps fits into a file of its
+## own. Let's take this up at a separate time as a separate refactoring
+## altogether.
+
+class Profile:
+    def __init__ (self, conf, pname=None, **kwargs):
+        self.set_conf(conf)
+        self.set_pname(pname)
+        self.read_netrc()
+
+    def read_netrc (self):
+        self.netrc = NetrcAuth()
+
+    ##
+    ## getter / setters
+    ##
+
+    def get_conf (self):
+        return self.name
+
+    def set_conf (self, conf):
+        self.conf = conf
+
+    def get_pname (self):
+        return self.name
+
+    def set_pname (self, pname):
+        self.pname = pname
+
 
 class Collection:
     def __init__ (self, config=None, dbid=None, stid=None,
-                  fid=None, pname=None):
-        self.config = config
+                  fid=None, pname=None, colln=1):
+        self.set_config(config)
+        self.set_dbid(dbid)
+        self.set_db(None)
+        self.set_stid(stid)
+        self.set_fid(fid)
+        self.set_pname(pname)
+        self.set_colln(colln)
 
-        self.dbid = dbid
-        self.stid = stid
-        self.fid  = fid
-        self.pname = pname
+        self.set_username(None)
+        self.set_pwd(None)
 
     @abstractmethod
     def login (self):
@@ -46,11 +124,16 @@ class Collection:
 
         pass
 
+    ##
+    ## Getters and Setters
+    ##
+
     def get_db (self):
         return self.db
 
     def set_db (self, db):
         self.db = db
+        return db
 
     def get_dbid (self):
         return self.dbid
@@ -74,25 +157,104 @@ class Collection:
     def set_fid (self, fid):
         self.fid = fid
 
+    def get_username (self):
+        return self.username
+
+    def set_username (self, username):
+        self.username = username
+
+    def get_pwd (self):
+        return self.pwd
+
+    def set_pwd (self, pwd):
+        self.pwd = pwd
+
+    def get_pname (self):
+        return self.pname
+
+    def set_pname (self, pname):
+        self.pname = pname
+
+    def get_config (self):
+        return self.config
+
+    def set_config (self, config):
+        self.config = config
+
+    def get_colln (self):
+        return self.colln
+
+    def set_colln (self, colln):
+        self.colln = colln
+
     def all_set (self):
         return (self.get_dbid() is not None and
                 self.get_stid() is not None and
                 self.get_fid()  is not None)
+
+    ##
+    ## more serious action
+    ##
+
+    def init_username_pwd (self):
+        """Take in account the authentication credentials available from
+        different sources for this Collection, resolve any conflicts and set
+        the state to the right values."""
+
+        u = None
+        p = None
+        u, p = netrc.get_auth(self.get_pname(), self.get_dbid(),
+                              self.get_colln())
+
+        cmd_u = self.get_username()
+        cmd_p = self.get_pwd()
+
+        if cmd_u is not None:
+            u = cmd_u
+        else:
+            while not u and self.force_username():
+                msg = 'Please enter username for %s%s: ' % (self.get_dbid(),
+                                                            self.get_colln())
+                u = raw_input(msg)
+
+        if cmd_p is not None:
+            p = cmd_p
+        else:
+            while not p and self.force_pwd():
+                msg = 'Please enter password for %s%s: ' % (self.get_dbid(),
+                                                            self.get_colln())
+                p = raw_input(msg)
+
+        self.set_username(u)
+        self.set_pwd(p)
+
+    def force_username (self):
+        return False
+
+    def force_pwd (self):
+        return False
+
+    ##
+    ## Finally some representation and other such object level methods
+    ##
+
 
     def __eq__ (self, other):
         return (self.get_dbid() == other.get_dbid() and
                 self.get_stid() == other.get_stid() and
                 self.get_fid()  == other.get_fid())
 
-    def repr (self):
+    def __str__ (self):
         return str({'dbid' : self.dbid,
                     'stid' : self.stid,
-                    'foid' : self.fid })
+                    'foid' : self.fid,
+                    'username' : self.get_username(),
+                    'password' : self.get_pwd()})
 
 class BBCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
         Collection.__init__(self, config=config, dbid='bb', stid=stid,
-                            fid=fid, pname=pname)
+                            fid=fid, pname=pname, colln=colln)
 
     def login (self):
         if self.get_stid() is not None:
@@ -101,32 +263,65 @@ class BBCollection(Collection):
             bbfn = '~/.bbdb'
 
         if not bbfn:
-            raise AsynkError('No BBDB Store provided. Unable to initialize.')
+            raise AsynkCollectionError('Need BBDB Store to be specified')
 
         bb   = BBPIMDB(self.config, bbfn)
-        self.set_db(bb)
+        return self.set_db(bb)
 
-        return bb
 
 class CDCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
         Collection.__init__(self, config=config, dbid='cd', stid=stid, fid=fid,
-                            pname=pname)
+                            pname=pname, colln=colln)
+
+    def force_username (self):
+        return True
+
+    def force_pwd (self):
+        return True
+
 
 class EXCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
         Collection.__init__(self, config=config, dbid='ex', stid=stid, fid=fid,
-                            pname=pname)
+                            pname=pname, colln=colln)
+
+    def force_username (self):
+        return True
+
+    def force_pwd (self):
+        return True
+
 
 class GCCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
         Collection.__init__(self, config=config, dbid='gc', stid=stid, fid=fid,
-                            pname=pname)
+                            pname=pname, colln=colln)
+
+    def login (self):
+        try:
+            pimgc = GCPIMDB(self.get_config(),
+                            self.get_username(), self.get_pwd())
+        except BadAuthentication, e:
+            raise AsynkCollectionError('Invalid Google credentials (%s)' % e)
+
+        return self.set_db(pimgc)
+
+    def force_username (self):
+        return True
+
+    def force_pwd (self):
+        return True
+
 
 class OLCollection(Collection):
     def __init__ (self, config=None, stid=None, fid=None, pname=None):
         Collection.__init__(self, config=config, dbid='ol', stid=stid, fid=fid,
                             pname=pname)
+
+    def login (self):
+        return OLPIMDB(self.get_config())
+
 
 collection_id_to_class = {
     'bb' : BBCollection,

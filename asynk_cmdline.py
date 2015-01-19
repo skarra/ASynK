@@ -18,7 +18,7 @@
 ## You should have a copy of the license in the doc/ directory of ASynK.  If
 ## not, see <http://www.gnu.org/licenses/>.
 
-import logging, os, sys
+import logging, os, string, sys
 
 CUR_DIR           = os.path.abspath('')
 ASYNK_BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
@@ -30,9 +30,7 @@ import argparse, utils
 from   asynk_logger     import ASynKLogger
 from   asynk_core       import Asynk, AsynkParserError
 from   state            import Config
-
-class AsynkError(Exception):
-    pass
+from   state_collection import collection_id_to_class as coll_id_class
 
 class AsynkInternalError(Exception):
     pass
@@ -144,6 +142,129 @@ def setup_parser ():
 
     return p
 
+class AsynkBuilderC:
+    """A helper class written in the Builder design pattern to build a Asynk
+    class from the command line inputs and application configuration."""
+
+    def __init__ (self, uinps, config, alogger):
+        """uinps is a Namespace object as returned from the parse_args()
+        routine of argparse module."""
+
+        level = string.upper(uinps.log)
+        if level:
+            alogger.consoleLogger.setLevel(getattr(logging, level))
+
+        self.asynk = Asynk(config, alogger)
+        self.validate_and_snarf_uinps(uinps)
+
+    def _snarf_store_ids (self, uinps):
+        if uinps.store is None:
+            return
+
+        for i, stid in enumerate(uinps.store):
+            coll = self.asynk.get_colls()[i]
+            coll.set_stid(stid)
+
+    def _snarf_auth_creds (self, uinps):
+        if uinps.gcpwd and len(uinps.gcpwd) > 2:
+            raise AsynkParserError('--gcpwd takes 1 or 2 arguments only')
+
+        if uinps.cduser and len(uinps.cduser) > 2:
+            raise AsynkParserError('--cduser takes 1 or 2 arguments only')
+
+        if uinps.cdpwd and len(uinps.cdpwd) > 2:
+            raise AsynkParserError('--cdpwd takes 1 or 2 arguments only')
+
+        if (uinps.cdpwd and len(uinps.cdpwd) > 1 and
+            uinps.gcpwd and len(uinps.gcpwd) > 1):
+            raise AsynkParserError('--cdpwd and --gcpwd should together have'
+                                   'only 2 values')
+
+        # FIXME: I think the following is a bit flawed if a gc and cd profile
+        # exists and the order is cd, gc.
+
+        if uinps.gcpwd:
+            for i, gcpwd in enumerate(uinps.gcpwd):
+                coll = self.asynk.get_colls()[i]
+                if gcpwd != 'None':
+                    coll.set_pwd(gcpwd)
+
+        if uinps.cduser:
+            for i, cduser in enumerate(uinps.cduser):
+                coll = self.asynk.get_colls()[i]
+                if cduser != 'None':
+                    coll.set_username(cduser)
+
+        if uinps.cdpwd:
+            for i, cdpwd in enumerate(uinps.cdpwd):
+                coll = self.asynk.get_colls()[i]
+                if cdpwd != 'None':
+                    coll.set_pwd(cdpwd)
+
+    def _snarf_pname (self, uinps):
+        if uinps.name:
+            self.asynk.set_name(uinps.name)
+        else:
+            self.asynk.set_name(None)
+
+    def _snarf_folder_ids (self, uinps):
+        if uinps.folder:
+            for i, fid in enumerate(uinps.folder):
+                coll = self.asynk.get_colls()[i]
+                coll.set_fid(fid)
+
+    def _snarf_sync_dir (self, uinps):
+        if uinps.direction:
+            d = 'SYNC1WAY' if uinps.direction == '1way' else 'SYNC2WAY'
+        else:
+            d = None
+
+        self.asynk.set_sync_dir(d)
+
+    def validate_and_snarf_uinps (self, uinps):
+        # Most of the validation is already done by argparse. This is where we
+        # will do some additional sanity checking and consistency enforcement,
+        # mutual exclusion and so forth. In addition to this, every command
+        # will do some parsing and validation itself.
+
+        op  = 'op_' + string.replace(uinps.op, '-', '_')
+        self.asynk.set_op(op)
+
+        # Let's start with the db flags
+        if uinps.db:
+            if len(uinps.db) > 2:
+                raise AsynkParserError('--db takes 1 or 2 arguments only')
+
+            for dbid in uinps.db:
+                coll = coll_id_class[dbid](config=self.asynk.get_config())
+                self.asynk.add_coll(coll)
+        else:
+            # Only a few operations do not need a db. Check for this and move
+            # on.
+            if not ((self.asynk.get_op() in ['op_startweb', 'op_sync']) or
+                    (re.search('_profile', self.asynk.get_op()))):
+                raise AsynkParserError('--db needed for this operation.')
+
+        # The validation that follows is only relevant for command line
+        # usage.
+
+        if self.asynk.get_op() == 'op_startweb':
+            return
+
+        self.asynk.set_dry_run(uinps.dry_run)
+        self.asynk.set_sync_all(uinps.sync_all)
+
+        self._snarf_store_ids(uinps)
+        self._snarf_auth_creds(uinps)
+        self._snarf_pname(uinps)
+        self._snarf_folder_ids(uinps)
+        self._snarf_sync_dir(uinps)
+
+        self.asynk.set_label_re(uinps.label_regex)
+        self.asynk.set_conflict_resolve(uinps.conflict_resolve)
+        self.asynk.set_item_id(uinps.item)
+        # self.asynk.set_port(uinps.port)
+
 def main (argv=sys.argv):
     parser  = setup_parser()
     uinps = parser.parse_args()
@@ -161,7 +282,7 @@ def main (argv=sys.argv):
     logging.debug('Command line: "%s"', ' '.join(sys.argv))
 
     try:
-        asynk = Asynk(uinps, config, alogger)
+        asynk = AsynkBuilderC(uinps, config, alogger).asynk
     except AsynkParserError, e:
         logging.critical('Error in User input: %s', e)
         quit()
