@@ -199,7 +199,14 @@ class Collection:
     def init_username_pwd (self):
         """Take in account the authentication credentials available from
         different sources for this Collection, resolve any conflicts and set
-        the state to the right values."""
+        the state to the right values.
+
+        The rules are as follows:
+
+        - Highest priority for cmdline username / password
+        - Next comes anything specified in netrc
+        - If neither of the above are set, then get them from stdin
+        """
 
         u = None
         p = None
@@ -209,21 +216,21 @@ class Collection:
         cmd_u = self.get_username()
         cmd_p = self.get_pwd()
 
+        dbn = '%s%s' % (self.get_dbid(), self.get_colln())
+
         if cmd_u is not None:
+            logging.debug('Using cmdline username for collection %s', dbn)
             u = cmd_u
         else:
             while not u and self.force_username():
-                msg = 'Please enter username for %s%s: ' % (self.get_dbid(),
-                                                            self.get_colln())
-                u = raw_input(msg)
+                u = raw_input('Please enter username for %s: ' % dbn)
 
         if cmd_p is not None:
+            logging.debug('Using cmdline password for collection %s', dbn)
             p = cmd_p
         else:
             while not p and self.force_pwd():
-                msg = 'Please enter password for %s%s: ' % (self.get_dbid(),
-                                                            self.get_colln())
-                p = raw_input(msg)
+                p = raw_input('Enter password for %s: ' % dbn)
 
         self.set_username(u)
         self.set_pwd(p)
