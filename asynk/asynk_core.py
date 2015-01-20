@@ -85,67 +85,6 @@ class Asynk:
             coll.login()
 
     ## FIXME: To be removed, after migration to collections
-    def auth_lookup_netrc (self, mach):
-        netrc_user = None
-        netrc_a    = None
-        netrc_pass = None
-
-        # Use the netrc as a backup in case userid / pwd are not provided
-        try:
-            n = netrc.netrc()
-            if mach in n.hosts.keys():
-                netrc_user, netrc_a, netrc_pass = n.authenticators(mach)
-        except IOError, e:
-            logging.info('~/.netrc not found.')
-        except netrc.NetrcParseError, e:
-            logging.warning('Ignoring ~/.netrc as it could not be parsed (%s)', e)
-
-        return netrc_user, netrc_a, netrc_pass
-
-    ## FIXME: To be removed, after migration to collections
-    def auth_get_creds (self, dbid, pname, cmdl_user, cmdl_pwd):
-        """
-        For a given profile name and any username / pwd specfiied on the
-        command line, apply all the rules of looking up a username / pwd.
-        Method returns a (username, pwd) tuple.
-
-        The rules are as follows:
-
-        - Highest priority for cmdline username / password
-        - Next comes anything specified in netrc
-        - If neither of the above are set, then get them from stdin
-        """
-
-        mach = '%s_%s' % (dbid, pname)
-        netrc_user, netrc_a, netrc_pass = self.auth_lookup_netrc(mach)
-        user = None
-        pwd  = None
-
-        if cmdl_user is not None:
-            user = cmdl_user
-        else:
-            if netrc_user:
-                user = netrc_user
-            while not user:
-                user = raw_input('Please enter your username: ')
-
-        if cmdl_pwd is not None:
-            logging.debug('Using cmdline password for logging in to profile %s')
-            pwd = cmdl_pwd
-
-        while not pwd:
-            if netrc_pass and user == netrc_user:
-                pwd = netrc_pass
-            else:
-                logging.debug('Either netrc did not have credentials for '
-                              ' User (%s) or has different login', user)
-                pwd = raw_input('Password: ')
-                if not pwd:
-                    print 'Password cannot be blank'
-
-        return user, pwd
-
-    ## FIXME: To be removed, after migration to collections
     def _init_gc_user_pw (self, pname):
         u, p = self.auth_get_creds('gc', pname, self.get_gcuser(), self.get_gcpw())
         self.set_gcuser(u)
