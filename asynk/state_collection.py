@@ -24,7 +24,7 @@
 ## (DB ID, Store ID, Folder ID)
 ##
 
-import netrc
+import logging, netrc
 from   abc              import ABCMeta, abstractmethod
 from   pimdb_bb         import BBPIMDB
 from   gdata.client     import BadAuthentication
