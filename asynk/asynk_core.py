@@ -550,11 +550,7 @@ class Asynk:
         pass
 
     def login_ex (self):
-        from pimdb_ex import EXPIMDB
-        pimex = EXPIMDB(self.get_config(), self.get_exuser(), self.get_expw(),
-                        self.get_store_id('ex'))
-
-        return pimex
+        pass
 
     def _get_validated_pname (self):
         conf  = self.get_config()
