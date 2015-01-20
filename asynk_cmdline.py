@@ -18,7 +18,7 @@
 ## You should have a copy of the license in the doc/ directory of ASynK.  If
 ## not, see <http://www.gnu.org/licenses/>.
 
-import logging, os, string, sys
+import logging, os, re, string, sys
 
 CUR_DIR           = os.path.abspath('')
 ASYNK_BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
