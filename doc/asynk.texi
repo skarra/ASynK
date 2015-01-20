@@ -7,7 +7,7 @@
 @copying
 This file documents ``ASynK - Awesome Sync (by Karra)''
 
-Copyright (C) 2011, 2012 Sriram Karra <karra.etc@@gmail.com>
+Copyright (C) 2011, 2012, 2013, 2014, 2015 Sriram Karra <karra.etc@@gmail.com>
 
 @quotation
 Permission is granted to copy, distribute and/or modify this document
@@ -150,14 +150,15 @@ to work with Office 2007, Office 2008, Office 2010, Office 2013
 @cindex Windows
 
 @subsection CardDAV Specific Notes
-Keep in mind this is an experimental feature. Unlike Google Contacts, CardDAV
-servers do not generally support a roll back feature. This means any ASynK
-bugs could potentially lead to loss of information for you. So please take
-your own precautions before you deploy this on your live data. The user of the
-@kbd{--user-dir=} option is also high encouraged.
+Keep in mind that unlike Google Contacts, CardDAV servers do not support a
+roll back feature. This means any ASynK bugs could potentially lead to loss of
+information for you. While there have been no complaints of ASynK eating up
+people's data, please take your own precautions before you deploy this on your
+live data. The user of the @kbd{--user-dir=} option is also high encouraged.
 
-At the moment the following fields are synched in both ways. All other fields
-will be lost in transit. More may be supported over time.
+At the moment the following fields are synched in both ways. More may be
+supported over time.  @strong{Important}: Fields not mentioned here will be
+lost in transit!
 
 @enumerate  
 @item
@@ -538,15 +539,17 @@ To run ASynK, change to the root of the downloaded ASynK directory, and type
 the following sections we look at each of the flags and options in detail (in
 time, of course).
 @verbatim
-Cardassia:ASynK sriramkarra$ ./asynk.py --help
+Srirams-MacBook-Pro:asynk.co sriramkarra$ ./asynk.py --help
 usage: asynk.py [-h] [--dry-run] [--sync-all]
-                [--op {list-folders,create-folder,create-store,show-folder,del-folder,list-profiles,create-profile,del-profile,sync,clear-sync-artifacts}]
-                [--user-dir USER_DIR] [--db {bb,gc,ol,cd} [{bb,gc,ol,cd} ...]]
+                [--op {list-folders,create-folder,create-store,show-folder,del-folder,list-profiles,list-profile-names,find-profile,create-profile,show-profile,del-profile,sync,clear-sync-artifacts}]
+                [--user-dir USER_DIR]
+                [--db {bb,gc,ol,cd,ex} [{bb,gc,ol,cd,ex} ...]]
                 [--store STORE [STORE ...]] [--folder FOLDER [FOLDER ...]]
                 [--item ITEM] [--name NAME] [--direction {1way,2way}]
                 [--label-regex LABEL_REGEX]
-                [--conflict-resolve CONFLICT_RESOLVE] [--pwd PWD]
-                [--cduser CDUSER] [--cdpwd CDPWD]
+                [--conflict-resolve CONFLICT_RESOLVE]
+                [--gcpwd GCPWD [GCPWD ...]] [--cduser CDUSER [CDUSER ...]]
+                [--cdpwd CDPWD [CDPWD ...]]
                 [--log {debug,info,error,critical}] [--version]
 
 ASynK: PIM Awesome Sync by Karra
@@ -557,11 +560,11 @@ optional arguments:
                         sync is performed.
   --sync-all            when used with --op=sync, this will ignore previous
                         synchronization state, and perform a complete resync.
-  --op {list-folders,create-folder,create-store,show-folder,del-folder,list-profiles,create-profile,del-profile,sync,clear-sync-artifacts}
+  --op {list-folders,create-folder,create-store,show-folder,del-folder,list-profiles,list-profile-names,find-profile,create-profile,show-profile,del-profile,sync,clear-sync-artifacts}
                         Specific management operation to be performed.
   --user-dir USER_DIR   Directory to store ASynK config files, logs directory,
                         BBDB backups directory, etc.
-  --db {bb,gc,ol,cd} [{bb,gc,ol,cd,ex} ...]
+  --db {bb,gc,ol,cd,ex} [{bb,gc,ol,cd,ex} ...]
                         DB IDs required for most actions. Some actions need
                         two DB IDs - do it with two --db flags. When doing so
                         remember that order might be important for certain
@@ -587,8 +590,10 @@ optional arguments:
   --conflict-resolve CONFLICT_RESOLVE
                         Specifies how to deal with conflicts in case of a
                         bidirectional sync and an item is modified in both
-                        places. value should be one of the two dbids that are
-                        already specified.
+                        places. It should be set to 1 or 2 to specify the one
+                        to be used; in case the dbs are unique. For e.g. if
+                        you are synching from BBDB to Google Contacts, then
+                        you can also specify the dbid itself (i.e. bb or gc)
   --log {debug,info,error,critical}
                         Specify level of console logging. Note that DEBUG
                         level logs are always written to a log file for
@@ -596,17 +601,29 @@ optional arguments:
   --version             show program's version number and exit
 
 Google Authentication:
-  --pwd PWD             Google password. Relevant only if --db=gc is used. If
-                        this option is not specified, user is prompted
-                        password from stdin
+  --gcpwd GCPWD [GCPWD ...]
+                        Google password. Relevant only if --db=gc is used. You
+                        can specify two if you are operating with 2 gc dbs.
+                        You could also specify one from netrc and one on the
+                        command line. First one can optionally be "None"
+                        (without the quotes). If this option is not specified,
+                        user is prompted password from stdin as required.
 
 CardDAV Server Authentication:
-  --cduser CDUSER       CardDAV username. Relevant only if --db=cd is used. If
-                        this option is not specified, user is prompted for it
-                        from stdin
-  --cdpwd CDPWD         CardDAV password. Relevant only if --db=cd is used. If
-                        this option is not specified, user is prompted for it
-                        from stdin
+  --cduser CDUSER [CDUSER ...]
+                        CardDAV username. Relevant only if --db=cd is used.
+                        You can specify two if you are operating with 2 cd
+                        dbs. You could also specify one from netrc and one on
+                        the command line. First one can optionally be "None"
+                        (without the quotes). If this option is not specified,
+                        user is prompted for it from stdin if required.
+  --cdpwd CDPWD [CDPWD ...]
+                        CardDAV password. Relevant only if --db=cd is used.
+                        You can specify two if you are operating with 2 cd
+                        dbs. You could also specify one from netrc and one on
+                        the command line. First one can optionally be "None"
+                        (without the quotes). If this option is not specified,
+                        user is prompted for it from stdin if required.
 @end verbatim
 
 TODO: Detailed documentation on what each of the above flags mean, etc.
@@ -761,6 +778,26 @@ machine cd_testbbcd
   password <<< password >>>
 @end verbatim
 
+@subsection Using netrc for like-pair synching
+If your profile is set up to sync betwen two like stores, for e.g. between
+two Google Contacts accounts, you can specify the login credentials in your
+netrc as follows:
+
+@verbatim
+machine gc1_testgcgc
+  login <<< username >>>
+  password <<< password >>>
+
+machine gc2_testgcgc
+  login <<< username >>>
+  password <<< password >>>
+@end verbatim
+
+Note the name of the machine specifies if it belongs to the first or second
+collection. Note that you could use the same credentials for both
+collections. This case would be useful to copy / mirror contacts from one
+folder to another.
+
 @node Recipes, Internals, Customization, Top
 @chapter Recipes
 
@@ -777,7 +814,7 @@ ASynK, Using ASynK}, for detailed documentation on each flag, legal and
 illegal options, etc.
 
 @section Basic Usage: using the default sync profiles
-@kbd{$ python asynk.py --op=sync [--dry-run] [--log=debug]}
+@kbd{$ ./asynk.py --op=sync [--dry-run] [--log=debug]}
 
 The most common use case is to sync your ~/.bbdb file with google contacts or
 your default outlook contacts folder with google contacts. ASynK comes
@@ -842,7 +879,7 @@ In the above example, we have stored the password (in plain text) in a file
 called ``login.auth'' and piping it to ASynK.
 @end enumerate
 @verbatim
-Cardassia:Gout sriramkarra$ python asynk.py --op=list-folders --db bb --store test/bbdb.utah.ver7
+Cardassia:Gout sriramkarra$ ./asynk.py --op=list-folders --db bb --store test/bbdb.utah.ver7
 [18:27:07.147     INFO] Debug logging to file: /Users/sriramkarra/stuff/code/python/Gout/logs/asynk_logs.2012-05-09.18-27-07.147160
 [18:27:07.149     INFO] Parsing BBDB file /Users/sriramkarra/stuff/code/python/Gout/test/bbdb.utah.ver7...
 [18:27:07.396     INFO] Successfully parsed 338 entries.
@@ -869,12 +906,12 @@ hold your synchronized contacts. While you can create new folders in the
 native UI of Google Contacts or Outlook and use them with ASynK, we just
 provide a convenience option of creating one from the command line.
 @verbatim
-Cardassia:Gout sriramkarra$ python asynk.py --op create-folder --name 'Demo' --db gc --store karra.etc@gmail.com < login.auth
+Cardassia:Gout sriramkarra$ ./asynk.py --op create-folder --name 'Demo' --db gc --store karra.etc@gmail.com < login.auth
 [22:30:00.827     INFO] Debug logging to file: /Users/sriramkarra/stuff/code/python/Gout/logs/asynk_logs.2012-05-12.22-30-00.827089
 [22:30:00.829     INFO] Logging into Google...
 [22:30:02.871     INFO] Successfully created group. ID: http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/6c2034580ea2ac15
 
-Cardassia:Gout sriramkarra$ python asynk.py --op=list-folders --db gc --store karra.etc < login.auth
+Cardassia:Gout sriramkarra$ ./asynk.py --op=list-folders --db gc --store karra.etc < login.auth
 [22:30:08.870     INFO] Debug logging to file: /Users/sriramkarra/stuff/code/python/Gout/logs/asynk_logs.2012-05-12.22-30-08.870610
 [22:30:08.872     INFO] Logging into Google...
 [22:30:09.899     INFO] Listing all folders in PIMDB gc...
@@ -1187,6 +1224,7 @@ Ensure you are able to login to your account properly.
    $ ./asynk.py --op=sync --user-dir=~/.asynk.cd --name testbbcd
 @end verbatim
 
+@subsubsection CardDAV URL to use for the --store parameter
 The thing that confuses most people is the CardDAV url which is not in
 any standard format. Here are some of the known CardDAV servers, and
 the URL that usually works with them. Replace server.org with the name of
@@ -1208,6 +1246,22 @@ Baikal Server: http://server.org/card.php
 Note that for the port number may be optional. If Apple CalendarServer is configured
 to respond to both http and https the a port number will be required. Check your 
 server documentation.
+
+@subsubsection CardDAV URL to use for the --folder parameter
+You can just use ``default'' as the folder ID. But if you feel like using
+a specific folder, note that the foid parameter in your state.json should look
+like the following for each of the tested CardDAV servers:
+
+@enumerate
+@item
+Apple CalendarServer: /addressbooks/__uids__/skarrag/addressbook/
+
+@item
+OwnCloud: /owncloud/remote.php/carddav/addressbooks/skarra/contacts/
+
+@item
+Baikal Server: /card.php/addressbooks/skarra/default/
+@end enumerate
 
 @section Synching to Microsoft Exchange
 A reminder - Exchange support is the newest feature in ASynK, and there may be some
@@ -1372,41 +1426,27 @@ More to come here
 
 Here are some Frequently Ask-able Questions, along with answers.
 
-@section What's Changed between v0.1 and v0.2?
-It's almost a total rewrite. Here are main changes:
+@section Can I use this to copy my contacts from one Google account to
+another?
+Yes, that is possible.
 
-@enumerate
-@item
-v0.2.0 adds support for Emacs BBDB. At this time ASynK is the only available
-working program that does bidirectional sync of BBDB to any other PIM
-database.
+@section Is there a way to not use my google/CardDAV password in clear text?
+For now it is not possible. But please note that you are running ASynK on your
+own machine. The authors of ASynk, or any one other than you, will see any of
+your activity. That should provide some comfort.
 
-@item
-v0.1 was designed only for MS Outlook and Google Contacts. As a result it was
-designed to run on Windows only, and there is a mandatory dependency on
-PyWin32.
+That said we are exploring ways to implement oAuth so you do not have to use
+your passwords in clear text.
 
-v0.2 works on Linux, Mac and Windows. Only if MS Outlook support is needed, a
-third party library called PyWin32 is needed.
-
-@item
-v0.1 was distributed as a packaged Windows binary and the only user interface
-was a GUI built with WxPython (required the user to install an additional
-third party library)
-
-v0.2 UI is purely command line, even on Windows.
-
-@item 
-v0.2 introduces the concept of sync profiles and folder-folder sync, which is
-much more advanced than what we had earlier. v0.1 always did a sync between the
-default contacts folder in the default message store with a newly created
-folder called Gout on google.
-
-@end enumerate
+@section My Google password is not working, but I know it is right!
+Circa late 2014 Google starting blocking access to applications accessing
+account data using plain text authentication as a conservative security
+policy. You can find more information about this on Google's page here:
+https://support.google.com/accounts/answer/6010255 and see if this is what's
+tripping you up.
 
 @section Other Comparable Tools
 @subsection What's wrong with Google's tools?
-
 Google's tools are not as versatile as ASynK. I started work on ASynK because
 I was unhappy with the state of sync solutions for Android and MS Outlook
 (more on this later). Subsequently I added BBDB support and the made the
@@ -1485,6 +1525,38 @@ favourable reviews on the general internet. The drawback is it is written in
 time. Python was versatile enough to work on Windows and Unix, and allowed me
 to extend to a third PIM data provider (BBDB). As noted earlier, ASynK is the
 only two way sync solution for BBDB today.
+
+@section What's Changed between v0.1 and v0.2?
+It's almost a total rewrite. Here are main changes:
+
+@enumerate
+@item
+v0.2.0 adds support for Emacs BBDB. At this time ASynK is the only available
+working program that does bidirectional sync of BBDB to any other PIM
+database.
+
+@item
+v0.1 was designed only for MS Outlook and Google Contacts. As a result it was
+designed to run on Windows only, and there is a mandatory dependency on
+PyWin32.
+
+v0.2 works on Linux, Mac and Windows. Only if MS Outlook support is needed, a
+third party library called PyWin32 is needed.
+
+@item
+v0.1 was distributed as a packaged Windows binary and the only user interface
+was a GUI built with WxPython (required the user to install an additional
+third party library)
+
+v0.2 UI is purely command line, even on Windows.
+
+@item 
+v0.2 introduces the concept of sync profiles and folder-folder sync, which is
+much more advanced than what we had earlier. v0.1 always did a sync between the
+default contacts folder in the default message store with a newly created
+folder called Gout on google.
+
+@end enumerate
 
 @cindex Other Sync Programs
 
