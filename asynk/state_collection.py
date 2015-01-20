@@ -281,6 +281,20 @@ class CDCollection(Collection):
         Collection.__init__(self, config=config, dbid='cd', stid=stid, fid=fid,
                             pname=pname, colln=colln)
 
+    def login (self):
+        try:
+            from   pimdb_cd         import CDPIMDB
+        except ImportError, e:
+            raise AsynkError("%s: Cannot use any CardDAV accounts" % e)
+
+        try:
+            pimcd = CDPIMDB(self.get_config(), self.get_stid(),
+                            self.get_username(), self.get_pwd())
+        except BadAuthentication, e:
+            raise AsynkCollectionError('Invalid CardDAV credentials (%s).', e)
+
+        return self.set_db(pimcd)
+
     def force_username (self):
         return True
 
@@ -322,9 +336,9 @@ class GCCollection(Collection):
 
 
 class OLCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
         Collection.__init__(self, config=config, dbid='ol', stid=stid, fid=fid,
-                            pname=pname)
+                            pname=pname, colln=colln)
 
     def login (self):
         return OLPIMDB(self.get_config())
