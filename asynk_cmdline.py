@@ -192,9 +192,6 @@ class AsynkBuilderC:
             raise AsynkParserError('--cdpwd and --gcpwd should together have'
                                    'only 2 values')
 
-        # FIXME: I think the following is a bit flawed if a gc and cd profile
-        # exists and the order is cd, gc.
-
         if uinps.gcpwd:
             for i, gcpwd in enumerate(uinps.gcpwd):
                 coll = self.asynk.get_colls()[i]
