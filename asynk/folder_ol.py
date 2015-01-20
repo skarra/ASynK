@@ -249,7 +249,8 @@ class OLFolder(Folder):
         store = self.get_msgstore().get_obj()
         success = True
         for item in items:
-            olc = OLContact(self, con=item)
+            con_itemid = item.get_itemid_from_synctags(pname, 'ol')
+            olc = OLContact(self, con=item, con_itemid=con_itemid)
 
             ## We lose the sync tag as well when we blow everything. To ensure
             ## this gets recreated, put it back in.
