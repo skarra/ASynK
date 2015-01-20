@@ -15,6 +15,10 @@ that website.
     Google Contacts, Microsoft Outlook, Microsoft Exchange Server, any CardDAV
     server and Emacs BBDB.
   
+  - You can use ASynK to copy contacts from one Google account to another
+    (say from a Google Apps account at work to a personal address before you
+    leave your job). You can do this at the level of folders (see below)
+
   - ASynK is the only two-way synchronization option for BBDB known to be in
     existence today. So if you are keen to keep your BBDB content synchronized
     with a mobile device or Outlook, look no further.
@@ -29,7 +33,7 @@ that website.
   
   - The infrastructure is there to add more database and item types
     (i.e. tasks, notes, etc.), but currently only Contacts synchronization is
-    supported
+    supported.
     
   - It is free software, and released under the GNU AGPL (Affero GPL) version
     3
