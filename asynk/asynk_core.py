@@ -84,24 +84,6 @@ class Asynk:
             coll.init_username_pwd()
             coll.login()
 
-    ## FIXME: To be removed, after migration to collections
-    def _init_gc_user_pw (self, pname):
-        u, p = self.auth_get_creds('gc', pname, self.get_gcuser(), self.get_gcpw())
-        self.set_gcuser(u)
-        self.set_gcpw(p)
-
-    ## FIXME: To be removed, after migration to collections
-    def _init_cd_user_pw (self, pname):
-        u, p = self.auth_get_creds('cd', pname, self.get_cduser(), self.get_cdpw())
-        self.set_cduser(u)
-        self.set_cdpw(p)
-
-    ## FIXME: To be removed, after migration to collections
-    def _init_ex_user_pw (self, pname):
-        u, p = self.auth_get_creds('ex', pname, self.get_exuser(), self.get_expw())
-        self.set_exuser(u)
-        self.set_expw(p)
-
     def reset_fields (self):
         self.atts = {}
 
@@ -540,17 +522,6 @@ class Asynk:
 
     def set_config (self, val):
         return self._set_att('config', val)
-
-    ## The login_* routines can assume that _load_profile has been invoked by
-    ## this time. FIXME: To be moved to collections.
-    def login_gc (self):
-        pass
-
-    def login_cd (self):
-        pass
-
-    def login_ex (self):
-        pass
 
     def _get_validated_pname (self):
         conf  = self.get_config()
