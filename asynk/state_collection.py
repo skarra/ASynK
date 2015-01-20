@@ -307,6 +307,14 @@ class EXCollection(Collection):
         Collection.__init__(self, config=config, dbid='ex', stid=stid, fid=fid,
                             pname=pname, colln=colln)
 
+    def login (self):
+        from pimdb_ex import EXPIMDB
+        pimex = EXPIMDB(self.get_config(), self.get_username(), self.get_pwd(),
+                        self.get_stid())
+
+        ## FIXME: Need better error handling
+        return self.set_db(pimex)
+
     def force_username (self):
         return True
 
