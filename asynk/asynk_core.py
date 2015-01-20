@@ -547,18 +547,7 @@ class Asynk:
         pass
 
     def login_cd (self):
-        try:
-            from   pimdb_cd         import CDPIMDB
-        except ImportError, e:
-            raise AsynkError("%s: Cannot use any CardDAV accounts" % e)
-
-        try:
-            pimcd = CDPIMDB(self.get_config(), self.get_store_id('cd'),
-                            self.get_cduser(), self.get_cdpw())
-        except BadAuthentication:
-            raise AsynkError('Invalid CardDAV auth credentials. Cannot proceed.')
-
-        return pimcd
+        pass
 
     def login_ex (self):
         from pimdb_ex import EXPIMDB

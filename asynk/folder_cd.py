@@ -245,7 +245,7 @@ class CDContactsFolder(Folder):
             ## warned. 
             con_old = cons[href]
             con_itemid = item.get_itemid_from_synctags(pname, 'cd')
-            cd = CDContact(self, con=item, con_itemid=con_itemid)
+            con_new = CDContact(self, con=item, con_itemid=con_itemid)
 
             con_new.set_uid(con_old.get_uid())
             con_new.update_sync_tags(src_sync_tag, item.get_itemid())
