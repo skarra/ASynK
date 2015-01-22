@@ -74,7 +74,7 @@ level features of ASynK:
 @chapter Getting ASynK and Installation
 
 The official website for ASynK is at:
-@url{http://karra-asynk.appspot.com}. You will find links to latest downloads,
+@url{http://asynk.io}. You will find links to latest downloads,
 complete and latest documentaiton, announcements and other information on that
 website.
 
@@ -85,7 +85,7 @@ development version, or to register an issue you have identified.
 
 @section Pre-packaged Bundle
 You can download the latest version by visiting the downloads section of the
-official website at @url{http://karra-asynk.appspot.com/downloads/}.
+official website at @url{http://asynk.io/downloads/}.
 
 @section From Source
 You can clone the git repository by using a command such as @kbd{git clone
@@ -350,7 +350,7 @@ index cc12045..dabbf05 100644
    The user documentation is in the directory called doc/ in the root of
    the ASynK source tree. The main source file is asynk.texi in TexInfo
    format. HTML, PDF and Info files are available on the project 
-   home page at: http://karra-asynk.appspot.com/
+   home page at: http://asynk.io
 
    If you wish to build the documentation from source, you can try the 
    Makefile in the documentation directory, like so: 
