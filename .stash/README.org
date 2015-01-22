@@ -3,26 +3,40 @@
 
 ** Critical
 
+   - Determine MVP user stories
+   - Try out ASynK on Google AppEngine
    - API based model for invoking sync
    - oAuth for Google
-
    - Export state.json:
      - Store state.json in Dropbox
      - Download / upload state.json to local storage
 
-*** Ops
-
-   - AWS provisioning
-   - https certification
-
 ** Good to have
 
-   - Ability to sync to same database type 
+   - Ability to sync to same database type - done
    - Autodiscover URLs for Exchange and CardDAV
    - Get rid of the sync tags stuff completely from all the stores
 
+* asynk.io user stories
+
+** New user comes to site and wants to know what this tool is all about
+
+** New user wants to try a trial sync between 
 
 * Branch refactor-a (gc-gc refactor)
+
+** Thu Jan 22 14:59:53 IST 2015
+
+   Sent a request for beta testing the branch to asynk-users. Will merge to
+   master and announce as rc
+
+** Tue Jan 20 10:20:30 IST 2015
+
+   Got the gc-gc sync working. Hurray!! 
+
+   Next steps: Make sure BB:CD sync works as before as also some of the CD:CD
+   stuff. Then send out a request to dev mailingn list asking for people to
+   take this for a spin.
 
 ** Fri Nov 07 13:12:57 IST 2014
 
@@ -68,6 +82,9 @@
  ./asynk.py --op=create-profile --db gc gc  --folder \
  'http://www.google.com/m8/feeds/groups/karra.etc%40gmail.com/base/2fae451c0fe771d5'\
  'default' --store karra.etc karra.etc --name gcgctest --user-dir=/tmp
+
+ ./asynk.py --op=create-profile --db cd cd  --store http://baikal/card.php/ \
+ localhost:8008 --folder 'default' 'default' --name testcdcd --user-dir=~/.asynk.cd
 
   ./asynk.py --op=sync --dry-run --name gcgctest --user-dir=/tmp
   ./asynk.py --op=sync --name gcgctest --user-dir=/tmp
