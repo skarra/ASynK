@@ -2,8 +2,8 @@ Created : Wed Aug 24 22:41:42 IST 2011
 
 This is only a short introduction and some key points of interest. For more
 details on how to use ASynK please refer to the included documentation, or the
-official website for ASynK is at: http://karra-asynk.appspot.com You will find
-links to latest download, complete documentaiton, and other information on
+official website for ASynK is at: http://asynk.io/ You will find
+links to latest download, complete documentation, and other information on
 that website.
 
 * About
@@ -46,17 +46,16 @@ invoke ASynK.
 
 ** Dependencies
 
-   - You need Python (tested with 2.7, try earlier versions at your
-     discretion; may not work with Python 3)
+   ASynK is completely written in Python. For most use cases and set ups you
+   only need to have Python 2.x (x >= 7) installed. Some additional
+   dependencies include:
 
-   - The following python packages:
-
-     - tornado
-     - requests
-
-   - If you wish to sync to Outlook you can do that only on Windows. Further
-     you will need MS Outlook installed, along with a third party python
-     library called Pywin32 from Mark Hammond
+   - If you wish to sync from/to MS Outlook:
+     - MS Windows
+     - Python 2.x (2.7 or later) for Windows
+     - MS Outlook
+     - Pywin32 from Mark Hammond, available from
+       http://sourceforge.net/projects/pywin32/
 
    - On Debian (and likely Ubuntu) you will need the following packages:
         sudo apt-get install python-argparse
