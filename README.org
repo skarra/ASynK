@@ -38,11 +38,22 @@ that website.
   - It is free software, and released under the GNU AGPL (Affero GPL) version
     3
 
-* Installation & Usage
+* Installation
 
 As you are reading this file, the most efficient installation is to clone this
 git repository to your machine. Then see the section titled Usage below to 
 invoke ASynK.
+
+** Updating an earlier install
+
+   If you are updating your ASynK installation from an earlier version,
+   please note that many new git-submodules are added to the project. So for
+   your update to work properly you need to update all
+   sub-modules. Recommended way to do this would be to fun the following
+   command from the root of your ASynK directory, after you pull in the latest
+   changes
+
+: git submodule update --init --recursive
 
 ** Dependencies
 
@@ -63,7 +74,7 @@ invoke ASynK.
    - The dateutil package available from http://labix.org/python-dateutil or
      https://pypi.python.org/pypi/python-dateutil
 
-** Usage
+* Usage
 
    The recommended way to use ASynK is to first create your own 'sync profile'
    which specifies which folders and PIM DBs you want to keep in sync. Refer
@@ -71,8 +82,8 @@ invoke ASynK.
 
    For the really impatient, ASynK comes with two default sync profiles that
    kick in if no other profile is configured.
-   
-   $ python asynk.py --op=sync [--dry-run] [--log=debug]
+
+: $ python asynk.py --op=sync [--dry-run] [--log=debug]
 
    If you run the above command on Windows, the entire default outlook
    contacts folder will get synched to "My Contacts" on Google Contacts. (You
