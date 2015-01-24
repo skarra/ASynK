@@ -44,7 +44,7 @@ def pytime_to_yyyy_mm_dd (pyt):
         return ('%04d-%02d-%02d' % (pyt.year, pyt.month, pyt.day))
 
 ## Some Global Variables to get started
-asynk_ver = 'v2.0.0'
+asynk_ver = 'v2.1.0-rc1'
 
 def asynk_ver_str ():
     return 'ASynK %s' % asynk_ver
