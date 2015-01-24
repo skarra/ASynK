@@ -8,9 +8,8 @@ that website.
 
 * About
 
-  ASynK - Awesome Sync (by Karra), is a flexible PIM synchronization platform
-  written in Python. ASynK was earlier known as Gout. High level features
-  include:
+  ASynK - Awesome Sync (by Karra), is a flexible Contacts synchronization platform
+  written in Python. High level features include:
 
   - ASynK allows two-way sync of Contacts across any two supported sources -
     Google Contacts, Microsoft Outlook, Microsoft Exchange Server, any CardDAV
@@ -29,8 +28,8 @@ that website.
     BBDB (On your Mac, say)
   
   - The infrastructure is there to add more database and item types
-    (i.e. tasks, notes, etc.), but currently only Contacts synchronization for
-    Google Contacts, BBDB and Outlook supported
+    (i.e. tasks, notes, etc.), but currently only Contacts synchronization is
+    supported
     
   - It is free software, and released under the GNU AGPL (Affero GPL) version
     3
