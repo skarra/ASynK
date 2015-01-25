@@ -33,6 +33,7 @@ bbdb.Non-Existent
 # Doc related stuff.
 
 *.html
+!gae/templates/*.html
 *.info
 *.pdf
 *.dvi
