@@ -87,7 +87,14 @@ class Asynk:
     def reset_fields (self):
         self.atts = {}
 
+        self.set_sync_dir(None)
+        self.set_sync_all(None)
         self.set_dry_run(True)
+        self.set_op(None)
+        self.set_label_re(None)
+        self.set_conflict_resolve(None)
+        self.set_item_id(None)
+        self.set_name(None)
         self.reset_colls()
 
     def dispatch (self):
