@@ -60,6 +60,9 @@ class NetrcAuth:
         how to use the coll_n parameter and should expect that parameter to be
         ignored if that suits the netrc data!"""
 
+        if self.netrc is None:
+            return None, None
+
         tries = ['%s%s_%s' % (dbid, coll_n, pname), '%s_%s' % (dbid, pname)]
         for mach in tries:
             res = self.netrc.authenticators(mach)
