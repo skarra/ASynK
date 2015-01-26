@@ -21,15 +21,12 @@
 import datetime, logging, os, string
 import utils
 
-class ASynKLogger:
+class ASynKBaseLogger:
     def __init__ (self, config):
+        """Set up the logging settings to the defaults."""
+
         self.config = config
 
-    def setup (self):
-        """Set up the logging settings to the defaults. The log directory is
-        created inside asynk_user_dir, which is assumed to exist already"""
-
-        config = self.config
         formatter = logging.Formatter('[%(asctime)s.%(msecs)03d '
                                       '%(levelname)8s] %(message)s',
                                       datefmt='%H:%M:%S')
@@ -44,7 +41,18 @@ class ASynKLogger:
         self.consoleLogger.setLevel(logging.INFO)
         self.consoleLogger.setFormatter(formatter)
         logger.addHandler(self.consoleLogger)
-    
+
+    def clear_old_logs (self):
+        pass
+
+class ASynKFileLogger(ASynKBaseLogger):
+    """When invoked from the command line we also store detailed debug logs in
+    the user directory. The log directory is created inside 'asynk_user_dir',
+    which is assumed to exist already."""
+
+    def __init__ (self, config):
+        ASynKBaseLogger.__init__(config)
+
         ## Now the more detailed debug logs which are written to file in a default
         ## logs/ directory. The location of the directory is read from the
         ## configuration file.
@@ -58,12 +66,12 @@ class ASynKLogger:
         stamp   = string.replace(stamp, ':', '-')
         logname = os.path.abspath(os.path.join(logdir, 'asynk_logs.' + stamp))
         logging.info('Debug logging to file: %s', logname)
-    
+
         fileLogger = logging.FileHandler(logname, 'w')
         fileLogger.setLevel(logging.DEBUG)
         fileLogger.setFormatter(formatter)
         logger.addHandler(fileLogger)
-    
+
     def clear_old_logs (self):
         config = self.config
         logdir = os.path.join(config.get_user_dir(), config.get_log_dir())
@@ -75,4 +83,3 @@ class ASynKLogger:
         utils.del_files_older_than(logdir, period)
         logging.info('Deleting log files older than %d days, if any...done',
                      period)
-    

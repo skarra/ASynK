@@ -26,7 +26,7 @@ EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
 sys.path = EXTRA_PATHS + sys.path
 
 import argparse, utils
-from   asynk_logger     import ASynKLogger
+from   asynk_logger     import ASynKFileLogger
 from   asynk_core       import Asynk, AsynkParserError
 from   state            import Config
 from   state_collection import collection_id_to_class as coll_id_class
@@ -308,8 +308,7 @@ def main (argv=sys.argv):
         os.makedirs(uinps.user_dir)
 
     config  = Config(ASYNK_BASE_DIR, uinps.user_dir)
-    alogger = ASynKLogger(config)
-    alogger.setup()
+    alogger = ASynKFileLogger(config)
 
     logging.debug('Command line: "%s"', ' '.join(sys.argv))
 
