@@ -106,7 +106,7 @@ class Profile:
 
 class Collection:
     def __init__ (self, config=None, dbid=None, stid=None,
-                  fid=None, pname=None, colln=1):
+                  fid=None, pname=None):
         self.set_config(config)
         self.set_dbid(dbid)
         self.set_db(None)
@@ -262,9 +262,9 @@ class Collection:
                     'password' : self.get_pwd()})
 
 class BBCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None):
         Collection.__init__(self, config=config, dbid='bb', stid=stid,
-                            fid=fid, pname=pname, colln=colln)
+                            fid=fid, pname=pname)
 
     def login (self):
         if self.get_stid() is not None:
@@ -280,9 +280,9 @@ class BBCollection(Collection):
 
 
 class CDCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None):
         Collection.__init__(self, config=config, dbid='cd', stid=stid, fid=fid,
-                            pname=pname, colln=colln)
+                            pname=pname)
 
     def login (self):
         try:
@@ -306,9 +306,9 @@ class CDCollection(Collection):
 
 
 class EXCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None):
         Collection.__init__(self, config=config, dbid='ex', stid=stid, fid=fid,
-                            pname=pname, colln=colln)
+                            pname=pname)
 
     def login (self):
         from pimdb_ex import EXPIMDB
@@ -326,9 +326,9 @@ class EXCollection(Collection):
 
 
 class GCCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None):
         Collection.__init__(self, config=config, dbid='gc', stid=stid, fid=fid,
-                            pname=pname, colln=colln)
+                            pname=pname)
 
     def login (self):
         try:
@@ -347,9 +347,9 @@ class GCCollection(Collection):
 
 
 class OLCollection(Collection):
-    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
+    def __init__ (self, config=None, stid=None, fid=None, pname=None):
         Collection.__init__(self, config=config, dbid='ol', stid=stid, fid=fid,
-                            pname=pname, colln=colln)
+                            pname=pname)
 
     def login (self):
         return OLPIMDB(self.get_config())
