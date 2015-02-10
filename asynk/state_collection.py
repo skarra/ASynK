@@ -105,15 +105,15 @@ class Profile:
 
 
 class Collection:
-    def __init__ (self, config=None, dbid=None, stid=None,
-                  fid=None, pname=None):
+    def __init__ (self, config=None, dbid=None, stid=None, fid=None,
+                  pname=None):
         self.set_config(config)
         self.set_dbid(dbid)
         self.set_db(None)
         self.set_stid(stid)
         self.set_fid(fid)
         self.set_pname(pname)
-        self.set_colln(colln)
+        self.set_colln(None)
 
         self.set_username(None)
         self.set_pwd(None)
