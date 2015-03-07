@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block base_body %}
+
+<form method="post" id="syncform">
+  <p/>
+  <input type="submit" value="submit"/>
+
+  <p/>
+  <label> <input type="checkbox" name="twoway" checked/>
+    Two way synchronisation
+  </label>
+  <p/>In two way synchronisation if a contact is modified in both places, the
+      'Source' will overwrite the 'Destination' changes.
+
+</form>
+
+<div id="container">
+  <label>Source: </label><br/>
+  <select form="syncform">
+    <option value="select">== Select == </option>
+    <option value="gc">Google Contacts</option>
+    <option value="bb">Emacs BBDB</option>
+  </select>
+
+  <p/>
+
+  <label>Destination: </label><br/>
+  <select form="syncform">
+    <option value="select">== Select == </option>
+    <option value="gc">Google Contacts</option>
+    <option value="bb">Emacs BBDB</option>
+  </select>
+</div>  
+{% endblock %}
