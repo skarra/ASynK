@@ -288,7 +288,7 @@ class CDCollection(Collection):
         try:
             from   pimdb_cd         import CDPIMDB
         except ImportError, e:
-            raise AsynkError("%s: Cannot use any CardDAV accounts" % e)
+            raise AsynkCollectionError("%s: Cannot use any CardDAV accounts" % e)
 
         try:
             pimcd = CDPIMDB(self.get_config(), self.get_stid(),
