@@ -222,7 +222,7 @@ class CDContact(Contact):
         if not vco:
             return
 
-        if vco.n and vco.n.value:
+        if hasattr(vco, 'n') and vco.n and vco.n.value:
             if vco.n.value.given:
                 self.set_firstname(vco.n.value.given)
 
