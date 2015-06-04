@@ -53,7 +53,6 @@ def usage ():
 def main (argv=None):
     print 'Command line: ', sys.argv
     print confn_src
-    exit
 
     if os.path.exists(user_dir):
         logging.debug('Clearing user directory: %s', user_dir)
@@ -73,11 +72,15 @@ def main (argv=None):
     with open(sys.argv[1], "r") as f:
         data = f.read()
         
+    print
     print data
     vco = vobject.readOne(data)
     print vco
+    print vco.prettyPrint()
     con = CDContact(None, vco=vobject.readOne(data), debug_vcf=True)
-    print con
+    print unicode(con)
+
+    print "Display Name: ", con.get_disp_name()
 
 
 if __name__ == '__main__':
