@@ -647,8 +647,12 @@ class CDContact(Contact):
 
     def _add_sync_tags_to_vco (self, vco):
         conf     = self.get_config()
-        pname_re = conf.get_profile_name_re()
-        label    = conf.make_sync_label(pname_re, self.get_dbid())
+        if self.debug_vcf:
+            pname_re = '([0-9a-zA-Z]+)'
+            label    = 'asynk:test:cd'
+        else:
+            pname_re  = conf.get_profile_name_re()
+            label     = conf.make_sync_label(pname_re, self.get_dbid())
 
         ret = ''
         i = 0

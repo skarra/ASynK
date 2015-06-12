@@ -81,6 +81,7 @@ def main (argv=None):
     print unicode(con)
 
     print "Display Name: ", con.get_disp_name()
+    print "VCO: ", con.init_vco_from_props().serialize()
 
 
 if __name__ == '__main__':

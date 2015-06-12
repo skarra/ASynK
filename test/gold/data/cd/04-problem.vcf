@@ -1,0 +1,11 @@
+BEGIN:VCARD
+VERSION:3.0
+UID:aabd8dd0-29a1-4fe7-abd3-5c831b365b83
+FN:Ángel Jesús Varela Vaca
+N:Vaca;Ángel;Jesús,Varela;;
+EMAIL;TYPE=home:ajvarela@us.es
+EMAIL;TYPE=x-internet:angeljesusvarela@gmail.com
+EMAIL;TYPE=x-internet:angel-jesus.varela@hpi.uni-potsdam.de
+PRODID:DAVdroid/0.7.3 (ez-vcard/0.9.6)
+REV:20150429T204335Z
+END:VCARD
