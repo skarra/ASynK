@@ -110,6 +110,14 @@ def setup_parser ():
 
     # Google Contacts authentication
     gg = p.add_argument_group('Google Authentication')
+    gg.add_argument('--gcuser', action='store', nargs='+',
+                     help=('Google sername. Relevant only if --db=gc is used. '
+                         'You can specify two if you are operating with 2 cd '
+                         'dbs. You could also specify one from netrc and one '
+                         'on the command line.  First one can optionally be '
+                         '"None" (without the quotes). '
+                         'If this option is not specified, user is prompted '
+                         'for it from stdin if required.'))
     gg.add_argument('--gcpwd', action='store', nargs='+',
                    help=('Google password. Relevant only if --db=gc is used. '
                          'You can specify two if you are operating with 2 gc '
@@ -178,6 +186,9 @@ class AsynkBuilderC:
             coll.set_stid(stid)
 
     def _snarf_auth_creds (self, uinps):
+        if uinps.gcuser and len(uinps.gcuser) > 2:
+            raise AsynkParserError('--gcuser takes 1 or 2 arguments only')
+
         if uinps.gcpwd and len(uinps.gcpwd) > 2:
             raise AsynkParserError('--gcpwd takes 1 or 2 arguments only')
 
@@ -191,6 +202,12 @@ class AsynkBuilderC:
             uinps.gcpwd and len(uinps.gcpwd) > 1):
             raise AsynkParserError('--cdpwd and --gcpwd should together have'
                                    'only 2 values')
+
+        if uinps.gcuser:
+            for i, gcuser in enumerate(uinps.gcuser):
+                coll = self.asynk.get_colls()[i]
+                if gcuser != 'None':
+                    coll.set_username(gcuser)
 
         if uinps.gcpwd:
             for i, gcpwd in enumerate(uinps.gcpwd):
@@ -239,13 +256,16 @@ class AsynkBuilderC:
         op  = 'op_' + string.replace(uinps.op, '-', '_')
         self.asynk.set_op(op)
 
+        self._snarf_pname(uinps)
+
         # Let's start with the db flags
         if uinps.db:
             if len(uinps.db) > 2:
                 raise AsynkParserError('--db takes 1 or 2 arguments only')
 
             for dbid in uinps.db:
-                coll = coll_id_class[dbid](config=self.asynk.get_config())
+                coll = coll_id_class[dbid](config=self.asynk.get_config(),
+                                           pname=self.asynk.get_name())
                 self.asynk.add_coll(coll)
         else:
             # Only a few operations do not need a db. Check for this and move
@@ -265,7 +285,6 @@ class AsynkBuilderC:
 
         self._snarf_store_ids(uinps)
         self._snarf_auth_creds(uinps)
-        self._snarf_pname(uinps)
         self._snarf_folder_ids(uinps)
         self._snarf_sync_dir(uinps)
 

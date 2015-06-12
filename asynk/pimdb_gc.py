@@ -1,3 +1,5 @@
+## httplib2, oauth2client, PyOpenSSL
+
 ##
 ## Created : Thu Jul 07 14:47:54 IST 2011
 ##
@@ -22,6 +24,7 @@
 
 import datetime, getopt, logging, sys, time, utils
 import atom, gdata.contacts.data, gdata.contacts.client, base64
+from   oauth2client.client import SignedJwtAssertionCredentials
 
 from   state        import Config
 from   pimdb        import PIMDB, GoutInvalidPropValueError
@@ -47,8 +50,8 @@ class GCPIMDB(PIMDB):
 
     def __init__ (self, config, user, pw):
         PIMDB.__init__(self, config)
-        self.set_user(user)
-        self.set_pw(pw)
+        self.set_client_email(user)
+        self.set_private_key(pw)
         self.gc_init()
 
         self.set_folders()
@@ -175,16 +178,16 @@ class GCPIMDB(PIMDB):
     ## Now the non-abstract methods and internal methods
     ##
 
-    def get_user (self):
+    def get_client_email (self):
         return self.user
 
-    def set_user (self, user):
+    def set_client_email (self, user):
         self.user = user
 
-    def get_pw (self):
+    def get_private_key (self):
         return self.pw
 
-    def set_pw (self, pw):
+    def set_private_key (self, pw):
         self.pw = pw
 
     def get_gdc (self):
@@ -196,8 +199,15 @@ class GCPIMDB(PIMDB):
     def gc_init (self):
         logging.info('Logging into Google...')
 
+        em  = self.get_client_email()
+        key = self.get_private_key()
+        scope = 'https://www.google.com/m8/feeds'
+
         gdc = gdata.contacts.client.ContactsClient(source='ASynK')
-        gdc.ClientLogin(self.get_user(), self.get_pw(), gdc.source)
+        credentials = SignedJwtAssertionCredentials(em, key, scope)
+        auth2token = gdata.gauth.OAuth2TokenFromCredentials(credentials)
+        auth2token.authorize(gdc)
+
         self.set_gdc(gdc)
 
         # if not self.get_config().get_gid():
