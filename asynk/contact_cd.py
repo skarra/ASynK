@@ -297,13 +297,15 @@ class CDContact(Contact):
             #     ## We will do something here to save the label as well.
             #     self.add_email_other(em.value)
 
+            em_types = [x.lower() for x in em_types]
+
             if em_types:
                 if 'pref' in em_types:
                     self.set_email_prim(em.value)
 
-                if 'WORK' in em_types:
+                if 'work' in em_types:
                     self.add_email_work(em.value)
-                elif 'HOME' in em_types:
+                elif 'home' in em_types:
                     self.add_email_home(em.value)
                 else:
                     self.add_email_other(em.value)
