@@ -218,25 +218,36 @@ class CDContact(Contact):
             if vco.uid and vco.uid.value:
                 self.set_uid(vco.uid.value)
 
+    def _flatten (self, n):
+        if isinstance(n, list):
+            return ' '.join(n)
+        else:
+            return n
+
     def _snarf_names_gender_from_vco (self, vco):
         if not vco:
             return
 
         if hasattr(vco, 'n') and vco.n and vco.n.value:
             if vco.n.value.given:
-                self.set_firstname(vco.n.value.given)
+                n = self._flatten(vco.n.value.given)
+                self.set_firstname(n)
 
             if vco.n.value.family:
-                self.set_lastname(vco.n.value.family)
+                n = self._flatten(vco.n.value.family)
+                self.set_lastname(n)
 
             if vco.n.value.additional:
-                self.set_middlename(vco.n.value.additional)
+                n = self._flatten(vco.n.value.additional)
+                self.set_middlename(n)
 
             if vco.n.value.prefix:
-                self.set_prefix(vco.n.value.prefix)
+                n = self._flatten(vco.n.value.prefix)
+                self.set_prefix(n)
 
             if vco.n.value.suffix:
-                self.set_suffix(vco.n.value.suffix)
+                n = self._flatten(vco.n.value.suffix)
+                self.set_suffix(n)
 
         if hasattr(vco, l(self.NICKNAME)):
             nicks = vco.contents[l(self.NICKNAME)]
@@ -431,22 +442,36 @@ class CDContact(Contact):
         vco.add('prodid')
         vco.prodid.value = '-//' + utils.asynk_ver_str() + '//EN'
 
+    def _expand (self, n):
+        l = n.split(' ')
+        if len(l) == 1:
+            return n
+        else:
+            return l
+
     def _add_names_gender_to_vco (self, vco):
         vco.add('n')
         vco.n.value = vobject.vcard.Name()
-        if self.get_lastname():
-            vco.n.value.family = self.get_lastname()
-        if self.get_firstname():
-            vco.n.value.given = self.get_firstname()
 
-        if self.get_middlename():
-            vco.n.value.additional = self.get_middlename()
+        n = self.get_lastname() 
+        if n:
+            vco.n.value.family = self._expand(n)
 
-        if self.get_prefix():
-            vco.n.value.prefix=self.get_prefix()
+        n = self.get_firstname()
+        if n:
+            vco.n.value.given = self._expand(n)
 
-        if self.get_suffix():
-            vco.n.value.suffix = self.get_suffix()
+        n = self.get_middlename()
+        if n:
+            vco.n.value.additional = self._expand(n)
+
+        n = self.get_prefix()
+        if n:
+            vco.n.value.prefix = self._expand(n)
+
+        n = self.get_suffix()
+        if n:
+            vco.n.value.suffix = self._expand(n)
 
         if self.get_disp_name():
             vco.add('fn')
