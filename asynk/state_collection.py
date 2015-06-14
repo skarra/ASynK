@@ -153,7 +153,7 @@ class Collection:
     def get_fid (self, cd_fix=False):
         fid = self.fid
         if (fid is not None and cd_fix and self.get_dbid() == 'cd' and
-            fid[-1] != '/'):
+            fid != 'default' and fid[-1] != '/'):
             fid += '/'
         return fid
 
