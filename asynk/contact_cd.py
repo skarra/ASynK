@@ -475,8 +475,8 @@ class CDContact(Contact):
         if n:
             vco.n.value.suffix = self._expand(n)
 
+        vco.add('fn')
         if self.get_disp_name():
-            vco.add('fn')
             vco.fn.value = self.get_disp_name()
 
         if self.get_gender():
