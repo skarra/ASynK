@@ -334,7 +334,7 @@ class CDPIMDB(PIMDB):
                 if rurl == path:
                     continue
 
-                props = results[rurl]
+                props = results[urllib.quote(rurl)]
                 rtype = props.get(davxml.resourcetype)
                 logging.debug('    Resource type of prop: %s.', rtype)
                 if not isinstance(rtype, str):
