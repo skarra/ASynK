@@ -54,7 +54,7 @@ above data from the keyboard as well when ASynK will prompt you.
 Step 4. You will have to install some additional python packages. For e.g.
 -
 
-    $ pip install httplib2 oauth2client PyOpenSSL
+    $ pip install httplib2 oauth2client PyOpenSSL google-api-python-client
 
 There may be a few others, so please tell if you additional are required.
 
@@ -72,3 +72,4 @@ Notes & Caveats
 1. The username you provide should match actual user you select.
 2. The client credentials json you save remains on your computer and not shared with anyone.
 3. There is no easier way to set this up. Sorry.
+4. The browser-based user consent step should be required only once. 
