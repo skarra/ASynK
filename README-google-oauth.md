@@ -12,13 +12,13 @@ Step 1. Setting up your Google Account
 3. Create a new project. You can call it 'My ASynK'
 4. Click on the newly created project
 5. Click on APIs & Auth -> API
-- Search for 'Contacts API'
-- Click on 'Enable API'
+ - Search for 'Contacts API'
+ - Click on 'Enable API'
 6. Click on APIs & Auth -> Credentials
-- click on the blue 'Create new Client ID' button
-- select third bullet 'Installed application' for application type
-- select 'Other' for Installed application type
-- click on the blue 'Create Client ID' button
+ - click on the blue 'Create new Client ID' button
+ - select third bullet 'Installed application' for application type
+ - select 'Other' for Installed application type
+ - click on the blue 'Create Client ID' button
 
 Step 2. Saving your credentials to your user-dir
 -
