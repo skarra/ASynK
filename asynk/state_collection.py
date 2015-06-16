@@ -330,46 +330,6 @@ class GCCollection(Collection):
         Collection.__init__(self, config=config, dbid='gc', stid=stid, fid=fid,
                             pname=pname, colln=colln)
 
-    ## We are overriding this method from base class Collection as we want to
-    ## hack the way netrc password is really specified. This is a quick hack
-    ## to see if this can fly
-    def init_username_pwd (self):
-        print 'pname, db, colln: ', self.get_pname(), self.get_dbid(), self.get_colln()
-        netrc_u, netrc_p = netrc.get_auth(self.get_pname(), self.get_dbid(),
-                                           self.get_colln())
-
-        ## Hack Alert!: We will treat the "password" as a filename in case the
-        ## first character starts with ~ or / and read that in.
-        if netrc_p and len(netrc_p) > 0 and netrc_p[0] in ['~', '/']:
-            fn = os.path.abspath(os.path.expanduser(netrc_p))
-            with open(fn, "rb") as f:
-                netrc_p = f.read()
-
-        u = netrc_u
-        p = netrc_p
-
-        cmd_u = self.get_username()
-        cmd_p = self.get_pwd()
-
-        dbn = '%s%s' % (self.get_dbid(), self.get_colln())
-
-        if cmd_u is not None:
-            logging.debug('Using cmdline username for collection %s', dbn)
-            u = cmd_u
-        else:
-            while not u and self.force_username():
-                u = raw_input('Please enter username for %s: ' % dbn)
-
-        if cmd_p is not None:
-            logging.debug('Using cmdline password for collection %s', dbn)
-            p = cmd_p
-        else:
-            while not p and self.force_pwd():
-                p = raw_input('Enter password for %s: ' % dbn)
-
-        self.set_username(u)
-        self.set_pwd(p)
-
     def login (self):
         try:
             pimgc = GCPIMDB(self.get_config(),

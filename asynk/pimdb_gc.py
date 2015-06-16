@@ -1,5 +1,3 @@
-## httplib2, oauth2client, PyOpenSSL
-
 ##
 ## Created : Thu Jul 07 14:47:54 IST 2011
 ##
@@ -22,9 +20,15 @@
 ## ####
 ##
 
-import datetime, getopt, logging, sys, time, utils
-import atom, gdata.contacts.data, gdata.contacts.client, base64
-from   oauth2client.client import SignedJwtAssertionCredentials
+import base64, datetime, getopt, httplib2, logging, os, sys, threading, time
+import utils, webbrowser
+from   urlparse import urlparse
+import SimpleHTTPServer, SocketServer
+
+from   apiclient import discovery
+import atom, gdata.contacts.data, gdata.contacts.client
+from   oauth2client.client import flow_from_clientsecrets as flow_from_cs
+from   oauth2client.file   import Storage
 
 from   state        import Config
 from   pimdb        import PIMDB, GoutInvalidPropValueError
@@ -45,16 +49,26 @@ def patched_post(client, entry, uri, auth_token=None, converter=None,
                           http_request=http_request, converter=converter,
                           desired_class=desired_class, **kwargs)
 
+class MyAuthToken:
+    def __init__ (self, credentials):
+        self.creds = credentials
+
+    def modify_request (self, http_request):
+        self.creds.apply(http_request.headers)
+
 class GCPIMDB(PIMDB):
     """GC object is a wrapper for a Google Contacts stream API."""
 
     def __init__ (self, config, user, pw):
         PIMDB.__init__(self, config)
-        self.set_client_email(user)
-        self.set_private_key(pw)
+        self.set_user(user)
+        self.set_cs(pw)
         self.gc_init()
 
         self.set_folders()
+
+    def __del__ (self):
+        self.server.shutdown()
 
     ##
     ## First implementation of the abstract methods of PIMDB.
@@ -178,16 +192,16 @@ class GCPIMDB(PIMDB):
     ## Now the non-abstract methods and internal methods
     ##
 
-    def get_client_email (self):
+    def get_user (self):
         return self.user
 
-    def set_client_email (self, user):
+    def set_user (self, user):
         self.user = user
 
-    def get_private_key (self):
+    def get_cs (self):
         return self.pw
 
-    def set_private_key (self, pw):
+    def set_cs (self, pw):
         self.pw = pw
 
     def get_gdc (self):
@@ -196,19 +210,72 @@ class GCPIMDB(PIMDB):
     def set_gdc (self, gdc):
         self.gdc = gdc
 
-    def gc_init (self):
-        logging.info('Logging into Google...')
+    def _init_webserver (self, port):
+        class MyRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+            def do_GET (self1):
+                parsed_path = urlparse(self1.path)
+                try:
+                    params = dict([p.split('=') for p in parsed_path[4].split('&')])
+                except:
+                    params = {}
 
-        em  = self.get_client_email()
-        key = self.get_private_key()
+                self.authorized = True
+                self.credentials = self.flow.step2_exchange(params)
+                return params
+
+        self.server = SocketServer.TCPServer(('', port), MyRequestHandler)
+
+        logging.info('Starting to listen on port %d...', port)
+
+        self.authorized = False
+        thread = threading.Thread(target = self.server.serve_forever)
+        thread.start()
+
+    def _oauth_dance (self, storage):
+        port = 1977
+        self._init_webserver(port)
+
+        logging.info('Staring the wonderful oAuth dance...')
         scope = 'https://www.google.com/m8/feeds'
+        cs = os.path.abspath(os.path.expanduser(self.get_cs()))
+        self.flow = flow_from_cs(cs, scope=scope,
+                                 redirect_uri='http://localhost:%d' % port)
+        auth_uri = self.flow.step1_get_authorize_url()
+        webbrowser.open_new(auth_uri)
 
-        gdc = gdata.contacts.client.ContactsClient(source='ASynK')
-        credentials = SignedJwtAssertionCredentials(em, key, scope)
-        auth2token = gdata.gauth.OAuth2TokenFromCredentials(credentials)
-        auth2token.authorize(gdc)
+        while not self.authorized:
+            time.sleep(1)
 
+        self.server.shutdown()
+
+        http = self.credentials.authorize(http = httplib2.Http())
+        storage.put(self.credentials)
+        self.credentials.set_store(storage)
+
+        return self.credentials
+
+    def gc_init (self):
+        logging.info('Attempting to log into Google...')
+        user_dir = self.get_config().get_user_dir()
+        cs_file = os.path.abspath(os.path.join(user_dir,
+                                               '%s.dat' % self.get_user()))
+        storage = Storage(cs_file)
+        if not os.path.exists(cs_file):
+           self.credentials = self._oauth_dance(storage)
+        else:
+            self.credentials = storage.get()
+            if not self.credentials:
+                self.credentials = self._oauth_dance(storage)
+            else:
+                logging.info('Using pre-fetched access_token...')
+
+        auth = MyAuthToken(self.credentials)
+        gdc = gdata.contacts.client.ContactsClient(source='ASynK',
+                                                   auth_token=auth)
         self.set_gdc(gdc)
+
+        ## Mon Jun 15 16:07:56 IST 2015 Not sure why this code is commented
+        ## out, and if we need it to be here at all ... Hm.
 
         # if not self.get_config().get_gid():
         #     logging.info('First use of application. Creating group...')
