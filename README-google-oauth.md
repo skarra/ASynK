@@ -30,10 +30,26 @@ Step 2. Saving your credentials to your user-dir
 Step 3. Authentication
 -
 
-   username: your gmail username
-   password: the path to your credentials json you downloaded in step 2
+Note you still need to give your username, but not your password. Instead you
+need to tell ASynK where to find the credentials JSON you saved in step 2
+above. In the interest of time I have hacked so that you can reuse your
+earlier method of authentication via `~/.betrc/` or entering it via command
+line.
 
-You can use netrc or keyboard input. `--gcuser` and `--gcpw` commandline flags are not currently working
+    username: your gmail username
+    password: the path to your credentials json you downloaded in step 2
+
+Note `--gcuser` and `--gcpw` commandline flags are not currently working
+
+For e.g. Here is the extract from my ~/.netrc for one of the profiles.
+
+    machine gc_testbbgc
+    	login karra.etc
+    	password ~/.asynk/karra.etc.json
+
+Note that the password is not really a password but the location of the
+credentials json. If you choose not to use the netrc file, you can enter the
+above data from the keyboard as well when ASynK will prompt you.
 
 Step 4. You will have to install some additional python packages. For e.g.
 -
@@ -49,3 +65,10 @@ Some of the submodules have been updated. So you may have to do the following as
 
     $ git pull --recurse-submodules
     $ git submodule update --recursive
+
+Notes & Caveats
+=======
+
+1. The username you provide should match actual user you select.
+2. The client credentials json you save remains on your computer and not shared with anyone.
+3. There is no easier way to set this up. Sorry.
