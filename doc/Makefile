@@ -1,8 +1,8 @@
 ##
 ## Created       : Thu May 17 13:02:14 IST 2012
-## Last Modified : Sun May 04 11:37:36 IST 2014
+## Last Modified : Tue Jun 30 13:31:21 IST 2015
 ##
-## Copyright (C) 2012 Sriram Karra <karra.etc@gmail.com>
+## Copyright (C) 2012, 2015 Sriram Karra <karra.etc@gmail.com>
 ##
 ## This file is part of ASynK
 ##
@@ -18,8 +18,17 @@
 ## You should have a copy of the license in the doc/ directory of ASynK.  If
 ## not, see <http://www.gnu.org/licenses/>.
 
+## Change this to the location of the Info dir file, will be used for
+## the install-info target below.
+infodir  = ~/elisp/info
+
+##
+## You should not have to change anything below this
+##
+
 srcdir   = .
 texinfo_main  = asynk.texi	# The Master Texinfo file
+texinfo_info  = asynk.info
 texinfo_intro = intro.texi
 texinfo_other = ${texinfo_intro} # Included in texinfo_main
 texinfos   = ${texinfo_main} ${texinfo_other}
@@ -60,6 +69,9 @@ ${intro_html}: ${texinfo_intro}
 
 info: ${texinfos} ${extra_texi}
 	${makeinfo} ${makeinfo_flags} ${texinfo_main}
+install-info: info
+	cp ${texinfo_info} ${infodir}
+	install-info --info-file ${infodir}/${texinfo_info} --dir-file ${infodir}/dir
 
 docbook: ${texinfos} ${extra_texi}
 	${makeinfo} --docbook ${makeinfo_flags} ${texinfo_main}
