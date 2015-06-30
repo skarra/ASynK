@@ -42,7 +42,7 @@ that website.
 
 As you are reading this file, the most efficient installation is to clone this
 git repository to your machine. Then see the section titled Usage below to 
-invoke ASynK.
+invoke ASynK. Remember to use the --recursive flag while cloning.
 
 ** Updating an earlier install
 
