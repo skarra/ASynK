@@ -102,7 +102,7 @@ endif
 install:
 	@echo
 	@echo ==== Pushing release changes with tags upstream...
-	cd .. && git push --tags
+	cd .. && git push --follow-tags
 
 	@echo
 	@echo ==== Replacing version identifier in ${src} to dev ver...
