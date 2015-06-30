@@ -418,15 +418,21 @@ class Asynk:
         logging.info('Try `python asynk.py -h` for options')
 
     def op_clear_sync_artifacts (self):
-        db1 = self.get_db1()
+        colls = self.get_colls()
+        if len(colls) < 1 :
+            logging.error('Insufficient args for op clear-sync-artifacts.')
+            return
+
+        coll = colls[0]
+        db1 = coll.get_dbid()
 
         self._login()
 
-        fid = self.get_folder_id(db1)
+        fid = coll.get_fid()
         if db1 == 'bb' and fid == None:
             fid = 'default'
 
-        f1, t  = self.get_db(db1).find_folder(fid)
+        f1, t  = coll.get_db().find_folder(fid)
         if not f1:
             logging.error('Folder with ID %s not found. Nothing to do',
                           fid)
