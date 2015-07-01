@@ -71,8 +71,16 @@ invoke ASynK. Remember to use the --recursive flag while cloning.
    - On Debian (and likely Ubuntu) you will need the following packages:
         sudo apt-get install python-argparse
 
-   - The dateutil package available from http://labix.org/python-dateutil or
-     https://pypi.python.org/pypi/python-dateutil
+   - The following python packages.
+     - dateutil
+     - httplib2
+     - oauth2client
+     - PyOpenSSL
+     - google-api-python-client
+
+     You could install all of them with just 
+
+: $ pip install -r requirements.txt
 
 * Usage
 
