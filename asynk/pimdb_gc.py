@@ -65,10 +65,13 @@ class GCPIMDB(PIMDB):
         self.set_cs(pw)
         self.gc_init()
 
+        self.server = None
+
         self.set_folders()
 
     def __del__ (self):
-        self.server.shutdown()
+        if not self.server is None:
+            self.server.shutdown()
 
     ##
     ## First implementation of the abstract methods of PIMDB.
@@ -264,10 +267,14 @@ class GCPIMDB(PIMDB):
            self.credentials = self._oauth_dance(storage)
         else:
             self.credentials = storage.get()
-            if not self.credentials:
+            if self.credentials is None or self.credentials.invalid:
                 self.credentials = self._oauth_dance(storage)
             else:
-                logging.info('Using pre-fetched access_token...')
+                if self.credentials.access_token_expired:
+                    self.credentials.refresh(http=httplib2.Http())
+                    storage.put(self.credentials)
+                else:
+                    logging.info('Using pre-fetched access_token...')
 
         auth = MyAuthToken(self.credentials)
         gdc = gdata.contacts.client.ContactsClient(source='ASynK',
