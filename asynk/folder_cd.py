@@ -128,13 +128,13 @@ class CDContactsFolder(Folder):
 
     def del_itemids (self, itemids):
         sess = self.get_db().session()
-        for href in itemids:
+        for itemid in itemids:
             try:
-                sess.deleteResource(URL(url=href))
-                self.del_contact(href)
-                logging.info('Deleted CardDAV server contact %s...', href)
+                sess.deleteResource(URL(url=self.item_path(itemid)))
+                self.del_contact(itemid)
+                logging.info('Deleted CardDAV server contact %s...', itemid)
             except HTTPError, e:
-                logging.error('Could not delete itemid: %s (%s)', href, e)
+                logging.error('Could not delete itemid: %s (%s)', itemid, e)
 
 
     def item_path (self, itemid):
