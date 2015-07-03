@@ -26,6 +26,7 @@
 ##
 
 import logging, getopt, re, string, sys, time
+from datetime import datetime
 import atom, iso8601
 import gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
@@ -45,7 +46,7 @@ class GCContact(Contact):
             if con_itemid:
                 self.set_itemid(self.normalize_gcid(con_itemid))
             else:
-                logging.debug('Potential new GCContact: %s', con.get_name())
+                logging.debug('Potential new GCContact: %s', con.get_disp_name())
 
         self.set_gce(gce)
         if gce:
@@ -774,7 +775,7 @@ class GCContact(Contact):
         if c:
             ud       = gdata.contacts.data.UserDefinedField()
             ud.key   = 'created'
-            ud.value = c
+            ud.value = c.isoformat() if isinstance(c, datetime) else c
             gce.user_defined_field.append(ud)
 
         for key, val in self.get_custom().iteritems():
@@ -783,6 +784,7 @@ class GCContact(Contact):
             if val and not key in ['gids']:
                 ud       = gdata.contacts.data.UserDefinedField()
                 ud.key   = key
+                val = val.isoformat() if isinstance(val, datetime) else val
                 ud.value = val
                 gce.user_defined_field.append(ud)
                 
