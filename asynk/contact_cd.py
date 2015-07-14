@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 ##
 ## Created : Wed Apr 03 19:02:15 IST 2013
 ##
@@ -135,7 +137,7 @@ class CDContact(Contact):
             fo.put_item(fn, vcf_data, 'text/vcard', etag=etag)
         else:
             assert(not etag)
-            cdid = md5.new(vcf_data).hexdigest() 
+            cdid = md5.new(vcf_data).hexdigest()
             fn += cdid + '.vcf'
 
             ## FIXME: Handle errors and all that good stuff.
@@ -148,7 +150,7 @@ class CDContact(Contact):
         return success
 
     ## First the get/set methods
-    
+
     def get_vco (self, refresh=False):
         vco = self._get_att('vco')
         if vco and (not refresh):
@@ -281,7 +283,7 @@ class CDContact(Contact):
         emails = vco.contents['email']
         for em in emails:
             em_types = em.params['TYPE'] if 'TYPE' in em.params else None
-                
+
             ## The following code is commented out because it deals with the
             ## case when the vCard file has custom labels associated with
             ## specific email addresses. ASynK currently does not this
@@ -299,6 +301,17 @@ class CDContact(Contact):
 
             em_types = [x.lower() for x in em_types]
 
+
+            #sanitize the email since the script breaks if
+            #we have illegal characters in email when doing batch requests to GC
+            #TODO repeat for every contact model (or just GC?)
+            if not self.is_ascii(em.value):
+                     print "illegal character in email, stripping email from contact"
+                     print em.value
+                     em.value = None
+                     continue
+            #print type(em.value)
+
             if em_types:
                 if 'pref' in em_types:
                     self.set_email_prim(em.value)
@@ -311,6 +324,10 @@ class CDContact(Contact):
                     self.add_email_other(em.value)
             else:
                 self.add_email_other(em.value)
+
+
+    def is_ascii(self, s):
+        return all(ord(c) < 128 for c in s)
 
     def _snarf_phones_from_vco (self, vco):
         if hasattr(vco, l(self.TEL)):
@@ -372,7 +389,7 @@ class CDContact(Contact):
             dt = pimdb_cd.CDPIMDB.parse_vcard_time(vco.rev.value)
         else:
             dt = pimdb_cd.CDPIMDB.parse_vcard_time("19800101T000000Z")
-            
+
         if dt is None:
             logging.error(('Could not parse revision string (%s) for %s.' +
                            'This may result in improper sync.'),
@@ -384,7 +401,7 @@ class CDContact(Contact):
         if hasattr(vco, 'bday') and vco.bday.value:
             ign = self.OMIT_YEAR in vco.bday.params.keys()
             bday = self._parse_vcard_date(vco.bday.value, ign)
-                                          
+
             if bday:
                 self.set_birthday(bday)
             else:
@@ -455,7 +472,7 @@ class CDContact(Contact):
         vco.add('n')
         vco.n.value = vobject.vcard.Name()
 
-        n = self.get_lastname() 
+        n = self.get_lastname()
         if n:
             vco.n.value.family = self._expand(n)
 
@@ -522,7 +539,7 @@ class CDContact(Contact):
         if pref:
             params['TYPE'].append('pref')
 
-        p.params = params        
+        p.params = params
 
     def _add_phones_to_vco (self, vco):
         ph_prim = self.get_phone_prim()
@@ -536,7 +553,7 @@ class CDContact(Contact):
         for label, ph in self.get_phone_work():
             self._add_phones_helper(vco, l(self.TEL), ph == ph_prim,
                                     ['VOICE', 'WORK'], ph)
-        
+
         for label, ph in self.get_phone_mob():
             self._add_phones_helper(vco, l(self.TEL), ph == ph_prim,
                                     ['VOICE', 'CELL'], ph)
