@@ -302,15 +302,13 @@ class CDContact(Contact):
             em_types = [x.lower() for x in em_types]
 
 
-            #sanitize the email since the script breaks if
-            #we have illegal characters in email when doing batch requests to GC
-            #TODO repeat for every contact model (or just GC?)
-            if not self.is_ascii(em.value):
-                     print "illegal character in email, stripping email from contact"
-                     print em.value
-                     em.value = None
-                     continue
-            #print type(em.value)
+            ##sanitize the email since the script breaks if
+            ##we have illegal characters in email when doing batch requests to GC
+            ##TODO repeat for every contact model (or just GC?)
+            if not utils.is_ascii(em.value):
+                logging.debug("illegal character in email, stripping email from contact %s",em.value)
+                em.value = None
+                continue
 
             if em_types:
                 if 'pref' in em_types:
@@ -326,8 +324,6 @@ class CDContact(Contact):
                 self.add_email_other(em.value)
 
 
-    def is_ascii(self, s):
-        return all(ord(c) < 128 for c in s)
 
     def _snarf_phones_from_vco (self, vco):
         if hasattr(vco, l(self.TEL)):
