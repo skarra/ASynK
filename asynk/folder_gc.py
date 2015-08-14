@@ -741,9 +741,7 @@ class BatchState:
 
                 if op == 'insert' or op == 'update':
                     try:
-                        name = self.get_con(bid).name
-                    except Exception, e:
-                        name = self.get_con(bid).get_name()
+                        name = self.get_con(bid).get_disp_name()
                     except Exception, e:
                         name = "WTH!"    
 

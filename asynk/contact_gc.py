@@ -176,6 +176,14 @@ class GCContact(Contact):
 
         return ret
 
+    def get_curr_gmail_userid (self):
+        gid = self.get_folder().get_itemid()
+        return self.get_gid_gmail_userid(gid)
+
+    def get_gid_gmail_userid (self, group_uri):
+        m = re.search('/groups/([^/]*)/', group_uri)
+        return m.group(1) if m else None
+
     ##
     ## Internal functions that are not inteded to be called from outside.
     ##
@@ -537,6 +545,8 @@ class GCContact(Contact):
         """Append the group IDs that denote group membership to the specified
         ContactEntry object."""
 
+        gmail_owner = self.get_curr_gmail_userid()
+
         gid = self.get_folder().get_itemid()
         gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
         gce.group_membership_info.append(gidm)
@@ -547,9 +557,19 @@ class GCContact(Contact):
         js = self.get_custom('gids')
         js = js.replace('\\', '')
         gids = demjson.decode(js)
+
+        retained_gids = []
         for gid in gids:
-            gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
-            gce.group_membership_info.append(gidm)
+            gid_owner = self.get_gid_gmail_userid(gid)
+            if gid_owner == gmail_owner:
+                gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
+                gce.group_membership_info.append(gidm)
+            else:
+                logging.debug(('Skipped mismatched membership in gid: %s; ' +
+                              'Current Owner: %s'), gid, gmail_owner)
+                retained_gids.append(gid)
+
+        self.update_custom({'gids' : demjson.encode(retained_gids)})
 
     def _add_emails_to_gce (self, gce):
         """Append the email addresses from the current Contact object to the
@@ -781,7 +801,7 @@ class GCContact(Contact):
         for key, val in self.get_custom().iteritems():
             # We skip certain keys that have been processed already and
             # populated into other elements of the contact entry.
-            if val and not key in ['gids']:
+            if val and not key in []:
                 ud       = gdata.contacts.data.UserDefinedField()
                 ud.key   = key
                 val = val.isoformat() if isinstance(val, datetime) else val
