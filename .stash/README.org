@@ -1,4 +1,44 @@
 
+* GAE
+
+** Top Priorities
+
+   - User should be able to try out ASynK without creating
+   - No state will be saved on our site for people who want to avoid it
+   - 
+
+** asynk.io user stories
+
+*** New users
+
+- Learn what this product can do
+- Copy Google contacts from one google account to another
+- Copy MS Exchange contacts to a Google account
+- Name the sync profile
+- Save sync state for later: (a) to a Dropbox folder (b) locally
+
+  Once a sync is completed we should prompt the user to save the sync state -
+  as a file download or to the browser db
+
+*** Returning Users
+
+    - We should identify 
+    - Select a source
+
+** Mon Jan 26 18:57:33 IST 2015
+   
+   Current activity is really to figure how to run ASynK as an app on Google
+   App Engine. So far it looks like we can do most of the things except write
+   to the file system. Will eventually just try to write to a user folder on
+   Dropbox or something, but here is something that needs to be 'fixed' to
+   even get to the POC stage.
+
+   - Logging: Have disabled the backup file logging 
+
+** Time Tracking
+
+   CLOCK: [2015-02-10 Tue 18:06]--[2015-02-10 Tue 19:52] =>  1:46
+
 * Major activities for asynk.io launch
 
 ** Critical
@@ -16,59 +56,6 @@
    - Ability to sync to same database type - done
    - Autodiscover URLs for Exchange and CardDAV
    - Get rid of the sync tags stuff completely from all the stores
-
-* asynk.io user stories
-
-** New user comes to site and wants to know what this tool is all about
-
-** New user wants to try a trial sync between 
-
-* Branch refactor-a (gc-gc refactor)
-
-** Thu Jan 22 14:59:53 IST 2015
-
-   Sent a request for beta testing the branch to asynk-users. Will merge to
-   master and announce as rc
-
-** Tue Jan 20 10:20:30 IST 2015
-
-   Got the gc-gc sync working. Hurray!! 
-
-   Next steps: Make sure BB:CD sync works as before as also some of the CD:CD
-   stuff. Then send out a request to dev mailingn list asking for people to
-   take this for a spin.
-
-** Fri Nov 07 13:12:57 IST 2014
-
-   Updated the main driver for --op=sync. There is one interesting blocker
-   related to storing all sync tags. See the comments in
-   _get_sync_tags_as_str in contact_bb.py for more details.
-
-   Note Nov 10: this was fixed for all the other DBs as well.
-
-** Thu Nov 06 12:22:11 IST 2014
-
-   Still working on the migration of the asynk_core.py so all the ops work
-   with the Collections refactor. Today I migrated many of the operations -
-   mostly the less important ones. 
-
-   Next up - the last of the heavy weight operations - sync
-
-** Sun Nov 02 09:46:43 IST 2014
-
-   The branch is to enable multiple collections on the same type of db. There
-   are some restrictions on that today. This branch is for some much needed
-   refactoring to enable that
-
-   The first goal will be to get a BBDB-BBDB sync going. For the other stuff
-   we will need to work around the authentication stuff.
-
-   Status as of now:
-
-   ./asynk_cmdline.py --help works
-   ./asynk_cmdline.py --op=list-folders --db=bb --store ~/.bbdb needs to be
-   checked
-   Nothing involving any of the other dbs will even work
 
 * API design
 
@@ -104,10 +91,12 @@
 
 * MS Exchange support
 
+  Mon Jan 26 18:56:33 IST 2015: Not sure how many of these "Next things" are
+  actually still pending.
+
 ** Next things to do
 
    - bulk clear sync tags
-
    - support --exuser and --expwd command line flags
    - support 'default' storeid to get URL through autodisc
    - support 'default' as foid
@@ -261,7 +250,56 @@ Clock summary at [2014-05-04 Sun 13:11]
 
 
 
-* Old Log
+* == Old Logs: ==
+
+* Branch refactor-a (gc-gc refactor)
+
+** Thu Jan 22 14:59:53 IST 2015
+
+   Sent a request for beta testing the branch to asynk-users. Will merge to
+   master and announce as rc
+
+** Tue Jan 20 10:20:30 IST 2015
+
+   Got the gc-gc sync working. Hurray!! 
+
+   Next steps: Make sure BB:CD sync works as before as also some of the CD:CD
+   stuff. Then send out a request to dev mailingn list asking for people to
+   take this for a spin.
+
+** Fri Nov 07 13:12:57 IST 2014
+
+   Updated the main driver for --op=sync. There is one interesting blocker
+   related to storing all sync tags. See the comments in
+   _get_sync_tags_as_str in contact_bb.py for more details.
+
+   Note Nov 10: this was fixed for all the other DBs as well.
+
+** Thu Nov 06 12:22:11 IST 2014
+
+   Still working on the migration of the asynk_core.py so all the ops work
+   with the Collections refactor. Today I migrated many of the operations -
+   mostly the less important ones. 
+
+   Next up - the last of the heavy weight operations - sync
+
+** Sun Nov 02 09:46:43 IST 2014
+
+   The branch is to enable multiple collections on the same type of db. There
+   are some restrictions on that today. This branch is for some much needed
+   refactoring to enable that
+
+   The first goal will be to get a BBDB-BBDB sync going. For the other stuff
+   we will need to work around the authentication stuff.
+
+   Status as of now:
+
+   ./asynk_cmdline.py --help works
+   ./asynk_cmdline.py --op=list-folders --db=bb --store ~/.bbdb needs to be
+   checked
+   Nothing involving any of the other dbs will even work
+
+* Other
 
 ** Fri Aug 09 18:29:39 IST 2013
 

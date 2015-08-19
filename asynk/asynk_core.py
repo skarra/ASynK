@@ -590,12 +590,12 @@ class Asynk:
                 ## handling is rewritten in whole hard to avoid.
                 self.colls = []
 
-            ## FIXME: Why were we not setting fid?
-            self.add_coll(db1c(config=conf, stid=conf.get_stid1(pname),
-                               pname=pname))
+            # ## FIXME: Why were we not setting fid?
+            # self.add_coll(db1c(config=conf, stid=conf.get_stid1(pname),
+            #                    pname=pname))
 
-            self.add_coll(db2c(config=conf, stid=conf.get_stid2(pname),
-                               pname=pname))
+            # self.add_coll(db2c(config=conf, stid=conf.get_stid2(pname),
+            #                    pname=pname))
 
             if not self.get_sync_dir():
                 self.set_sync_dir(conf.get_sync_dir(pname))
