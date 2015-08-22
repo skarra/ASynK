@@ -351,6 +351,9 @@ class Config:
     def get_cd_logging (self):
         return self.get_db_config('cd')['log']
 
+    def get_gc_logging (self):
+        return self.get_db_config('gc')['log']
+
     def get_ex_guid (self):
         return self.get_db_config('ex')['guid']
 

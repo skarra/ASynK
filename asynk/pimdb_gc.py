@@ -50,11 +50,16 @@ def patched_post(client, entry, uri, auth_token=None, converter=None,
                           desired_class=desired_class, **kwargs)
 
 class MyAuthToken:
-    def __init__ (self, credentials):
+    def __init__ (self, config, credentials):
+        self.config = config
         self.creds = credentials
 
     def modify_request (self, http_request):
         self.creds.apply(http_request.headers)
+
+        debug = self.config.get_gc_logging()
+        if debug:
+            logging.debug(http_request._dump())
 
 class GCPIMDB(PIMDB):
     """GC object is a wrapper for a Google Contacts stream API."""
@@ -234,6 +239,13 @@ class GCPIMDB(PIMDB):
         thread = threading.Thread(target = self.server.serve_forever)
         thread.start()
 
+    def _new_http (self):
+        http = httplib2.Http()
+        debug = self.get_config().get_gc_logging()
+        if debug:
+            http.debuglevel = 4
+        return http
+
     def _oauth_dance (self, storage):
         port = 1977
         self._init_webserver(port)
@@ -251,7 +263,7 @@ class GCPIMDB(PIMDB):
 
         self.server.shutdown()
 
-        http = self.credentials.authorize(http = httplib2.Http())
+        http = self.credentials.authorize(http=self._new_http())
         storage.put(self.credentials)
         self.credentials.set_store(storage)
 
@@ -271,12 +283,12 @@ class GCPIMDB(PIMDB):
                 self.credentials = self._oauth_dance(storage)
             else:
                 if self.credentials.access_token_expired:
-                    self.credentials.refresh(http=httplib2.Http())
+                    self.credentials.refresh(http=self._new_http())
                     storage.put(self.credentials)
                 else:
                     logging.info('Using pre-fetched access_token...')
 
-        auth = MyAuthToken(self.credentials)
+        auth = MyAuthToken(self.get_config(), self.credentials)
         gdc = gdata.contacts.client.ContactsClient(source='ASynK',
                                                    auth_token=auth)
         self.set_gdc(gdc)

@@ -27,3 +27,15 @@ def customize_config (config):
     ## from the default 'logs' to 'logfiles'
 
     # config['log_dir'] = 'logfiles'
+
+    ## Uncomment this line if you are synching with a carddav server and want
+    ## to see detailed request and response interaction with the Carddav
+    ## server.
+
+    # config['db_config']['cd']['log'] =  True
+
+    ## Uncomment this line if you are synching with Google Contacts and want
+    ## to see detailed request and response interaction with the server (for
+    ## some requests and responses only)
+
+    # config['db_config']['gc']['log'] =  True
