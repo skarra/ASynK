@@ -128,6 +128,7 @@ class GCContact(Contact):
     def init_props_from_gce (self, gce):
         self._snarf_itemid_from_gce(gce)
         self._snarf_names_gender_from_gce(gce)
+        self._snarf_userpic_from_gce(gce)
         self._snarf_notes_from_gce(gce)
         self._snarf_group_membership_from_gce(gce)
         self._snarf_emails_from_gce(gce)
@@ -152,6 +153,7 @@ class GCContact(Contact):
 
         self._add_itemid_to_gce(gce)
         self._add_names_gender_to_gce(gce)
+        self._add_userpic_to_gce(gce)
         self._add_notes_to_gce(gce)
         self._add_group_membership_to_gce(gce)
         self._add_emails_to_gce(gce)

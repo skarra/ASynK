@@ -175,6 +175,21 @@ class Contact(Item):
 
         return self._set_prop('fileas', val)
 
+    def get_userpic (self):
+        """Return a tuple (type, contents). Contents are the raw binary file
+        contents. Any base64 encoding etc. to be handled by the caller"""
+
+        return self._get_prop('userpic_type'), self._get_prop('userpic')
+
+    def set_userpic (self, userpic_type, userpic):
+        """userpic_type should be an image type. userpic should be a raw byte
+        stream representing the file contents."""
+
+        self._set_prop('userpic_type', userpic_type)
+        self._set_prop('userpic', userpic)
+
+        return userpic_type, userpic
+
     def get_gender (self):
         return self._get_prop('gender')
 
