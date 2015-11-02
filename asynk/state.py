@@ -27,7 +27,7 @@
 ## and we are continuing to use the same handling framework...
 
 import iso8601, demjson
-import glob, logging, os, re, shutil, sys, time
+import glob, logging, os, re, shutil, sys, time, stat
 
 sync_dirs = ['SYNC1WAY', 'SYNC2WAY']
 
@@ -152,10 +152,15 @@ class Config:
                 print user_dir
                 print 'We have not copied any of your logs and backup directories.'
             else:
+                dest_state = os.path.join(user_dir, 'state.json')
                 ## Looks like this is a pretty "clean" run. So just copy the
                 ## state.init file to get things rolling
                 shutil.copy2(os.path.join(base_dir, 'state.init.json'),
-                             os.path.join(user_dir, 'state.json'))
+                             dest_state)
+                ## Add user write permission in case state.init.json
+                ## was not writable
+                os.chmod(dest_state,
+                         os.stat(dest_state).st_mode | stat.S_IWUSR)
 
     def _migrate_config_if_reqd (self, curr_ver):
         user_dir = self.get_user_dir()
