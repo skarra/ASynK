@@ -97,6 +97,7 @@ invoke ASynK. Remember to use the --recursive flag while cloning.
    contacts folder will get synched to "My Contacts" on Google Contacts. (You
    will be prompted for your google username and password). 
 
-   On any non-windows platform your ~/.bbdb will be synced to google.
+   On any non-windows platform if you have a  ~/.bbdb will simply be "backed
+   up" to /tmp/asynk.bbdb.
 
    For further usage help, try "python asynk.py -h"

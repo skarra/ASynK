@@ -409,7 +409,7 @@ class Asynk:
                 logging.critical(traceback.format_exc())
                 return False
 
-        if not pname in ['defgcol', 'defgcbb']:
+        if not pname in ['defolbb', 'defbbbb']:
             conf.set_default_profile(pname)
 
         return True
@@ -536,11 +536,11 @@ class Asynk:
         if not pname:
             def_pname = conf.get_default_profile()
             if not def_pname:
-                # Use the defgcbb on Unix and defgcol profile on Windows
+                # Use the defbbbb on Unix and defolbb profile on Windows
                 if platform.system() == 'Windows':
-                    pname = 'defgcol'
+                    pname = 'defolbb'
                 else:
-                    pname = 'defgcbb'
+                    pname = 'defbbbb'
             elif conf.profile_exists(def_pname):
                 pname = def_pname
             else:

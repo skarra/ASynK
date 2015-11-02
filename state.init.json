@@ -22,7 +22,7 @@
     // This absolutely has to be the same as the version of the
     // config.json file. If they are different it will help us
     // identify if any migration has to be performed - in the future.
-    'file_version' : 4,
+    'file_version' : 5,
 
     // The default profile. It will contain the name of one of the
     // profile keys once the user makes at a sync or at least sets up
@@ -34,16 +34,16 @@
 	// The following is an example of what a profile could like. This
 	// sample profile will not be written to the state.json file
 
-	'defgcol' : {
+	'defolbb' : {
 	    "coll_1" : {
-		"dbid" : "gc",
+		"dbid" : "ol",
 		"stid" : null,
 		"foid" : null,
 	    },
 
 	    "coll_2" : {
-		"dbid" : "ol",
-		"stid" : null,
+		"dbid" : "bb",
+		"stid" : "~/.bbdb",
 		"foid" : null,
 	    },
 
@@ -57,24 +57,24 @@
             // Direction in which to resolve conflicts if the same
             // entry is modified both locally and in the google
             // cloud. Value should be one of the two dbids (in this
-            // instance, either 'gc' or 'ol')
-	    'conflict_resolve' : 'gc',
+            // instance, either 'bb' or 'ol')
+	    'conflict_resolve' : 'ol',
 
             // The GID used to compute the custom property tag that is
             // used to store the sync tag.
             'olgid' : 0x9001,
-	}, // profiles['defgcol']
+	}, // profiles['defolbb']
 
-	'defgcbb' : {
+	'defbbbb' : {
 	    "coll_1" : {
-		"dbid" : "gc",
-		"stid" : null,
-		"foid" : null,
+		"dbid" : "bb",
+		"stid" : "~/.bbdb",
+		"foid" : "default",
 	    },
 
 	    "coll_2" : {
 		"dbid" : "bb",
-		"stid" : "~/.bbdb",
+		"stid" : "/tmp/asynk.bbdb",
 		"foid" : "default",
 	    },
 
@@ -84,16 +84,11 @@
 	    // Default direction in which to perform Sync. Values can
 	    // be one of ['SYNC1WAY' or 'SYCN2WAY'].
             'sync_dir'        : "SYNC2WAY",
-
-            // Direction in which to resolve conflicts if the same
-            // entry is modified both locally and in the google
-            // cloud. Value should be one of the two dbids (in this
-            // instance, either 'gc' or 'bb')
-	    'conflict_resolve' : 'gc',
+	    'conflict_resolve' : 'bb',
 
             // The GID used to compute the custom property tag that is
             // used to store the sync tag.
             'olgid' : null,
-	}, // profiles['defgcbb']
+	}, // profiles['defbbbb']
     }, // 'profiles'
 }
