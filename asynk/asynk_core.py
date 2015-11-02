@@ -152,8 +152,9 @@ class Asynk:
         dbid = coll.get_dbid()
         fid  = coll.get_fid()
 
+        ## FIXME: These ParserErrors do not really belong in this file.
         if not fid and not ('bb' == dbid):
-            raise AsynkParserError('--show-folder needs a --folder-id option')
+            raise AsynkParserError('--show-folder needs a --folder option')
 
         self._login()
 
