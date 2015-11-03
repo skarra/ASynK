@@ -202,6 +202,9 @@ class AsynkBuilderC:
             raise AsynkParserError('--cdpwd and --gcpwd should together have'
                                    'only 2 values')
 
+        if len(self.asynk.get_colls()) == 0:
+            self.asynk._load_profile()
+
         if uinps.gcuser:
             for i, gcuser in enumerate(uinps.gcuser):
                 coll = self.asynk.get_colls()[i]
@@ -283,13 +286,13 @@ class AsynkBuilderC:
         self.asynk.set_sync_all(uinps.sync_all)
 
         self._snarf_store_ids(uinps)
-        self._snarf_auth_creds(uinps)
         self._snarf_folder_ids(uinps)
         self._snarf_sync_dir(uinps)
 
         self.asynk.set_label_re(uinps.label_regex)
         self.asynk.set_conflict_resolve(uinps.conflict_resolve)
         self.asynk.set_item_id(uinps.item)
+        self._snarf_auth_creds(uinps)
         # self.asynk.set_port(uinps.port)
 
 def main (argv=sys.argv):

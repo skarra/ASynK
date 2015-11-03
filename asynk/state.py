@@ -270,7 +270,7 @@ class Config:
     def _get_profile_prop (self, profile, key):
         if not profile in self.state['state']['profiles']:
             raise AsynkConfigError('Profile %s not found in state.json'
-                                   % profile) 
+                                   % profile)
 
         try:
             return self.state['state']['profiles'][profile][key]
@@ -281,7 +281,7 @@ class Config:
     def _set_profile_prop (self, profile, key, val, sync=True):
         if not profile in self.state['state']['profiles']:
             raise AsynkConfigError('Profile %s not found in state.json'
-                                   % profile) 
+                                   % profile)
 
         self.state['state']['profiles'][profile].update({key : val})
 

@@ -561,8 +561,7 @@ class Asynk:
 
         if pname:
             if not pname in conf.get_profile_names():
-                logging.error('Profile "%s" not found. Nothing to do.', pname)
-                return None
+                raise AsynkParserError('Profile "%s" not found' % pname)
 
             self.set_name(pname)
 
@@ -572,7 +571,10 @@ class Asynk:
             db1c = coll_id_class[db1id]
             db2c = coll_id_class[db2id]
 
-            assert len(self.colls) == 0
+            if len(self.colls) != 0:
+                ## FIXME: this looks ugly but unless the command line flags
+                ## handling is rewritten in whole hard to avoid.
+                self.colls = []
 
             ## FIXME: Why were we not setting fid?
             self.add_coll(db1c(config=conf, stid=conf.get_stid1(pname),
