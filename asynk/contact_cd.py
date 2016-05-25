@@ -297,9 +297,9 @@ class CDContact(Contact):
             #     ## We will do something here to save the label as well.
             #     self.add_email_other(em.value)
 
-            em_types = [x.lower() for x in em_types]
 
             if em_types:
+                em_types = [x.lower() for x in em_types]
                 if 'pref' in em_types:
                     self.set_email_prim(em.value)
 
