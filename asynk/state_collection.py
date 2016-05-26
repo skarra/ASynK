@@ -24,7 +24,7 @@
 ## (DB ID, Store ID, Folder ID)
 ##
 
-import logging, netrc, os
+import logging, os
 from   abc              import ABCMeta, abstractmethod
 from   pimdb_bb         import BBPIMDB
 from   gdata.client     import BadAuthentication
@@ -45,11 +45,15 @@ class NetrcAuth:
     right authentication information for a specified collection."""
 
     def __init__ (self):
+        self.netrc = None
+
         try:
-            self.netrc = None
+            import netrc
             self.netrc = netrc.netrc()
         except IOError, e:
             logging.info('~/.netrc not found.')
+        except ImportError, e:
+            logging.warning('Cannot use netrc as source of credentials.')
         except netrc.NetrcParseError, e:
             logging.warning('Ignoring ~/.netrc: could not parse it (%s)', e)
 
