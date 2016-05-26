@@ -339,12 +339,16 @@ class Asynk:
         colls = self.get_colls()
         [db1, db2] = [x.get_db() for x in colls]
 
+        hr = True
+
         ## First remove the tags for the profile from both folders
         f1, t  = db1.find_folder(conf.get_fid1(pname))
-        hr = f1.bulk_clear_sync_flags(label_re=label_re)
+        if f1:
+            hr = f1.bulk_clear_sync_flags(label_re=label_re)
 
         f2, t  = db2.find_folder(conf.get_fid2(pname))
-        hr = hr and f2.bulk_clear_sync_flags(label_re=label_re)
+        if f2:
+            hr = hr and f2.bulk_clear_sync_flags(label_re=label_re)
         
         if hr:
             del profiles[pname]

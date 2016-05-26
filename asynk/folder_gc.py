@@ -505,7 +505,8 @@ class GCContactsFolder(Folder):
             if mod:
                 mods.append(ce)
 
-        logging.info('Found %d contacts with matching sync tag(s). ', cnt)
+        logging.info('Found %d contacts with matching sync tags (%s). ',
+                     cnt, label_re)
         if cnt > 0:
             logging.info('Sending modification request to Google...')
 
