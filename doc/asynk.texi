@@ -82,7 +82,7 @@ level features of ASynK:
 The official website for ASynK is at:
 @url{http://asynk.io}. You will find links to latest downloads,
 complete and latest documentaiton, announcements and other information on that
-website.
+website. 
 
 The source code for ASynK is hosted on Github at:
 @url{https://github.com/skarra/AsynK} (earlier hosted at:
@@ -160,7 +160,7 @@ Keep in mind that unlike Google Contacts, CardDAV servers do not support a
 roll back feature. This means any ASynK bugs could potentially lead to loss of
 information for you. While there have been no complaints of ASynK eating up
 people's data, please take your own precautions before you deploy this on your
-live data. The user of the @kbd{--user-dir=} option is also high encouraged.
+live data. The use of the @kbd{--user-dir=} option is also high encouraged.
 
 At the moment the following fields are synched in both ways. More may be
 supported over time.  @strong{Important}: Fields not mentioned here will be
@@ -221,12 +221,12 @@ Custom fields
 @subsection BBDB Specific Notes
 ASynK can parse and write BBDB files without the need for Emacs or
 BBDB. However, ensure you are using BBDB at the time ASynK is reading/writing
-the database. Bad things can happen if you are not careful with this. Further,
-not the following:
+the database. Bad things can happen if you are not careful with this. Furthermore,
+note the following:
 
 @enumerate
 @item
-@strong{BBDB V3}: ASynK works best with if you use BBDBV3. V3 is the future of
+@strong{BBDB V3}: ASynK works best if you use BBDBV3. V3 is the future of
 BBDB and a significant rewrite of large portions of the code base, but is
 decidedly not backward compatible with most user customization. You can
 download it at @url{http://savannah.nongnu.org/projects/bbdb}.
