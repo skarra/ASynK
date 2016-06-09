@@ -270,7 +270,7 @@ class GCPIMDB(PIMDB):
         return self.credentials
 
     def gc_init (self):
-        logging.info('Attempting to log into Google...')
+        logging.info('Attempting to log into Google (%s)...', self.get_user())
         user_dir = self.get_config().get_user_dir()
         cs_file = os.path.abspath(os.path.join(user_dir,
                                                '%s.dat' % self.get_user()))
