@@ -26,6 +26,7 @@
 ## wondering, at some point in the past it all resided in a single json file,
 ## and we are continuing to use the same handling framework...
 
+from   abc     import ABCMeta, abstractmethod
 import iso8601, demjson
 import glob, logging, os, re, shutil, sys, time, stat
 
@@ -34,39 +35,138 @@ sync_dirs = ['SYNC1WAY', 'SYNC2WAY']
 class AsynkConfigError(Exception):
     pass
 
-class Config:
-    def __init__ (self, asynk_base_dir, user_dir, sync_through=True):
-        ## FIXME: The sync_through flag does not really work as expected. The
-        ## intended behaviour was this will provide a default which can be
-        ## overriden in any call. The way each attribute write has been
-        ## implemented, all the methods override this explicitly - basically
-        ## rendering this useless, more or less. The right fix is to set the
-        ## default values for 'sync' in attribute writers to this value and
-        ## allow the callers to override it as required. This 'bug' has no
-        ## user-facing consequences. So get to it some time.
+class ConfigBase:
+    __metaclass__ = ABCMeta
 
-        """If sync_through is True, any change to the configuration is
-        immediately written back to the original disk file, otherwise
-        the user has to explicitly save to disk."""
+    def __init__ (self):
+        self.props = {}
 
-        self.state = { 'state'  : {},
-                       'config' : {} }
+    def all_props (self):
+        return self.props
 
-        self.sync_through = False
-        self.set_app_root(asynk_base_dir)
-        self.set_user_dir(user_dir)
+    def get_prop (self, key):
+        return self.props[key]
 
-        confi   = None
-        statei  = None
-        self.confi_curr_ver = Config.get_latest_config_version(self.get_app_root())
+    def set_prop (self, key, val, sync=False):
+        self.props.update({key : val})
+        if sync:
+            self.save()
+
+    def append_to_prop (self, key, val):
+        """In the particular property value is an array, we would like to
+        append individual elements to the property value. this method does
+        exactly that."""
+
+        if not self.get_prop(key):
+            self.set_prop(key, val)
+        else:
+            self.set_prop(key, self.get_prop(key).append(val))
+
+    def update_prop (self, prop, which, val, sync=True):
+        """If a particular property value is a dictionary, we would like to
+        update the dictinary with a new mapping or alter an existing
+        mapping. This method does exactly that."""
+
+        if not self.get_prop(prop):
+            self.set_prop(prop, {which : val})
+        else:
+            self.set_prop(prop, self.get_prop(prop).update({which : val}))
+
+    def _save (self, fn, json):
+        """fn should be the full absolute path. json is the json to be written
+        out"""
+
+        try:
+            fi = open(fn, "w")
+        except IOError, e:
+            logging.critical('Error! Could not Open file (%s): %s', fn, e)
+            return
+
+        fi.write(json)
+        fi.close()
+
+
+class UserStateBase(ConfigBase):
+    def __init__ (self):
+        ConfigBase.__init__(self)
+
+    def save (self):
+        pass
+
+    def get_profile_prop (self, profilen, key):
+        if not profilen in self.get_prop('profiles'):
+            raise AsynkConfigError('Profile %s not found in state.json'
+                                   % profilen)
+
+        try:
+            profile = self.get_prop('profiles')[profilen]
+            return profile[key]
+        except KeyError, e:
+            raise AsynkConfigError(('Property %s not found in profile %s'
+                                    % (key, profilen)))
+
+    def set_profile_prop (self, profilen, key, val):
+        if not profilen in self.get_prop('profiles'):
+            raise AsynkConfigError('Profile %s not found in state.json'
+                                   % profilen)
+
+        self.get_prop('profiles')[profilen].update({key : val})
+
+class UserStateFile(UserStateBase):
+    def __init__ (self, config, app_root, user_dir):
+        UserStateBase.__init__(self)
+
+        base_dir = app_root
+        self.staten = os.path.abspath(os.path.join(user_dir, 'state.json'))
+
+        # If the user does not have a state.json file, then let's copy
+        # something that makes sense...
+        if not os.path.isfile(self.staten):
+            # Let's first see if there is anything in the asynk source root
+            # directory - this would be the case with early users of ASynK when
+            # there was no support for a user-level config dir in ~/.asynk/
+            if os.path.isfile(os.path.join(base_dir, 'state.json')):
+                shutil.copy2(os.path.join(base_dir, 'state.json'),
+                             os.path.join(user_dir, 'state.json'))
+                print 'We have copied your state.json to new user directory: ',
+                print user_dir
+                print 'We have not copied any of your logs and backup directories.'
+            else:
+                ## Looks like this is a pretty "clean" run. So just copy the
+                ## state.init file to get things rolling
+                shutil.copy2(os.path.join(base_dir, 'state.init.json'),
+                             os.path.join(user_dir, 'state.json'))
+
+        self.props = self.as_json()
+
+    def as_json (self):
+        try:
+            statei = open(self.staten, "r")
+            js = demjson.decode(statei.read())
+            statei.close()
+            return js
+        except IOError, e:
+            print 'Error! Could not Open file (%s): %s' % (self.staten, e)
+            raise
+
+    def save (self, fn=None):
+        json = demjson.encode(self.all_props(), compactly=False)
+        self._save(fn if fn else self.staten, json)
+
+class UserConfig(ConfigBase):
+    def __init__ (self, asynk_base_dir, user_dir):
+        ConfigBase.__init__(self)
+
+        self.base_dir = asynk_base_dir
+        self.user_dir = user_dir
+
+        self.confi_curr_ver = UserConfig.get_latest_config_version(asynk_base_dir)
 
         self.confpy = os.path.abspath(os.path.join(user_dir, 'config.py'))
         self.confn  = 'config_v%d.json' % self.confi_curr_ver
         self.confn  = os.path.abspath(os.path.join(asynk_base_dir,
                                                    'config', self.confn))
-        self.staten = os.path.abspath(os.path.join(user_dir, 'state.json'))
 
-        self._setup_state_json()
         self._migrate_config_if_reqd(self.confi_curr_ver)
 
         try:
@@ -77,35 +177,14 @@ class Config:
             print 'Error! Could not Open file (%s): %s' % (self.confn, e)
             raise
 
-        try:
-            statei = open(self.staten, "r")
-        except IOError, e:
-            print 'Error! Could not Open file (%s): %s' % (self.staten, e)
-            raise
-
         stc = demjson.decode(confi.read())
-        sts = demjson.decode(statei.read())
+        confi.close()
 
         print 'Applying user customizations from file %s...' % self.confpy
         self._customize_config(self.confpy, stc)
         print 'Applying user customizations from file %s...done' % self.confpy
 
-        # #  A sample profile is given in the initial distribution, that should
-        # #  not be written back to the file. Do the needful.
-        # if 'sample' in sts['profiles']:
-        #     del sts['profiles']['sample']
-
-        self.state = { 'state'  : sts,
-                       'config' : stc, }
-
-        ## FIXME: A bit grotesque that we have to do this again. But let's go
-        ## with this flow for now.
-
-        self.set_app_root(asynk_base_dir)
-        self.set_user_dir(user_dir)
-
-        confi.close()
-        statei.close()
+        self.props = stc
 
         if self.get_conf_file_version() < self.confi_curr_ver:
             logging.warn('config.json file version is out of date. You may '
@@ -114,11 +193,9 @@ class Config:
                          'to configure. Note that this is optional and your '
                          'ASynK will continue to work as before.')
 
-        self.sync_through = sync_through
-
-    ##
-    ## Helper routines
-    ##
+    def save (self, fn=None):
+        logging.debug(' ==== Alert - trying to save config.json ==== ')
+        return
 
     ## First some class methods
 
@@ -135,36 +212,9 @@ class Config:
     def get_latest_config_filen (root):
         return 'config_v%s.json' % Config.get_latest_config_version(root)
 
-    def _setup_state_json (self):
-        user_dir = self.get_user_dir()
-        base_dir = self.get_app_root()
-
-        # If there is no config file, then let's copy something that makes
-        # sense...
-        if not os.path.isfile(os.path.join(user_dir, 'state.json')):
-            # Let's first see if there is anything in the asynk source root
-            # directory - this would be the case with early users of ASynK when
-            # there was no support for a user-level config dir in ~/.asynk/
-            if os.path.isfile(os.path.join(base_dir, 'state.json')):
-                shutil.copy2(os.path.join(base_dir, 'state.json'),
-                             os.path.join(user_dir, 'state.json'))
-                print 'We have copied your state.json to new user directory: ',
-                print user_dir
-                print 'We have not copied any of your logs and backup directories.'
-            else:
-                dest_state = os.path.join(user_dir, 'state.json')
-                ## Looks like this is a pretty "clean" run. So just copy the
-                ## state.init file to get things rolling
-                shutil.copy2(os.path.join(base_dir, 'state.init.json'),
-                             dest_state)
-                ## Add user write permission in case state.init.json
-                ## was not writable
-                os.chmod(dest_state,
-                         os.stat(dest_state).st_mode | stat.S_IWUSR)
-
     def _migrate_config_if_reqd (self, curr_ver):
-        user_dir = self.get_user_dir()
-        base_dir = self.get_app_root()
+        user_dir = self.user_dir
+        base_dir = self.base_dir
         confpy_init = os.path.join(base_dir, 'config', 'config.init.py')
         confpy      = os.path.join(user_dir, 'config.py')
         confjs      = os.path.join(user_dir, 'config.json')
@@ -206,7 +256,7 @@ class Config:
                 print '*** NOTE: Custom config auto migrated from v%d' % user_ver
 
     def _customize_config (self, confpy, config):
-        user_dir = self.get_user_dir()
+        user_dir = self.user_dir
         sys.path += [user_dir]
         confpy_m = None
         try:
@@ -217,76 +267,99 @@ class Config:
 
         confpy_m.customize_config(config)
 
+    def get_conf_file_version (self):
+        return self.get_prop('file_version')
+
+class Config(ConfigBase):
+    def __init__ (self, asynk_base_dir, user_dir, sync_through=True,
+                  state=None):
+        ## FIXME: The sync_through flag does not really work as expected. The
+        ## intended behaviour was this will provide a default which can be
+        ## overriden in any call. The way each attribute write has been
+        ## implemented, all the methods override this explicitly - basically
+        ## rendering this useless, more or less. The right fix is to set the
+        ## default values for 'sync' in attribute writers to this value and
+        ## allow the callers to override it as required. This 'bug' has no
+        ## user-facing consequences. So get to it some time.
+
+        """If sync_through is True, any change to the configuration is
+        immediately written back to the original disk file, otherwise
+        the user has to explicitly save to disk."""
+
+        ConfigBase.__init__(self)
+
+        self.state = { 'state'  : None,
+                       'config' : None }
+
+        self.sync_through = False
+
+        ## Now read and process application sync state from state.json
+        statei  = None
+        if state is not None:
+            self.user_state = state
+        else:
+            self.user_state = UserStateFile(self, asynk_base_dir, user_dir)
+
+        # #  A sample profile is given in the initial distribution, that should
+        # #  not be written back to the file. Do the needful.
+        # if 'sample' in sts['profiles']:
+        #     del sts['profiles']['sample']
+
+        self.state = { 'state'  : self.user_state,
+                       'config' : UserConfig(asynk_base_dir, user_dir), }
+
+        ## FIXME: A bit grotesque that we have to do this again. But let's go
+        ## with this flow for now. Fri Jun 10 16:33:48 IST 2016: Not sure
+        ## anymore why this was required in the first place. Sigh.
+        self.set_app_root(asynk_base_dir)
+        self.set_user_dir(user_dir)
+
+        self.sync_through = sync_through
+
+    ##
+    ## Helper routines
+    ##
+
     ## Not dependent on sync state between a pair of PIMDs
 
     def _get_prop (self, group, key):
-        return self.state[group][key]
+        return self.state[group].get_prop(key)
 
     def _set_prop (self, group, key, val, sync=True):
-        self.state[group][key] = val
+        self.state[group].set_prop(key, val)
 
         if self.sync_through and sync:
-            if group == 'state':
-                self.save_state()
-            elif group == 'config':
-                self.save_config()
+            self.state[group].save()
 
     def _append_to_prop (self, group, key, val, sync=True):
         """In the particular property value is an array, we would like to
         append individual elements to the property value. this method does
         exactly that."""
 
-        if not self.state[group][key]:
-            self.state[group][key] = [val]
-        else:
-            self.state[group][key].append(val)
-
+        self.state[group].append_prop(key, val)
         if self.sync_through and sync:
-            if group == 'state':
-                self.save_state()
-            elif group == 'config':
-                self.save_config()
+            self.state[group].save()
 
     def _update_prop (self, group, prop, which, val, sync=True):
         """If a particular property value is a dictionary, we would like to
         update the dictinary with a new mapping or alter an existing
         mapping. This method does exactly that."""
 
-        if not self.state[group][prop]:
-            self.state[group][prop] = {which : val}
-        else:
-            self.state[group][prop].update({which : val})
-
+        self.state[group].update_prop(prop, which, val)
         if self.sync_through and sync:
-            if group == 'state':
-                self.save_state()
-            elif group == 'config':
-                self.save_config()
+            self.state[group].save()
 
-    ## get/set properties for specified sync profiles.Invalid field access
+    ## get/set properties for specified sync profiles. Invalid field access
     ## will throw a AsynkConfigError exeption. ss in the method names stands
     ## for 'sync_state'
 
     def _get_profile_prop (self, profile, key):
-        if not profile in self.state['state']['profiles']:
-            raise AsynkConfigError('Profile %s not found in state.json'
-                                   % profile)
-
-        try:
-            return self.state['state']['profiles'][profile][key]
-        except KeyError, e:
-            raise AsynkConfigError(('Property %s not found in profile %s'
-                                    % (key, profile)))
+        return self.state['state'].get_profile_prop(profile, key)
 
     def _set_profile_prop (self, profile, key, val, sync=True):
-        if not profile in self.state['state']['profiles']:
-            raise AsynkConfigError('Profile %s not found in state.json'
-                                   % profile)
-
-        self.state['state']['profiles'][profile].update({key : val})
-
+        self.state['state'].set_profile_prop(profile, key, val)
         if self.sync_through and sync:
-            self.save_state()
+            self.state['state'].save()
 
     def get_curr_time (self):
         return iso8601.tostring(time.time())
@@ -296,47 +369,47 @@ class Config:
     ##
 
     def get_conf_file_version (self):
-        return self._get_prop('config', 'file_version')
+        return self.state['config'].get_prop('file_version')
 
     def get_label_prefix (self):
-        return self._get_prop('config', 'label_prefix')
+        return self.state['config'].get_prop('label_prefix')
 
     def get_label_separator (self):
-        return self._get_prop('config', 'label_separator')
+        return self.state['config'].get_prop('label_separator')
 
     def get_db_config (self, dbid):
-        return self._get_prop('config', 'db_config')[dbid]
+        return self.state['config'].get_prop('db_config')[dbid]
 
     def get_backup_dir (self):
         return self._get_prop('config', 'backup_dir')
 
     def get_backup_hold_period (self):
         try:
-            return self._get_prop('config', 'backup_hold_period')
+            return self.state['config'].get_prop('backup_hold_period')
         except KeyError, e:
             ## Possibly due to a older version of the config.json. Silently
             ## return a default value
             return 7        
 
     def get_log_dir (self):
-        return self._get_prop('config', 'log_dir')
+        return self.state['config'].get_prop('log_dir')
 
     def get_log_hold_period (self):
         try:
-            return self._get_prop('config', 'log_hold_period')
+            return self.state['config'].get_prop('log_hold_period')
         except KeyError, e:
             ## Possibly due to a older version of the config.json. Silently
             ## return a default value
             return 7
 
     def get_profile_defaults (self):
-        return self._get_prop('config', 'profile_defaults')
+        return self.state['config'].get_prop('profile_defaults')
 
     def get_profile_name_re (self):
-        return self._get_prop('config', 'profile_name_re')
+        return self.state['config'].get_prop('profile_name_re')
 
     def get_dbid_re (self):
-        return self._get_prop('config', 'dbid_re')
+        return self.state['config'].get_prop('dbid_re')
 
     def get_ol_guid (self):
         return self.get_db_config('ol')['guid']
@@ -369,41 +442,41 @@ class Config:
         return self.get_db_config('ex')['stags_pname']
 
     ##
-    ## get-set pairs for sync state parameters in state.json
+    ## get-set pairs for sync state parameters in state.json or equivalent
     ##
 
     def get_user_dir (self):
-        return self._get_prop('state', 'asynk_user_dir')
+        return self.state['state'].get_prop('asynk_user_dir')
 
     def set_user_dir (self, val, sync=False):
-        return self._set_prop('state', 'asynk_user_dir', val, sync)
+        return self.state['state'].set_prop('asynk_user_dir', val, sync)
 
     def get_app_root (self):
-        return self._get_prop('state', 'app_root')
+        return self.state['state'].get_prop('app_root')
 
     def set_app_root (self, val, sync=False):
-        return self._set_prop('state', 'app_root', val, sync)
+        return self.state['state'].set_prop('app_root', val, sync)
 
     def get_state_file_version (self):
-        return self._get_prop('state', 'file_version')
+        return self.state['state'].get_prop('file_version')
 
     def set_state_file_version (self, val, sync=True):
-        return self._set_prop('state', 'file_version', val, sync)
+        return self.state['state'].set_prop('file_version', val, sync)
 
     def get_default_profile (self):
-        return self._get_prop('state', 'default_profile')
+        return self.state['state'].get_prop('default_profile')
 
     def set_default_profile (self, val, sync=True):
-        return self._set_prop('state', 'default_profile', val, sync)
+        return self.state['state'].set_prop('default_profile', val, sync)
 
     def get_profiles (self):
-        return self._get_prop('state', 'profiles')
+        return self.state['state'].get_prop('profiles')
 
     def set_profiles (self, val, sync=True):
-        return self._set_prop('state', 'profiles', val, sync)
+        return self.state['state'].set_prop('profiles', val, sync)
 
     def add_profile (self, pname, val, sync=True):
-        return self._update_prop('state', 'profiles', pname, val, sync)
+        return self.state['state'].update_prop('profiles', pname, val, sync)
 
     def get_profile_names (self):
         return self.get_profiles().keys()
@@ -553,34 +626,6 @@ class Config:
         old = self.get_ex_sync_state(pname)
         self._set_profile_prop(pname, 'sync_state', sync_state, sync)
         return sync_state
-
-    ##
-    ## Finally the two save routines.
-    ##
-
-    def _save (self, fn, json):
-        """fn should be the full absolute path. json is the json to be written
-        out"""
-
-        try:
-            fi = open(fn, "w")
-        except IOError, e:
-            logging.critical('Error! Could not Open file (%s): %s', fn, e)
-            return
-
-        fi.write(json)
-        fi.close()
-
-    def save_state (self, fn=None):
-        json = demjson.encode(self.state['state'], compactly=False)
-        self._save(fn if fn else self.staten, json)
-
-    def save_config (self, fn=None):
-        logging.debug(' ==== Alert - trying to save config.json ==== ')
-        return
-
-        json = demjson.encode(self.state['config'], compactly=False)
-        self._save(fn if fn else self.confn, json)
 
     ##
     ## Misc Routines
