@@ -210,7 +210,7 @@ class UserConfig(ConfigBase):
 
     @staticmethod
     def get_latest_config_filen (root):
-        return 'config_v%s.json' % Config.get_latest_config_version(root)
+        return 'config_v%s.json' % UserConfig.get_latest_config_version(root)
 
     def _migrate_config_if_reqd (self, curr_ver):
         user_dir = self.user_dir

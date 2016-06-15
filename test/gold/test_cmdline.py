@@ -29,7 +29,7 @@ EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
 import utils
-from   state          import Config
+from   state          import Config, UserConfig
 
 asynk_base_dir = os.path.abspath(os.path.join("..", ".."))
 user_dir   = os.path.abspath('user_dir')
@@ -37,7 +37,7 @@ state_src  = os.path.join('..', '..', 'state.init.json')
 state_dest = os.path.join(user_dir, 'state.json')
 
 confn_src = os.path.join('..', '..', 'config',
-                         Config.get_latest_config_filen(asynk_base_dir))
+                         UserConfig.get_latest_config_filen(asynk_base_dir))
 confn_dest  = os.path.join(user_dir, 'config.json')
 
 def main (argv=None):
