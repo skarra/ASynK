@@ -20,6 +20,9 @@
 
 import iso8601, logging, os, re, xml.dom.minidom
 
+OPMODE_CONSOLE = 0
+OPMODE_WEB     = 1
+
 time_start = "1980-01-01T00:00:00.00+00:00"
 
 def yyyy_mm_dd_to_pytime (date_str):

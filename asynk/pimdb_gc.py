@@ -102,7 +102,12 @@ class GCPIMDB(PIMDB):
             if not silent:
                 logging.info(' %2d: Contacts Name: %-25s ID: %s',
                              i, name, entry.id.text)
-            ret.append((entry.id.text, name, entry))
+            if self.operating_mode == utils.OPMODE_WEB:
+                ret.append({'index' : i,
+                            'folder_id' : entry.id.text,
+                            'folder_name' : name})
+            else:
+                ret.append((entry.id.text, name, entry))
 
         return ret
 

@@ -42,6 +42,7 @@
 import logging
 from   abc      import ABCMeta, abstractmethod
 from   folder   import Folder
+import utils
 
 class GoutInvalidPropValueError(Exception):
     pass
@@ -50,6 +51,7 @@ class PIMDB:
     __metaclass__ = ABCMeta
 
     def __init__ (self, config):
+        self.operating_mode = utils.OPMODE_CONSOLE
         self.atts = {}
 
         self.set_config(config)
