@@ -28,7 +28,7 @@
 
 from   abc     import ABCMeta, abstractmethod
 import iso8601, demjson
-import glob, logging, os, re, shutil, sys, time, stat
+import copy, glob, logging, os, re, shutil, sys, time
 
 sync_dirs = ['SYNC1WAY', 'SYNC2WAY']
 
@@ -93,6 +93,9 @@ class UserStateBase(ConfigBase):
     def save (self):
         pass
 
+    def get_profile_names (self):
+        return self.get_prop('profiles').keys()
+
     def get_profile_prop (self, profilen, key):
         if not profilen in self.get_prop('profiles'):
             raise AsynkConfigError('Profile %s not found in state.json'
@@ -111,6 +114,26 @@ class UserStateBase(ConfigBase):
                                    % profilen)
 
         self.get_prop('profiles')[profilen].update({key : val})
+
+    def add_profile (self, pname, profile, sync=True):
+        self.get_prop('profiles').update({pname : profile})
+        if sync is True:
+            self.save()
+
+    def duplicate_profile (self, old_pname, new_pname, sync=True):
+        if not old_pname in self.get_profile_names():
+            return False
+
+        profile = self.get_prop('profiles')[old_pname]
+        self.add_profile(new_pname, copy.deepcopy(profile), sync)
+
+        return new_pname
+
+    def get_default_profile (self):
+        return self.get_prop('default_profile')
+
+    def set_default_profile (self, pname, sync=True):
+        return self.set_prop('default_profile', pname, sync)
 
 class UserStateFile(UserStateBase):
     def __init__ (self, config, app_root, user_dir):
@@ -139,7 +162,10 @@ class UserStateFile(UserStateBase):
 
         self.props = self.as_json()
 
-    def as_json (self):
+    def as_json (self, refresh=True):
+        """If refresh is True then the file is actually read from the file
+        again. Otherwise the in-memory version is returned. """
+
         try:
             statei = open(self.staten, "r")
             js = demjson.decode(statei.read())
@@ -464,10 +490,10 @@ class Config(ConfigBase):
         return self.state['state'].set_prop('file_version', val, sync)
 
     def get_default_profile (self):
-        return self.state['state'].get_prop('default_profile')
+        return self.state['state'].get_default_profile()
 
     def set_default_profile (self, val, sync=True):
-        return self.state['state'].set_prop('default_profile', val, sync)
+        return self.state['state'].set_default_profile(val, sync)
 
     def get_profiles (self):
         return self.state['state'].get_prop('profiles')
@@ -476,10 +502,10 @@ class Config(ConfigBase):
         return self.state['state'].set_prop('profiles', val, sync)
 
     def add_profile (self, pname, val, sync=True):
-        return self.state['state'].update_prop('profiles', pname, val, sync)
+        return self.state['state'].add_profile(pname, val, sync)
 
     def get_profile_names (self):
-        return self.get_profiles().keys()
+        return self.state['state'].get_profiles().keys()
 
     ##
     ## get-set pairs for application modifiable config/state specific to a

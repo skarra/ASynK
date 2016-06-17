@@ -18,10 +18,21 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
-import iso8601, logging, os, re, xml.dom.minidom
+import iso8601, logging, os, random, re, xml.dom.minidom
 
 OPMODE_CONSOLE = 0
 OPMODE_WEB     = 1
+
+def gen_random_profile_name (length=6):
+    """Generate a random string of specified length where each character is a
+    randomly selected letter from the Base56 alphabet."""
+
+    alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+    ret = []
+    for i in range(0, length):
+        ret.append(random.choice(alphabet))
+
+    return ''.join(ret)
 
 time_start = "1980-01-01T00:00:00.00+00:00"
 
