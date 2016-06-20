@@ -27,21 +27,17 @@ class ASynKBaseLogger:
 
         self.config = config
 
-        formatter = logging.Formatter('[%(asctime)s.%(msecs)03d '
-                                      '%(levelname)8s] %(message)s',
-                                      datefmt='%H:%M:%S')
+        self.formatter = logging.Formatter('[%(asctime)s.%(msecs)03d '
+                                           '%(levelname)8s] %(message)s',
+                                           datefmt='%H:%M:%S')
     
         ## First the console logger - the logging level may be changed later after
         ## the command line arguments are parsed properly.
 
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
+        self.consoleLogger = logger
     
-        self.consoleLogger = logging.StreamHandler()
-        self.consoleLogger.setLevel(logging.INFO)
-        self.consoleLogger.setFormatter(formatter)
-        logger.addHandler(self.consoleLogger)
-
     def clear_old_logs (self):
         pass
 
@@ -51,7 +47,9 @@ class ASynKFileLogger(ASynKBaseLogger):
     which is assumed to exist already."""
 
     def __init__ (self, config):
-        ASynKBaseLogger.__init__(config)
+        ASynKBaseLogger.__init__(self, config)
+
+        self.consoleLogger.setLevel(logging.INFO)
 
         ## Now the more detailed debug logs which are written to file in a default
         ## logs/ directory. The location of the directory is read from the
@@ -69,8 +67,8 @@ class ASynKFileLogger(ASynKBaseLogger):
 
         fileLogger = logging.FileHandler(logname, 'w')
         fileLogger.setLevel(logging.DEBUG)
-        fileLogger.setFormatter(formatter)
-        logger.addHandler(fileLogger)
+        fileLogger.setFormatter(self.formatter)
+        logging.getLogger().addHandler(fileLogger)
 
     def clear_old_logs (self):
         config = self.config
