@@ -505,7 +505,7 @@ class Config(ConfigBase):
         return self.state['state'].add_profile(pname, val, sync)
 
     def get_profile_names (self):
-        return self.state['state'].get_profiles().keys()
+        return self.get_profiles().keys()
 
     ##
     ## get-set pairs for application modifiable config/state specific to a
