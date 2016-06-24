@@ -135,6 +135,37 @@ class UserStateBase(ConfigBase):
     def set_default_profile (self, pname, sync=True):
         return self.set_prop('default_profile', pname, sync)
 
+    def find_matching_pname (self, db1, st1, fo1, db2, st2, fo2):
+        """Return the name(s) of any existing profile for the matching tuples
+        of db, store, and folder specified. Returns None if there is nothing
+        matching found. As always the order matters.
+
+        If a store id or a folder id is None, then it is used to match any
+        value in those fields. If they are 'default' then the appropriate
+        deafult values are matched."""
+
+        ret = []
+
+        ## FIXME: This is a hack. Needs to be fixed. Basically None and
+        ## default are treated the same. This should not be the case.
+        st1 = None if st1 in ["default", "None"] else st1
+        st2 = None if st2 in ["default", "None"] else st2
+        fo1 = None if fo1 in ["default", "None"] else fo1
+        fo2 = None if fo2 in ["default", "None"] else fo2
+
+        pnames = self.get_profile_names()
+        for p in pnames:
+            if (db1 == self.get_profile_db1(p) and
+                db2 == self.get_profile_db2(p) and
+                (not st1 or st1 == self.get_stid1(p)) and
+                (not st2 or st2 == self.get_stid2(p)) and
+                (not fo1 or fo1 == self.get_fid1(p))  and
+                (not fo2 or fo2 == self.get_fid2(p))):
+                ret.append(p)
+
+        return ret if len(ret) > 0 else None
+
+
 class UserStateFile(UserStateBase):
     def __init__ (self, config, app_root, user_dir):
         UserStateBase.__init__(self)
@@ -772,34 +803,8 @@ class Config(ConfigBase):
         return pname in self.get_profiles()
 
     def find_matching_pname (self, db1, st1, fo1, db2, st2, fo2):
-        """Return the name(s) of any existing profile for the matching tuples
-        of db, store, and folder specified. Returns None if there is nothing
-        matching found. As always the order matters.
-
-        If a store id or a folder id is None, then it is used to match any
-        value in those fields. If they are 'default' then the appropriate
-        deafult values are matched."""
-
-        ret = []
-
-        ## FIXME: This is a hack. Needs to be fixed. Basically None and
-        ## default are treated the same. This should not be the case.
-        st1 = None if st1 in ["default", "None"] else st1
-        st2 = None if st2 in ["default", "None"] else st2
-        fo1 = None if fo1 in ["default", "None"] else fo1
-        fo2 = None if fo2 in ["default", "None"] else fo2
-
-        pnames = self.get_profile_names()
-        for p in pnames:
-            if (db1 == self.get_profile_db1(p) and
-                db2 == self.get_profile_db2(p) and
-                (not st1 or st1 == self.get_stid1(p)) and
-                (not st2 or st2 == self.get_stid2(p)) and
-                (not fo1 or fo1 == self.get_fid1(p))  and
-                (not fo2 or fo2 == self.get_fid2(p))):
-                ret.append(p)
-
-        return ret if len(ret) > 0 else None
+        return self.state['state'].find_matching_pname(db1, st1, fo1,
+                                                       db2, st2, fo2)
 
     def get_store_pnames (self, db1, db2=None, store=None):
         """Find the profile name(s) from db1:db2 where the store field matches
