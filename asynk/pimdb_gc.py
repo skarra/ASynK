@@ -91,8 +91,13 @@ class GCPIMDB(PIMDB):
         """Apart from doing the usual thing, this also retusn some good
         stuff..."""
 
+        return GCPIMDB.list_folders_static(self.get_gdc(), silent,
+                                           self.operating_mode)
+
+    @staticmethod
+    def list_folders_static (gdc, silent=False, operating_mode=utils.OPMODE_WEB):
         ret = []
-        feed = self.get_groups_feed()
+        feed = GCPIMDB.get_groups_feed_static(gdc)
 
         if not feed.entry:
             return ret
@@ -102,7 +107,7 @@ class GCPIMDB(PIMDB):
             if not silent:
                 logging.info(' %2d: Contacts Name: %-25s ID: %s',
                              i, name, entry.id.text)
-            if self.operating_mode == utils.OPMODE_WEB:
+            if operating_mode == utils.OPMODE_WEB:
                 ret.append({'index' : i,
                             'folder_id' : entry.id.text,
                             'folder_name' : name})
@@ -314,8 +319,11 @@ class GCPIMDB(PIMDB):
 
 
     def get_groups_feed (self):
-        feed = self.get_gdc().GetGroups()
-        return feed
+        return GCPIMDB.get_groups_feed_static(self.get_gdc())
+
+    @staticmethod
+    def get_groups_feed_static (gdc):
+        return gdc.GetGroups()
 
     def print_groups (self):
         feed = self.get_groups_feed()
