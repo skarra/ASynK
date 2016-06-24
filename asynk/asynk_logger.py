@@ -22,10 +22,8 @@ import datetime, logging, os, string
 import utils
 
 class ASynKBaseLogger:
-    def __init__ (self, config):
+    def __init__ (self):
         """Set up the logging settings to the defaults."""
-
-        self.config = config
 
         self.formatter = logging.Formatter('[%(asctime)s.%(msecs)03d '
                                            '%(levelname)8s] %(message)s',
@@ -47,9 +45,9 @@ class ASynKFileLogger(ASynKBaseLogger):
     which is assumed to exist already."""
 
     def __init__ (self, config):
-        ASynKBaseLogger.__init__(self, config)
+        ASynKBaseLogger.__init__(self)
 
-        self.consoleLogger.setLevel(logging.INFO)
+        self.consoleLogger.setLevel(logging.DEBUG)
 
         ## Now the more detailed debug logs which are written to file in a default
         ## logs/ directory. The location of the directory is read from the
