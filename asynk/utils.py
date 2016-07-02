@@ -18,6 +18,11 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
+##
+## This file contains routines that are mostly helper functions and those that
+## do not have anything to do with ASynK itself.
+##
+
 import iso8601, logging, os, random, re, xml.dom.minidom
 
 OPMODE_CONSOLE = 0
@@ -304,3 +309,43 @@ def QName_GNS2 (name):
 
 def QName_GNS3 (name):
     return QName(GNS3_NAMESPACE, name)
+
+## Buffer manipulation
+
+def do_buffer_in_chunks (buf, chunk_size, func, fail_fast=False):
+    """Apply func to 'buffer', 'chunk_size' at a time.
+
+    func should return None in case of failure. Anything else is considered as
+    success.
+
+    If fail_fast is set to True, then this method returns immediately after
+    first failure, and returns (False, iter), where iter shows the iteration
+    count (starting at 0) where it failed.
+
+    if fail_fast is set to False, then the entire buffer is processed. The
+    return vaue is (False/True, fail_count), fail_count is the number of
+    failures encountered while processing."""
+
+    index = 0
+    start = index * chunk_size
+    fail_count = 0
+    ret_val = True
+
+    while start <= len(buf) - 1:
+        end = start + chunk_size
+        if end > len(buf) - 1:
+            end = len(buf) - 1
+
+        buf_tmp = buf[start : start + chunk_size]
+        ret = func(buf_tmp)
+        if ret is None:
+            if fail_fast:
+                return True, index
+
+            ret_val = False
+            fail_count += 1
+
+        index += 1
+        start = index * chunk_size
+
+    return ret_val, fail_count
