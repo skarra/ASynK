@@ -292,8 +292,10 @@ class AsynkBuilderC:
         self.asynk.set_label_re(uinps.label_regex)
         self.asynk.set_conflict_resolve(uinps.conflict_resolve)
         self.asynk.set_item_id(uinps.item)
-        self._snarf_auth_creds(uinps)
-        # self.asynk.set_port(uinps.port)
+
+        if not self.asynk.get_op() in ['op_list_profiles',
+                                       'op_list_profile_names']:
+            self._snarf_auth_creds(uinps)
 
 def main (argv=sys.argv):
     parser  = setup_parser()
