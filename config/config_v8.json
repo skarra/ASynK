@@ -283,8 +283,8 @@
                 'birthday'    : 'birthday',
                 'anniv'       : 'anniversary',
                 'itemid'      : 'bbdb-id',
-                'web_home_re' : 'Web.*Home',  // Regexp
-                'web_work_re' : 'Web.*Work',  // Regexp
+                'web_home_re' : 'Web.*Home',  // Regexp. FIXME. See Issue 103.
+                'web_work_re' : 'Web.*Work',  // Regexp. FIXME. See Issue 103.
                 'ims'         : 'im-(.*)',    // Regexp brackets are important.
                 'dept'        : 'department',
                 'title'       : 'title',

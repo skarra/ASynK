@@ -578,21 +578,36 @@ class BBContact(Contact):
     def _get_websites_as_string (self):
         ## FIXME: What happens to the "get_web_prim()". 
 
+        noted = self.get_notes_map()
         ret = []
+
+        home_label = noted['web_home_re']
         for i, web in enumerate(self.get_web_home()):
             if not web:
                 continue
 
-            label = 'Web-%02d-Home' % i
+            ## FIXME: Hack Alert. There is no easy way to regenerate proper
+            ## labels with the regex. Need to rethink this a bit. Perhaps
+            ## there needs to be a patter to match, and a python pattern to
+            ## generate them at the remote end.
+            if home_label == 'Web.*Home':
+                label = 'Web-%02d-Home' % i
+            else:
+                label = home_label
             value = unchompq(esc_str(web))
 
             ret.append("(%s . %s)" % (label, value))
 
+        work_label = noted['web_work_re']
         for i, web in enumerate(self.get_web_work()):
             if not web:
                 continue
 
-            label = 'Web-%02d-Work' % i
+            ## FIXME: Hack Alert. See above
+            if work_label == 'Web.*Work':
+                label = 'Web-%02d-Work' % i
+            else:
+                label = work_label
             value = unchompq(esc_str(web))
 
             ret.append("(%s . %s)" % (label, value))
