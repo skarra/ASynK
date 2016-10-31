@@ -23,10 +23,6 @@
 ## words this file wraps a vCard object.
 ##
 
-## TODO: On priority we need to sync the (a) sync tags and (b) the last
-## modification time stamp. These two are critical to maintain state of
-## synchronization.
-
 from   contact    import Contact
 from   vobject    import vobject
 import demjson, pimdb_cd, utils
