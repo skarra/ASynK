@@ -585,10 +585,21 @@ class Asynk:
             db1c = coll_id_class[db1id]
             db2c = coll_id_class[db2id]
 
-            if len(self.colls) != 0:
-                ## FIXME: this looks ugly but unless the command line flags
-                ## handling is rewritten in whole hard to avoid.
-                self.colls = []
+            ## FIXME: Mon Oct 31 22:00:17 IST 2016 The following two blocks
+            ## were conflicting code blocks. The block (b) was added in master
+            ## to fix https://github.com/skarra/ASynK/issues/87 However that
+            ## prevents ASynK Online code from working properly - the gae
+            ## branch had the codebllock (a). What needs to be done now is -
+            ## once ASynK Online dev effort is completed, to look at these two
+            ## - particularly from the pov of CardDAV dry run sync and then
+            ## leave the working version behind.
+
+            # assert len(self.colls) == 0 # (a) - commented out code in 'gae'
+
+            # if len(self.colls) != 0: # (b)
+            #     ## FIXME: this looks ugly but unless the command line flags
+            #     ## handling is rewritten in whole hard to avoid.
+            #     self.colls = []
 
             # ## FIXME: Why were we not setting fid?
             # self.add_coll(db1c(config=conf, stid=conf.get_stid1(pname),
