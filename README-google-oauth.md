@@ -33,7 +33,7 @@ Step 3. Authentication
 Note you still need to give your username, but not your password. Instead you
 need to tell ASynK where to find the credentials JSON you saved in step 2
 above. In the interest of time I have hacked so that you can reuse your
-earlier method of authentication via `~/.betrc/` or entering it via command
+earlier method of authentication via `~/.netrc/` or entering it via command
 line.
 
     username: your gmail username
