@@ -40,9 +40,13 @@ that website.
 
 * Installation
 
-As you are reading this file, the most efficient installation is to clone this
-git repository to your machine. Then see the section titled Usage below to 
-invoke ASynK. Remember to use the --recursive flag while cloning.
+** Fresh Installation
+
+As you are reading this file, the most efficient installation is to
+recursively clone this git repository to your machine. Then see the
+section titled Usage below to invoke ASynK.
+
+: git clone  --recursive https://github.com/skarra/ASynK.git
 
 ** Updating an earlier install
 
