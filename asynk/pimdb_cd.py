@@ -194,10 +194,10 @@ class CDPIMDB(PIMDB):
        # actually in the string. This sucks, but this is all I am willing to
        # do for the m moment. FIXME
 
-        res = re.search(r'(\d\d\d\d\d\d\d\dT\d\d\d\d\d\dZ).*', t)
+        res = re.search(r'(\d\d\d\d\d\d\d\dT\d\d\d\d\d\d).*', t)
         if res:
             t = res.group(1)
-            return datetime.datetime.strptime(t, '%Y%m%dT%H%M%SZ')
+            return datetime.datetime.strptime(t, '%Y%m%dT%H%M%S')
         else:
             t = iso8601.parse(t)
             return datetime.datetime.utcfromtimestamp(t)
