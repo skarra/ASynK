@@ -18,7 +18,8 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
-import iso8601, logging, os, re, xml.dom.minidom
+import lib.iso8601 as iso8601
+import logging, os, re, xml.dom.minidom
 
 time_start = "1980-01-01T00:00:00.00+00:00"
 
@@ -84,19 +85,8 @@ def touch (fn):
         os.utime(fn, None)
 
 def abs_pathname (config, fname):
-    """If fname is an absolute path then it is returned as is. If it starts
-    with a ~ then expand the path as per Unix conventions and finally if it
-    appears to be a relative path, the application root is prepended to the
-    name and an absolute OS-specific path string is returned."""
-
-    app_root = config.get_app_root()
-    if fname[0] == '~':
-        return os.path.expanduser(fname)
-
-    if fname[0] != '/' and fname[1] != ':' and fname[2] != '\\':
-        return os.path.join(app_root, fname)
-
-    return fname
+    """Returns the absolute path to file fname after expanding."""
+    return os.path.abspath(os.path.expanduser( fname ))
 
 def chompq (s):
     """Remove any leading and trailing quotes from the passed string."""

@@ -20,7 +20,7 @@
 
 from   folder         import Folder
 from   contact_cd     import CDContact
-from   vobject        import vobject
+import vobject
 from   caldavclientlibrary.protocol.url                 import URL
 from   caldavclientlibrary.protocol.http.util           import HTTPError
 from   caldavclientlibrary.protocol.webdav.definitions  import davxml

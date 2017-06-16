@@ -19,12 +19,6 @@
 
 import logging, os, re, string, sys
 
-CUR_DIR           = os.path.abspath('')
-ASYNK_BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
-               os.path.join(ASYNK_BASE_DIR, 'asynk'),]
-sys.path = EXTRA_PATHS + sys.path
-
 import argparse, utils
 from   asynk_logger     import ASynKLogger
 from   asynk_core       import Asynk, AsynkParserError
@@ -307,7 +301,7 @@ def main (argv=sys.argv):
         print 'Creating ASynK User directory at: ', uinps.user_dir
         os.makedirs(uinps.user_dir)
 
-    config  = Config(ASYNK_BASE_DIR, uinps.user_dir)
+    config  = Config(uinps.user_dir)
     alogger = ASynKLogger(config)
     alogger.setup()
 

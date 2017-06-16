@@ -27,7 +27,8 @@
 
 import logging, getopt, re, string, sys, time
 from datetime import datetime
-import atom, iso8601
+import atom
+import lib.iso8601 as iso8601
 import gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
 import demjson, utils

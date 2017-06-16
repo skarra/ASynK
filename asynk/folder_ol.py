@@ -19,7 +19,8 @@
 ##
 
 import logging, os, re, sys, time, traceback
-import iso8601, base64
+import lib.iso8601 as iso8601
+import base64
 import utils
 
 from   abc            import ABCMeta, abstractmethod

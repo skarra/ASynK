@@ -25,7 +25,7 @@
 import os, os.path, string, sys, logging, time, traceback
 from   datetime      import datetime
 
-import iso8601, base64
+import lib.iso8601, base64
 import win32com.client, pywintypes, winerror
 from   win32com.mapi import mapi, mapitags, mapiutil
 

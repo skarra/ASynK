@@ -24,7 +24,7 @@
 ##
 
 from   contact    import Contact
-from   vobject    import vobject
+import vobject
 import demjson, pimdb_cd, utils
 from   caldavclientlibrary.protocol.http.util import HTTPError
 

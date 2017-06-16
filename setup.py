@@ -15,13 +15,22 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
-setup(name='asynk',
+setup(
+      name='asynk',
       version='0.4.1',
       description='Synchronizes Google Contacts, BBDB and Outlook',
       author='Sriram Karra',
       author_email='karra.etc@gmail.com',
       url='https://karra-asynk.appspot.com/',
-      packages=['asynk'],
-     )
+      packages=['asynk','lib'],
+      install_requires=['demjson','vobject','httplib2'],
+#     install_requires=['iso8601','demjson','vobject','httplib2'],#,'caldavclientlibrary'],#,'apiclient'],#,'atom','distribute','vobject'],
+      package_data={
+          '': ['config/*'],},
+      entry_points={
+          'console_scripts': [
+              'asynk = asynk.asynk_cmdline:main' ],
+          }
+)

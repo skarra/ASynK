@@ -30,7 +30,7 @@ from   caldavclientlibrary.protocol.http.util           import HTTPError
 from   caldavclientlibrary.protocol.url   import URL
 from   caldavclientlibrary.client.account import CalDAVAccount
 
-import iso8601
+import lib.iso8601 as iso8601
 import datetime, logging, os, re, sys, urllib, urlparse
 
 class CardDAVPrincipalNotFoundError(Exception):

@@ -25,8 +25,10 @@
 ## file has code that manages both of these json files. In case you are
 ## wondering, at some point in the past it all resided in a single json file,
 ## and we are continuing to use the same handling framework...
+from pkg_resources import resource_filename, resource_listdir
 
-import iso8601, demjson
+import lib.iso8601 as iso8601
+import demjson
 import glob, logging, os, re, shutil, sys, time, stat
 
 sync_dirs = ['SYNC1WAY', 'SYNC2WAY']
@@ -35,7 +37,7 @@ class AsynkConfigError(Exception):
     pass
 
 class Config:
-    def __init__ (self, asynk_base_dir, user_dir, sync_through=True):
+    def __init__ (self, user_dir, sync_through=True):
         ## FIXME: The sync_through flag does not really work as expected. The
         ## intended behaviour was this will provide a default which can be
         ## overriden in any call. The way each attribute write has been
@@ -53,17 +55,15 @@ class Config:
                        'config' : {} }
 
         self.sync_through = False
-        self.set_app_root(asynk_base_dir)
         self.set_user_dir(user_dir)
 
         confi   = None
         statei  = None
-        self.confi_curr_ver = Config.get_latest_config_version(self.get_app_root())
+        self.confi_curr_ver = Config.get_latest_config_version()
 
         self.confpy = os.path.abspath(os.path.join(user_dir, 'config.py'))
-        self.confn  = 'config_v%d.json' % self.confi_curr_ver
-        self.confn  = os.path.abspath(os.path.join(asynk_base_dir,
-                                                   'config', self.confn))
+        self.confn  = 'config/config_v%d.json' % self.confi_curr_ver
+        self.confn = resource_filename(__name__, self.confn)
         self.staten = os.path.abspath(os.path.join(user_dir, 'state.json'))
 
         self._setup_state_json()
@@ -100,8 +100,6 @@ class Config:
 
         ## FIXME: A bit grotesque that we have to do this again. But let's go
         ## with this flow for now.
-
-        self.set_app_root(asynk_base_dir)
         self.set_user_dir(user_dir)
 
         confi.close()
@@ -123,30 +121,30 @@ class Config:
     ## First some class methods
 
     @staticmethod
-    def get_latest_config_version (root):
-        d = os.path.join(root, 'config')
-        files = glob.glob(os.path.join(d, 'config_*.json'))
-        vers = [int(re.search('_v(\d+).json$', x).group(1)) for x in files]
+    def get_latest_config_version ():
+        files = resource_listdir(__name__, 'config')
+        json_files = [re.search('config_v(\d+).json$', x) for x in files]
+        vers = [int(x.group(1)) for x in json_files if x is not None]
         vers.sort(reverse=True)
-
         return vers[0]
 
     @staticmethod
-    def get_latest_config_filen (root):
-        return 'config_v%s.json' % Config.get_latest_config_version(root)
+    def get_latest_config_filen ():
+        return 'config_v%s.json' % Config.get_latest_config_version()
 
     def _setup_state_json (self):
         user_dir = self.get_user_dir()
-        base_dir = self.get_app_root()
 
         # If there is no config file, then let's copy something that makes
         # sense...
         if not os.path.isfile(os.path.join(user_dir, 'state.json')):
-            # Let's first see if there is anything in the asynk source root
+            # Let's first see if there is anything in the current working directory
+            # This will break the situation where there is user config in the
+            # asynk source root
             # directory - this would be the case with early users of ASynK when
             # there was no support for a user-level config dir in ~/.asynk/
-            if os.path.isfile(os.path.join(base_dir, 'state.json')):
-                shutil.copy2(os.path.join(base_dir, 'state.json'),
+            if os.path.isfile('state.json'):
+                shutil.copy2('state.json',
                              os.path.join(user_dir, 'state.json'))
                 print 'We have copied your state.json to new user directory: ',
                 print user_dir
@@ -155,8 +153,9 @@ class Config:
                 dest_state = os.path.join(user_dir, 'state.json')
                 ## Looks like this is a pretty "clean" run. So just copy the
                 ## state.init file to get things rolling
-                shutil.copy2(os.path.join(base_dir, 'state.init.json'),
-                             dest_state)
+                json_init = resource_filename(__name__,
+                                'config/state.init.json')
+                shutil.copy2( json_init, dest_state)
                 ## Add user write permission in case state.init.json
                 ## was not writable
                 os.chmod(dest_state,
@@ -164,12 +163,10 @@ class Config:
 
     def _migrate_config_if_reqd (self, curr_ver):
         user_dir = self.get_user_dir()
-        base_dir = self.get_app_root()
-        confpy_init = os.path.join(base_dir, 'config', 'config.init.py')
+        confpy_init = resource_filename(__name__, 'config/config.init.py')
         confpy      = os.path.join(user_dir, 'config.py')
         confjs      = os.path.join(user_dir, 'config.json')
-        confjs_curr = os.path.join(base_dir, 'config',
-                                   'config_v%d.json' % curr_ver)
+        confjs_curr =  'config_v%d.json' % curr_ver
 
         if not os.path.isfile(confpy):
             shutil.copy2(confpy_init, confpy)
@@ -178,8 +175,8 @@ class Config:
             user_config = open(confjs, 'r').read()
 
             user_ver = demjson.decode(user_config)['file_version']
-            confjs_curr1 = os.path.join(base_dir, 'config',
-                                        'config_v%d.json' % user_ver)
+            confjs_curr1 = resource_filename(__name__,
+                                    'config/config_v%d.json' % user_ver)
             std_config  = open(confjs_curr1, 'r').read()
 
             if user_config != std_config:
@@ -377,12 +374,6 @@ class Config:
 
     def set_user_dir (self, val, sync=False):
         return self._set_prop('state', 'asynk_user_dir', val, sync)
-
-    def get_app_root (self):
-        return self._get_prop('state', 'app_root')
-
-    def set_app_root (self, val, sync=False):
-        return self._set_prop('state', 'app_root', val, sync)
 
     def get_state_file_version (self):
         return self._get_prop('state', 'file_version')

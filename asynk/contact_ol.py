@@ -30,7 +30,7 @@ from   contact import Contact
 from   win32com.mapi import mapitags as mt
 import asynk_mapitags as amt
 from   win32com.mapi import mapi
-import demjson, iso8601, winerror, win32api, pywintypes
+import demjson, lib.iso8601, winerror, win32api, pywintypes
 
 class OLContactError(Exception):
     pass
