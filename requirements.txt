@@ -3,3 +3,4 @@ oauth2client
 PyOpenSSL
 google-api-python-client
 python-dateutil
+vobject

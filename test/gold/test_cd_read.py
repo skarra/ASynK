@@ -36,7 +36,7 @@ sys.path = EXTRA_PATHS + sys.path
 from   state          import Config
 from   pimdb_cd       import CDPIMDB
 from   contact_cd     import CDContact
-from   vobject        import vobject
+import vobject
 
 asynk_base_dir = os.path.abspath(os.path.join("..", ".."))
 user_dir   = os.path.abspath('user_dir')

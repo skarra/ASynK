@@ -24,11 +24,10 @@
 ##
 
 from   contact    import Contact
-from   vobject    import vobject
 import demjson, pimdb_cd, utils
 from   caldavclientlibrary.protocol.http.util import HTTPError
 
-import copy, datetime, logging, md5, os, re, string, uuid
+import copy, datetime, logging, md5, os, re, string, uuid, vobject
 
 def l (s):
     return s.lower()
