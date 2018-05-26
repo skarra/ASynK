@@ -785,8 +785,8 @@ class BBPIMDB(PIMDB):
                   '(?P<emails>'    + res['string_array'] + ')\s*' +
                   '(?P<notes>'     + res['notes']        + ')\s*' +
                   '(?P<bbdbid>'    + res['string']       + ')\s*' +
-                  '(?P<creationon>' + res['string']   + ')\s*' +
-                  '(?P<lastpdated>'  + res['string']   + ')\s*' +
+                  '(?P<createdon>' + res['string']   + ')\s*' +
+                  '(?P<lastupdated>'  + res['string']   + ')\s*' +
                   '(?P<cache>'     + res['string']       + ')\s*' +
                   '\s*\]')
 

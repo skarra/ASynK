@@ -139,6 +139,7 @@ class BBContact(Contact):
         self._snarf_postal_from_parse_res(d)
         self._snarf_phones_from_parse_res(d)
         self._snarf_notes_from_parse_res(d)
+        self._snarf_created_updated_from_parse_res(d)
 
     def init_rec_from_props (self):
         if self.dirty():
@@ -445,6 +446,20 @@ class BBContact(Contact):
 
         if len(custom.keys()) > 0:
             self.update_custom(custom)
+
+    def _snarf_created_updated_from_parse_res (self, pr):
+        """In file format ver 9 some fields were made first class citizens in
+        the schema, which were parts of the notes field in earlier
+        versions. Such fields need to be read and processed separately."""
+
+        # FIXME: We may also want to read and use the native bbdbid...
+        created_on = pr['createdon']
+        if created_on and created_on != 'nil':
+            self.set_created(unesc_str(chompq(created_on)))
+
+        last_updated = pr['lastupdated']
+        if last_updated and last_updated != 'nil':
+            self.set_updated(unesc_str(chompq(last_updated)))
 
     def _is_valid_date (self, date, label):
         res = re.search('((\d\d\d\d)|-)-(\d\d)-(\d\d)', date)
