@@ -433,6 +433,7 @@ class BBPIMDB(PIMDB):
         self.set_regexes({})
         self._set_regexes_ver6()
         self._set_regexes_ver7()
+        self._set_regexes_ver9()
 
         self.set_msgstores({})
         def_ms = self.add_msgstore(def_fn)
@@ -678,7 +679,7 @@ class BBPIMDB(PIMDB):
             'notes_re' : res['notes'],
             })
 
-    def _set_regexes_ver7 (self):
+    def _set_regexes_ver7 (self, ver='7'):
         res = {'string' : r'"[^"\\]*(?:\\.[^"\\]*)*"|nil',
                'ws'     : '\s*'}
         re_str_ar = 'nil|\(((' + res['string'] + ')' + res['ws'] + ')*\)'
@@ -724,8 +725,70 @@ class BBPIMDB(PIMDB):
                   '(?P<notes>'     + res['notes']        + ')\s*' +
                   '(?P<cache>'     + res['string']       + ')\s*' +
                   '\s*\]')
-        
-        ver = '7'
+
+        ## Now save some of the regexes for later use...
+        self.add_regexes(ver, {
+            'con_re' : re_con,
+            'str_re' : res['string'],
+            'adr_re' : re_ad_vec,
+            'ph_re'  : re_ph_vec,
+            'note_re' : res['note'],
+            'notes_re' : res['notes'],
+            })
+
+    ## FIXME: This is an attempt at a gross hack to get quick and
+    ## dirty support for v9. Let's see if this works.
+    def _set_regexes_ver9 (self, ver='9'):
+#        self._set_regexes_ver7(ver='9')
+
+        res = {'string' : r'"[^"\\]*(?:\\.[^"\\]*)*"|nil',
+               'ws'     : '\s*'}
+        re_str_ar = 'nil|\(((' + res['string'] + ')' + res['ws'] + ')*\)'
+        res.update({'string_array' : re_str_ar})
+
+        ## Phones
+        re_ph_vec = ('\[\s*((?P<phlabel>' + res['string'] + 
+                     ')\s*(?P<number>(?P<unstructured>'  +
+                     res['string'] + ')|'+
+                     '(?P<structured>\d+\s+\d+\s+\d+\s+.+)' +
+                     '\s*))\]')
+        re_phs = 'nil|(\(\s*(' + re_ph_vec + '\s*)+)\)'
+        res.update({'ph_vec' : re_phs})
+
+        ## Addresses
+        re_ad_vec = ('\[\s*(?P<adlabel>' + res['string'] + ')\s*(' +
+                     '(?P<streets>' + res['string_array'] + ')\s*' +
+                     '(?P<city>'    + res['string'] + ')\s*' +
+                     '(?P<state>'   + res['string'] + ')\s*' +
+                     '(?P<zip>('    + res['string'] + ')|(' + '\d\d\d\d\d))\s*' +
+                     '(?P<country>' + res['string'] + ')' +
+                     ')\s*\]')
+        re_ads = 'nil|\(\s*(' + re_ad_vec + '\s*)+\)'
+        res.update({'ad_vec' : re_ads})
+
+
+        re_note = ('\((?P<field>[^()]+)\s*\.\s*(?P<value>' +
+                   res['string'] + '|\d+)+\)')
+        re_notes = '\((' + re_note + '\s*)+\)'
+        res.update({'note'  : re_note})
+        res.update({'notes' : re_notes})
+
+        ## A full contact entry
+        re_con = ('\[\s*' +
+                  '(?P<firstname>' + res['string']       + ')\s*' +
+                  '(?P<lastname>'  + res['string']       + ')\s*' +
+                  '(?P<affix>'     + res['string_array'] + ')\s*' +
+                  '(?P<aka>'       + res['string_array'] + ')\s*' +
+                  '(?P<company>'   + res['string_array'] + ')\s*' +
+                  '(?P<phones>'    + res['ph_vec']       + ')\s*' +
+                  '(?P<addrs>'     + res['ad_vec']       + ')\s*' +
+                  '(?P<emails>'    + res['string_array'] + ')\s*' +
+                  '(?P<notes>'     + res['notes']        + ')\s*' +
+                  '(?P<bbdbid>'    + res['string']       + ')\s*' +
+                  '(?P<creationon>' + res['string']   + ')\s*' +
+                  '(?P<lastpdated>'  + res['string']   + ')\s*' +
+                  '(?P<cache>'     + res['string']       + ')\s*' +
+                  '\s*\]')
 
         ## Now save some of the regexes for later use...
         self.add_regexes(ver, {
