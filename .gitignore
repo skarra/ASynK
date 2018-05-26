@@ -24,6 +24,9 @@ state.json
 logs
 backups
 user_dir/
+build/
+dist/
+asynk.egg-info/
 bbdb.Non-Existent
 
 # Karra's Password files for development purposes
