@@ -160,7 +160,7 @@ Keep in mind that unlike Google Contacts, CardDAV servers do not support a
 roll back feature. This means any ASynK bugs could potentially lead to loss of
 information for you. While there have been no complaints of ASynK eating up
 people's data, please take your own precautions before you deploy this on your
-live data. The use of the @kbd{--user-dir=} option is also high encouraged.
+live data. The use of the @kbd{--user-dir=} option is also highly encouraged.
 
 At the moment the following fields are synched in both ways. More may be
 supported over time.  @strong{Important}: Fields not mentioned here will be
