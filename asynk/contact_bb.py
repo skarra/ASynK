@@ -152,7 +152,8 @@ class BBContact(Contact):
         rec += self._get_phones_as_string()  + ' '
         rec += self._get_postal_as_string()  + ' '
         rec += self._get_emails_as_string()  + ' '
-        rec += self._get_notes_as_string()
+        rec += self._get_notes_as_string()   + ' '
+        rec += self._get_created_updated_as_string() + ' '
         rec += ' nil]'
 
         self.dirty(False)
@@ -561,7 +562,7 @@ class BBContact(Contact):
 
             comp.insert(0, comp1)
             return unchompq('; '.join(comp))
-        elif ver == '7':
+        else:
             if comp and len(comp) > 0:
                 comp = demjson.decode(comp)
                 comp.insert(0, unchompq(comp1))
@@ -686,14 +687,19 @@ class BBContact(Contact):
         return ret
 
     def _get_notes_as_string (self):
+        bbdb_ver = self.get_store().get_file_format()
+
         noted = self.get_notes_map()
         if not noted:
             logging.error('_ge(): Error in Config. No notes_map field for bb')
             return
 
         ret =  '(bbdb-id . %s) ' % unchompq(self.get_itemid())
-        ret += '(%s . %s) ' % (noted['created'], unchompq(self.get_created()))
-        ret += '(%s . %s) ' % (noted['updated'], unchompq(self.get_updated()))
+        if int(bbdb_ver) <= 9:
+            ret += '(%s . %s) ' % (noted['created'],
+                                   unchompq(self.get_created()))
+            ret += '(%s . %s) ' % (noted['updated'],
+                                   unchompq(self.get_updated()))
 
         p = esc_str(self.get_prefix())
         g = esc_str(self.get_gender())
@@ -741,6 +747,19 @@ class BBContact(Contact):
             ret += '(%s . %s) ' % (label, unchompq(esc_str(note)))
 
         return '(' + ret + ')'
+
+    def _get_created_updated_as_string (self):
+        """Prior to file format ver 9 these fields were embedded in the notes
+           section. Ver 9 onwards they are first class citizens, so we
+           need to handle them separately and make sure they are
+           available in the record at the appropriate level."""
+
+        bbdb_ver = int(self.get_store().get_file_format())
+        if bbdb_ver < 9:
+            print 'Hi Karl WTF'
+            return ' '           # Handled via the notes section
+
+        return ' '.join([self.get_created(), self.get_updated()])
 
     def _get_sync_tags_as_str (self):
         conf     = self.get_config()

@@ -235,7 +235,8 @@ class MessageStore:
         return None
 
     def _set_default_preamble (self):
-        ver = '7'
+        ver = '9'               # There is no real difference in the
+                                # preamble itself
         self.append_preamble(';; -*-coding: utf-8-emacs;-*-\n')
         self.append_preamble(';;; file-format: %s\n' % ver)
         self.set_file_format(ver)
