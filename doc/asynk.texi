@@ -95,7 +95,7 @@ official website at @url{http://asynk.io/downloads/}.
 
 @section From Source
 You can clone the git repository by using a command such as @kbd{git clone
-git://github.com/skarra/ASynK.git}. Then run @kbd{asynk.py} as per
+https://github.com/skarra/ASynK.git}. Then run @kbd{asynk.py} as per
 instructions given in the @ref{Using ASynK, Using ASynK}, section below.
 
 @section Dependencies / Notes
