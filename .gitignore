@@ -26,6 +26,7 @@ backups
 user_dir/
 build/
 dist/
+tmp/
 asynk.egg-info/
 bbdb.Non-Existent
 

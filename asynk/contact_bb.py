@@ -153,7 +153,7 @@ class BBContact(Contact):
         rec += self._get_postal_as_string()  + ' '
         rec += self._get_emails_as_string()  + ' '
         rec += self._get_notes_as_string()   + ' '
-        rec += self._get_created_updated_as_string() + ' '
+        rec += self._get_ver9_fields_as_string() + ' '
         rec += ' nil]'
 
         self.dirty(False)
@@ -453,6 +453,12 @@ class BBContact(Contact):
         the schema, which were parts of the notes field in earlier
         versions. Such fields need to be read and processed separately."""
 
+        ## For earlier versions of the file format this would have
+        ## been handled already as part of the notes section.
+        bbdb_ver = int(self.get_store().get_file_format())
+        if bbdb_ver < 9:
+            return
+
         # FIXME: We may also want to read and use the native bbdbid...
         created_on = pr['createdon']
         if created_on and created_on != 'nil':
@@ -748,7 +754,7 @@ class BBContact(Contact):
 
         return '(' + ret + ')'
 
-    def _get_created_updated_as_string (self):
+    def _get_ver9_fields_as_string (self):
         """Prior to file format ver 9 these fields were embedded in the notes
            section. Ver 9 onwards they are first class citizens, so we
            need to handle them separately and make sure they are
@@ -756,10 +762,11 @@ class BBContact(Contact):
 
         bbdb_ver = int(self.get_store().get_file_format())
         if bbdb_ver < 9:
-            print 'Hi Karl WTF'
             return ' '           # Handled via the notes section
 
-        return ' '.join([self.get_created(), self.get_updated()])
+        return ' '.join([unchompq(x) for x in
+                         [self.get_itemid(), self.get_created(),
+                          self.get_updated()]])
 
     def _get_sync_tags_as_str (self):
         conf     = self.get_config()
