@@ -651,7 +651,7 @@ class BBPIMDB(PIMDB):
 
         re_note = ('\((?P<field>[^()]+)\s*\.\s*(?P<value>' +
                    res['string'] + '|\d+)+\)')
-        re_notes = '\((' + re_note + '\s*)+\)'
+        re_notes = 'nil|\((' + re_note + '\s*)+\)'
         res.update({'note'  : re_note})
         res.update({'notes' : re_notes})
 
@@ -709,7 +709,7 @@ class BBPIMDB(PIMDB):
 
         re_note = ('\((?P<field>[^()]+)\s*\.\s*(?P<value>' +
                    res['string'] + '|\d+)+\)')
-        re_notes = '\((' + re_note + '\s*)+\)'
+        re_notes = 'nil|\((' + re_note + '\s*)+\)'
         res.update({'note'  : re_note})
         res.update({'notes' : re_notes})
 
@@ -770,7 +770,7 @@ class BBPIMDB(PIMDB):
 
         re_note = ('\((?P<field>[^()]+)\s*\.\s*(?P<value>' +
                    res['string'] + '|\d+)+\)')
-        re_notes = '\((' + re_note + '\s*)+\)'
+        re_notes = 'nil|\((' + re_note + '\s*)+\)'
         res.update({'note'  : re_note})
         res.update({'notes' : re_notes})
 
