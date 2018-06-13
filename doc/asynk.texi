@@ -220,7 +220,7 @@ Custom fields
 
 @subsection BBDB Specific Notes
 ASynK can parse and write BBDB files without the need for Emacs or
-BBDB. However, ensure you are using BBDB at the time ASynK is reading/writing
+BBDB. However, ensure you are not actively using BBDB at the time ASynK is reading/writing
 the database. Bad things can happen if you are not careful with this. Furthermore,
 note the following:
 
