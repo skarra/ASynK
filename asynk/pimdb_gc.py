@@ -65,12 +65,12 @@ class GCPIMDB(PIMDB):
     """GC object is a wrapper for a Google Contacts stream API."""
 
     def __init__ (self, config, user, pw):
+        self.server = None
+
         PIMDB.__init__(self, config)
         self.set_user(user)
         self.set_cs(pw)
         self.gc_init()
-
-        self.server = None
 
         self.set_folders()
 
