@@ -52,20 +52,21 @@ class Sync:
 
         logging.debug('pimdbs : %s', pimdbs)
         logging.debug('pname : %s', profile)
-        logging.debug('fid1  : %s', fid1)
-        logging.debug('fid2  : %s', fid2)
         logging.debug('db1id : %s', self.get_db1id())
+        logging.debug('fid1  : %s', fid1)
+        logging.debug('db2id : %s', self.get_db2id())
+        logging.debug('fid2  : %s', fid2)
 
         db1 = self.get_db(0)
         db2 = self.get_db(1)
 
         logging.debug('db    : %s', db1)
 
-        if fid1 == 'default':
+        if not fid1 or fid1 == 'default':
             fid1 = db1.get_def_folder().get_itemid()
             logging.debug('Updated fid1  : %s', fid1)
 
-        if fid2 == 'default':
+        if not fid2 or fid2 == 'default':
             fid2 = db2.get_def_folder().get_itemid()
             logging.debug('Updated fid2  : %s', fid2)
 
