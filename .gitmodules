@@ -1,9 +1,12 @@
-[submodule "lib/.CalDAVClientLibrary"]
-	path = lib/.CalDAVClientLibrary
-	url = https://github.com/skarra/CalDAVClientLibrary.git
+[submodule "lib/vobject"]
+	path = lib/vobject
+	url = https://github.com/skarra/vobject.git
 [submodule "lib/.pyews"]
 	path = lib/.pyews
 	url = https://github.com/skarra/pyews.git
 [submodule "lib/.gdata"]
 	path = lib/.gdata
-	url = https://github.com/skarra/Google-Contacts-API.git
+	url = git@github.com:skarra/Google-Contacts-API.git
+[submodule "lib/.ccs-caldavclientlibrary"]
+	path = lib/.ccs-caldavclientlibrary
+	url = https://github.com/apple/ccs-caldavclientlibrary

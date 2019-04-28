@@ -20,13 +20,13 @@
 ## ####
 ##
 
+from   utils        import HTTPError
 from   state        import Config
 from   pimdb        import PIMDB
 from   folder       import Folder
 from   folder_cd    import CDContactsFolder
 from   caldavclientlibrary.protocol.webdav.definitions  import davxml
 from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
-from   caldavclientlibrary.protocol.http.util           import HTTPError
 from   caldavclientlibrary.protocol.url   import URL
 from   caldavclientlibrary.client.account import CalDAVAccount
 
@@ -116,7 +116,7 @@ class CDPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         root     = self.get_def_root_folder_path()
-        props    = (carddavxml.def_adbk_url,)
+        props    = (carddavxml.default_addressbook_url,)
 
         res, bad = self.session().getProperties(URL(url=root), props)
         uris = res.values()
@@ -129,11 +129,12 @@ class CDPIMDB(PIMDB):
             ## def_adbk_url property request. In this case we will just pick
             ## the first folder. One hopes every addressbook server will have
             ## at least one server
-            logging.debug('Coud not find default adbk Property. Trying to ' +
-                          'use first of the available contacts folders')
+            logging.debug('Coud not find default adbk Property.')
             fs = self.get_contacts_folders()
             assert(len(fs) > 0)
             def_f = fs[0]
+            logging.debug('Setting first available folder as default: %s',
+                          def_f.get_name())
 
         self.set_def_folder(Folder.CONTACT_t, def_f)
    

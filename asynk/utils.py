@@ -1,7 +1,7 @@
 ## 
 ## Created : Tue Jul 26 06:54:41 IST 2011
 ## 
-## Copyright (C) 2011, 2012, 2013 by Sriram Karra <karra.etc@gmail.com>
+## Copyright (C) 2011-2019 by Sriram Karra <karra.etc@gmail.com>
 ## 
 ## This file is part of ASynK
 ##
@@ -19,6 +19,9 @@
 ##
 
 import iso8601, logging, os, re, xml.dom.minidom
+
+class HTTPError(Exception):
+    pass
 
 time_start = "1980-01-01T00:00:00.00+00:00"
 
