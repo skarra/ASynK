@@ -1,1 +1,26 @@
-This directory contains unit tests that must pass before anything can be released. At this time the coverage is, er, rather poor. But the idea is this will evolve into a proper regression test suite that every commit / batch of commits should pass before being accepted to the master branch.
+This directory contains unit tests that must pass before anything can
+be released. At this time the coverage is, er, rather poor. But the
+idea is this will evolve into a proper regression test suite that
+every commit / batch of commits should pass before being accepted to
+the master branch.
+
+* 2019-04-22 Thoughts on CardDAV gold testing
+
+As of today there is no automated testing for CardDAV sync (or any of
+the others for that matter). Here are some thoughts on what it could be.
+
+CardDAV testing can be along following lines:
+
+Pre-requisites:
+  - CardDAV server on locahost
+  - test principal account
+
+Test 1
+- Clear all the contacts
+- Initialize ASynK with a sample BBDB file and write a bunch of
+  contacts to the CardDAV server
+- make a raw HTTP or other carddav query for contacts, and validate
+  number of contacts and contents.
+
+The last step might require us to use this project or something
+similar to: https://github.com/apple/ccs-caldavtester for automation.

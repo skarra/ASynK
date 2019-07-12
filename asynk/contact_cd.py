@@ -63,6 +63,8 @@ class CDContact(Contact):
     ABDATE     = 'X-ABDATE'
     ABLABEL    = 'X-ABLABEL'
     OMIT_YEAR  = 'X-APPLE-OMIT-YEAR'
+    IMPP       = 'IMPP'
+    URL        = 'URL'
 
     ## OUr own extensions
     X_NOTE     = 'X-ASYNK_NOTE'
@@ -173,6 +175,9 @@ class CDContact(Contact):
         self._snarf_names_gender_from_vco(vco)
         self._snarf_emails_from_vco(vco)
         self._snarf_phones_from_vco(vco)
+        self._snarf_ims_from_vco(vco)
+        self._snarf_websites_from_vco(vco)
+        self._snarf_postal_from_vco(vco)
         self._snarf_org_details_from_vco(vco)
         self._snarf_dates_from_vco(vco)
         self._snarf_sync_tags_from_vco(vco)
@@ -188,6 +193,9 @@ class CDContact(Contact):
         self._add_prodid_to_vco(vco)
         self._add_names_gender_to_vco(vco)
         self._add_emails_to_vco(vco)
+        self._add_ims_to_vco(vco)
+        self._add_websites_to_vco(vco)
+        self._add_postal_to_vco(vco)
         self._add_phones_to_vco(vco)
         self._add_org_details_to_vco(vco)
         self._add_dates_to_vco(vco)
@@ -338,6 +346,68 @@ class CDContact(Contact):
                     else:
                         self.add_phone_other(('Other', phone.value))
 
+
+    def _snarf_ims_from_vco (self, vco):
+        if not hasattr(vco, 'impp'):
+            return
+
+        ims = vco.contents['impp']
+        for im in ims:
+            im_types = im.params['TYPE'] if 'TYPE' in im.params else None
+
+            ## ASynK currently does not support custom labels for IMs in
+            ## CardDAV, which could be a potential problem.
+
+            label = im_types[0].lower() if len(im_types) > 0 else 'home'
+            if im_types:
+                im_types = [x.lower() for x in im_types]
+            else:
+                im_types = ['home']
+
+            ## Not exactly seen cases when we have more than one type in a
+            ## IMPP. But you never know
+            if len(im_types) > 1:
+                logging.debug('Contact %s has IMPP with more than one type: %s',
+                              self.get_name(), vco.contents['impp'])
+
+            for im_type in im_types:
+                if 'pref' == im_types:
+                    self.set_im_prim(im.value)
+
+                else:
+                    self.add_im(im_type, im.value)
+
+    def _snarf_websites_from_vco (self, vco):
+        if not hasattr(vco, 'url'):
+            return
+
+        urls = vco.contents['url']
+        for url in urls:
+            url_types = url.params['TYPE'] if 'TYPE' in url.params else None
+
+            if url_types:
+                url_types = [x.lower() for x in url_types]
+            else:
+                logging.debug('Contact %s has URL with no type. Assuming home',
+                              self.get_name())
+                url_types = ['home']
+
+            ## Note that the same URL can be stored as a prim AND a
+            ## home/work URL
+            if 'pref' in url_types:
+                self.set_web_prim(url.value)
+            if 'home' in url_types:
+                self.add_web_home(url.value)
+            if 'work' in url_types:
+                self.add_web_work(url.value)
+            else:
+                logging.debug('Sorry friend; you are going to lose some data ' +
+                              'on the www url for this unsupported type (%s) ' +
+                              'for contact: %s', url_types, self.get_name())
+
+    def _snarf_postal_from_vco (self, vco):
+        ## FIXME: To be implemented.
+        pass
 
     def _snarf_org_details_from_vco (self, vco):
         if hasattr(vco, l(self.TITLE)):
@@ -505,6 +575,43 @@ class CDContact(Contact):
         self._add_emails_to_vco_helper(vco, self.get_email_home, 'HOME')
         self._add_emails_to_vco_helper(vco, self.get_email_work, 'WORK')
         self._add_emails_to_vco_helper(vco, self.get_email_other, '')
+
+    def _add_ims_to_vco (self, vco):
+        im_prim = self.get_im_prim()
+        for label, addr in self.get_im().iteritems():
+            im = vco.add(l(self.IMPP))
+            im.value = addr
+            if im_prim == addr:
+                im.params.update({'TYPE' : [label, 'pref']})
+            else:
+                im.params.update({'TYPE' : [label]})
+
+    def _add_websites_to_vco (self, vco):
+        pref = self.get_web_prim()
+        home = self.get_web_home()
+        work = self.get_web_work()
+
+        if home and len(home) > 0:
+            for site in home:
+                url = vco.add(l(self.URL))
+                url.value = site
+                if pref == site:
+                    url.params.update({'TYPE' : ['home', 'pref']})
+                else:
+                    url.params.update({'TYPE' : ['home']})
+
+        if work and len(work) > 0:
+            for site in work:
+                url = vco.add(l(self.URL))
+                url.value = site
+                if pref == site:
+                    url.params.update({'TYPE' : ['work', 'pref']})
+                else:
+                    url.params.update({'TYPE' : ['work']})
+
+    def _add_postal_to_vco (self, vco):
+        ## FIXME: To be implemented.
+        pass
 
     def _add_phones_helper (self, vco, elem, pref, types, value):
         if not value:

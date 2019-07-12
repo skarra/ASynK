@@ -1,1 +1,120 @@
-This directory contains random test and exploration code that can be used to activate and test specific areas of the code base in isolation. In particular the "gold/" directory is meant to be the full unit test suite that every change should pass before commit. This directory, otoh, is to do some probing (like print a given outlook entry, or clear specific flags, or some such one time operation in a debug cycle).
+This directory contains random test and exploration code that can be
+used to activate and test specific areas of the code base in
+isolation. In particular the "gold/" directory is meant to be the full
+unit test suite that every change should pass before commit. This
+directory, otoh, is to do some probing (like print a given outlook
+entry, or clear specific flags, or some such one time operation in a
+debug cycle).
+
+* Misc bits about testing
+
+Some random bits of information relevant for testing. This section is
+not meant to be intelligble to anyone other than the author (skarra@)
+
+** CardDav testing
+
+*** Setup Baikal on localhost
+
+At various points in the past I have used CardDav servers from Baikal
+and Apple "Calendar Server".
+
+On upgrading to macOS Mojave stuff stopped working and I had to redo a
+bunch of things in Apr 2019:
+
+- Set up Apache, like so:
+  https://coolestguidesontheplanet.com/install-apache-mysql-php-on-macos-mojave-10-14/
+  (and a bunch of other stuff to get the basic Apache config in
+  order).
+
+- Set up Baikal: http://sabre.io/baikal/install/ Ran into this error:
+  "Baïkal needs to have write permissions in the Specific/ folder."
+  Had to make that directory world writable. Oh well.
+
+  Eventually http://localhost/baikal/html/admin/install worked well,
+  and was able to complete some basic config and baikal installation
+  was completed
+
+  Created a new test account with following credentials:
+  - username: unittest1 and unittest2
+  - email: karra.etc@gmail.com
+  - Password: <saved to Chrome profile> for URL localhost/baikal/html
+
+  This is super useful information for later reference:
+  http://sabre.io/dav/building-a-carddav-client/
+
+- Finally set up Baikal to be on a separate virtualhost with the
+  following config:
+
+<VirtualHost *:80>
+    DocumentRoot /Library/WebServer/Documents/baikal/html
+    ServerName baikal
+
+    RewriteEngine On
+    RewriteRule /.well-known/carddav /dav.php [R,L]
+    RewriteRule /.well-known/caldav /dav.php [R,L]
+
+    <Directory "/Library/WebServer/Documents/baikal/html">
+        Options None
+	Options +FollowSymlinks
+	AllowOverride All
+
+	# Confiugration for apache-2.2:
+	Order allow,deny
+	Allow from all
+
+	# Confiugration for apache-2.4:
+	Require all granted
+    </Directory>
+</VirtualHost>
+
+  Note that the main localhost stuff is as follows:
+
+<VirtualHost *:80>
+    DocumentRoot "/Library/WebServer/Documents"
+    ServerName localhost
+    <Directory "/Library/WebServer/Documents">
+        Options FollowSymLinks Multiviews
+        MultiviewsMatch Any
+        AllowOverride None
+        Require all granted
+    </Directory>
+</VirtualHost>
+
+***  Testing - MacOS Mojave Contacts does not work
+
+Also tried using caldavclientlibrary to inspect the carddav server
+
+- One of the main problemsin testing carddav automatically is to
+  effect changes on the server via "other means" - either
+  programmatically or manually through another interface. Setting up
+  Apple Contacts on Mac to read the carddav server has been a pain.
+
+  2019-04-27: The following config does not work:
+  - CardDAV, Manual
+  - username:password (same as what I used for ASynK)
+  - Server Address: http://localhost/baikal/html/card.php
+  - Server Path: /addressbooks/unittest1/default/
+
+  Tried a bunch of variations on the Server path to
+  /addressbooks/default/ etc but nothing works
+
+  I tried enabling some network logging in OSX, like so:
+
+     $ defaults write com.apple.AddressBook.CardDAVPlugin EnableDebug -bool YES
+     $ defaults write com.apple.AddressBook.CardDAVPlugin LogConnectionDetails -bool YES
+
+  And logs were supposed to show up using Console.app in
+  ~/Library/Logs; it does not work. Just WTF...
+
+*** Testing - BusyContacts works and displays contacts from Baikal
+
+Installed 30 day trial version of https://www.busymac.com/busycontacts/ and it just
+worked with the localhost version of Baikal.
+
+username: unittest1
+Password: <from chrome password manager>
+server: http://baikal/ - that's it.
+
+Testing flow was like so:
+
+- Clear all c

@@ -1,0 +1,32 @@
+// -*- javascript -*-
+
+// This is the starter file for test scripts doing testing between
+// BBDB and CardDAV
+
+{
+    'file_version' : 4,
+    'default_profile' : null,
+
+    'profiles' : {
+	"testbbcd" : {
+	    "coll_1" : {
+		"dbid" : "bb",
+		"foid" : "default",
+		"stid" : "user_dir/01.06-bbdb.v7.names-with-commas"
+	    },
+
+            "coll_2" : {
+		"dbid" : "cd",
+		"foid" : "default"
+		"stid" : "http://localhost/baikal/html/card.php"
+            },
+
+            "conflict_resolve" : "bb",
+            "items" : {},
+          "last_sync_start" : "2000-01-20T13:25:20.16Z",
+          "last_sync_stop" : "2000-01-20T13:25:20.86Z",
+          "olgid" : null,
+          "sync_dir" : "SYNC2WAY"
+        },
+    }, // 'profiles'
+}

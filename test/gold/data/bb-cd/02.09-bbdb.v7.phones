@@ -1,0 +1,17 @@
+;; -*-coding: utf-8-emacs;-*-
+;;; file-format: 7
+;;
+;; One structurd phone number 
+;;["John" "Doe" nil nil nil (["Mobile" 0 0 0 60]) nil ("name@gmail.com") ((creation-date . "2013-12-06 14:33:49 +0000") (timestamp . "2013-12-20 17:56:49 +0000")) nil]
+;;
+;; One structured phone number with a dot notation
+["John" "Doe" nil nil nil (["Mobile" 0 0 0 60.8]) nil ("name@gmail.com") ((creation-date . "2013-12-06 14:33:49 +0000") (timestamp . "2013-12-20 17:56:49 +0000")) nil]
+;;
+;; One Unstructured European style number
+["John" "Doe" nil nil nil (["Mobile" "+91 44 2811 2640"]) nil ("name@gmail.com") ((creation-date . "2013-12-06 14:33:49 +0000") (timestamp . "2013-12-20 17:56:49 +0000")) nil]
+;;
+;; Two variants of structured number
+["John" "Doe" nil nil nil (["Mobile" 0 0 0 60.8] ["Mobile" 0 0 0 60]) nil ("name@gmail.com") ((creation-date . "2013-12-06 14:33:49 +0000") (timestamp . "2013-12-20 17:56:49 +0000")) nil]
+;;
+;; All variants in single entry
+["John" "Doe" nil nil nil (["Mobile" 0 0 0 60.8] ["Mobile" 0 0 0 60] ["Mobile" "+91 44 2811 2640"]) nil ("name@gmail.com") ((creation-date . "2013-12-06 14:33:49 +0000") (timestamp . "2013-12-20 17:56:49 +0000")) nil]
