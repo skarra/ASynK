@@ -1,3 +1,44 @@
+This README is the main development README, for keeping track of what
+I am doing and some notes on what I need to do next.
+
+* Running dev notes
+
+** Updating gdata library
+
+Started thinking on 2019-07-12 
+
+Problem: The gdata submodule probably needs to be updated.
+
+lib/gdata and lib/atom are linked to a submodule. The submodule has
+origin at git@github.com:skarra/Google-Contacts-API.git; the branch is
+on a branch called 'asynk'; with master expected to track the real
+source. The real Google origin source code ("source") is at
+git@github.com:google/gdata-python-client.git
+
+Here is the plan to udpate:
+
+- Clone origin to a new repo on local machine ('repo')
+- Add a new remote to it to start tracking 'source'
+- Refresh master to tip of source
+- Rebase asynk branch in repo on the refreshed master.
+- Push the update asynk branch to github
+- Pull the latest asynk branch from github into ASynK submodule
+
+Optionally I want to explore if it is possible do away with the separate
+submodule and merely add this as a dependency in requirements.txt 
+
+*** Actua outcome
+
+Main repo: ~/stuff/code/python/3rd-parth/gdata
+Contains three branches:
+  - master: only useful for historical purposes. quite useless otherwise
+
+  - upstream: tracking branch for
+    https://github.com/google/gdata-python-client/commits/master
+
+  - google-asynk: This is the branch whose tip should be a submodule in
+    asynk, via the google-asynk branch on
+    https://github.com/skarra/Google-Contacts-API 
 
 * Major activities for asynk.io launch
 
