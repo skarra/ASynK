@@ -1,7 +1,7 @@
 ##
 ## Created : Sat Apr 07 20:03:04 IST 2012
 ##
-## Copyright (C) 2012, 2013 Sriram Karra <karra.etc@gmail.com>
+## Copyright (C) 2012-2022 Sriram Karra <karra.etc@gmail.com>
 ##
 ## This file is part of ASynK
 ##
@@ -20,9 +20,13 @@
 #####
 ##
 ## This unit test file is used to test BBDB file parsing and processing
-## functionality in ASynK
+## functionality in ASynK.
 ##
-## Usage is: python test_bb.py <bbdbfile>
+## Usage is: python test_bb_read.py <bbdb_file>
+##
+## This will try to read and parse specified BBDB file. If optoinal filename
+## is skipped then all the gold test database files in the
+## ./data/bb/ directory are tested.
 
 import glob, logging, os, re, shutil, sys, traceback, unittest
 
@@ -51,7 +55,7 @@ confnv4_src_dirty = os.path.join('.', 'config_v4.dirty.json')
 conf_src = confnv6_src
 
 def usage ():
-    print 'Usage: python test_bb.py'
+    print 'Usage: python test_bb_read.py'
 
 def main (argv=None):
     print 'Command line: ', sys.argv
