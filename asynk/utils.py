@@ -52,6 +52,10 @@ asynk_ver = 'v2.3.1+'
 def asynk_ver_str ():
     return 'ASynK %s' % asynk_ver
 
+def is_ascii (self, s):
+    return all(ord(c) < 128 for c in s)
+
+
 def asynk_ts_to_iso8601 (ts):
     """The text timestamps in ASynK will be stored in a format that is readily
     usable by BBDB. Frequently there is a need to parse it into other formats,
