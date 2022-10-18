@@ -90,7 +90,7 @@ The source code for ASynK is hosted on Github at:
 development version, or to register an issue you have identified.
 
 @section Pre-packaged Bundle
-You can download the latest version by visiting the downloads section of the
+You can download the latest version by visiting the Downloads section of the
 official website at @url{http://asynk.io/downloads/}.
 
 @section From Source
@@ -127,7 +127,7 @@ formats. Version 4.8 is known to work with our sources.
 @subsection Microsoft Exchange Specific Notes
 If you want to synchronize to your Exchange Server you could do that from any
 machine or operating system that can access your Exchange server over the
-internet. You will need to ask  your system administrators for:
+internet. You will need to ask your system administrators for:
 
 @enumerate
 @item Your full email address 
@@ -137,7 +137,7 @@ internet. You will need to ask  your system administrators for:
 
 @subsection Windows / Outlook Specific Notes
 If you have contacts on your own machine inside a Outlook PST file you can
-sycn them too. But there are a few additional dependencies:
+sync them too. But there are a few additional dependencies:
 
 @enumerate
 @item
@@ -147,7 +147,7 @@ recent version such as XP onwards will do.
 @item 
 @strong{MS Outlook}: Outlook should be installed. Direct read/write of PST
 files is not possible. Any recent version should work. ASynK has been reported
-to work with Office 2007, Office 2008, Office 2010, Office 2013
+to work with Office 2007, Office 2008, Office 2010, Office 2013.
 
 @item
 @strong{Pywin32 for Python 2.7}: It is available for download 
