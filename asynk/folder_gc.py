@@ -97,7 +97,7 @@ class GCContactsFolder(Folder):
         self.set_name(gn)
         self.set_gcentry(gcentry)
         self.set_type(Folder.CONTACT_t)
-        self.set_gdc(db.get_gdc())
+        self.set_service(db.get_service())
 
         self.reset_contacts()
 
@@ -227,7 +227,7 @@ class GCContactsFolder(Folder):
         return ret
 
     def find_item (self, itemid):
-        gce = self.get_gdc().GetContact(itemid)
+        gce = self.get_service().GetContact(itemid)
         gc  = GCContact(self, gce=gce)
 
         return gc
@@ -594,7 +594,7 @@ class GCContactsFolder(Folder):
         for con in cons:
             logging.info('Deleting ID: %s; Name: %s...', con.id.text,
                          con.name.full_name.text if con.name else '')
-            self.get_gdc().Delete(con)
+            self.get_service().Delete(con)
             try:
                del self.contacts[con.id.text]
             except KeyError, e:
@@ -606,11 +606,11 @@ class GCContactsFolder(Folder):
     def get_contacts (self):
         return self.contacts    
 
-    def get_gdc (self):
-        return self._get_prop('gdc')
+    def get_service (self):
+        return self._get_prop('service')
 
-    def set_gdc (self, gdc):
-        self._set_prop('gdc', gdc)
+    def set_service (self, service):
+        self._set_prop('service', service)
 
     def get_gcentry (self):
         return self._get_prop('gcentry')
@@ -627,7 +627,7 @@ class GCContactsFolder(Folder):
         if updated_min:
             query.updated_min = updated_min
         
-        feed = self.get_gdc().GetContacts(q=query)
+        feed = self.get_service().GetContacts(q=query)
         return feed
 
     def del_all_entries (self):
@@ -640,7 +640,7 @@ class GCContactsFolder(Folder):
         for con in feed.entry:
             logging.info('Deleting ID: %s; Name: %s...', con.id.text,
                          con.name.full_name.text if con.name else '')
-            self.get_gdc().Delete(con)
+            self.get_service().Delete(con)
 
 class BatchState:
     """This class is used as a temporary store of state related to batch

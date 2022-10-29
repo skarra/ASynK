@@ -20,20 +20,24 @@
 ## ####
 ##
 
-import base64, datetime, getopt, httplib2, logging, os, sys, threading, time
+import base64, datetime, getopt, httplib2, json, logging, os, sys, threading, time
 import utils, webbrowser
 from   urlparse import urlparse
 import SimpleHTTPServer, SocketServer
 
-from   apiclient import discovery
-import atom, gdata.contacts.data, gdata.contacts.client
-from   oauth2client.client import flow_from_clientsecrets as flow_from_cs
-from   oauth2client.file   import Storage
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from   state        import Config
 from   pimdb        import PIMDB, GoutInvalidPropValueError
 from   folder       import Folder
 from   folder_gc    import GCContactsFolder
+
+CONTACTS_SCOPE_RO = 'https://www.googleapis.com/auth/contacts.readonly'
+CONTACTS_SCOPES = [CONTACTS_SCOPE_RO]
 
 def patched_post(client, entry, uri, auth_token=None, converter=None,
                  desired_class=None, **kwargs):
@@ -65,6 +69,19 @@ class GCPIMDB(PIMDB):
     """GC object is a wrapper for a Google Contacts stream API."""
 
     def __init__ (self, config, user, pw):
+        """
+        config - an instantitation of the Config class specific to ASynK
+        user - username, typically an @gmail.com email address
+        pw   - historically this was the plaintext password. However
+               since deprecation of plain text authn by Google, this should
+               be the file name of OAuth "client secrets" json file. This can
+               be quite confusing - this is not tied to a specific username;
+               it refers to the AsynK program itself. The client information
+               here will be used to dynamically get credentials to access the
+               account after authz from user - those dynamic credentials
+               (access_tokens) will be stored in a different location and are
+               separate from this client secrets file. I am sorry; not sorry :)
+        """
         self.server = None
 
         PIMDB.__init__(self, config)
@@ -94,15 +111,25 @@ class GCPIMDB(PIMDB):
         ret = []
         feed = self.get_groups_feed()
 
-        if not feed.entry:
+        if not feed:
             return ret
 
-        for i, entry in enumerate(feed.entry):
-            name = entry.content.text if entry.content else entry.title.text
-            if not silent:
-                logging.info(' %2d: Contacts Name: %-25s ID: %s',
-                             i, name, entry.id.text)
-            ret.append((entry.id.text, name, entry))
+        pageToken = None
+
+        while True:
+            results = feed.list(pageToken=pageToken).execute()
+
+            for i, entry in enumerate(results['contactGroups']):
+                name = entry['formattedName']
+                if not silent:
+                    logging.info(' %2d: Contacts Name: %-25s ID: %s',
+                                 i, name, entry['resourceName'])
+                ret.append((entry['resourceName'], name, entry))
+
+            if len(ret) >= results['totalItems']:
+                break
+
+            pageToken = results['nextPageToken']
 
         return ret
 
@@ -171,7 +198,7 @@ class GCPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         logging.debug('Getting Group List to populate folders...')
-        groups = self.list_folders(silent=True)
+        groups = self.list_folders(silent=False)
         for (gid, gn, gcentry) in groups:
             f = GCContactsFolder(self, gid, gn, gcentry)
             self.add_contacts_folder(f)
@@ -212,11 +239,11 @@ class GCPIMDB(PIMDB):
     def set_cs (self, pw):
         self.pw = pw
 
-    def get_gdc (self):
-        return self.gdc
+    def set_service (self, service):
+        self.service = service
 
-    def set_gdc (self, gdc):
-        self.gdc = gdc
+    def get_service (self):
+        return self.service
 
     def _init_webserver (self, port):
         class MyRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -239,59 +266,36 @@ class GCPIMDB(PIMDB):
         thread = threading.Thread(target = self.server.serve_forever)
         thread.start()
 
-    def _new_http (self):
-        http = httplib2.Http()
-        debug = self.get_config().get_gc_logging()
-        if debug:
-            http.debuglevel = 4
-        return http
-
-    def _oauth_dance (self, storage):
-        port = 1977
-        self._init_webserver(port)
-
-        logging.info('Staring the wonderful oAuth dance...')
-        scope = 'https://www.google.com/m8/feeds'
-        cs = os.path.abspath(os.path.expanduser(self.get_cs()))
-        self.flow = flow_from_cs(cs, scope=scope,
-                                 redirect_uri='http://localhost:%d' % port)
-        auth_uri = self.flow.step1_get_authorize_url()
-        webbrowser.open_new(auth_uri)
-
-        while not self.authorized:
-            time.sleep(1)
-
-        self.server.shutdown()
-
-        http = self.credentials.authorize(http=self._new_http())
-        storage.put(self.credentials)
-        self.credentials.set_store(storage)
-
-        return self.credentials
-
     def gc_init (self):
         logging.info('Attempting to log into Google...')
         user_dir = self.get_config().get_user_dir()
-        cs_file = os.path.abspath(os.path.join(user_dir,
-                                               '%s.dat' % self.get_user()))
-        storage = Storage(cs_file)
-        if not os.path.exists(cs_file):
-           self.credentials = self._oauth_dance(storage)
-        else:
-            self.credentials = storage.get()
-            if self.credentials is None or self.credentials.invalid:
-                self.credentials = self._oauth_dance(storage)
-            else:
-                if self.credentials.access_token_expired:
-                    self.credentials.refresh(http=self._new_http())
-                    storage.put(self.credentials)
-                else:
-                    logging.info('Using pre-fetched access_token...')
 
-        auth = MyAuthToken(self.get_config(), self.credentials)
-        gdc = gdata.contacts.client.ContactsClient(source='ASynK',
-                                                   auth_token=auth)
-        self.set_gdc(gdc)
+        # Refresh and Access tokens for accessing the Contact list is stored
+        # in a file on $user_dir, and is created automatically when the
+        # authorization flow completes for the first time. The app's
+        # credentials used to run the oauth dance should be specified at the
+        # time of invocation of asynk (or through the sync profile).
+        token_filen = os.path.abspath(os.path.join(user_dir,
+                                                   'token.%s.json' % self.get_user()))
+
+        creds = None
+        if os.path.exists(token_filen):
+            creds = Credentials.from_authorized_user_file(token_filen,
+                                                          CONTACTS_SCOPES)
+            # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    self.get_cs(), CONTACTS_SCOPES)
+                creds = flow.run_local_server(port=0)
+            # Save the credentials for the next run
+            with open(token_filen, 'w') as token:
+                token.write(creds.to_json())
+
+        self.creds = creds
+        self.set_service(build('people', 'v1', credentials=self.creds))
 
         ## Mon Jun 15 16:07:56 IST 2015 Not sure why this code is commented
         ## out, and if we need it to be here at all ... Hm.
@@ -309,11 +313,11 @@ class GCPIMDB(PIMDB):
 
 
     def get_groups_feed (self):
-        feed = self.get_gdc().GetGroups()
-        return feed
+        return self.get_service().contactGroups()
 
     def print_groups (self):
         feed = self.get_groups_feed()
+        print feed
 
         if not feed.entry:
             print 'No groups for user'
