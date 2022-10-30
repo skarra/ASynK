@@ -27,6 +27,8 @@ import xml.etree.ElementTree as ET
 import utils
 import atom, gdata.contacts.client
 
+MAX_MEMBERS = 200               # limited by getBatchGet() call for contacts.
+
 class AddHeader:
     def __init__ (self):
         pass
@@ -548,10 +550,58 @@ class GCContactsFolder(Folder):
         return ret
        
     def _refresh_contacts (self):
-        feed = self._get_group_feed()
-        for gce in feed.entry:
-            gc = GCContact(self, gce=gce)
-            self.add_contact(gc)
+        personFields= ','.join([
+            "addresses",
+            "ageRanges",
+            "biographies",
+            "birthdays",
+            "calendarUrls",
+            "clientData",
+            "coverPhotos",
+            "emailAddresses",
+            "events",
+            "externalIds",
+            "genders",
+            "imClients",
+            "interests",
+            "locales",
+            "locations",
+            "memberships",
+            "metadata",
+            "miscKeywords",
+            "names",
+            "nicknames",
+            "occupations",
+            "organizations",
+            "phoneNumbers",
+            "photos",
+            "relations",
+            "sipAddresses",
+            "skills",
+            "urls",
+            "userDefined"])
+
+        service = self.get_service()
+        cg = service.contactGroups()
+        count = 0
+
+        while True:
+            resp = cg.get(resourceName=self.get_itemid(),
+                          maxMembers=MAX_MEMBERS).execute()
+
+            contact_ids = []
+            for id in resp['memberResourceNames']:
+                contact_ids.append(id)
+
+            print contact_ids
+            # # Make a batch get call on the contacts to fetch their data.
+            req = service.people().getBatchGet(resourceNames=contact_ids,
+                                               personFields=personFields)
+            resp2 = req.execute()
+
+            count += len(resp['memberResourceNames'])
+            if count >= resp['memberCount']:
+                break
 
     def show (self, what='summary'):
         logging.info(str(self))
@@ -619,6 +669,7 @@ class GCContactsFolder(Folder):
         self._set_prop('gcentry', gcentry)
 
     def _get_group_feed (self, showdeleted='false', updated_min=None):
+        service = self.get_service().conta
         query             = gdata.contacts.client.ContactsQuery()
         query.max_results = 100000
         query.showdeleted = showdeleted

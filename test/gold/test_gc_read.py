@@ -86,7 +86,14 @@ def run (username):
     cs = os.path.join("./", "gc-test-client-secrets.json")
     cs = os.path.abspath(os.path.expanduser(cs))
     try:
+        ## First some basic sanity tests
+
+        # Test 1: just connect to Google and create a db and print out folders
         gc = GCPIMDB(config, username, cs)
+        # gc.print_groups()
+
+        # Test 2: List contacts in a folder; assumes this exists, of course
+        gc.show_folder("contactGroups/4ed5a8dc8885aa3d")
     except BadAuthentication, e:
         raise AsynkCollectionError('Invalid Google credentials (%s)' % e)
 

@@ -198,7 +198,7 @@ class GCPIMDB(PIMDB):
         """See the documentation in class PIMDB"""
 
         logging.debug('Getting Group List to populate folders...')
-        groups = self.list_folders(silent=False)
+        groups = self.list_folders(silent=True)
         for (gid, gn, gcentry) in groups:
             f = GCContactsFolder(self, gid, gn, gcentry)
             self.add_contacts_folder(f)
@@ -315,18 +315,11 @@ class GCPIMDB(PIMDB):
     def get_groups_feed (self):
         return self.get_service().contactGroups()
 
+    ## Print names and other details of already fetched groups. This will NOT
+    ## make a call to the server
     def print_groups (self):
-        feed = self.get_groups_feed()
-        print feed
-
-        if not feed.entry:
-            print 'No groups for user'
-        for i, entry in enumerate(feed.entry):
-            print '\n%s %s' % (i+1, entry.title.text)
-            if entry.content:
-                print '  Content: %s' % (entry.content.text)
-
-            print '  Group ID: %s' % entry.id.text
+        for f in self.get_contacts_folders():
+            print("Name: %-25s; ID: %s" % (f.get_name(), f.get_itemid()))
 
     def find_group (self, title, ret_type='id'):
         """This routine will directly look up the server using the API and try
