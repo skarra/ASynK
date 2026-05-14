@@ -598,6 +598,8 @@ class GCContactsFolder(Folder):
             req = service.people().getBatchGet(resourceNames=contact_ids,
                                                personFields=personFields)
             resp2 = req.execute()
+            for c in resp2['responses']:
+                pass
 
             count += len(resp['memberResourceNames'])
             if count >= resp['memberCount']:
