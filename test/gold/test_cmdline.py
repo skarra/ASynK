@@ -24,7 +24,7 @@ from   subprocess import call
 ## Being able to fix the sys.path thusly makes is easy to execute this
 ## script standalone from IDLE. Hack it is, but what the hell.
 DIR_PATH    = os.path.abspath(os.path.join(
-    os.path.dirname(os.path.abspath('__file__')), '../..'))
+    os.path.dirname(os.path.abspath(__file__)), '../..'))
 EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
@@ -70,15 +70,15 @@ class TestMethods(unittest.TestCase):
         self.DEVNULL = open(os.devnull, 'wb')
 
     def test_no_args (self):
-        ret = call([self.prog], stdout=self.DEVNULL, stderr=self.DEVNULL)
+        ret = call([sys.executable, self.prog], stdout=self.DEVNULL, stderr=self.DEVNULL)
         self.assertEqual(ret, 0)
 
     def test_help (self):
-        ret = call([self.prog, '--help'], stdout=self.DEVNULL, stderr=self.DEVNULL)
+        ret = call([sys.executable, self.prog, '--help'], stdout=self.DEVNULL, stderr=self.DEVNULL)
         self.assertEqual(ret, 0)
 
     def test_create_profile_ok (self):
-        ret = call([self.prog, '--op=create-profile', '--db', 'cd', 'bb',
+        ret = call([sys.executable, self.prog, '--op=create-profile', '--db', 'cd', 'bb',
                    '--folder', 'default', 'default',
                    '--store', 'https://server.org:8443/', 'test/bbdb.olbb',
                    '--name', 'pname',
