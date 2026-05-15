@@ -48,11 +48,11 @@ confn_src = os.path.join('..', '..', 'config',
 confn_dest  = os.path.join(user_dir, 'config.json')
 
 def usage ():
-    print 'Usage: python test_cd.py'
+    print('Usage: python test_cd.py')
 
 def main (argv=None):
-    print 'Command line: ', sys.argv
-    print confn_src
+    print('Command line: ', sys.argv)
+    print(confn_src)
 
     if os.path.exists(user_dir):
         logging.debug('Clearing user directory: %s', user_dir)
@@ -72,16 +72,16 @@ def main (argv=None):
     with open(sys.argv[1], "r") as f:
         data = f.read()
         
-    print
-    print data
+    print()
+    print(data)
     vco = vobject.readOne(data)
-    print vco
-    print vco.prettyPrint()
+    print(vco)
+    print(vco.prettyPrint())
     con = CDContact(None, vco=vobject.readOne(data), debug_vcf=True)
-    print unicode(con)
+    print(str(con))
 
-    print "Display Name: ", con.get_disp_name()
-    print "VCO: ", con.init_vco_from_props().serialize()
+    print("Display Name: ", con.get_disp_name())
+    print("VCO: ", con.init_vco_from_props().serialize())
 
 
 if __name__ == '__main__':

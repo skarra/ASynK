@@ -25,9 +25,9 @@
 ##
 
 import copy, logging, re, string, uuid
-from   contact    import Contact
-from   utils      import chompq, unchompq, classify_email_addr
-import demjson, pimdb_bb, folder_bb
+from contact import Contact
+from utils import chompq, unchompq, classify_email_addr
+import demjson3 as demjson, pimdb_bb, folder_bb
 
 def esc_str (x):
     """This takes a raw string and ensures all problematic characters are
@@ -180,7 +180,7 @@ class BBContact(Contact):
                     ## FIXME: Do we need to escape the quotes in json encoding
                     ## as in the except clause?
                     self.add_custom('affix', aff)
-        except KeyError, e:
+        except KeyError as e:
             ## FIXME: There should be a better way to handle the format
             ## differences.... for now we'll put up with the hacks
             affix = self.get_custom('affix')
@@ -282,7 +282,7 @@ class BBContact(Contact):
 
                 streets = fields['streets']
                 sts = re.findall(str_re, streets)
-                sts = map(unesc_str, [chompq(x) for x in sts])
+                sts = list(map(unesc_str, [chompq(x) for x in sts]))
 
                 if sts:
                     addict.update({'street' : '\n'.join(sts)})
@@ -364,7 +364,7 @@ class BBContact(Contact):
         if res:
             try:
                 tag = res.group(1)
-            except IndexError, e:
+            except IndexError as e:
                 tag = res.group(0)
         else:
             tag = label
@@ -445,7 +445,7 @@ class BBContact(Contact):
                 ## The rest of the stuff go into the 'Custom' field...
                 custom.update({key : val})
 
-        if len(custom.keys()) > 0:
+        if len(list(custom.keys())) > 0:
             self.update_custom(custom)
 
     def _snarf_created_updated_from_parse_res (self, pr):
@@ -682,12 +682,12 @@ class BBContact(Contact):
 
         im_label_re  = self.get_notes_map()['ims']
         if re.search(r'(.*)', im_label_re):
-            im_label_fmt = string.replace(im_label_re, '(.*)', '%s')
+            im_label_fmt = im_label_re.replace('(.*)', '%s')
         else:
             im_label_fmt = '%s'
 
         ret = ''
-        for l, v in ims.iteritems():
+        for l, v in ims.items():
             ret += ' ('+ (im_label_fmt % l) + ' . ' + unchompq(esc_str(v)) + ')'
 
         return ret
@@ -746,7 +746,7 @@ class BBContact(Contact):
         ret += self._get_sync_tags_as_str() + ' '
         ret += self._get_websites_as_string() + ' '
 
-        for label, note in self.get_custom().iteritems():
+        for label, note in self.get_custom().items():
             if label in ['company', 'aka']:
                 continue
 
@@ -775,7 +775,7 @@ class BBContact(Contact):
 
         ret = ''
         i = 0
-        for key, val in self.get_sync_tags().iteritems():
+        for key, val in self.get_sync_tags().items():
             ## FIXME: This was put in here for a reason. I think it had
             ## something to do with "reproducing" sync labels containing the
             ## ID on the local end itself. This was the easiest fix,

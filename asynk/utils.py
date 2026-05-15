@@ -65,9 +65,9 @@ def asynk_ts_to_iso8601 (ts):
     try:
         ## Eliminate the case where the input string is already in iso8601
         ## format... 
-        iso8601.parse(ts)
+        iso8601.parse_date(ts)
         return ts
-    except ValueError, e:
+    except ValueError as e:
         return re.sub(r'(\d\d\d\d-\d\d-\d\d) (\d\d:\d\d:\d\d).*$',
                       r'\1T\2Z', ts)
 
@@ -78,7 +78,7 @@ def asynk_ts_parse (ts):
     string, and then parse it into a python datetime object, which is returned
     """
 
-    return iso8601.parse(asynk_ts_to_iso8601(ts))
+    return iso8601.parse_date(asynk_ts_to_iso8601(ts))
 
 def touch (fn):
     """Equivalent of the Unix 'touch' command."""
@@ -113,7 +113,7 @@ def chompq (s):
 
 def unchompq (s):
     if s:
-        return '"' + unicode(s) + '"'
+        return '"' + str(s) + '"'
     else:
         return '""'
 
@@ -124,7 +124,7 @@ def unchompq (s):
 ## It is used like so: Numbers = enum(ONE=1, TWO=2, THREE='three')
 ## and, Numbers = enum('ZERO', 'ONE', 'TWO') # for auto initialization
 def enum(*sequential, **named):
-	enums = dict(zip(sequential, range(len(sequential))), **named)
+	enums = dict(list(zip(sequential, list(range(len(sequential))))), **named)
 	return type('Enum', (), enums)
 
 def get_link_rel (links, rel):
@@ -214,7 +214,7 @@ def utc_time_to_local_ts (t, ret_dt=False):
     try:
         utc_ts  = int(t)
         dt = datetime.fromtimestamp(utc_ts)
-    except ValueError, e:
+    except ValueError as e:
         ## Pytimes earlier than the epoch are a pain in the rear end. 
         dt = datetime(year=t.year,
                       month=t.month,
@@ -235,12 +235,12 @@ def classify_email_addr (addr, domains):
 
     res = {'home' : False, 'work' : False, 'other' : False}
 
-    for cat in res.keys():
+    for cat in list(res.keys()):
         try:
             for domain in domains[cat]:
                 if re.search((domain + '$'), addr):
                     res[cat] = True
-        except KeyError, e:
+        except KeyError as e:
             logging.warning('Invalid email_domains specification.')
 
     return (res['home'], res['work'], res['other'])

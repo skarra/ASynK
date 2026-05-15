@@ -18,8 +18,8 @@
 ## not, see <http://www.gnu.org/licenses/>.
 
 import codecs, logging, re, string, traceback
-from   folder     import Folder
-from   contact_bb import BBContact, BBDBParseError
+from folder import Folder
+from contact_bb import BBContact, BBDBParseError
 import pimdb_bb, utils
 
 class BBContactsFolder(Folder):    
@@ -68,14 +68,14 @@ class BBContactsFolder(Folder):
             ## times. This rides on a big assumption that both the timestamps
             ## are in UTC
             updated_min = self.get_config().get_last_sync_stop(pname)
-            updated_min = string.replace(updated_min, r'+', ' ')
-            updated_min = string.replace(updated_min, r'T', ' ')
+            updated_min = updated_min.replace(r'+', ' ')
+            updated_min = updated_min.replace(r'T', ' ')
 
         i = 0
         logging.debug('destid: %s', destid)
 
         newi = {}
-        for iid, con in self.get_contacts().iteritems():
+        for iid, con in self.get_contacts().items():
             i += 1
             if stag in con.get_sync_tags():
                 t, did = con.get_sync_tags(stag)[0]
@@ -96,8 +96,8 @@ class BBContactsFolder(Folder):
                               con.get_name(), iid)
                 sl.add_new(iid)
 
-        kss = newi.keys()
-        for x, y in oldi.iteritems():
+        kss = list(newi.keys())
+        for x, y in oldi.items():
             ## FIXME: The following could lead to virtually undebuggable
             ## problem if same item ID is used across two different sources
             ## and stores. But what are the chances, eh?
@@ -114,7 +114,7 @@ class BBContactsFolder(Folder):
 
         ret = {}
         stag = self.get_config().make_sync_label(pname, destid)
-        for locid, con in self.get_contacts().iteritems():
+        for locid, con in self.get_contacts().items():
             if stag in con.get_sync_tags():
                 t, remid = con.get_sync_tags(stag)[0]
                 ret.update({locid : remid})
@@ -155,13 +155,13 @@ class BBContactsFolder(Folder):
                 item.update_sync_tags(dst_tag, bbc.get_itemid())
                 logging.info('Successfully %sd BBDB entry for %30s (%s)',
                              op, bbc.get_name(), bbc.get_itemid())
-            except BBDBParseError, e:
+            except BBDBParseError as e:
                 logging.error('Could not instantiate BBDBContact object: %s',
                               str(e))
 
         try:
             self.get_store().save_file()
-        except Exception, e:
+        except Exception as e:
             logging.error('bb:bc: Could not save BBDB folder %s (%s)',
                           self.get_name(), str(e))
             self.get_store().restore_backup()
@@ -188,7 +188,7 @@ class BBContactsFolder(Folder):
         try:
             self.get_store().save_file()
             return True
-        except Exception, e:
+        except Exception as e:
             logging.error('bb:wst: Could not save BBDB folder %s (%s)',
                           self.get_name(), str(e))
             self.get_store().restore_backup()
@@ -203,10 +203,10 @@ class BBContactsFolder(Folder):
 
         ret = True
         cnt = 0
-        for i, c in self.get_contacts().iteritems():
+        for i, c in self.get_contacts().items():
             try:
                 cnt += 1 if c.del_sync_tags(label_re) else 0
-            except Exception, e:
+            except Exception as e:
                 logging.error('Caught exception (%s) while clearing flag: %s',
                               str(e), label_re)
                 logging.error(traceback.format_exc())
@@ -221,7 +221,7 @@ class BBContactsFolder(Folder):
             self.get_store().save_file()
             if cnt > 0:
                 logging.info('Saving changes to disk...done')
-        except Exception, e:
+        except Exception as e:
             logging.error('Caught exception (%s) while saving BBDB folder',
                           str(e))
             self.get_store().restore_backup()
@@ -247,9 +247,9 @@ class BBContactsFolder(Folder):
         should be an open file handle. If the keep_open flag is False, this
         will close the file handle after completing its work."""
 
-        for bbdbid, bbc in self.get_contacts().iteritems():
+        for bbdbid, bbc in self.get_contacts().items():
             con = bbc.init_rec_from_props()
-            bbf.write('%s\n' % unicode(con))
+            bbf.write('%s\n' % str(con))
 
         if not keep_open:
             bbf.close()
@@ -288,7 +288,7 @@ class BBContactsFolder(Folder):
                 logging.info('Deleting ID: %s; Name: %s...', itemid,
                              con.get_name())
                 del self.contacts[itemid]
-            except KeyError, e:
+            except KeyError as e:
                 retv = False
                 retf.append(itemid)
 
@@ -313,13 +313,13 @@ class BBContactsFolder(Folder):
         i = 0
         ret = []
 
-        for iid, con in self.get_contacts().iteritems():
+        for iid, con in self.get_contacts().items():
             if not name:
                 ret.append(con)
             else:
-                if (re.search(name, unicode(con.get_firstname()))
-                    or re.search(name, unicode(con.get_name()))
-                    or re.search(name, unicode(con.get_lastname()))):
+                if (re.search(name, str(con.get_firstname()))
+                    or re.search(name, str(con.get_name()))
+                    or re.search(name, str(con.get_lastname()))):
                     ret.append(con)
             i += 1
 
@@ -331,7 +331,7 @@ class BBContactsFolder(Folder):
     def print_contacts (self, cnt=0, name=None):
         cons = self.find_contacts_by_name(cnt, name)
         for con in cons:
-            logging.debug('%s', unicode(con))
+            logging.debug('%s', str(con))
 
         logging.debug('Printed %d contacts from folder %s', len(cons),
                       self.get_name())

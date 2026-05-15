@@ -40,8 +40,8 @@ class TestGCContact:
         # Parse command line options
         try:
             opts, args = getopt.getopt(sys.argv[1:], '', ['user=', 'pw='])
-        except getopt.error, msg:
-            print 'python gc_wrapper.py --user [username] --pw [password]'
+        except getopt.error as msg:
+            print('python gc_wrapper.py --user [username] --pw [password]')
             sys.exit(2)
 
         user = ''
@@ -54,17 +54,17 @@ class TestGCContact:
                 pw = arg
 
         while not user:
-            user = raw_input('Please enter your username: ')
+            user = input('Please enter your username: ')
 
         while not pw:
-            pw = raw_input('Password: ')
+            pw = input('Password: ')
             if not pw:
-                print 'Password cannot be blank'
+                print('Password cannot be blank')
 
         try:
             self.pimdb = GCPIMDB(self.conf, user, pw)
         except gdata.client.BadAuthentication:
-            print 'Invalid credentials. WTF.'
+            print('Invalid credentials. WTF.')
             raise
 
     def test_batch_error (self):
@@ -88,15 +88,15 @@ class TestGCContact:
 
         b = BatchState(1, feed, op='insert', sync_tag="asynk:testgcex:ex")
 
-        print 'Request: ', utils.pretty_xml(str(feed))
+        print('Request: ', utils.pretty_xml(str(feed)))
         rr = self.pimdb.exec_batch(feed)
-        print 'Response: ', utils.pretty_xml(str(rr))
+        print('Response: ', utils.pretty_xml(str(rr)))
 
         for entry in rr.entry:
-            print entry.batch_status
+            print(entry.batch_status)
             if entry.batch_status:
-                print 'Code: ',entry.batch_status.code
-                print 'Reason: ', entry.batch_status.reason
+                print('Code: ',entry.batch_status.code)
+                print('Reason: ', entry.batch_status.reason)
             else:
                 self.handle_interrupted_feed(feed, str(rr))
 
@@ -121,10 +121,10 @@ class TestGCContact:
         #    sample.print_groups()
         self.gout, ftype = self.pimdb.find_folder(gid)
         if self.gout:
-            print 'Found the sucker. Name is: ', self.gout.get_name()
+            print('Found the sucker. Name is: ', self.gout.get_name())
             return self.gout
         else:
-            print 'D''oh. Folder not found.'
+            print('D''oh. Folder not found.')
             return
 
     def test_print_item (self, gcid):
@@ -134,7 +134,7 @@ class TestGCContact:
         gce = f.get_gdc().GetContact(gcid)
         g   = GCContact(f, gce=gce)
 
-        print g
+        print(g)
 
     def test_find_item (self, gcid):
         f = self.find_group(self.gid)
@@ -169,9 +169,9 @@ class TestGCContact:
 
         cid = c.save()
         if cid:
-            print 'Successfully added contact. ID: ', cid
+            print('Successfully added contact. ID: ', cid)
         else:
-            print 'D''oh. Failed.'
+            print('D''oh. Failed.')
 
     def get_folder_contacts (self, f, cnt=0):
         """A thought out version of this routine will eventually go as a
@@ -201,10 +201,10 @@ class TestGCContact:
 
         f  = self.find_group(gid)
         cs = self.get_folder_contacts(f)
-        print 'Got %d entries\n' % len(cs)
+        print('Got %d entries\n' % len(cs))
         for i, c in enumerate(cs):
-            print 'Contact No %d: ' % i
-            print str(c)
+            print('Contact No %d: ' % i)
+            print(str(c))
 
     def test_sync_status (self, gid=None):
         from   sync       import SyncLists
@@ -222,8 +222,8 @@ class TestGCContact:
         # Parse command line options
         try:
             opts, args = getopt.getopt(sys.argv[1:], '', ['user=', 'pw='])
-        except getopt.error, msg:
-            print 'python gc_wrapper.py --user [username] --pw [password]'
+        except getopt.error as msg:
+            print('python gc_wrapper.py --user [username] --pw [password]')
             sys.exit(2)
     
         user = ''
@@ -236,17 +236,17 @@ class TestGCContact:
                 pw = arg
     
         while not user:
-            user = raw_input('Please enter your username: ')
+            user = input('Please enter your username: ')
     
         while not pw:
-            pw = raw_input('Password: ')
+            pw = input('Password: ')
             if not pw:
-                print 'Password cannot be blank'
+                print('Password cannot be blank')
     
         try:
             sample = GCPIMDB(config, user, pw)
         except gdata.client.BadAuthentication:
-            print 'Invalid credentials. WTF.'
+            print('Invalid credentials. WTF.')
             return
     
         sample.print_groups()

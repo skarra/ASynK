@@ -59,7 +59,7 @@ class TestOLContact:
         self.ol     = OLPIMDB(self.config)
         self.deff   = self.ol.get_def_folder()
 
-        print "\nHurrah: Name is: ", self.deff.get_name()
+        print("\nHurrah: Name is: ", self.deff.get_name())
 
     def print_contact (self, itemid):
         eid = base64.b64decode(itemid)
@@ -84,7 +84,7 @@ class TestOLContact:
 
         con = OLContact(self.deff, eid=base64.b64decode(itemid))
 
-        print 'Con: \n', con
+        print('Con: \n', con)
 
         props  = dict(con.get_olprops_from_mapi()) # later to try get_olprops_from_mapi
         fields = con.get_sync_fields()
@@ -98,7 +98,7 @@ class TestOLContact:
             props[tag]= True
 
         for field in fields:
-            if not field in props.keys():
+            if not field in list(props.keys()):
                 logging.debug('Property %35s (0x%x) not in Props.',
                              pt.name(field), field)
             else:
@@ -116,10 +116,10 @@ class TestOLContact:
         hr, props = item.GetProps([prop_tag], mapi.MAPI_UNICODE)
         (tag, val) = props[0]
         if mt.PROP_TYPE(tag) == mt.PT_ERROR:
-            print 'Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
-                                                                (tag % (2**64)))
+            print('Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
+                                                                (tag % (2**64))))
         else:
-            print 'Hurrah! Custom found: ', val
+            print('Hurrah! Custom found: ', val)
 
     def test_read_emails (self, itemid):
         eid = base64.b64decode(itemid)
@@ -132,10 +132,10 @@ class TestOLContact:
         hr, props = item.GetProps([prop_tag], mapi.MAPI_UNICODE)
         (tag, val) = props[0]
         if mt.PROP_TYPE(tag) == mt.PT_ERROR:
-            print 'Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
-                                                                (tag % (2**64)))
+            print('Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
+                                                                (tag % (2**64))))
         else:
-            print 'Email address found: ', val
+            print('Email address found: ', val)
 
     def test_sync_status (self):
         sl = SyncLists(self.deff, 'gc')
@@ -145,8 +145,8 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
     try:
         main()
-    except Exception, e:
-        print 'Caught Exception... Hm. Need to cleanup.'
-        print 'Full Exception as here:', traceback.format_exc()
+    except Exception as e:
+        print('Caught Exception... Hm. Need to cleanup.')
+        print('Full Exception as here:', traceback.format_exc())
 
 ## FIXME: Needs more thorough unit testing.

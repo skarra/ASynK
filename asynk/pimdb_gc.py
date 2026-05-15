@@ -22,18 +22,18 @@
 
 import base64, datetime, getopt, httplib2, logging, os, sys, threading, time
 import utils, webbrowser
-from   urlparse import urlparse
-import SimpleHTTPServer, SocketServer
+from   urllib.parse import urlparse
+import http.server, socketserver
 
 from   apiclient import discovery
 import atom, gdata.contacts.data, gdata.contacts.client
 from   oauth2client.client import flow_from_clientsecrets as flow_from_cs
 from   oauth2client.file   import Storage
 
-from   state        import Config
-from   pimdb        import PIMDB, GoutInvalidPropValueError
-from   folder       import Folder
-from   folder_gc    import GCContactsFolder
+from state import Config
+from pimdb import PIMDB, GoutInvalidPropValueError
+from folder import Folder
+from folder_gc import GCContactsFolder
 
 def patched_post(client, entry, uri, auth_token=None, converter=None,
                  desired_class=None, **kwargs):
@@ -43,8 +43,7 @@ def patched_post(client, entry, uri, auth_token=None, converter=None,
     entry_string = entry.to_string(gdata.client.get_xml_version(client.api_version))
     entry_string = entry_string.replace('ns1', 'gd')
     http_request.add_body_part(
-        entry_string,
-        'application/atom+xml')
+        entry_string, 'application/atom+xml')
     return client.request(method='POST', uri=uri, auth_token=auth_token,
                           http_request=http_request, converter=converter,
                           desired_class=desired_class, **kwargs)
@@ -219,7 +218,7 @@ class GCPIMDB(PIMDB):
         self.gdc = gdc
 
     def _init_webserver (self, port):
-        class MyRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+        class MyRequestHandler(http.server.SimpleHTTPRequestHandler):
             def do_GET (self1):
                 parsed_path = urlparse(self1.path)
                 try:
@@ -231,7 +230,7 @@ class GCPIMDB(PIMDB):
                 self.credentials = self.flow.step2_exchange(params)
                 return params
 
-        self.server = SocketServer.TCPServer(('', port), MyRequestHandler)
+        self.server = socketserver.TCPServer(('', port), MyRequestHandler)
 
         logging.info('Starting to listen on port %d...', port)
 
@@ -316,13 +315,13 @@ class GCPIMDB(PIMDB):
         feed = self.get_groups_feed()
 
         if not feed.entry:
-            print 'No groups for user'
+            print('No groups for user')
         for i, entry in enumerate(feed.entry):
-            print '\n%s %s' % (i+1, entry.title.text)
+            print('\n%s %s' % (i+1, entry.title.text))
             if entry.content:
-                print '  Content: %s' % (entry.content.text)
+                print('  Content: %s' % (entry.content.text))
 
-            print '  Group ID: %s' % entry.id.text
+            print('  Group ID: %s' % entry.id.text)
 
     def find_group (self, title, ret_type='id'):
         """This routine will directly look up the server using the API and try

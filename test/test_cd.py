@@ -71,8 +71,8 @@ def clear_def_folder (cd):
 
 def main (argv=None):
     setup_config()
-    user = raw_input('Enter Username:')
-    pw   = raw_input('Password:')
+    user = input('Enter Username:')
+    pw   = input('Password:')
     #url = 'https://localhost:8443'
     url = 'https://dav.brewster.com/sriramkarra'
     cd   = CDPIMDB(config, url, user, pw)
@@ -88,7 +88,7 @@ def main (argv=None):
 
 def get (cd, root):
     fi = cd.get_def_folder()
-    print fi.find_item(root + '395dc187673076cdba17557d12f94ce5.vcf')
+    print(fi.find_item(root + '395dc187673076cdba17557d12f94ce5.vcf'))
 
 def multi_get (cd, root):
     fi = cd.get_def_folder().find_items
@@ -97,8 +97,8 @@ def multi_get (cd, root):
                      root + '8afb07c99deac51532a10a4070aa48ec.vcf'])
 
     for c in cs:
-        print c
-        print
+        print(c)
+        print()
 
 def show_def_folder (cd, details=False):
     cd.get_def_folder().show(details)
@@ -113,7 +113,7 @@ def create_contact (cd):
     c.add_email_home('abcd1234@gmail.com')
 
     c.save()
-    print c
+    print(c)
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)

@@ -2,4 +2,4 @@
 ;;; file-format: 9
 ;; Test comment. Let's see what happens to this.
 ;; Another comment at the end of th file.
-["Apple" "Inc." nil nil ("Apple Inc.") nil nil nil nil "f41318f4-b7a5-4144-87ae-2e7ca4a8146f" "2013-08-03 03:28:32.750988" "2013-08-03 03:28:32 +0000" nil]
+["Apple" "Inc."  nil nil ("Apple Inc.") nil nil nil ((bbdb-id . "0a9ffe00-50b4-11f1-b250-761511dfdd65") (creation-date . "2013-08-03 03:28:32.750988") (timestamp . "2013-08-03 03:28:32 +0000")   ) "0a9ffe00-50b4-11f1-b250-761511dfdd65" "2013-08-03 03:28:32.750988" "2013-08-03 03:28:32 +0000"  nil]

@@ -18,9 +18,9 @@
 ## not, see <http://www.gnu.org/licenses/>.
 ##
 
-from   utils          import HTTPError
-from   folder         import Folder
-from   contact_cd     import CDContact
+from utils import HTTPError
+from folder import Folder
+from contact_cd import CDContact
 from   caldavclientlibrary.protocol.url                 import URL
 from   caldavclientlibrary.protocol.webdav.definitions  import davxml
 from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
@@ -64,8 +64,8 @@ class CDContactsFolder(Folder):
         oldi  = conf.get_itemids(pname)
         curi  = self.get_itemids(pname, destid)
 
-        kss = curi.keys()
-        for x, y in oldi.iteritems():
+        kss = list(curi.keys())
+        for x, y in oldi.items():
             if not x in kss and not y in kss:
                 logging.debug('Del      Carddav Contact: %s:%s', x, y)
                 if pdb1id == self.get_dbid():
@@ -81,10 +81,10 @@ class CDContactsFolder(Folder):
         # Note: crdid refers to the CardDAV server item id for the contact,
         # and the remid refers to the ID on the other end of the sync
         # profile.
-        for i, (crdid, item) in enumerate(self.get_contacts().iteritems()):
+        for i, (crdid, item) in enumerate(self.get_contacts().items()):
             try:
                 label, remid = item.get_sync_tags(stag)[0]
-            except IndexError, e:
+            except IndexError as e:
                 label = None
                 remid = None
 
@@ -118,7 +118,7 @@ class CDContactsFolder(Folder):
         self._refresh_contacts()
         ret = {}
         stag = self.get_config().make_sync_label(pname, destid)
-        for locid, con in self.get_contacts().iteritems():
+        for locid, con in self.get_contacts().items():
             if stag in con.get_sync_tags():
                 t, remid = con.get_sync_tags(stag)[0]
                 ret.update({locid : remid})
@@ -132,7 +132,7 @@ class CDContactsFolder(Folder):
                 sess.deleteResource(URL(url=self.item_path(itemid)))
                 self.del_contact(itemid)
                 logging.info('Deleted CardDAV server contact %s...', itemid)
-            except HTTPError, e:
+            except HTTPError as e:
                 logging.error('Could not delete itemid: %s (%s)', itemid, e)
 
 
@@ -158,7 +158,7 @@ class CDContactsFolder(Folder):
         try:
             itemid = CDContact.normalize_cdid(itemid)
             return CDContact(self, vco=vobject.readOne(data), itemid=itemid)
-        except Exception, e:
+        except Exception as e:
             logging.error('Error (%s) parsing vCard object for %s',
                           e, itemid)
             raise
@@ -172,14 +172,14 @@ class CDContactsFolder(Folder):
                                 (davxml.getetag, carddavxml.address_data))
 
         ret = []
-        for key, item in results.iteritems():
+        for key, item in results.items():
             etag = item.getNodeProperties()[davxml.getetag]
             vcf  = item.getNodeProperties()[carddavxml.address_data]
 
             try:
                 key = CDContact.normalize_cdid(key)
                 cd = CDContact(self, vco=vobject.readOne(vcf.text), itemid=key)
-            except Exception, e:
+            except Exception as e:
                 logging.error('Error (%s) parsing vCard object for %s',
                               e, key)
                 raise
@@ -253,7 +253,7 @@ class CDContactsFolder(Folder):
                 con_new.save(etag=con_old.get_etag())
                 logging.info('Successfully updated CardDAV entry for %30s (%s)',
                              con_new.get_disp_name(), con_new.get_itemid())
-            except HTTPError, e:
+            except HTTPError as e:
                 logging.error('Error (%s). Could not update CardDAV entry %s',
                               e, con_new.get_disp_name())
                 success = False
@@ -306,8 +306,8 @@ class CDContactsFolder(Folder):
         props = (davxml.getetag,)
         items = sess.getPropertiesOnHierarchy(path, props)
 
-        hrefs = [x for x in items.keys() if x != path.toString().strip()]
-        etags = [items[x].get(davxml.getetag, "-") for x in items.keys()]
+        hrefs = [x for x in list(items.keys()) if x != path.toString().strip()]
+        etags = [items[x].get(davxml.getetag, "-") for x in list(items.keys())]
 
         cons  = self.find_items(hrefs)
 
@@ -322,10 +322,10 @@ class CDContactsFolder(Folder):
     def show (self, detailed=False):
         self._refresh_contacts()
         cons = self.get_contacts()
-        logging.info('Total contained contacts: %d', len(cons.keys()))
+        logging.info('Total contained contacts: %d', len(list(cons.keys())))
         logging.info('Items in brief: ')
 
-        for itemid, con in cons.iteritems():
+        for itemid, con in cons.items():
             if detailed:
                 logging.info('Printing Contact: %s', con.get_disp_name())
                 logging.info('%s', con)

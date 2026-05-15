@@ -26,12 +26,15 @@
 
 import logging, netrc, os
 from   abc              import ABCMeta, abstractmethod
-from   pimdb_bb         import BBPIMDB
-from   gdata.client     import BadAuthentication
-from   pimdb_gc         import GCPIMDB
+from pimdb_bb import BBPIMDB
+
 try:
-    from   pimdb_ol         import OLPIMDB
-except ImportError, e:
+    from pimdb_gc import GCPIMDB
+except Exception:
+    GCPIMDB = None
+try:
+    from pimdb_ol import OLPIMDB
+except ImportError as e:
     ## This could mean one of two things: (a) we are not on Windows, or (b)
     ## some of th relevant supporting stuff is not installed (like
     ## pywin32). these error cases are handled elsewhere, so move on.
@@ -48,9 +51,9 @@ class NetrcAuth:
         try:
             self.netrc = None
             self.netrc = netrc.netrc()
-        except IOError, e:
+        except IOError as e:
             logging.info('~/.netrc not found.')
-        except netrc.NetrcParseError, e:
+        except netrc.NetrcParseError as e:
             logging.warning('Ignoring ~/.netrc: could not parse it (%s)', e)
 
     def get_auth (self, pname, dbid, coll_n):
@@ -226,14 +229,14 @@ class Collection:
             u = cmd_u
         else:
             while not u and self.force_username():
-                u = raw_input('Please enter username for %s: ' % dbn)
+                u = input('Please enter username for %s: ' % dbn)
 
         if cmd_p is not None:
             logging.debug('Using cmdline password for collection %s', dbn)
             p = cmd_p
         else:
             while not p and self.force_pwd():
-                p = raw_input('Enter password for %s: ' % dbn)
+                p = input('Enter password for %s: ' % dbn)
 
         self.set_username(u)
         self.set_pwd(p)
@@ -286,15 +289,15 @@ class CDCollection(Collection):
 
     def login (self):
         try:
-            from   pimdb_cd         import CDPIMDB
-        except ImportError, e:
+            from pimdb_cd import CDPIMDB
+        except ImportError as e:
             raise AsynkCollectionError("%s: Cannot use any CardDAV accounts" % e)
 
         try:
             pimcd = CDPIMDB(self.get_config(), self.get_stid(),
                             self.get_username(), self.get_pwd())
-        except BadAuthentication, e:
-            raise AsynkCollectionError('Invalid CardDAV credentials (%s).', e)
+        except Exception as e:
+            raise AsynkCollectionError('Invalid CardDAV credentials (%s).' % e)
 
         return self.set_db(pimcd)
 
@@ -334,7 +337,7 @@ class GCCollection(Collection):
         try:
             pimgc = GCPIMDB(self.get_config(),
                             self.get_username(), self.get_pwd())
-        except BadAuthentication, e:
+        except Exception as e:
             raise AsynkCollectionError('Invalid Google credentials (%s)' % e)
 
         return self.set_db(pimgc)

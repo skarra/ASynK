@@ -22,13 +22,8 @@
 
 import logging, os
 
-from   state         import Config
-import demjson
-
-import atom, gdata
-from   gdata.client import BadAuthentication
-from   pimdb_gc     import GCPIMDB
-import gdata.contacts.data, gdata.contacts.client
+from state import Config
+import demjson3 as demjson
 
 class Sync:
     BATCH_SIZE = 100
@@ -191,7 +186,7 @@ class Sync:
         # First create a list of matching entries. comd will be a dictionary
         # of common entries represented as a dictionary of 'f1_id : f2_id'
         # pairs: essentially an extract of the f1_mod
-        coma = [id1 for id1,id2 in f1_mod.iteritems() if id2 in f2_mod.keys()]
+        coma = [id1 for id1,id2 in f1_mod.items() if id2 in list(f2_mod.keys())]
 
         logging.info('Number of entries modified both places (conflicts): %d',
                      len(coma) if coma else 0)
@@ -232,10 +227,10 @@ class Sync:
         f1_del = f1sl.get_dels()
         f2_del = f2sl.get_dels()
 
-        coma = [y for x,y in f1_del.iteritems() if y in f2_mod.keys()]
+        coma = [y for x,y in f1_del.items() if y in list(f2_mod.keys())]
         f2_mod = f2sl.remove_keys_from_mod(coma)
 
-        coma = [y for x,y in f2_del.iteritems() if y in f1_mod.keys()]
+        coma = [y for x,y in f2_del.items() if y in list(f1_mod.keys())]
         f1_mod = f1sl.remove_keys_from_mod(coma)
 
         logging.debug('After removing dels from mod, size of %s mod : %5d',
@@ -245,14 +240,14 @@ class Sync:
 
         # Finally remove entries that have been deleted from both places. Why
         # bother with these suckers?
-        coma = dict([(x,y) for x,y in f1_del.iteritems() if y in f2_del.keys()])
-        f2_del = f2sl.remove_keys_from_del(coma.values())
-        for x in coma.keys():
+        coma = dict([(x,y) for x,y in f1_del.items() if y in list(f2_del.keys())])
+        f2_del = f2sl.remove_keys_from_del(list(coma.values()))
+        for x in list(coma.keys()):
             del f1_del[x]
 
-        coma = dict([(x,y) for x,y in f2_del.iteritems() if y in f1_del.keys()])
-        f1_del = f1sl.remove_keys_from_del(coma.values())
-        for x in coma.keys():
+        coma = dict([(x,y) for x,y in f2_del.items() if y in list(f1_del.keys())])
+        f1_del = f1sl.remove_keys_from_del(list(coma.values()))
+        for x in list(coma.keys()):
             del f2_del[x]
 
         logging.info('After conflict resolution, size of %s del : %5d',
@@ -346,7 +341,7 @@ class SyncLists:
         used to manipulate one of the self.dictoinaries."""
 
         d = self.get_mods()
-        d = dict([(x,y) for x,y in d.iteritems() if not x in k])
+        d = dict([(x,y) for x,y in d.items() if not x in k])
 
         return self.set_mods(d)
 
@@ -356,7 +351,7 @@ class SyncLists:
         used to manipulate one of the self.dictoinaries."""
 
         d = self.get_mods()
-        d = dict([(x,y) for x,y in d.iteritems() if not y in v])
+        d = dict([(x,y) for x,y in d.items() if not y in v])
 
         return self.set_mods(d)
 
@@ -366,7 +361,7 @@ class SyncLists:
         used to manipulate one of the self.dictoinaries."""
 
         d = self.get_dels()
-        d = dict([(x,y) for x,y in d.iteritems() if not x in k])
+        d = dict([(x,y) for x,y in d.items() if not x in k])
 
         return self.set_dels(d)
 
@@ -376,7 +371,7 @@ class SyncLists:
         used to manipulate one of the self.dictoinaries."""
 
         d = self.get_dels()
-        d = dict([(x,y) for x,y in d.iteritems() if not y in v])
+        d = dict([(x,y) for x,y in d.items() if not y in v])
 
         return self.set_dels(d)
 
@@ -399,7 +394,7 @@ class SyncLists:
         self.add_etag(f1id, f2id)
 
     def get_entries (self):
-        return self.all.keys()
+        return list(self.all.keys())
 
     ## Just an alias for add_entry; used to clarify the nature of the value
     ## being added.
@@ -487,7 +482,7 @@ class SyncLists:
                      self.db1id, df.get_dbid())
         logging.info('=====================================================')
 
-        remids = self.get_dels().values()
+        remids = list(self.get_dels().values())
         if len(remids) > 0:
             df.del_itemids(remids)
         else:

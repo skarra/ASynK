@@ -169,7 +169,7 @@ class AsynkBuilderC:
         """uinps is a Namespace object as returned from the parse_args()
         routine of argparse module."""
 
-        level = string.upper(uinps.log)
+        level = uinps.log.upper()
         if level:
             alogger.consoleLogger.setLevel(getattr(logging, level))
 
@@ -255,7 +255,7 @@ class AsynkBuilderC:
         # mutual exclusion and so forth. In addition to this, every command
         # will do some parsing and validation itself.
 
-        op  = 'op_' + string.replace(uinps.op, '-', '_')
+        op  = 'op_' + uinps.op.replace('-', '_')
         self.asynk.set_op(op)
 
         self._snarf_pname(uinps)
@@ -304,7 +304,7 @@ def main (argv=sys.argv):
     # Make the user directory if it does not exist
     uinps.user_dir = os.path.abspath(os.path.expanduser(uinps.user_dir))
     if not os.path.exists(uinps.user_dir):
-        print 'Creating ASynK User directory at: ', uinps.user_dir
+        print(('Creating ASynK User directory at: ', uinps.user_dir))
         os.makedirs(uinps.user_dir)
 
     config  = Config(ASYNK_BASE_DIR, uinps.user_dir)
@@ -315,7 +315,7 @@ def main (argv=sys.argv):
 
     try:
         asynk = AsynkBuilderC(uinps, config, alogger).asynk
-    except AsynkParserError, e:
+    except AsynkParserError as e:
         logging.critical('Error in User input: %s', e)
         quit()
 

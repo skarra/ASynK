@@ -23,14 +23,14 @@ import iso8601, base64
 import utils
 
 from   abc            import ABCMeta, abstractmethod
-from   folder         import Folder
+from folder import Folder
 from   win32com.mapi  import mapi, mapiutil
 from   win32com.mapi  import mapitags as mt
-from   contact_ol     import OLContact
+from contact_ol import OLContact
 import winerror
 import asynk_mapitags as amt
 
-class OLFolder(Folder):
+class OLFolder(Folder, metaclass=ABCMeta):
     """An Outlook folder directly corresponds to a MAPI Folder entity. This
     class wraps a mapi folder object while implementing the normalized Folder
     methods and accessors defined by Gout.
@@ -39,8 +39,6 @@ class OLFolder(Folder):
     instantiated.
     """
 
-    __metaclass__ = ABCMeta
-
     cclass_ftype_d = {'IPF.Contact'     : Folder.CONTACT_t,
                       'IPF.Task'        : Folder.TASK_t,
                       'IPF.StickyNote'  : Folder.NOTE_t,
@@ -48,7 +46,7 @@ class OLFolder(Folder):
                       'IPF.Note'        : Folder.UNKNOWN_t,
                       }
     ftype_cclass_d = {}
-    for key, val in cclass_ftype_d.iteritems():
+    for key, val in cclass_ftype_d.items():
         ftype_cclass_d.update({val : key})
 
     def __init__ (self, db, entryid, name, fobj, msgstore):
@@ -100,10 +98,10 @@ class OLFolder(Folder):
         synct_str = self.get_config().get_last_sync_start(pname)
         if not synct_sto:
             synct_sto = self.get_config().get_last_sync_stop(pname)
-        synct     = iso8601.parse(synct_sto)
+        synct     = iso8601.parse_date(synct_sto)
         logging.debug('Last Start iso str : %s', synct_str)
         logging.debug('Last Stop  iso str : %s', synct_sto)
-        logging.debug('Current Time       : %s', iso8601.tostring(time.time()))
+        logging.debug('Current Time       : %s', __import__("datetime").datetime.utcfromtimestamp(time.time().isoformat() + "Z"))
 
         logging.info('Data obtained from MAPI. Processing...')
 
@@ -142,8 +140,8 @@ class OLFolder(Folder):
 
         ctable.SetColumns(self.get_def_cols(), 0)
 
-        kss = newi.keys()
-        for x, y in oldi.iteritems():
+        kss = list(newi.keys())
+        for x, y in oldi.items():
             if not x in kss and not y in kss:
                 logging.debug('Deleted Outlook Contact: %s:%s', x, y)
                 if pdb1id == self.get_dbid():
@@ -227,7 +225,7 @@ class OLFolder(Folder):
                 eid = olc.save()
                 logging.info('Successfully created outlook entry for %30s (%s)',
                              olc.get_disp_name(), olc.get_itemid())
-            except Exception, e:
+            except Exception as e:
                 logging.error('Could not save contact (%s) due to: %s',
                               olc.get_disp_name(), str(e))
                 logging.debug('Contact Entry: %s', olc)
@@ -263,7 +261,7 @@ class OLFolder(Folder):
             try:
                 def_cols = oli.GetPropList(mapi.MAPI_UNICODE)
                 hr, ps = oli.DeleteProps(def_cols)
-            except Exception, e:
+            except Exception as e:
                 logging.error('%s: Could not clear our MAPI props for: %s (%s)',
                               'ol:batch_update()', item.get_name(), e)
                 logging.debug(traceback.format_exc())
@@ -276,7 +274,7 @@ class OLFolder(Folder):
                 oli.SaveChanges(mapi.KEEP_OPEN_READWRITE)
                 logging.info('Successfully updated changes to Outlook for %s',
                              item.get_disp_name())
-            except Exception, e:
+            except Exception as e:
                 logging.error('%s: Could not set new props set for: %s (%s)',
                               'ol:batch_update()', item.get_disp_name(), e)
                 success = False
@@ -301,7 +299,7 @@ class OLFolder(Folder):
             label_re = 'asynk:[a-z][a-z]:id'
 
         tags = []
-        for name, tag in self.get_proptags().sync_tags.iteritems():
+        for name, tag in self.get_proptags().sync_tags.items():
             if re.search(label_re, name):
                 tags.append(tag)
 
@@ -347,7 +345,7 @@ class OLFolder(Folder):
         defined property tags so they will be processed like any other
         property. """
 
-        sync_tag_props = self.get_proptags().sync_tags.values()
+        sync_tag_props = list(self.get_proptags().sync_tags.values())
         custom_props   = [self.get_proptags().valu('ASYNK_PR_CUSTOM_PROPS')]
         self.def_cols  = (self.get_contents().QueryColumns(mapi.TBL_ALL_COLUMNS) +
                           tuple(sync_tag_props) +
@@ -452,7 +450,7 @@ class OLFolder(Folder):
 
         try:
             tval = self.get_ftype_from_cclass(tval)
-        except KeyError, e:
+        except KeyError as e:
             tval = Folder.UNKNOWN_t
 
         return tval, f
@@ -472,7 +470,7 @@ class OLContactsFolder(OLFolder):
         self.set_type(Folder.PR_IPM_CONTACT_ENTRYID)
 
     def print_key_stats (self):
-        print 'Contacts Folder Name: ', self.get_name()
+        print('Contacts Folder Name: ', self.get_name())
 
 class OLNotesFolder(OLFolder):
     def __init__ (self, db, entryid, name, fobj, msgstore):
@@ -505,19 +503,19 @@ class OLTasksFolder(OLFolder):
 
             try:
                 entryid = props[mt.PR_ENTRYID]
-            except AttributeError, e:
+            except AttributeError as e:
                 entryid = 'Not Available'
 
             try:
                 subject = props[mt.PR_SUBJECT_W]
-            except AttributeError, e:
+            except AttributeError as e:
                 subject = 'Not Available'
 
             try:
                 complete = props[self.get_proptags().valu('ASYNK_PR_TASK_COMPLETE')]
                 if complete:
                     completed += 1
-            except KeyError, e:
+            except KeyError as e:
                 complete = 'Not Available'
 
             try:
@@ -525,38 +523,38 @@ class OLTasksFolder(OLFolder):
                 recurr_status = props[tag]
                 if recurr_status:
                     recurring += 1
-            except KeyError, e:
+            except KeyError as e:
                 recurr_status = 'Not Available'
 
             try:
                 tag = self.get_proptags().valu('ASYNK_PR_TASK_STATE')
                 state = props[tag]
-            except KeyError, e:
+            except KeyError as e:
                 state = 'Not Available'
 
             try:
                 tag = self.get_proptags().valu('ASYNK_PR_TASK_DUE_DATE')
                 duedate = utils.pytime_to_yyyy_mm_dd(props[tag])
-            except KeyError, e:
+            except KeyError as e:
                 duedate = 'Not Available'
 
 
             if complete:
                 continue
 
-            print 'Task #%3d: Heading: %s' % (total, subject)
-            print '\tEntryID   : ', base64.b64encode(entryid)
-            print '\tCompleted : ', complete
-            print '\tRecurring : ', recurr_status
-            print '\tState     : ', state
-            print '\tDue Date  : ', duedate
-            print '\n'
+            print('Task #%3d: Heading: %s' % (total, subject))
+            print('\tEntryID   : ', base64.b64encode(entryid))
+            print('\tCompleted : ', complete)
+            print('\tRecurring : ', recurr_status)
+            print('\tState     : ', state)
+            print('\tDue Date  : ', duedate)
+            print('\n')
 
-        print '===== Summary Status for Task Folder: %s ======' % self.name
-        print '\tTotal Tasks count : %4d' % total
-        print '\tRecurring count   : %4d' % recurring
-        print '\tExpired count     : %4d' % expired
-        print '\tCompleted count   : %4d' % completed
+        print('===== Summary Status for Task Folder: %s ======' % self.name)
+        print('\tTotal Tasks count : %4d' % total)
+        print('\tRecurring count   : %4d' % recurring)
+        print('\tExpired count     : %4d' % expired)
+        print('\tCompleted count   : %4d' % completed)
 
 class OLAppointmentsFolder(OLFolder):
     def __init__ (self, db, entryid, name, fobj, msgstore):
@@ -591,7 +589,7 @@ class PropTags:
 
     def load_proptags (self):
         # Load up all available properties from mt module
-        for name, value in mt.__dict__.iteritems():
+        for name, value in mt.__dict__.items():
             if name[:3] == 'PR_':
                 # Store both the full ID (including type) and just the ID.
                 # This is so PR_FOO_A and PR_FOO_W are still
@@ -640,7 +638,7 @@ class PropTags:
         mydid = self.def_olcf.get_db().get_dbid()
         olps  = conf.get_db_profiles(mydid)
 
-        for pname, prof in olps.iteritems():
+        for pname, prof in olps.items():
             db1id = conf.get_profile_db1(pname)
             db2id = conf.get_profile_db2(pname)
 
@@ -687,7 +685,7 @@ class PropTags:
         if n <= 1:
             try:
                 return self.valu('ASYNK_PR_EMAIL_1')
-            except KeyError, e:
+            except KeyError as e:
                 prop_name = [(self.PSETID_Address_GUID, 0x8084)]
                 prop_type = mt.PT_UNICODE
                 prop_ids = self.def_cf.GetIDsFromNames(prop_name,
@@ -740,7 +738,7 @@ class PropTags:
         if n <= 1:
             try:
                 return self.valu('ASYNK_PR_IM_1')
-            except KeyError, e:
+            except KeyError as e:
                 prop_name = [(self.PSETID_Address_GUID, plid)]
                 prop_type = mt.PT_UNICODE
                 prop_ids = self.def_cf.GetIDsFromNames(prop_name, mapi.MAPI_CREATE)

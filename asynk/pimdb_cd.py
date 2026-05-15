@@ -20,18 +20,18 @@
 ## ####
 ##
 
-from   utils        import HTTPError
-from   state        import Config
-from   pimdb        import PIMDB
-from   folder       import Folder
-from   folder_cd    import CDContactsFolder
+from utils import HTTPError
+from state import Config
+from pimdb import PIMDB
+from folder import Folder
+from folder_cd import CDContactsFolder
 from   caldavclientlibrary.protocol.webdav.definitions  import davxml
 from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
 from   caldavclientlibrary.protocol.url   import URL
 from   caldavclientlibrary.client.account import CalDAVAccount
 
 import iso8601
-import datetime, logging, os, re, sys, urllib, urlparse
+import datetime, logging, os, re, sys, urllib.request, urllib.parse, urllib.error, urllib.parse
 
 class CardDAVPrincipalNotFoundError(Exception):
     pass
@@ -98,7 +98,7 @@ class CDPIMDB(PIMDB):
         logging.info('Deleting all the contained items. Will not remove folder')
 
         items = sess.getPropertiesOnHierarchy(path, (davxml.getetag,))
-        hrefs = [x for x in items.keys() if x != path.toString().strip()]
+        hrefs = [x for x in list(items.keys()) if x != path.toString().strip()]
 
         for href in hrefs:
             sess.deleteResource(URL(url=href))
@@ -119,7 +119,7 @@ class CDPIMDB(PIMDB):
         props    = (carddavxml.default_addressbook_url,)
 
         res, bad = self.session().getProperties(URL(url=root), props)
-        uris = res.values()
+        uris = list(res.values())
         if len(uris) > 0:
             def_uri  = uris[0].toString().strip()
             logging.debug('Looking for default folder: "%s"', def_uri)
@@ -171,7 +171,7 @@ class CDPIMDB(PIMDB):
 
        if not t:
            t = datetime.datetime.utcnow()
-       elif type(t) == str or type(t) == unicode:
+       elif type(t) == str or type(t) == str:
            ## Most likely this is in iso8601 format.
            res = re.search(r'(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d).*', t)
            if res:
@@ -200,7 +200,7 @@ class CDPIMDB(PIMDB):
             t = res.group(1)
             return datetime.datetime.strptime(t, '%Y%m%dT%H%M%S')
         else:
-            t = iso8601.parse(t)
+            t = iso8601.parse_date(t)
             return datetime.datetime.utcfromtimestamp(t)
 
     ## Note: I learnt of the setter, and @property and @property.setter
@@ -266,7 +266,7 @@ class CDPIMDB(PIMDB):
     def parse_uri (self, uri):
         if not uri.startswith('http'):
             uri = 'http://' + uri
-        splits = urlparse.urlsplit(uri)
+        splits = urllib.parse.urlsplit(uri)
         self.set_server(splits.scheme + "://" + splits.netloc)
         self.set_path(splits.path)
 
@@ -279,7 +279,7 @@ class CDPIMDB(PIMDB):
                                      pswd=self.get_pw(), root=self.get_path(),
                                      principal=None,
                                      logging=self.get_client_logging())
-        except HTTPError, e:
+        except HTTPError as e:
             server = "Carddav Server (%s)" % sf
             logging.fatal('Could not open connection to %s. Error: %s',
                           server, e)
@@ -327,15 +327,15 @@ class CDPIMDB(PIMDB):
             path = root.path
             logging.debug('Processing root path %s', path)
             results = sess.getPropertiesOnHierarchy(URL(url=path), props)
-            items = results.keys()
+            items = list(results.keys())
             items.sort()
             logging.debug('  Found following properties: %s.', items)
             for rurl in items:
-                rurl = urllib.unquote(rurl)
+                rurl = urllib.parse.unquote(rurl)
                 if rurl == path:
                     continue
 
-                props = results[urllib.quote(rurl)]
+                props = results[urllib.parse.quote(rurl)]
                 rtype = props.get(davxml.resourcetype)
                 logging.debug('    Resource type of prop: %s.', rtype)
                 if not isinstance(rtype, str):

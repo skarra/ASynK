@@ -29,11 +29,7 @@ from abc     import ABCMeta, abstractmethod
 class ASynKInvalidPropValueError(Exception):
     pass
 
-class Folder:
-    __metaclass__ = ABCMeta
-
-    ## We are borrowing the following constants from MAPI to identify our
-    ## folder types. I mean, why not...
+class Folder(metaclass=ABCMeta):
     CONTACT_t   = PR_IPM_CONTACT_ENTRYID     = 0x36D10102
     NOTE_t      = PR_IPM_NOTE_ENTRYID        = 0x36D30102
     TASK_t      = PR_IPM_TASK_ENTRYID        = 0x36D40102

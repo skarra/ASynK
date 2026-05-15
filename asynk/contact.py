@@ -26,14 +26,12 @@
 ##
 
 from abc     import ABCMeta, abstractmethod
-from pimdb   import PIMDB
-from item    import Item
+from pimdb import PIMDB
+from item import Item
 
 import copy, logging, re, string
 
-class Contact(Item):
-    __metaclass__ = ABCMeta
-
+class Contact(Item, metaclass=ABCMeta):
     def __init__ (self, folder, con=None):
         """Constructor for the abstract base class Contact. If con is not
         None, this behaves like pseudo copy constructor, copying all the
@@ -93,7 +91,7 @@ class Contact(Item):
         if not self.in_init():
             self.dirty(True)
 
-        self._set_prop('firstname', string.strip(val) if val else None)
+        self._set_prop('firstname', val.strip() if val else None)
 
     def get_lastname (self):
         return self._get_prop('lastname')
@@ -102,7 +100,7 @@ class Contact(Item):
         if not self.in_init():
             self.dirty(True)
 
-        self._set_prop('lastname', string.strip(val) if val else None)
+        self._set_prop('lastname', val.strip() if val else None)
 
     def get_middlename (self):
         return self._get_prop('middlename')
@@ -357,7 +355,7 @@ class Contact(Item):
             if not as_array:
                 return postals
             ret = []
-            for cat, ary in postals.iteritems():
+            for cat, ary in postals.items():
                 ret += ary
 
             ## Now, we need to ensure the primary address is the first element
@@ -394,7 +392,7 @@ class Contact(Item):
 
         type = 'home'
         if postal_map and len(postal_map) > 0:
-            for cat, reg in postal_map.iteritems():
+            for cat, reg in postal_map.items():
                 if re.search(reg, which):
                     type = cat
                     break

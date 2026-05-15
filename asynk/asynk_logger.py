@@ -54,8 +54,8 @@ class ASynKLogger:
             logging.info('Creating Logs directory at: %s', logdir)
             os.mkdir(logdir)
     
-        stamp   = string.replace(str(datetime.datetime.now()), ' ', '.')
-        stamp   = string.replace(stamp, ':', '-')
+        stamp   = str(datetime.datetime.now()).replace(' ', '.')
+        stamp   = stamp.replace(':', '-')
         logname = os.path.abspath(os.path.join(logdir, 'asynk_logs.' + stamp))
         logging.info('Debug logging to file: %s', logname)
     

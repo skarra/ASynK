@@ -49,7 +49,7 @@ confn_dest  = os.path.join(user_dir, 'config.json')
 conf_src = confnv6_src
 
 def usage ():
-    print 'Usage: python test_bb_write.py'
+    print('Usage: python test_bb_write.py')
 
 def main (argv=None):
     ## First setup the config files
@@ -114,7 +114,7 @@ class TestBBDBWrite(unittest.TestCase):
 
     def test_unicode (self):
         con = BBContact(self.deff)
-        con.set_firstname(u'Héctor')
+        con.set_firstname('Héctor')
         con.set_lastname(r'Tarrido-Picart')
 
         self.deff.add_contact(con)

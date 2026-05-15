@@ -32,7 +32,7 @@ import logging, os, os.path, sys, traceback
 ## script standalone from IDLE. Hack it is, but what the hell.
 CUR_DIR           = os.path.abspath('')
 ASYNK_BASE_DIR    = os.path.abspath('..')
-print ASYNK_BASE_DIR
+print(ASYNK_BASE_DIR)
 EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
                os.path.join(ASYNK_BASE_DIR, 'asynk'),]
 sys.path = EXTRA_PATHS + sys.path
@@ -43,7 +43,7 @@ from folder_bb     import BBContactsFolder
 from contact_bb    import BBContact
 
 def main (argv=None):
-    print sys.argv
+    print(sys.argv)
 
     if len(sys.argv) > 1:
         bbfn = os.path.abspath(sys.argv[1])

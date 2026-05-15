@@ -23,11 +23,11 @@
 ## words this file wraps a vCard object.
 ##
 
-from   utils      import HTTPError
-from   contact    import Contact
-import demjson, pimdb_cd, utils
+from utils import HTTPError
+from contact import Contact
+import demjson3 as demjson, pimdb_cd, utils
 
-import copy, datetime, logging, md5, os, re, string, uuid, vobject
+import copy, datetime, logging, hashlib, os, re, string, uuid, vobject
 
 def l (s):
     return s.lower()
@@ -132,14 +132,14 @@ class CDContact(Contact):
             fo.put_item(fn, vcf_data, 'text/vcard', etag=etag)
         else:
             assert(not etag)
-            cdid = md5.new(vcf_data).hexdigest() 
+            cdid = hashlib.md5(vcf_data.encode('utf-8') if isinstance(vcf_data, str) else vcf_data).hexdigest() 
             fn += cdid + '.vcf'
 
             ## FIXME: Handle errors and all that good stuff.
             self.set_itemid(cdid)
             try:
                 fo.put_item(fn, vcf_data, 'text/vcard')
-            except HTTPError, e:
+            except HTTPError as e:
                 success = False
 
         return success
@@ -447,7 +447,7 @@ class CDContact(Contact):
 
         ## Date of Birth
         if hasattr(vco, 'bday') and vco.bday.value:
-            ign = self.OMIT_YEAR in vco.bday.params.keys()
+            ign = self.OMIT_YEAR in list(vco.bday.params.keys())
             bday = self._parse_vcard_date(vco.bday.value, ign)
                                           
             if bday:
@@ -481,10 +481,10 @@ class CDContact(Contact):
             pname_re  = conf.get_profile_name_re()
         pname_re  = "^" + l(self.SYNC_TAG_PREFIX) + pname_re + "-"
 
-        for label, val in vco.contents.iteritems():
+        for label, val in vco.contents.items():
             if re.search(pname_re, label):
-                label = string.replace(label, l(self.SYNC_TAG_PREFIX), '')
-                label = string.replace('asynk-' + label, '-', ':')
+                label = label.replace(l(self.SYNC_TAG_PREFIX), '')
+                label = 'asynk-' + label.replace('-', ':')
                 self.update_sync_tags(label, val[0].value)
 
     def _snarf_notes_from_vco (self, vco):
@@ -578,7 +578,7 @@ class CDContact(Contact):
 
     def _add_ims_to_vco (self, vco):
         im_prim = self.get_im_prim()
-        for label, addr in self.get_im().iteritems():
+        for label, addr in self.get_im().items():
             im = vco.add(l(self.IMPP))
             im.value = addr
             if im_prim == addr:
@@ -758,7 +758,7 @@ class CDContact(Contact):
 
         ret = ''
         i = 0
-        for key, val in self.get_sync_tags().iteritems():
+        for key, val in self.get_sync_tags().items():
             ## FIXME: This was put in here for a reason. I think it had
             ## something to do with "reproducing" sync labels containing the
             ## ID on the local end itself. This was the easiest fix,
@@ -770,8 +770,8 @@ class CDContact(Contact):
             #     continue
 
             ## Make the label more vCard friendly
-            key = string.replace(key, ':', '-')
-            key = string.replace(key, 'asynk-', '')
+            key = key.replace(':', '-')
+            key = key.replace('asynk-', '')
             key = l(self.SYNC_TAG_PREFIX) + key
 
             la = vco.add(key)

@@ -85,8 +85,8 @@ class TestSync:
         # Parse command line options
         try:
             opts, args = getopt.getopt(sys.argv[1:], '', ['user=', 'pw='])
-        except getopt.error, msg:
-            print 'python gc_wrapper.py --user [username] --pw [password]'
+        except getopt.error as msg:
+            print('python gc_wrapper.py --user [username] --pw [password]')
             sys.exit(2)
 
         user = ''
@@ -99,17 +99,17 @@ class TestSync:
                 pw = arg
 
         while not user:
-            user = raw_input('Please enter your username: ')
+            user = input('Please enter your username: ')
 
         while not pw:
-            pw = raw_input('Password: ')
+            pw = input('Password: ')
             if not pw:
-                print 'Password cannot be blank'
+                print('Password cannot be blank')
 
         try:
             self.pimgc = GCPIMDB(self.config, user, pw)
         except BadAuthentication:
-            print 'Invalid credentials. WTF.'
+            print('Invalid credentials. WTF.')
             raise
 
         destid = self.db2id if self.db1id == 'gc' else self.db1id
@@ -164,10 +164,10 @@ class TestSync:
         hr, props = item.GetProps([prop_tag], mapi.MAPI_UNICODE)
         (tag, val) = props[0]
         if mapitags.PROP_TYPE(tag) == mapitags.PT_ERROR:
-            print 'Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
-                                                                (tag % (2**64)))
+            print('Prop_Tag (0x%16x) not found. Tag: 0x%16x' % (prop_tag,
+                                                                (tag % (2**64))))
         else:
-            print 'Google ID found for contact. ID: ', val
+            print('Google ID found for contact. ID: ', val)
 
     def test_sync_status (self):
         db1cf = self.db1.get_def_folder()
@@ -203,17 +203,17 @@ class TestSync:
     def find_group (self, gid):
         gc, ftype = self.pimgc.find_folder(gid)
         if gc:
-            print 'Found the sucker. Name is: ', gc.get_name()
+            print('Found the sucker. Name is: ', gc.get_name())
             return gc
         else:
-            print 'D''oh. Folder not found.'
+            print('D''oh. Folder not found.')
             return
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
     try:
         main()
-    except Exception, e:
-        print 'Caught Exception... Hm. Need to cleanup.'
-        print 'Full Exception as here:', traceback.format_exc()
+    except Exception as e:
+        print('Caught Exception... Hm. Need to cleanup.')
+        print('Full Exception as here:', traceback.format_exc())
 

@@ -51,10 +51,10 @@ confnv4_src_dirty = os.path.join('.', 'config_v4.dirty.json')
 conf_src = confnv6_src
 
 def usage ():
-    print 'Usage: python test_bb.py'
+    print('Usage: python test_bb.py')
 
 def main (argv=None):
-    print 'Command line: ', sys.argv
+    print('Command line: ', sys.argv)
 
     if os.path.exists(user_dir):
         logging.debug('Clearing user directory: %s', user_dir)
@@ -73,7 +73,7 @@ def main (argv=None):
     if len(sys.argv) > 1:
         run(sys.argv[1])
     else:
-        print "Running tests against all BBDB files in data/bb/..."
+        print("Running tests against all BBDB files in data/bb/...")
         bb_data_dir = os.path.join(asynk_base_dir, "test", "gold", "data",
                                    "bb")
         patt =  os.path.join(bb_data_dir, "*")
@@ -81,7 +81,7 @@ def main (argv=None):
         test_inputs.append(os.path.abspath('data/bb/bbdb.Non-Existent'))
 
         for f in test_inputs:
-            print "Testing against input file: ", f
+            print("Testing against input file: ", f)
             run(f)
 
 def run (fn):

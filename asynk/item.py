@@ -27,10 +27,10 @@
 import datetime, logging, re
 
 from abc     import ABCMeta, abstractmethod
-from pimdb   import PIMDB, GoutInvalidPropValueError
-from folder  import Folder
+from pimdb import PIMDB, GoutInvalidPropValueError
+from folder import Folder
 
-class Item:
+class Item(metaclass=ABCMeta):
     """A generic PIM item - can be a Contact, Task, Note, or Appointment.
 
     Items have two types of properties: props and atts - props are properties
@@ -44,8 +44,6 @@ class Item:
     It is important to keep this difference in mind, and there are different
     accessors for properties and attributes.
     """
-
-    __metaclass__ = ABCMeta
 
     valid_types   = [Folder.CONTACT_t, Folder.NOTE_t, Folder.TASK_t,
                      Folder.APPT_t]
@@ -177,10 +175,10 @@ class Item:
     ##
 
     def get_prop_names (self):
-        return self.props.keys()
+        return list(self.props.keys())
 
     def get_att_names (self):
-        return self.atts.keys()
+        return list(self.atts.keys())
 
     ## First the object attributes
 
@@ -294,13 +292,13 @@ class Item:
         tags = self._get_prop('sync_tags')
         try:
             return [(label, tags[label])] if label else tags
-        except KeyError, e:
+        except KeyError as e:
             ## Could not make an exact match, now let's attempt a regexp
             ## match... 
             pass
 
         ret = []
-        for key, val in tags.iteritems():
+        for key, val in tags.items():
             if re.search(label, key):
                 ret.append((key, val))
 
@@ -361,7 +359,7 @@ class Item:
         try:
             tag, itemid = self.get_sync_tags(label)[0]
             return itemid
-        except IndexError, e:
+        except IndexError as e:
             return None
 
     def __str__ (self):

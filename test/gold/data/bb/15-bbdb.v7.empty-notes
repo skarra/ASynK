@@ -1,4 +1,2 @@
 ;;; file-format: 7
-["Apple" "Inc."  nil nil ("Apple Inc.") nil nil nil nil  nil]
-
-
+["Apple" "Inc."  nil nil ("Apple Inc.") nil nil nil ((bbdb-id . "0a9fb968-50b4-11f1-b250-761511dfdd65") (creation-date . "") (timestamp . "")   )    nil]

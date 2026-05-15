@@ -41,14 +41,12 @@
 
 import logging
 from   abc      import ABCMeta, abstractmethod
-from   folder   import Folder
+from folder import Folder
 
 class GoutInvalidPropValueError(Exception):
     pass
 
-class PIMDB:
-    __metaclass__ = ABCMeta
-
+class PIMDB(metaclass=ABCMeta):
     def __init__ (self, config):
         self.atts = {}
 
@@ -161,7 +159,7 @@ class PIMDB:
             try:
                 ed = dbc['email_domains']
                 return self._set_att('email_domains', ed)
-            except KeyError, e:
+            except KeyError as e:
                 logging.debug('PIMDB %s does not have email_domains.',
                               self.get_dbid())
 
@@ -176,7 +174,7 @@ class PIMDB:
             try:
                 ed = dbc['postal_map']
                 return self._set_att('postal_map', ed)
-            except KeyError, e:
+            except KeyError as e:
                 logging.debug('PIMDB %s does not have postal_map',
                               self.get_dbid())
 
@@ -191,7 +189,7 @@ class PIMDB:
             try:
                 ed = dbc['notes_map']
                 return self._set_att('notes_map', ed)
-            except KeyError, e:
+            except KeyError as e:
                 logging.debug('PIMDB %s does not have notes_map',
                               self.get_dbid())
 
@@ -206,7 +204,7 @@ class PIMDB:
             try:
                 ed = dbc['phones_map']
                 return self._set_att('phones_map', ed)
-            except KeyError, e:
+            except KeyError as e:
                 logging.debug('PIMDB %s does not have phones_map',
                               self.get_dbid())
 
@@ -242,7 +240,7 @@ class PIMDB:
         ftkey = Folder.type_names[ft]
         try:
             self.folders[ftkey].remove(f)
-        except ValueError, e:
+        except ValueError as e:
             logging.debug('Attemped to remove unlisted folder %s of type %s',
                           f.get_name(), f.get_type())
 

@@ -30,8 +30,8 @@ from datetime import datetime
 import atom, iso8601
 import gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
-import demjson, utils
-from   contact    import Contact
+import demjson3 as demjson, utils
+from contact import Contact
 import folder_gc
 
 class GCContact(Contact):
@@ -63,18 +63,18 @@ class GCContact(Contact):
 
         # Workaround for a weird Google API behaviour. Certain
         # operations only succed with the 'full' projection.
-        itemid = string.replace(itemid, '/base/', '/full/')
+        itemid = itemid.replace('/base/', '/full/')
 
         # The /thin/ projection has a problem with updating etags and for
         # modifications... Not sure I really understand this projection
         # stuff.
-        itemid = string.replace(itemid, '/thin/', '/full/')
+        itemid = itemid.replace('/thin/', '/full/')
 
         # Finally, since we use the entire URL as the contact's key,
         # we need to normalize the URLs. I am not sure why Google
         # can't be more consistent at its end... but this is what we
         # got.
-        itemid = string.replace(itemid, 'http://', 'https://')
+        itemid = itemid.replace('http://', 'https://')
 
         return itemid
 
@@ -119,7 +119,7 @@ class GCContact(Contact):
     def get_etag (self):
         try:
             return self._get_att('etag')
-        except Exception, e:
+        except Exception as e:
             return None
 
     def set_etag (self, etag):
@@ -145,8 +145,8 @@ class GCContact(Contact):
         # Google entries do not have a created entry. We should just set it to
         # the current time, and take it from there.
         if not self.get_created():
-            self.set_created(iso8601.tostring(time.time()))
-            self.set_updated(iso8601.tostring(time.time()))
+            self.set_created(__import__("datetime").datetime.utcfromtimestamp(time.time().isoformat() + "Z"))
+            self.set_updated(__import__("datetime").datetime.utcfromtimestamp(time.time().isoformat() + "Z"))
         
     def init_gce_from_props (self):
         gce = gdata.contacts.data.ContactEntry()
@@ -402,7 +402,7 @@ class GCContact(Contact):
     }
 
     im_label_proto_map = {}
-    for key, val in im_proto_label_map.iteritems():
+    for key, val in im_proto_label_map.items():
         im_label_proto_map.update({val : key})
 
     def _snarf_ims_from_gce (self, ce):
@@ -754,7 +754,7 @@ class GCContact(Contact):
 
     def _add_ims_to_gce (self, gce):
         im_prim = self.get_im_prim()
-        for label, addr in self.get_im().iteritems():
+        for label, addr in self.get_im().items():
             prim  = 'true' if im_prim == label else 'false'
             rel   = 'http://schemas.google.com/g/2005#other'
             proto = None
@@ -776,7 +776,7 @@ class GCContact(Contact):
         ## These will be stored as extended properties. Note that if this
         ## routine keeps appending the sync_tags to the user_defined_fields,
         ## with no regard for whether it already exists or not...
-        for key, val in self.get_sync_tags().iteritems():
+        for key, val in self.get_sync_tags().items():
             ## FIXME: This was put in here for a reason. I think it had
             ## something to do with "reproducing" sync labels containing the
             ## ID on the local end itself. This was the easiest fix,
@@ -800,7 +800,7 @@ class GCContact(Contact):
             ud.value = c.isoformat() if isinstance(c, datetime) else c
             gce.user_defined_field.append(ud)
 
-        for key, val in self.get_custom().iteritems():
+        for key, val in self.get_custom().items():
             # We skip certain keys that have been processed already and
             # populated into other elements of the contact entry.
             if val and not key in []:

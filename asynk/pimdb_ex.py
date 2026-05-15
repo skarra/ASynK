@@ -29,9 +29,9 @@ from   pyews.ews.errors       import EWSCreateFolderError
 from   pyews.pyews            import WebCredentials, ExchangeService
 from   pyews.ews.autodiscover import EWSAutoDiscover, ExchangeAutoDiscoverError
 
-from   folder         import Folder
-from   folder_ex      import EXContactsFolder, folder_class_map
-from   pimdb          import PIMDB
+from folder import Folder
+from folder_ex import EXContactsFolder, folder_class_map
+from pimdb import PIMDB
 
 class EXPIMDB(PIMDB):
 

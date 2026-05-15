@@ -77,8 +77,8 @@ class TestEXContact:
 
     def list_all_contacts (self):
         self.cons_f._refresh_items()
-        for key, item in self.cons_f.get_items().iteritems():
-            print item
+        for key, item in self.cons_f.get_items().items():
+            print(item)
 
     def print_contacts (self, cnt=0, name=None):
         self.cons_f._refresh_items()
@@ -89,10 +89,10 @@ class TestEXContact:
 
         if cons is None:
             cons = []
-        print 'Found %d contacts' % len(cons)
+        print('Found %d contacts' % len(cons))
 
         for con in cons:
-            print con
+            print(con)
 
     def clear_folder (self, folder_id):
         fobj, ign = self.ex.find_folder(folder_id)

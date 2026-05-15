@@ -26,7 +26,8 @@
 ## wondering, at some point in the past it all resided in a single json file,
 ## and we are continuing to use the same handling framework...
 
-import iso8601, demjson
+import iso8601
+import demjson3 as demjson
 import glob, logging, os, re, shutil, sys, time, stat
 
 sync_dirs = ['SYNC1WAY', 'SYNC2WAY']
@@ -70,25 +71,25 @@ class Config:
         self._migrate_config_if_reqd(self.confi_curr_ver)
 
         try:
-            print 'Applying base config from file %s...' % self.confn
+            print('Applying base config from file %s...' % self.confn)
             confi = open(self.confn, "r")
-            print 'Applying base config from file %s...done' % self.confn
-        except IOError, e:
-            print 'Error! Could not Open file (%s): %s' % (self.confn, e)
+            print('Applying base config from file %s...done' % self.confn)
+        except IOError as e:
+            print('Error! Could not Open file (%s): %s' % (self.confn, e))
             raise
 
         try:
             statei = open(self.staten, "r")
-        except IOError, e:
-            print 'Error! Could not Open file (%s): %s' % (self.staten, e)
+        except IOError as e:
+            print('Error! Could not Open file (%s): %s' % (self.staten, e))
             raise
 
         stc = demjson.decode(confi.read())
         sts = demjson.decode(statei.read())
 
-        print 'Applying user customizations from file %s...' % self.confpy
+        print('Applying user customizations from file %s...' % self.confpy)
         self._customize_config(self.confpy, stc)
-        print 'Applying user customizations from file %s...done' % self.confpy
+        print('Applying user customizations from file %s...done' % self.confpy)
 
         # #  A sample profile is given in the initial distribution, that should
         # #  not be written back to the file. Do the needful.
@@ -148,9 +149,9 @@ class Config:
             if os.path.isfile(os.path.join(base_dir, 'state.json')):
                 shutil.copy2(os.path.join(base_dir, 'state.json'),
                              os.path.join(user_dir, 'state.json'))
-                print 'We have copied your state.json to new user directory: ',
-                print user_dir
-                print 'We have not copied any of your logs and backup directories.'
+                print('We have copied your state.json to new user directory: ', end=' ')
+                print(user_dir)
+                print('We have not copied any of your logs and backup directories.')
             else:
                 dest_state = os.path.join(user_dir, 'state.json')
                 ## Looks like this is a pretty "clean" run. So just copy the
@@ -183,27 +184,27 @@ class Config:
             std_config  = open(confjs_curr1, 'r').read()
 
             if user_config != std_config:
-                print
-                print '*** NOTE: Due to recent changes to the customization system'
-                print '***       your config needs to be'
-                print '***       migrated. However as you have modified your'
-                print '***       configuration, auto migration is not possible'
-                print '***       and we need your manual intervention.'
-                print
-                print '***       You need to do the following steps:'
-                print
-                print '***       1) delete your customization json'
-                print '***       2) port your changes to the new config.py file'
-                print '***          that has been copied to you asynk config dir.'
-                print
-                print '*** You can view the comments in config.py for ideas.'
-                print '*** ASynK will now exit without doing anything more.'
-                print
+                print()
+                print('*** NOTE: Due to recent changes to the customization system')
+                print('***       your config needs to be')
+                print('***       migrated. However as you have modified your')
+                print('***       configuration, auto migration is not possible')
+                print('***       and we need your manual intervention.')
+                print()
+                print('***       You need to do the following steps:')
+                print()
+                print('***       1) delete your customization json')
+                print('***       2) port your changes to the new config.py file')
+                print('***          that has been copied to you asynk config dir.')
+                print()
+                print('*** You can view the comments in config.py for ideas.')
+                print('*** ASynK will now exit without doing anything more.')
+                print()
 
                 sys.exit(0)
             else:
                 os.remove(confjs)
-                print '*** NOTE: Custom config auto migrated from v%d' % user_ver
+                print('*** NOTE: Custom config auto migrated from v%d' % user_ver)
 
     def _customize_config (self, confpy, config):
         user_dir = self.get_user_dir()
@@ -211,8 +212,8 @@ class Config:
         confpy_m = None
         try:
             confpy_m = __import__('config')
-        except Exception, e:
-            print 'Error importing config from %s: %s' % (user_dir, e)
+        except Exception as e:
+            print('Error importing config from %s: %s' % (user_dir, e))
             return
 
         confpy_m.customize_config(config)
@@ -274,7 +275,7 @@ class Config:
 
         try:
             return self.state['state']['profiles'][profile][key]
-        except KeyError, e:
+        except KeyError as e:
             raise AsynkConfigError(('Property %s not found in profile %s'
                                     % (key, profile)))
 
@@ -289,7 +290,7 @@ class Config:
             self.save_state()
 
     def get_curr_time (self):
-        return iso8601.tostring(time.time())
+        return __import__("datetime").datetime.utcfromtimestamp(time.time()).isoformat() + "Z"
 
     ##
     ## get routines for reading the Configuration settings from config.json
@@ -313,7 +314,7 @@ class Config:
     def get_backup_hold_period (self):
         try:
             return self._get_prop('config', 'backup_hold_period')
-        except KeyError, e:
+        except KeyError as e:
             ## Possibly due to a older version of the config.json. Silently
             ## return a default value
             return 7        
@@ -324,7 +325,7 @@ class Config:
     def get_log_hold_period (self):
         try:
             return self._get_prop('config', 'log_hold_period')
-        except KeyError, e:
+        except KeyError as e:
             ## Possibly due to a older version of the config.json. Silently
             ## return a default value
             return 7
@@ -406,7 +407,7 @@ class Config:
         return self._update_prop('state', 'profiles', pname, val, sync)
 
     def get_profile_names (self):
-        return self.get_profiles().keys()
+        return list(self.get_profiles().keys())
 
     ##
     ## get-set pairs for application modifiable config/state specific to a
@@ -475,7 +476,7 @@ class Config:
 
     def set_last_sync_start (self, profile, val=None, sync=True):
         if not val:
-            val = iso8601.tostring(time.time())
+            val = __import__("datetime").datetime.utcfromtimestamp(time.time()).isoformat() + "Z"
         return self._set_profile_prop(profile, 'last_sync_start', val, sync)
 
     def get_last_sync_stop (self, profile):
@@ -483,7 +484,7 @@ class Config:
 
     def set_last_sync_stop (self, profile, val=None, sync=True):
         if not val:
-            val = iso8601.tostring(time.time())
+            val = __import__("datetime").datetime.utcfromtimestamp(time.time()).isoformat() + "Z"
         return self._set_profile_prop(profile, 'last_sync_stop', val, sync)
 
     def get_sync_dir (self, profile):
@@ -532,7 +533,7 @@ class Config:
 
         try:
             return self._get_profile_prop(pname, 'items')
-        except AsynkConfigError, e:
+        except AsynkConfigError as e:
             ## This path will happen when a user is upgrading from state.json
             ## version 2 to version 3. We don't really need to do anything
             ## special, thankfully.
@@ -564,7 +565,7 @@ class Config:
 
         try:
             fi = open(fn, "w")
-        except IOError, e:
+        except IOError as e:
             logging.critical('Error! Could not Open file (%s): %s', fn, e)
             return
 
@@ -591,7 +592,7 @@ class Config:
 
         destid = None
         ret = {}
-        for pname, pval in profiles.iteritems():
+        for pname, pval in profiles.items():
             db1id = self.get_profile_db1(pname)
             db2id = self.get_profile_db2(pname)
 
@@ -622,7 +623,7 @@ class Config:
         base     = base_fn(destid)
         try:
             gid_list = gid_lists_fn()[destid]
-        except KeyError, e:
+        except KeyError as e:
             gid_list = []
 
         cnt   = len(gid_list)
@@ -667,12 +668,12 @@ class Config:
             return None
 
     def list_profiles (self):
-        for key in self.get_profiles().keys():
+        for key in list(self.get_profiles().keys()):
             logging.info('')
             self.show_profile(key)
 
     def list_profile_names (self):
-        for key in self.get_profiles().keys():
+        for key in list(self.get_profiles().keys()):
             logging.info('Profile: %s', key)
 
     def show_profile (self, name):
@@ -762,7 +763,7 @@ class Config:
        id specifier such as bb, gc, ol."""
 
         ps = self.get_profiles()
-        return dict([(k,v) for k, v in ps.items() if i in [v['coll_1']['dbid'],
+        return dict([(k,v) for k, v in list(ps.items()) if i in [v['coll_1']['dbid'],
                                                            v['coll_2']['dbid']]])
 
     def get_other_dbid (self, pname, dbid):

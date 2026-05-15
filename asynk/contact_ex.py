@@ -25,7 +25,7 @@
 
 import logging
 
-from   contact            import Contact
+from contact import Contact
 from   pyews.ews          import contact as ews_c
 from   pyews.ews          import mapitags
 from   pyews.ews.data     import ews_pt, ews_pid
@@ -33,7 +33,7 @@ from   pyews.ews.data     import MapiPropertyTypeType as mptt
 from   pyews.ews.contact  import CompleteName as ews_cn
 from   pyews.ews.contact  import Contact as EWSContact
 import utils
-import demjson
+import demjson3 as demjson
 
 class EXContactError(Exception):
     pass
@@ -90,7 +90,7 @@ class EXContact(Contact):
 
         try:
             return self._get_att('parentid')
-        except Exception, e:
+        except Exception as e:
             return None
 
     def set_parent_folder_id (self, pfid):
@@ -316,7 +316,7 @@ class EXContact(Contact):
         eprop = ews_con.get_named_str_property(guid, prop_name)
         if eprop is not None:
             stags = demjson.decode(eprop.value)
-            for name, val in stags.iteritems():
+            for name, val in stags.items():
                 self.update_sync_tags(name, val)
 
     def _add_itemid_to_ews_con (self, ews_con):
@@ -502,7 +502,7 @@ class EXContact(Contact):
         prim = self.get_im_prim()
 
         i = 1
-        for label, value in self.get_ims().iteritems():
+        for label, value in self.get_ims().items():
             cust.update({value : label})
 
             if i > 3:
@@ -546,7 +546,7 @@ class EXContact(Contact):
     def get_changekey (self):
         try:
             return self._get_att('ck')
-        except KeyError, e:
+        except KeyError as e:
             return None
 
     def set_changekey (self, ck):

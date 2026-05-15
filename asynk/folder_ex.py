@@ -21,8 +21,8 @@
 
 import logging, re
 from   abc            import ABCMeta, abstractmethod
-from   folder         import Folder
-from   contact_ex     import EXContact
+from folder import Folder
+from contact_ex import EXContact
 from   pyews.ews      import mapitags
 from   pyews.utils    import pretty_eid
 from   pyews.ews.data import ews_pt, ews_pid
@@ -39,13 +39,11 @@ folder_class_map = {
     }
 
 folder_class_inv_map = {}
-for key, val in folder_class_map.iteritems():
+for key, val in folder_class_map.items():
     folder_class_inv_map.update({val : key})
 
-class EXFolder(Folder):
+class EXFolder(Folder, metaclass=ABCMeta):
     """A Folder That directly maps to a folder in MS Exchange"""
-
-    __metaclass__ = ABCMeta
 
     def __init__ (self, db, entryid, name, fobj):
         Folder.__init__(self, db)
@@ -73,7 +71,7 @@ class EXFolder(Folder):
 
         db1id = conf.get_profile_db1(pname)
         if db1id != self.get_dbid():
-            oldi = {v:k for k, v in oldi.iteritems()}
+            oldi = {v:k for k, v in oldi.items()}
 
         logging.info('Querying Exchange for status of Contact Entries...')
         stag = conf.make_sync_label(pname, destid)
@@ -104,7 +102,7 @@ class EXFolder(Folder):
                               ex_item.display_name.value, pretty_eid(eid))
                 sl.add_new(eid)
 
-        for oldid in oldi.keys():
+        for oldid in list(oldi.keys()):
             if not oldid in ex_itemids:
                 logging.debug('Del      Exchange Contact: %s',
                               pretty_eid(oldid))
@@ -118,7 +116,7 @@ class EXFolder(Folder):
     def get_itemids (self, pname, destid):
         ret = {}
         stag = self.get_config().make_sync_label(pname, destid)
-        for locid, con in self.get_items().iteritems():
+        for locid, con in self.get_items().items():
             if stag in con.get_sync_tags():
                 t, remid = con.get_sync_tags(stag)[0]
                 ret.update({locid : remid})
@@ -132,7 +130,7 @@ class EXFolder(Folder):
 
         resp = self.get_ews().DeleteItems(itemids)
         if resp.has_errors():
-            return False, [itemids[i] for i in resp.errors.keys()]
+            return False, [itemids[i] for i in list(resp.errors.keys())]
 
         return True, []
 
@@ -353,7 +351,7 @@ class EXContactsFolder(EXFolder):
     ##
 
     def print_key_stats (self):
-        print 'Contacts Folder Name: ', self.get_name()
+        print('Contacts Folder Name: ', self.get_name())
 
     ##
     ## Others
@@ -377,13 +375,13 @@ class EXContactsFolder(EXFolder):
         i = 0
         ret = []
 
-        for iid, con in self.get_contacts().iteritems():
+        for iid, con in self.get_contacts().items():
             if name is None:
                 ret.append(con)
             else:
-                if (re.search(name, unicode(con.get_firstname()))
-                    or re.search(name, unicode(con.get_name()))
-                    or re.search(name, unicode(con.get_lastname()))):
+                if (re.search(name, str(con.get_firstname()))
+                    or re.search(name, str(con.get_name()))
+                    or re.search(name, str(con.get_lastname()))):
                     ret.append(con)
             i += 1
 
@@ -395,7 +393,7 @@ class EXContactsFolder(EXFolder):
     def print_contacts (self, cnt=0, name=None):
         cons = self.find_contacts_by_name(cnt, name)
         for con in cons:
-            logging.debug('%s', unicode(con))
+            logging.debug('%s', str(con))
 
         logging.debug('Printed %d contacts from folder %s', len(cons),
                       self.get_name())

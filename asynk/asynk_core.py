@@ -30,22 +30,27 @@ EXTRA_PATHS = [os.path.join(ASYNK_BASE_DIR, 'lib'),
 sys.path = EXTRA_PATHS + sys.path
 
 try:
-    from   pimdb_ol         import OLPIMDB
-except ImportError, e:
+    from pimdb_ol import OLPIMDB
+except ImportError as e:
     ## This could mean one of two things: (a) we are not on Windows, or (b)
     ## some of th relevant supporting stuff is not installed (like
     ## pywin32). these error cases are handled elsewhere, so move on.
     pass
 
-from   sync             import Sync
-from   state            import Config
-from   gdata.client     import BadAuthentication
-from   folder           import Folder
-from   pimdb_gc         import GCPIMDB
-from   pimdb_bb         import BBPIMDB
-from   folder_bb        import BBContactsFolder
+from sync import Sync
+from state import Config
+from folder import Folder
+from pimdb_bb import BBPIMDB
+from folder_bb import BBContactsFolder
 import utils
-from   state_collection import collection_id_to_class as coll_id_class
+from state_collection import collection_id_to_class as coll_id_class
+
+try:
+    from pimdb_gc import GCPIMDB
+except Exception as e:
+    ## gdata / Google Contacts connector not available. Will be replaced
+    ## by People API in a future update.
+    pass
 
 class AsynkParserError(Exception):
     pass
@@ -408,7 +413,7 @@ class Asynk:
                 else:
                     logging.info('timestamps not reset for profile %s due to '
                                  'errors (previously identified).', pname)
-            except Exception, e:
+            except Exception as e:
                 logging.critical('Exception (%s) while syncing profile %s', 
                                  str(e), pname)
                 logging.critical(traceback.format_exc())
@@ -463,7 +468,7 @@ class Asynk:
     def __str__ (self):
         ret = ''
 
-        for prop, val in self.atts.iteritems():
+        for prop, val in self.atts.items():
             ret += '%18s: %s\n' % (prop, val)
 
         return ret

@@ -20,8 +20,8 @@
 
 import copy, logging, re
 from   abc            import ABCMeta, abstractmethod
-from   folder         import Folder
-from   contact_gc     import GCContact
+from folder import Folder
+from contact_gc import GCContact
 import xml.etree.ElementTree as ET
 
 import utils
@@ -46,7 +46,7 @@ def get_udp_by_key (udps, key):
                 return ep.value
             else:
                 value = 'Hrrmph. '
-                print 'Value: ', value
+                print('Value: ', value)
 
     return None
 
@@ -61,12 +61,12 @@ def get_udps_by_key_prefix (udps, keyprefix):
                 ret.update({ep.key : ep.value})
             else:
                 value = 'Hrrmph. '
-                print 'Value: ', value
+                print('Value: ', value)
 
     return ret
 
 def sync_status_str (const):
-    for name, val in globals().iteritems():
+    for name, val in globals().items():
         if name[:5] == 'SYNC_' and val == const:
             return name
 
@@ -117,8 +117,8 @@ class GCContactsFolder(Folder):
         oldi  = conf.get_itemids(pname)
         newi  = self.get_itemids(pname, destid)
 
-        kss = newi.keys()
-        for x, y in oldi.iteritems():
+        kss = list(newi.keys())
+        for x, y in oldi.items():
             if not x in kss and not y in kss:
                 logging.debug('Del      Google Contact: %s:%s', x, y)
                 if pdb1id == self.get_dbid():
@@ -219,7 +219,7 @@ class GCContactsFolder(Folder):
         self._refresh_contacts()
         ret = {}
         stag = self.get_config().make_sync_label(pname, destid)
-        for locid, con in self.get_contacts().iteritems():
+        for locid, con in self.get_contacts().items():
             if stag in con.get_sync_tags():
                 t, remid = con.get_sync_tags(stag)[0]
                 ret.update({locid : remid})
@@ -558,7 +558,7 @@ class GCContactsFolder(Folder):
         logging.info('Summary of contained Items:')
 
         self._refresh_contacts()
-        for itemid, con in self.get_contacts().iteritems():
+        for itemid, con in self.get_contacts().items():
             logging.info('  Name: %-25s Itemid: %s', con.get_name(), itemid)
 
     def __str__ (self):
@@ -597,7 +597,7 @@ class GCContactsFolder(Folder):
             self.get_gdc().Delete(con)
             try:
                del self.contacts[con.id.text]
-            except KeyError, e:
+            except KeyError as e:
                pass 
 
     def reset_contacts (self):
@@ -743,7 +743,7 @@ class BatchState:
                 if op == 'insert' or op == 'update':
                     try:
                         name = self.get_con(bid).get_disp_name()
-                    except Exception, e:
+                    except Exception as e:
                         name = "WTH!"    
 
                     logging.error('Upload to Google failed for: %s: %s',

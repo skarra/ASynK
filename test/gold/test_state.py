@@ -60,9 +60,9 @@ def run (conf_src):
 def main ():
     run(conf_src=confnv4_src)
 
-    print
-    print '*** Testing with dirty config. Program should abort. ***'
-    print
+    print()
+    print('*** Testing with dirty config. Program should abort. ***')
+    print()
     run(conf_src=confnv4_src_dirty)
 
 class TestStateFunctions(unittest.TestCase):
@@ -81,7 +81,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_get_conf_file_version (self):
         val = self.config.get_conf_file_version()
-        self.assertEqual(val, 7)
+        self.assertEqual(val, 8)
 
     def test_read_label_prefix (self):
         val = self.config.get_label_prefix()

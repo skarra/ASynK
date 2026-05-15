@@ -30,10 +30,10 @@ import win32com.client, pywintypes, winerror
 from   win32com.mapi import mapi, mapitags, mapiutil
 
 import utils
-from   pimdb         import PIMDB, GoutInvalidPropValueError
-from   folder        import Folder
-from   folder_ol     import OLFolder,      OLContactsFolder
-from   folder_ol     import OLTasksFolder, OLNotesFolder
+from pimdb import PIMDB, GoutInvalidPropValueError
+from folder import Folder
+from folder_ol import OLFolder,      OLContactsFolder
+from folder_ol import OLTasksFolder, OLNotesFolder
 
 MOD_FLAG = mapi.MAPI_BEST_ACCESS
 
@@ -78,7 +78,7 @@ class MessageStores:
     def get_stores (self):
         """Return an array of all the MessageStore objects."""
 
-        return self._store_by_eid.values()
+        return list(self._store_by_eid.values())
 
     ## This get and put stuff needs to be brought in line with the rest of the
     ## code conventions
@@ -122,7 +122,7 @@ class MessageStores:
                     store = MessageStore(self.ol, eid, name, def_store)
                     self.put(eid=eid, name=name, store=store,
                              default=def_store)
-                except Exception, e:
+                except Exception as e:
                     logging.debug('Error in opening message store. Skipping.')
                     logging.debug('Full Exception as here: %s',
                                   traceback.format_exc())
@@ -474,7 +474,7 @@ class OLPIMDB(PIMDB):
 
         try:
             folder = store.get_obj().OpenEntry(ipm_eid, None, MOD_FLAG)
-        except Exception, e:
+        except Exception as e:
             logging.error('Unable to open store: %s. Error: %s',
                           store.get_name(), str(e))
             return None
@@ -484,7 +484,7 @@ class OLPIMDB(PIMDB):
             nf = folder.CreateFolder(mapi.FOLDER_GENERIC, fname, 'Comment',
                                      None, 0)
             folder.SaveChanges(0)
-        except Exception, e:
+        except Exception as e:
             logging.error('Failed to create new folder %s. CreateFolder '
                           'returned  error code: %s', fname,
                           str(e))
@@ -544,7 +544,7 @@ class OLPIMDB(PIMDB):
             try:
                 folder = store.OpenEntry(eid, None, MOD_FLAG)
                 logging.debug('\tStore %s: Success!', msgstore.get_name())
-            except Exception, e:
+            except Exception as e:
                 logging.debug('\tStore %s: Not found. Error: %s',
                               msgstore.get_name(), str(e))
                 continue
@@ -552,7 +552,7 @@ class OLPIMDB(PIMDB):
             try:
                 folder.EmptyFolder(0, None, 0)
                 logging.info('Successfully emptied folder: %s', itemid)
-            except Exception, e:
+            except Exception as e:
                 logging.error('Folder %s could not be emptied. Error: %s %s',
                               itemid, str(e), traceback.format_exc())
             break

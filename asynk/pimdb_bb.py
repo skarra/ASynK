@@ -19,10 +19,10 @@
 ##
 
 import codecs, datetime, logging, os, re, shutil, string, time
-from   pimdb        import PIMDB
-from   folder       import Folder
-from   folder_bb    import BBContactsFolder
-from   contact_bb   import BBContact, BBDBParseError
+from pimdb import PIMDB
+from folder import Folder
+from folder_bb import BBContactsFolder
+from contact_bb import BBContact, BBDBParseError
 import utils
 
 class BBDBFileFormatError(Exception):
@@ -189,7 +189,7 @@ class MessageStore:
     def append_preamble (self, lines):
         try:
             pre = self.get_preamble()
-        except KeyError, e:
+        except KeyError as e:
             pre = ''
 
         pre += lines
@@ -266,7 +266,7 @@ class MessageStore:
             while True:
                 try:
                     ff = bbf.readline().strip()
-                except UnicodeDecodeError, e:
+                except UnicodeDecodeError as e:
                     ## We got the encoding wrong. We will have to drop
                     ## everything we have done, and start all over again.  At
                     ## a later stage, we could optimize by skipping over
@@ -284,7 +284,7 @@ class MessageStore:
 
                 try:
                     c  = BBContact(def_f, rec=ff.rstrip())
-                except BBDBParseError, e:
+                except BBDBParseError as e:
                     logging.error('Could not parse BBDB record: %s', ff)
 
                     raise BBDBFileFormatError(('Cannot proceed with '
@@ -344,7 +344,7 @@ class MessageStore:
                              encoding)
                 failed = False
                 break
-            except ASynKBBDBUnicodeError, e:
+            except ASynKBBDBUnicodeError as e:
                 ## Undo all state, and start afresh, pretty much.
                 failed = True
                 self.set_file_format(0)
@@ -373,7 +373,7 @@ class MessageStore:
         with codecs.open(fn, 'w', encoding=self.get_encoding()) as bbf:
             bbf.write(self.get_preamble())
 
-            for name, f in self.get_folders().iteritems():
+            for name, f in self.get_folders().items():
                 f.write_to_file(bbf)
 
         logging.info('Saving BBDB File %s...done', fn)
@@ -387,8 +387,8 @@ class MessageStore:
         conf = self.get_config()
         bdir = os.path.join(conf.get_user_dir(), conf.get_backup_dir())
 
-        stamp = string.replace(str(datetime.datetime.now()), ' ', '.')
-        stamp = string.replace(stamp, ':', '-')
+        stamp = str(datetime.datetime.now()).replace(' ', '.')
+        stamp = stamp.replace(':', '-')
         backup_name = os.path.join(bdir, 'bbdb_backup.' + pname + '.' + stamp)
 
         src = self.get_name()
@@ -447,7 +447,7 @@ class BBPIMDB(PIMDB):
     ##
 
     def supported_file_formats (self):
-        return self.get_regexes().keys()
+        return list(self.get_regexes().keys())
 
     def get_dbid (self):
         """See the documentation in class PIMDB"""
@@ -487,7 +487,7 @@ class BBPIMDB(PIMDB):
 
         if isinstance(ms, MessageStore):
             self.msgstores.update({ms.get_name(): ms})
-        elif isinstance(ms, basestring):
+        elif isinstance(ms, str):
             ms = MessageStore(self, ms)
             self.msgstores.update({ms.get_name() : ms})
         else:
@@ -579,8 +579,8 @@ class BBPIMDB(PIMDB):
     def set_folders (self):
         """See the documentation in class PIMDB"""
 
-        for name, store in self.get_msgstores().iteritems():
-            for name, f in store.get_folders().iteritems():
+        for name, store in self.get_msgstores().items():
+            for name, f in store.get_folders().items():
                 self.add_to_folders(f)
 
     def set_def_folders (self):
@@ -615,7 +615,7 @@ class BBPIMDB(PIMDB):
         logging.info('Deleting BBDB backup files older than %d days, '
                      'if any...done', period)    
 
-        for store in self.get_msgstores().values():
+        for store in list(self.get_msgstores().values()):
             store.prep_for_sync(pname)
 
     ##

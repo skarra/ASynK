@@ -26,11 +26,11 @@ import string
 import base64, logging, os, re, sys, traceback, utils
 from   datetime import datetime
 
-from   contact import Contact
+from contact import Contact
 from   win32com.mapi import mapitags as mt
 import asynk_mapitags as amt
 from   win32com.mapi import mapi
-import demjson, iso8601, winerror, win32api, pywintypes
+import demjson3 as demjson, iso8601, winerror, win32api, pywintypes
 
 class OLContactError(Exception):
     pass
@@ -138,7 +138,7 @@ class OLContact(Contact):
         pts  = olcf.get_proptags()
         sts  = pts.sync_tags
 
-        for tag, value in sts.iteritems():
+        for tag, value in sts.items():
             fields.append(olcf.get_proptags().valu(tag))
 
     ## This method is already defined in item.py, but we need to override it
@@ -166,7 +166,7 @@ class OLContact(Contact):
             hr, res = olitem.SetProps(olprops)
             olitem.SaveChanges(0)
             return True
-        except Exception, e:
+        except Exception as e:
             logging.critical('Could not save synctags(%s) for %s (reason: %s)',
                              olprops, self.get_name(), e)
             logging.critical('Will try to continue...')
@@ -224,7 +224,7 @@ class OLContact(Contact):
     def get_entryid (self):
         try:
             return self._get_att('entryid')
-        except KeyError, e:
+        except KeyError as e:
             return None
 
     def set_entryid (self, eid):
@@ -254,7 +254,7 @@ class OLContact(Contact):
 
         try:
             res = self._get_att('olitem')
-        except KeyError, e:
+        except KeyError as e:
             res = None
 
         if res:
@@ -456,7 +456,7 @@ class OLContact(Contact):
                     tag_country, tag_zip):
         try:
             label = addrs[lab]
-        except KeyError, e:
+        except KeyError as e:
             logging.debug('OL Contact %s does not have %s',
                           self.get_name(), lab)
             label = 'Home'        
@@ -497,7 +497,7 @@ class OLContact(Contact):
 
         try:
             prim_label = addrs['_prim_addr_label']
-        except KeyError, e:
+        except KeyError as e:
             logging.debug('OL Contact %s does not have _prim_addr_label',
                           self.get_disp_name())
             prim_label = 'Home'
@@ -516,7 +516,7 @@ class OLContact(Contact):
             if not cat in addrs:
                 continue
 
-            for label, addr in addrs[cat].iteritems():
+            for label, addr in addrs[cat].items():
                 self.add_postal(label, addr)
 
         self.del_custom('addrs')            
@@ -578,7 +578,7 @@ class OLContact(Contact):
         d = self._get_olprop(olpd, mt.PR_CREATION_TIME)
         if d:
             date = utils.utc_time_to_local_ts(d)
-            self.set_created(iso8601.tostring(date))
+            self.set_created(__import__("datetime").datetime.utcfromtimestamp(date).isoformat() + "Z")
         
         d = self._get_olprop(olpd, mt.PR_BIRTHDAY)
         if d:
@@ -617,7 +617,7 @@ class OLContact(Contact):
                           self.get_name())
             ims = {'_im_addr_label' : 'default'}
 
-        for label, addr in ims.iteritems():
+        for label, addr in ims.items():
             if label == '_im_addr_label':
                 label = addr
                 addr  = imadd
@@ -632,7 +632,7 @@ class OLContact(Contact):
         conf = self.get_config()
         sts  = self.get_folder().get_proptags().sync_tags
 
-        for name, tag in sts.iteritems():
+        for name, tag in sts.items():
             valu = self._get_olprop(olpd, tag)
             if valu:
                 self.update_sync_tags(name, valu)
@@ -655,7 +655,7 @@ class OLContact(Contact):
         self.update_custom(d)
 
     def _get_olprop (self, olprops, key):
-        if not (key in olprops.keys()):
+        if not (key in list(olprops.keys())):
             return None
 
         if olprops[key]:
@@ -910,7 +910,7 @@ class OLContact(Contact):
         cust = {}
         im_prim = self.get_im_prim()
 
-        for label, addr in self.get_im().iteritems():
+        for label, addr in self.get_im().items():
             if label == im_prim:
                 tag = self.get_proptags().valu('ASYNK_PR_IM_1')
                 if addr:
@@ -931,7 +931,7 @@ class OLContact(Contact):
         mydid = self.get_folder().get_dbid()
         olps  = conf.get_db_profiles(mydid)
 
-        for name, val in self.get_sync_tags().iteritems():
+        for name, val in self.get_sync_tags().items():
             if not val:
                 continue
 
@@ -982,7 +982,7 @@ class OLContact(Contact):
             try:
                 v = getattr(mt, field)
                 ar.append(v)
-            except AttributeError, e:
+            except AttributeError as e:
                 logging.error('Field %s not found', field)
 
         return ar
@@ -1005,7 +1005,7 @@ class OLContact(Contact):
         logging.debug('Num fields in fields : %d', len(fields))
 
         for field in fields:
-            if not field in props.keys():
+            if not field in list(props.keys()):
                 logging.debug('Property %35s (0x%x) not in Props.',
                              pt.name(field), field)
             else:
