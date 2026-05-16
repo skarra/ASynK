@@ -29,6 +29,7 @@ dist/
 tmp/
 asynk.egg-info/
 bbdb.Non-Existent
+temp.bbdb
 
 # Karra's Password files for development purposes
 *.pwd
