@@ -16,6 +16,7 @@
 *.pst
 *.PST
 *.bak
+*.swp
 .DS_Store
 Thumbs.db
 login.auth
