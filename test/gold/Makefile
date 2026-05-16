@@ -21,7 +21,7 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb sync-bb gc-best-effort sync-gc-best-effort
+all: state cmdline bb sync-bb-bb gc-best-effort sync-gc-bb-best-effort
 
 clean:
 	rm -rf user_dir *~ *.bak temp.bbdb test_sync_*.bbdb
@@ -42,7 +42,7 @@ bb:
 	$(PYTHON) test_bb_write.py
 
 ## BB<->BB sync engine tests (offline, always runs)
-sync-bb:
+sync-bb-bb:
 	$(PYTHON) test_sync_bb_bb.py
 
 ## Google Contacts integration tests.
@@ -68,14 +68,14 @@ endif
 
 ## GC<->BB sync engine tests.
 ## Same best-effort pattern as gc above.
-sync-gc:
+sync-gc-bb:
 ifdef GOOGLE_CL_SECRET
 	$(PYTHON) test_sync_gc_bb.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
 else
 	$(PYTHON) test_sync_gc_bb.py --user $(GC_USER)
 endif
 
-sync-gc-best-effort:
+sync-gc-bb-best-effort:
 ifdef GOOGLE_CL_SECRET
 	$(PYTHON) test_sync_gc_bb.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
 else
