@@ -218,7 +218,11 @@ class GCContactsFolder(Folder):
 
     def find_items (self, itemids):
         """Fetch multiple contacts by resourceName. Returns a list of
-        GCContact objects."""
+        GCContact objects.  itemids can be a list of resource names or a
+        dict whose keys are resource names (as returned by get_mods)."""
+
+        if isinstance(itemids, dict):
+            itemids = list(itemids.keys())
 
         ret = []
         svc = self.get_service()
@@ -325,10 +329,7 @@ class GCContactsFolder(Folder):
                 person_body['resourceName'] = gcid
                 person_body['etag'] = etag_map.get(gcid, '')
 
-                update_body[gcid] = {
-                    'person': person_body,
-                    'updatePersonFields': PERSON_FIELDS,
-                }
+                update_body[gcid] = person_body
 
             batch_num = (i // self.BATCH_SIZE) + 1
             logging.debug('Uploading mod batch #%02d to Google. Count: %d',
@@ -338,7 +339,7 @@ class GCContactsFolder(Folder):
                 resp = svc.people().batchUpdateContacts(
                     body={'contacts': update_body,
                           'readMask': PERSON_FIELDS,
-                          'updateMask': {'paths': PERSON_FIELDS.split(',')}
+                          'updateMask': PERSON_FIELDS,
                           }).execute()
 
                 for rn, result in resp.get('updateResult', {}).items():
@@ -385,10 +386,7 @@ class GCContactsFolder(Folder):
                 person_body['resourceName'] = gcid
                 person_body['etag'] = etag_map.get(gcid, '')
 
-                update_body[gcid] = {
-                    'person': person_body,
-                    'updatePersonFields': 'userDefined',
-                }
+                update_body[gcid] = person_body
 
             batch_num = (i // self.BATCH_SIZE) + 1
             logging.debug('Writeback batch #%02d. Count: %d',
@@ -398,7 +396,7 @@ class GCContactsFolder(Folder):
                 svc.people().batchUpdateContacts(
                     body={'contacts': update_body,
                           'readMask': 'userDefined',
-                          'updateMask': {'paths': ['userDefined']}
+                          'updateMask': 'userDefined',
                           }).execute()
             except Exception as e:
                 logging.error('Writeback batch failed: %s', e)

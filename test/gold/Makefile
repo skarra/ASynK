@@ -21,7 +21,7 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb sync-bb gc-best-effort
+all: state cmdline bb sync-bb gc-best-effort sync-gc-best-effort
 
 clean:
 	rm -rf user_dir *~ *.bak temp.bbdb test_sync_*.bbdb
@@ -64,4 +64,20 @@ ifdef GOOGLE_CL_SECRET
 	$(PYTHON) test_gc.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
 else
 	$(PYTHON) test_gc.py --user $(GC_USER) --best-effort
+endif
+
+## GC<->BB sync engine tests.
+## Same best-effort pattern as gc above.
+sync-gc:
+ifdef GOOGLE_CL_SECRET
+	$(PYTHON) test_sync_gc_bb.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
+else
+	$(PYTHON) test_sync_gc_bb.py --user $(GC_USER)
+endif
+
+sync-gc-best-effort:
+ifdef GOOGLE_CL_SECRET
+	$(PYTHON) test_sync_gc_bb.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
+else
+	$(PYTHON) test_sync_gc_bb.py --user $(GC_USER) --best-effort
 endif
