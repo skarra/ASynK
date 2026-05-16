@@ -58,7 +58,7 @@ class BBContactsFolder(Folder):
         ## Sort the DBIds so dest1 has the 'lower' ID
         db1 = self.get_dbid()
         if db1 > destid:
-            db2 = db11
+            db2 = db1
             db1 = destid
         else:
             db2 = destid
