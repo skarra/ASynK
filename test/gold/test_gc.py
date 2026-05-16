@@ -440,8 +440,15 @@ def main ():
             cs_file = jsons[0]
             logging.info('Using cached client secrets: %s', cs_file)
         else:
-            logging.warning('No --cs provided and no cached credentials in %s/'
-                            ' — GC tests will be skipped.', gc_creds_dir)
+            logging.warning('No cached credentials in %s/ -- GC tests will '
+                            'be skipped.', gc_creds_dir)
+            logging.warning('To enable GC tests (one-time setup):')
+            logging.warning('  make gc GOOGLE_CL_SECRET=/path/to/client_secret.json')
+            logging.warning('Get client_secret.json from Google Cloud Console '
+                            '(APIs & Services > Credentials > OAuth 2.0 '
+                            'Client ID > Desktop app).')
+            logging.warning('Credentials are cached; subsequent runs just '
+                            'need: make all')
 
     config = Config(asynk_base_dir='../../', user_dir=gc_creds_dir)
 
