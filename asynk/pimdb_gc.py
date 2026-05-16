@@ -33,12 +33,7 @@ from state import Config
 from pimdb import PIMDB, GoutInvalidPropValueError
 from folder import Folder
 
-try:
-    from folder_gc import GCContactsFolder
-except Exception:
-    GCContactsFolder = None
-    logging.warning('folder_gc not yet migrated to People API; '
-                    'GC folder operations will be unavailable.')
+from folder_gc import GCContactsFolder
 
 ## The People API scope for full contacts access (read/write).
 SCOPES = ['https://www.googleapis.com/auth/contacts']
@@ -156,11 +151,6 @@ class GCPIMDB(PIMDB):
 
     def set_folders (self):
         """See the documentation in class PIMDB"""
-
-        if GCContactsFolder is None:
-            logging.warning('GCContactsFolder not available (Phase 2 pending); '
-                            'skipping folder setup.')
-            return
 
         logging.debug('Getting Group List to populate folders...')
         groups = self.list_folders(silent=True)

@@ -45,12 +45,7 @@ from folder_bb import BBContactsFolder
 import utils
 from state_collection import collection_id_to_class as coll_id_class
 
-try:
-    from pimdb_gc import GCPIMDB
-except Exception as e:
-    ## gdata / Google Contacts connector not available. Will be replaced
-    ## by People API in a future update.
-    pass
+from pimdb_gc import GCPIMDB
 
 class AsynkParserError(Exception):
     pass

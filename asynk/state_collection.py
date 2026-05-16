@@ -28,10 +28,7 @@ import logging, netrc, os
 from   abc              import ABCMeta, abstractmethod
 from pimdb_bb import BBPIMDB
 
-try:
-    from pimdb_gc import GCPIMDB
-except Exception:
-    GCPIMDB = None
+from pimdb_gc import GCPIMDB
 try:
     from pimdb_ol import OLPIMDB
 except ImportError as e:

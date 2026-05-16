@@ -27,12 +27,7 @@ import copy, logging, re
 
 from folder import Folder
 
-try:
-    from contact_gc import GCContact
-except Exception:
-    GCContact = None
-    logging.warning('contact_gc not yet migrated to People API; '
-                    'contact operations will be unavailable.')
+from contact_gc import GCContact
 
 import utils
 
