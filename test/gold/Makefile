@@ -21,7 +21,7 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb gc
+all: state cmdline bb gc-best-effort
 
 clean:
 	rm -rf user_dir *~ *.bak temp.bbdb
@@ -41,11 +41,11 @@ bb:
 	$(PYTHON) test_bb_read.py
 	$(PYTHON) test_bb_write.py
 
-## Google Contacts integration tests.  Runs best-effort: if credentials
-## are not cached in gc_creds/ or the network is unavailable, the tests
-## are skipped (not failed).
+## Google Contacts integration tests.
 ##   First run:  make gc GOOGLE_CL_SECRET=~/path/to/credentials.json
 ##   After that: make gc  (reuses cached credentials in gc_creds/)
+## 'make all' uses gc-best-effort which gracefully skips if no credentials
+## are available.  'make gc' requires credentials and fails if missing.
 GC_USER ?= test
 
 gc:
@@ -53,4 +53,11 @@ ifdef GOOGLE_CL_SECRET
 	$(PYTHON) test_gc.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
 else
 	$(PYTHON) test_gc.py --user $(GC_USER)
+endif
+
+gc-best-effort:
+ifdef GOOGLE_CL_SECRET
+	$(PYTHON) test_gc.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
+else
+	$(PYTHON) test_gc.py --user $(GC_USER) --best-effort
 endif

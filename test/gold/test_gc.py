@@ -401,12 +401,15 @@ class TestGCContacts(unittest.TestCase):
 def main ():
     global config, cs_file, gc_user
 
+    best_effort = False
+
     # Parse command line options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], '', ['cs=', 'user='])
+        opts, args = getopt.getopt(sys.argv[1:], '',
+                                   ['cs=', 'user=', 'best-effort'])
     except getopt.error as msg:
         print('Usage: python test_gc.py --cs /path/to/credentials.json '
-              '[--user label]')
+              '[--user label] [--best-effort]')
         sys.exit(2)
 
     for option, arg in opts:
@@ -414,6 +417,8 @@ def main ():
             cs_file = os.path.abspath(arg)
         elif option == '--user':
             gc_user = arg
+        elif option == '--best-effort':
+            best_effort = True
 
     # Validate the secrets file exists
     if cs_file and not os.path.exists(cs_file):
@@ -439,7 +444,8 @@ def main ():
         if jsons:
             cs_file = jsons[0]
             logging.info('Using cached client secrets: %s', cs_file)
-        else:
+        elif best_effort:
+            ## Invoked via 'make all' -- skip gracefully
             logging.warning('No cached credentials in %s/ -- GC tests will '
                             'be skipped.', gc_creds_dir)
             logging.warning('To enable GC tests (one-time setup):')
@@ -449,6 +455,13 @@ def main ():
                             'Client ID > Desktop app).')
             logging.warning('Credentials are cached; subsequent runs just '
                             'need: make all')
+        else:
+            ## Invoked via 'make gc' explicitly -- hard error
+            print('ERROR: No --cs provided and no cached credentials in %s/'
+                  % gc_creds_dir)
+            print('First run requires:')
+            print('  make gc GOOGLE_CL_SECRET=/path/to/client_secret.json')
+            sys.exit(1)
 
     config = Config(asynk_base_dir='../../', user_dir=gc_creds_dir)
 
