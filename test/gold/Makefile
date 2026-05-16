@@ -21,10 +21,10 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb gc-best-effort
+all: state cmdline bb sync-bb gc-best-effort
 
 clean:
-	rm -rf user_dir *~ *.bak temp.bbdb
+	rm -rf user_dir *~ *.bak temp.bbdb test_sync_*.bbdb
 
 ## distclean also removes gc_creds/ which holds cached OAuth2 tokens
 ## and client secrets.  Use this to force re-authentication.
@@ -40,6 +40,10 @@ cmdline:
 bb:
 	$(PYTHON) test_bb_read.py
 	$(PYTHON) test_bb_write.py
+
+## BB<->BB sync engine tests (offline, always runs)
+sync-bb:
+	$(PYTHON) test_sync_bb_bb.py
 
 ## Google Contacts integration tests.
 ##   First run:  make gc GOOGLE_CL_SECRET=~/path/to/credentials.json

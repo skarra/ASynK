@@ -49,3 +49,4 @@ asynk.sublime-workspace
 venv/
 gc_creds/
 *.token.pickle
+test_sync_*.bbdb
