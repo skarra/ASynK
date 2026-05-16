@@ -21,7 +21,7 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb
+all: state cmdline bb gc
 
 clean:
 	rm -rf user_dir *~ *.bak temp.bbdb
@@ -41,12 +41,11 @@ bb:
 	$(PYTHON) test_bb_read.py
 	$(PYTHON) test_bb_write.py
 
-## Google Contacts tests — NOT included in 'all' because they need live
-## credentials and network access.
+## Google Contacts integration tests.  Runs best-effort: if credentials
+## are not cached in gc_creds/ or the network is unavailable, the tests
+## are skipped (not failed).
 ##   First run:  make gc GOOGLE_CL_SECRET=~/path/to/credentials.json
 ##   After that: make gc  (reuses cached credentials in gc_creds/)
-## Optionally override the user label:
-##   make gc GC_USER=myemail
 GC_USER ?= test
 
 gc:
