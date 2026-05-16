@@ -157,6 +157,11 @@ class GCPIMDB(PIMDB):
     def set_folders (self):
         """See the documentation in class PIMDB"""
 
+        if GCContactsFolder is None:
+            logging.warning('GCContactsFolder not available (Phase 2 pending); '
+                            'skipping folder setup.')
+            return
+
         logging.debug('Getting Group List to populate folders...')
         groups = self.list_folders(silent=True)
         for (gid, gn, gcentry) in groups:

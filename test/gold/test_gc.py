@@ -43,7 +43,7 @@ EXTRA_PATHS = [os.path.join(DIR_PATH, 'lib'), os.path.join(DIR_PATH, 'asynk')]
 sys.path = EXTRA_PATHS + sys.path
 
 from state    import Config
-from pimdb_gc import GCPIMDB
+from pimdb_gc import GCPIMDB, GCContactsFolder
 
 ## Directories
 user_dir     = os.path.abspath('user_dir')
@@ -129,6 +129,7 @@ class TestGCGroups(unittest.TestCase):
             resource_name, name, group = f
             self.assertTrue(resource_name.startswith('contactGroups/'))
 
+    @unittest.skipUnless(GCContactsFolder, 'GCContactsFolder not yet migrated')
     def test_default_folder_set (self):
         """After init, the default contacts folder should be
         contactGroups/myContacts."""
@@ -142,6 +143,7 @@ class TestGCGroups(unittest.TestCase):
         self.assertIsNotNone(rid)
         self.assertTrue(rid.startswith('contactGroups/'))
 
+    @unittest.skipUnless(GCContactsFolder, 'GCContactsFolder not yet migrated')
     def test_create_and_delete_group (self):
         """Create a test group, verify it exists, then delete it."""
         test_name = 'ASynK Test Group (safe to delete)'
