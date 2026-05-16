@@ -1,3 +1,21 @@
+2026-05-14 5:30pm Phase 0 complete and committed. ✅
+==========================================================
+
+**Summary**
+
+Phase 0: Dependencies & Scaffolding — Done:
+
+- ✅ Removed lib/.gdata/ (vendored tree) + lib/atom and lib/gdata symlinks
+- ✅ Cleaned up stale backup files (demjson.py.bak, iso8601.py.bak, lib/s/)
+- ✅ Installed google-api-python-client, google-auth-httplib2, google-auth-oauthlib in venv
+- ✅ Verified from googleapiclient.discovery import build works
+- ✅ Updated requirements.txt with all direct dependencies
+- ✅ All 88 test/gold/ tests still pass
+- ✅ Committed to python3 branch
+
+Ready to proceed with Phase 1 (Auth rewrite) whenever you are. That phase will rewrite pimdb_gc.py to use InstalledAppFlow + build('people', 'v1') instead of oauth2client + gdata.contacts.client.ContactsClient.
+
+
 2026-06-14 Notes after first major commit in migration to python 3
 ===================================================================
 With help from Antigravity, Gemini and Claude. 

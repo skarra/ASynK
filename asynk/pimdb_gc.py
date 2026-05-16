@@ -19,63 +19,54 @@
 ##
 ## ####
 ##
+## Google Contacts PIMDB implementation using the People API v1.
+## Replaces the old GData/Atom-based implementation.
+##
 
-import base64, datetime, getopt, httplib2, logging, os, sys, threading, time
-import utils, webbrowser
-from   urllib.parse import urlparse
-import http.server, socketserver
+import logging, os, pickle, sys
 
-from   apiclient import discovery
-import atom, gdata.contacts.data, gdata.contacts.client
-from   oauth2client.client import flow_from_clientsecrets as flow_from_cs
-from   oauth2client.file   import Storage
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 
 from state import Config
 from pimdb import PIMDB, GoutInvalidPropValueError
 from folder import Folder
-from folder_gc import GCContactsFolder
 
-def patched_post(client, entry, uri, auth_token=None, converter=None,
-                 desired_class=None, **kwargs):
-    if converter is None and desired_class is None:
-        desired_class = entry.__class__
-    http_request = atom.http_core.HttpRequest()
-    entry_string = entry.to_string(gdata.client.get_xml_version(client.api_version))
-    entry_string = entry_string.replace('ns1', 'gd')
-    http_request.add_body_part(
-        entry_string, 'application/atom+xml')
-    return client.request(method='POST', uri=uri, auth_token=auth_token,
-                          http_request=http_request, converter=converter,
-                          desired_class=desired_class, **kwargs)
+try:
+    from folder_gc import GCContactsFolder
+except Exception:
+    GCContactsFolder = None
+    logging.warning('folder_gc not yet migrated to People API; '
+                    'GC folder operations will be unavailable.')
 
-class MyAuthToken:
-    def __init__ (self, config, credentials):
-        self.config = config
-        self.creds = credentials
+## The People API scope for full contacts access (read/write).
+SCOPES = ['https://www.googleapis.com/auth/contacts']
 
-    def modify_request (self, http_request):
-        self.creds.apply(http_request.headers)
-
-        debug = self.config.get_gc_logging()
-        if debug:
-            logging.debug(http_request._dump())
+## personFields to request when listing connections. This should cover all
+## the fields ASynK cares about.
+PERSON_FIELDS = ','.join([
+    'names', 'nicknames', 'emailAddresses', 'phoneNumbers', 'addresses',
+    'organizations', 'birthdays', 'events', 'urls', 'imClients',
+    'biographies', 'memberships', 'userDefined', 'photos', 'genders',
+    'metadata',
+])
 
 class GCPIMDB(PIMDB):
-    """GC object is a wrapper for a Google Contacts stream API."""
+    """GC object is a wrapper for Google Contacts via the People API v1."""
 
     def __init__ (self, config, user, pw):
-        self.server = None
+        """Initialise a Google Contacts PIMDB.
 
+        user: a label used to identify the token file (e.g. email prefix)
+        pw:   path to the OAuth2 client secrets JSON file (credentials.json)
+        """
         PIMDB.__init__(self, config)
         self.set_user(user)
         self.set_cs(pw)
         self.gc_init()
 
         self.set_folders()
-
-    def __del__ (self):
-        if not self.server is None:
-            self.server.shutdown()
 
     ##
     ## First implementation of the abstract methods of PIMDB.
@@ -87,21 +78,19 @@ class GCPIMDB(PIMDB):
         return 'gc'
 
     def list_folders (self, silent=False):
-        """Apart from doing the usual thing, this also retusn some good
-        stuff..."""
+        """List all contact groups.  Returns a list of
+        (resourceName, name, group_resource) tuples."""
 
         ret = []
-        feed = self.get_groups_feed()
+        groups = self._list_contact_groups()
 
-        if not feed.entry:
-            return ret
-
-        for i, entry in enumerate(feed.entry):
-            name = entry.content.text if entry.content else entry.title.text
+        for i, group in enumerate(groups):
+            name = group.get('name', '(unnamed)')
+            resource_name = group['resourceName']
             if not silent:
                 logging.info(' %2d: Contacts Name: %-25s ID: %s',
-                             i, name, entry.id.text)
-            ret.append((entry.id.text, name, entry))
+                             i, name, resource_name)
+            ret.append((resource_name, name, group))
 
         return ret
 
@@ -113,20 +102,18 @@ class GCPIMDB(PIMDB):
             logging.error('Only Contact Groups are supported at this time.')
             return None
 
-        gn              = gdata.data.Name(name=fname)
-        new_group       = gdata.contacts.data.GroupEntry(name=gn)
-        new_group.title = atom.data.Title(text=fname)
+        body = {'contactGroup': {'name': fname}}
+        result = self.get_service().contactGroups().create(body=body).execute()
 
-        entry = self.get_gdc().create_group(new_group)
-
-        if entry:
-            logging.info('Successfully created group. ID: %s',
-                         entry.id.text)
-            f = GCContactsFolder(self, entry.id.text, gn, entry)
+        if result:
+            resource_name = result['resourceName']
+            name = result.get('name', fname)
+            logging.info('Successfully created group. ID: %s', resource_name)
+            f = GCContactsFolder(self, resource_name, name, result)
             self.add_contacts_folder(f)
-            return entry.id.text
+            return resource_name
         else:
-            logging.error('Could not create Group \'%s\'', gn)
+            logging.error('Could not create Group \'%s\'', fname)
             return None
 
     def show_folder (self, gid):
@@ -160,9 +147,10 @@ class GCPIMDB(PIMDB):
         f.del_all_entries()
         logging.info('Deleting Entries for Group: %s...done', f.get_name())
 
-        logging.info('Deleting the Group from Google''s servers...')
-        self.get_gdc().delete_group(f.get_gcentry())
-        logging.info('Deleting the Group from Google''s servers...done')
+        logging.info('Deleting the Group from Google\'s servers...')
+        self.get_service().contactGroups().delete(
+            resourceName=gid).execute()
+        logging.info('Deleting the Group from Google\'s servers...done')
 
         self.remove_folder_from_lists(f, ftype)
 
@@ -175,7 +163,9 @@ class GCPIMDB(PIMDB):
             f = GCContactsFolder(self, gid, gn, gcentry)
             self.add_contacts_folder(f)
             logging.debug('Processing Folder: %s...', gn)
-            if gn == 'System Group: My Contacts':
+            ## The system group for "My Contacts" in People API is
+            ## "contactGroups/myContacts"
+            if gid == 'contactGroups/myContacts':
                 self.set_def_folder(Folder.CONTACT_t, f)
 
     def set_def_folders (self):
@@ -211,117 +201,90 @@ class GCPIMDB(PIMDB):
     def set_cs (self, pw):
         self.pw = pw
 
+    def get_service (self):
+        """Return the Google People API service object."""
+        return self.service
+
+    def set_service (self, service):
+        self.service = service
+
+    ## Keep get_gdc/set_gdc as aliases for code that still references them
+    ## (e.g. folder_gc.py during transition)
     def get_gdc (self):
-        return self.gdc
+        return self.get_service()
 
-    def set_gdc (self, gdc):
-        self.gdc = gdc
-
-    def _init_webserver (self, port):
-        class MyRequestHandler(http.server.SimpleHTTPRequestHandler):
-            def do_GET (self1):
-                parsed_path = urlparse(self1.path)
-                try:
-                    params = dict([p.split('=') for p in parsed_path[4].split('&')])
-                except:
-                    params = {}
-
-                self.authorized = True
-                self.credentials = self.flow.step2_exchange(params)
-                return params
-
-        self.server = socketserver.TCPServer(('', port), MyRequestHandler)
-
-        logging.info('Starting to listen on port %d...', port)
-
-        self.authorized = False
-        thread = threading.Thread(target = self.server.serve_forever)
-        thread.start()
-
-    def _new_http (self):
-        http = httplib2.Http()
-        debug = self.get_config().get_gc_logging()
-        if debug:
-            http.debuglevel = 4
-        return http
-
-    def _oauth_dance (self, storage):
-        port = 1977
-        self._init_webserver(port)
-
-        logging.info('Staring the wonderful oAuth dance...')
-        scope = 'https://www.google.com/m8/feeds'
-        cs = os.path.abspath(os.path.expanduser(self.get_cs()))
-        self.flow = flow_from_cs(cs, scope=scope,
-                                 redirect_uri='http://localhost:%d' % port)
-        auth_uri = self.flow.step1_get_authorize_url()
-        webbrowser.open_new(auth_uri)
-
-        while not self.authorized:
-            time.sleep(1)
-
-        self.server.shutdown()
-
-        http = self.credentials.authorize(http=self._new_http())
-        storage.put(self.credentials)
-        self.credentials.set_store(storage)
-
-        return self.credentials
+    def set_gdc (self, svc):
+        self.set_service(svc)
 
     def gc_init (self):
+        """Authenticate with Google and create the People API service.
+
+        Uses InstalledAppFlow for the OAuth2 dance.  Tokens are cached
+        in a pickle file in the user directory so subsequent runs don't
+        require re-authorization.
+        """
         logging.info('Attempting to log into Google...')
         user_dir = self.get_config().get_user_dir()
-        cs_file = os.path.abspath(os.path.join(user_dir,
-                                               '%s.dat' % self.get_user()))
-        storage = Storage(cs_file)
-        if not os.path.exists(cs_file):
-           self.credentials = self._oauth_dance(storage)
-        else:
-            self.credentials = storage.get()
-            if self.credentials is None or self.credentials.invalid:
-                self.credentials = self._oauth_dance(storage)
+        token_file = os.path.join(user_dir, '%s.token.pickle' % self.get_user())
+        cs_file = os.path.abspath(os.path.expanduser(self.get_cs()))
+
+        creds = None
+
+        # Load cached token if it exists
+        if os.path.exists(token_file):
+            with open(token_file, 'rb') as token:
+                creds = pickle.load(token)
+
+        # If there are no valid credentials, do the OAuth dance
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                logging.info('Refreshing expired access token...')
+                creds.refresh(Request())
             else:
-                if self.credentials.access_token_expired:
-                    self.credentials.refresh(http=self._new_http())
-                    storage.put(self.credentials)
-                else:
-                    logging.info('Using pre-fetched access_token...')
+                logging.info('Starting OAuth2 authorization flow...')
+                if not os.path.exists(cs_file):
+                    logging.error('Client secrets file not found: %s', cs_file)
+                    raise FileNotFoundError(
+                        'OAuth2 client secrets file not found: %s' % cs_file)
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    cs_file, SCOPES)
+                creds = flow.run_local_server(port=0)
 
-        auth = MyAuthToken(self.get_config(), self.credentials)
-        gdc = gdata.contacts.client.ContactsClient(source='ASynK',
-                                                   auth_token=auth)
-        self.set_gdc(gdc)
+            # Save the credentials for the next run
+            with open(token_file, 'wb') as token:
+                pickle.dump(creds, token)
+            logging.info('Credentials saved to %s', token_file)
+        else:
+            logging.info('Using cached access token...')
 
-        ## Mon Jun 15 16:07:56 IST 2015 Not sure why this code is commented
-        ## out, and if we need it to be here at all ... Hm.
+        service = build('people', 'v1', credentials=creds)
+        self.set_service(service)
 
-        # if not self.get_config().get_gid():
-        #     logging.info('First use of application. Creating group...')
-        #     gn = self.config.get_gn()
-        #     if not gn:
-        #         gn = 'Gout'
-        #         self.config.set_gn(gn, False)
-        #         logging.info('Using default Gmail Contacts Group: Gout')
+    def _list_contact_groups (self):
+        """Fetch all contact groups from the People API.  Returns a list
+        of contactGroup resource dicts."""
 
-        #     gc_gid = self.create_group(gn)
-        #     self.config.set_gid(gc_gid)
-
+        results = self.get_service().contactGroups().list(
+            pageSize=1000).execute()
+        return results.get('contactGroups', [])
 
     def get_groups_feed (self):
-        feed = self.get_gdc().GetGroups()
-        return feed
+        """Compatibility wrapper — returns the list of contact groups.
+        Old code called this and expected a feed object with .entry;
+        new code returns a list of group resource dicts."""
+
+        return self._list_contact_groups()
 
     def print_groups (self):
-        feed = self.get_groups_feed()
+        groups = self._list_contact_groups()
 
-        if not feed.entry:
+        if not groups:
             print('No groups for user')
-        for i, entry in enumerate(feed.entry):
-            print('\n%s %s' % (i+1, entry.title.text))
-            if entry.content:
-                print('  Content: %s' % (entry.content.text))
-
-            print('  Group ID: %s' % entry.id.text)
+        for i, group in enumerate(groups):
+            print('\n%s %s' % (i+1, group.get('name', '(unnamed)')))
+            print('  Group ID: %s' % group['resourceName'])
+            if group.get('memberCount'):
+                print('  Members: %s' % group['memberCount'])
 
     def find_group (self, title, ret_type='id'):
         """This routine will directly look up the server using the API and try
@@ -331,34 +294,30 @@ class GCPIMDB(PIMDB):
         None if the group cannot be found.
         """
 
-        feed = self.get_gdc().GetGroups()
+        groups = self._list_contact_groups()
 
-        if not feed.entry:
+        if not groups:
             logging.info('\nGroup (%s) not found: there are no groups!',
                           title)
             return None
 
-        for i, entry in enumerate(feed.entry):
-            if entry.title.text == title:
+        for group in groups:
+            if group.get('name') == title:
                 if ret_type == 'entry':
-                    return entry
+                    return group
                 else:
-                    return entry.id.text
+                    return group['resourceName']
 
         return None
 
     def new_feed (self):
-        return gdata.contacts.data.ContactsFeed()
+        """No longer applicable — batch operations use different API.
+        Raises NotImplementedError to catch any old code paths."""
+        raise NotImplementedError(
+            'new_feed() is obsolete. Use People API batch methods instead.')
 
     def exec_batch (self, batch_feed, extra_headers=None):
-        # return self.get_gdc().ExecuteBatch(
-        #     batch_feed, gdata.contacts.client.DEFAULT_BATCH_URL,
-        #     custom_headers=atom.client.CustomHeaders(**{'If-Match': '*'}))
-
-        # As of May 2014 due to some change at Google's end the above
-        # ExecuteBatch started failing. As usual Google failed to respond to
-        # repeated requests to fix this. Eventually someone suggested a
-        # workaround that worked. The method patched_post is take from here:
-        # https://code.google.com/p/gdata-python-client/issues/detail?id=700#c9
-        return patched_post(self.get_gdc(), batch_feed,
-                            gdata.contacts.client.DEFAULT_BATCH_URL)
+        """No longer applicable — batch operations use different API.
+        Raises NotImplementedError to catch any old code paths."""
+        raise NotImplementedError(
+            'exec_batch() is obsolete. Use People API batch methods instead.')
