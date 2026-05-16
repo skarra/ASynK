@@ -248,9 +248,11 @@ class TestInitialSync(TestSyncBBBBBase):
         self.assertEqual(c.get_firstname(), 'Fidelity')
         self.assertEqual(c.get_lastname(), 'Test')
         self.assertEqual(c.get_prefix(), 'Dr')
+        self.assertEqual(c.get_suffix(), 'Jr')
         self.assertEqual(c.get_nickname(), 'Fiddy')
         self.assertEqual(c.get_company(), 'TestCorp')
         self.assertEqual(c.get_title(), 'Engineer')
+        self.assertEqual(c.get_dept(), 'R&D')
 
         # Emails may be re-classified by domain; just verify they exist
         all_emails = (c.get_email_home() + c.get_email_work() +
@@ -311,6 +313,48 @@ class TestIncrementalSync(TestSyncBBBBBase):
         self.assertEqual(len(f2.get_contacts()), 4)
         names = sorted([c.get_firstname() for c in f2.get_contacts().values()])
         self.assertIn('Grace', names)
+
+    def test_2_3_update_existing_contact (self):
+        """After initial sync, modify a field on a src contact. Re-sync."""
+        self._do_initial_sync()
+
+        # Modify a contact in bb1
+        db1, f1 = reopen_bb(BB1_FILE)
+        cons = f1.find_contacts_by_name(name='Dave')
+        self.assertEqual(len(cons), 1)
+        time.sleep(1.1)  # Ensure BBDB timestamp (>1s resolution) beats last_sync_stop
+        cons[0].set_company('NewCorp')
+        f1.save()
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = reopen_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+        db2, f2 = reopen_bb(BB2_FILE)
+        cons = f2.find_contacts_by_name(name='Dave')
+        self.assertEqual(len(cons), 1)
+        self.assertEqual(cons[0].get_company(), 'NewCorp')
+
+    def test_2_7_delete_contact (self):
+        """After initial sync, delete a contact from src. Re-sync."""
+        self._do_initial_sync()
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        cons = f1.find_contacts_by_name(name='Dave')
+        self.assertEqual(len(cons), 1)
+        f1.del_itemids([cons[0].get_itemid()])
+        f1.save()
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = reopen_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+        db2, f2 = reopen_bb(BB2_FILE)
+        cons = f2.find_contacts_by_name(name='Dave')
+        self.assertEqual(len(cons), 0)
+        self.assertEqual(len(f2.get_contacts()), 2)
 
     def test_2_4_empty_fields (self):
         """Sync a minimal contact (name only) — should not crash."""
@@ -410,6 +454,150 @@ class TestLargeBatch(TestSyncBBBBBase):
 
         db2, f2 = reopen_bb(BB2_FILE)
         self.assertEqual(len(f2.get_contacts()), 60)
+
+
+class TestConflictResolution(TestSyncBBBBBase):
+    """Section 3: Two-Way Conflict Resolution."""
+
+    def _do_initial_sync(self):
+        db1, f1 = open_bb(BB1_FILE)
+        make_contact(f1, 'Conflict', 'Tester', company='OldCorp')
+        f1.save()
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = open_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+    def test_3_1_bidirectional_new(self):
+        """Add a new contact to each side independently. Sync."""
+        db1, f1 = open_bb(BB1_FILE)
+        make_contact(f1, 'Left', 'Side')
+        f1.save()
+
+        db2, f2 = open_bb(BB2_FILE)
+        make_contact(f2, 'Right', 'Side')
+        f2.save()
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = reopen_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = reopen_bb(BB2_FILE)
+        self.assertEqual(len(f1.get_contacts()), 2)
+        self.assertEqual(len(f2.get_contacts()), 2)
+        names = sorted([c.get_firstname() for c in f1.get_contacts().values()])
+        self.assertEqual(names, ['Left', 'Right'])
+
+    def test_3_3_conflict_db1_wins(self):
+        """Modify the same contact on both sides. db1 wins."""
+        self._do_initial_sync()
+
+        time.sleep(1.1)  # Ensure timestamp beats last sync
+        # Modify bb1
+        db1, f1 = reopen_bb(BB1_FILE)
+        c1 = f1.find_contacts_by_name(name='Conflict')[0]
+        c1.set_company('Corp1')
+        f1.save()
+
+        # Modify bb2
+        db2, f2 = reopen_bb(BB2_FILE)
+        c2 = f2.find_contacts_by_name(name='Conflict')[0]
+        c2.set_company('Corp2')
+        f2.save()
+
+        # Set db1 to win ('1')
+        config.set_conflict_resolve(PROFILE_NAME, '1')
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = reopen_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+        db2, f2 = reopen_bb(BB2_FILE)
+        c2 = f2.find_contacts_by_name(name='Conflict')[0]
+        self.assertEqual(c2.get_company(), 'Corp1')
+
+    def test_3_4_conflict_db2_wins(self):
+        """Modify the same contact on both sides. db2 wins."""
+        self._do_initial_sync()
+
+        time.sleep(1.1)  # Ensure timestamp beats last sync
+        # Modify bb1
+        db1, f1 = reopen_bb(BB1_FILE)
+        c1 = f1.find_contacts_by_name(name='Conflict')[0]
+        c1.set_company('Corp1')
+        f1.save()
+
+        # Modify bb2
+        db2, f2 = reopen_bb(BB2_FILE)
+        c2 = f2.find_contacts_by_name(name='Conflict')[0]
+        c2.set_company('Corp2')
+        f2.save()
+
+        # Set db2 to win
+        config.set_conflict_resolve(PROFILE_NAME, '2')
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = reopen_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        c1 = f1.find_contacts_by_name(name='Conflict')[0]
+        self.assertEqual(c1.get_company(), 'Corp2')
+
+
+class TestOneWaySync(TestSyncBBBBBase):
+    """Section 5: One-Way Sync."""
+
+    def setUp(self):
+        super().setUp()
+        # Change the sync direction to 1-way
+        config.set_sync_dir(PROFILE_NAME, 'SYNC1WAY')
+
+    def test_5_1_sync1way_basic(self):
+        """Create contacts in src, sync 1-way. Verify they appear in dst."""
+        db1, f1 = open_bb(BB1_FILE)
+        make_contact(f1, 'OneWay', 'Test')
+        f1.save()
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = open_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+        db2, f2 = reopen_bb(BB2_FILE)
+        self.assertEqual(len(f2.get_contacts()), 1)
+
+    def test_5_2_sync1way_ignores_dst_changes(self):
+        """After 1-way sync, modify dst. Re-sync. Verify src is unchanged."""
+        db1, f1 = open_bb(BB1_FILE)
+        make_contact(f1, 'OneWay', 'Test')
+        f1.save()
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = open_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+        # Add a new contact to dst (db2)
+        db2, f2 = reopen_bb(BB2_FILE)
+        make_contact(f2, 'DstOnly', 'Contact')
+        f2.save()
+
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = reopen_bb(BB2_FILE)
+        result = run_sync(config, PROFILE_NAME, db1, db2)
+        self.assertTrue(result)
+
+        # Verify src is still 1 contact
+        db1, f1 = reopen_bb(BB1_FILE)
+        db2, f2 = reopen_bb(BB2_FILE)
+        self.assertEqual(len(f1.get_contacts()), 1)
+        self.assertEqual(len(f2.get_contacts()), 2)
 
 
 ## ---------------------------------------------------------------------------
