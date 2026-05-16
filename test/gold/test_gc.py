@@ -46,11 +46,12 @@ from state    import Config
 from pimdb_gc import GCPIMDB
 
 ## Directories
-user_dir   = os.path.abspath('user_dir')
-state_src  = os.path.join('.', 'state.test.json')
-state_dest = os.path.join(user_dir, 'state.json')
-confn_src  = os.path.join('..', '..', 'config', 'config_v4.json')
-confn_dest = os.path.join(user_dir, 'config.json')
+user_dir     = os.path.abspath('user_dir')
+gc_creds_dir = os.path.abspath('gc_creds')  # persistent — survives 'make clean'
+state_src    = os.path.join('.', 'state.test.json')
+state_dest   = os.path.join(user_dir, 'state.json')
+confn_src    = os.path.join('..', '..', 'config', 'config_v4.json')
+confn_dest   = os.path.join(user_dir, 'config.json')
 
 ## These get filled in by main()
 config    = None
@@ -65,6 +66,13 @@ def setup_user_dir ():
     shutil.copyfile(state_src, state_dest)
     if os.path.exists(confn_src):
         shutil.copyfile(confn_src, confn_dest)
+
+def setup_gc_creds_dir ():
+    """Ensure the persistent gc_creds/ directory exists.  Unlike user_dir/,
+    this is NOT wiped on each run — it stores the OAuth2 client secrets
+    and cached tokens across test runs."""
+    if not os.path.exists(gc_creds_dir):
+        os.makedirs(gc_creds_dir)
 
 ## ---------------------------------------------------------------------------
 ## Test cases
@@ -175,13 +183,24 @@ def main ():
         elif option == '--user':
             gc_user = arg
 
+    # Validate the secrets file exists
     if cs_file and not os.path.exists(cs_file):
         print('ERROR: Client secrets file not found: %s' % cs_file)
         sys.exit(1)
 
     # Set up the environment
-    setup_user_dir()
-    config = Config(asynk_base_dir='../../', user_dir=user_dir)
+    setup_user_dir()       # wipes and recreates user_dir/
+    setup_gc_creds_dir()   # creates gc_creds/ if it doesn't exist (persistent)
+
+    # Copy the client secrets into gc_creds/ on first use
+    if cs_file:
+        dest = os.path.join(gc_creds_dir, os.path.basename(cs_file))
+        if not os.path.exists(dest):
+            shutil.copyfile(cs_file, dest)
+        # Point cs_file to the copy inside gc_creds/
+        cs_file = dest
+
+    config = Config(asynk_base_dir='../../', user_dir=gc_creds_dir)
 
     # Remove our custom args from sys.argv so unittest doesn't choke
     sys.argv = [sys.argv[0]]

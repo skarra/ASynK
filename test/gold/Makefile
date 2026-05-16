@@ -26,6 +26,11 @@ all: state cmdline bb
 clean:
 	rm -rf user_dir *~ *.bak temp.bbdb
 
+## distclean also removes gc_creds/ which holds cached OAuth2 tokens
+## and client secrets.  Use this to force re-authentication.
+distclean: clean
+	rm -rf gc_creds
+
 state:
 	$(PYTHON) test_state.py
 

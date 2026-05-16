@@ -47,3 +47,5 @@ asynk.txt
 asynk.sublime-project
 asynk.sublime-workspace
 venv/
+gc_creds/
+*.token.pickle
