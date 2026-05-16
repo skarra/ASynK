@@ -129,6 +129,16 @@ class TestGCGroups(unittest.TestCase):
             resource_name, name, group = f
             self.assertTrue(resource_name.startswith('contactGroups/'))
 
+    def test_list_folders_verbose (self):
+        """List all folders with names and IDs.  Always passes if the API
+        call succeeds; the printed output is useful for interactive runs."""
+        folders = self.pimdb.list_folders(silent=True)
+        self.assertGreater(len(folders), 0)
+        print('\n  %-4s %-35s %s' % ('#', 'Name', 'Resource ID'))
+        print('  ' + '-' * 75)
+        for i, (rid, name, _group) in enumerate(folders, 1):
+            print('  %-4d %-35s %s' % (i, name, rid))
+
     @unittest.skipUnless(GCContactsFolder, 'GCContactsFolder not yet migrated')
     def test_default_folder_set (self):
         """After init, the default contacts folder should be
