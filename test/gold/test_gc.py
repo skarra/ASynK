@@ -170,14 +170,14 @@ class TestGCGroups(unittest.TestCase):
         # Delete
         self.pimdb.del_folder(gid)
 
-        # Verify it's gone (retry briefly — Google API is eventually consistent)
+        # Verify it's gone (retry — Google API is eventually consistent)
         import time
-        found = self.pimdb.find_group(test_name)
-        for _ in range(3):
+        found = gid   # assume still there
+        for _ in range(5):
+            time.sleep(2)
+            found = self.pimdb.find_group(test_name)
             if found is None:
                 break
-            time.sleep(1)
-            found = self.pimdb.find_group(test_name)
         self.assertIsNone(found)
 
 ## ---------------------------------------------------------------------------

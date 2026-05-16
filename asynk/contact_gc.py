@@ -20,25 +20,52 @@
 ## ####
 ##
 ## This file defines a wrapper class around a Google Contact entry, by
-## extending the Contact abstract base Contact class. Using this class one can
-## create and update contact entires in google contact folders, and manipulate
-## properties, etc.
+## extending the Contact abstract base Contact class.  Uses the People API
+## v1 Person resource (a plain dict) instead of the old GData ContactEntry.
 ##
 
-import logging, getopt, re, string, sys, time
+import logging, re, time
 from datetime import datetime
-import atom, iso8601
-import gdata, gdata.data, gdata.contacts.data, gdata.contacts.client
 
 import demjson3 as demjson, utils
 from contact import Contact
 import folder_gc
 
+## ---------------------------------------------------------------------------
+## People API type constants
+## ---------------------------------------------------------------------------
+
+## Canonical type values used by the People API for emails, phones, etc.
+TYPE_HOME   = 'home'
+TYPE_WORK   = 'work'
+TYPE_OTHER  = 'other'
+TYPE_MOBILE = 'mobile'
+TYPE_HOME_FAX = 'homeFax'
+TYPE_WORK_FAX = 'workFax'
+
+## IM protocol mapping between People API and ASynK labels
+IM_PROTO_LABEL = {
+    'aim'        : 'AOL',
+    'msn'        : 'MSN',
+    'yahoo'      : 'Yahoo',
+    'skype'      : 'Skype',
+    'qq'         : 'QQ',
+    'googleTalk' : 'GTalk',
+    'icq'        : 'ICQ',
+    'jabber'     : 'Jabber',
+}
+
+IM_LABEL_PROTO = {v: k for k, v in IM_PROTO_LABEL.items()}
+
+## ---------------------------------------------------------------------------
+## GCContact
+## ---------------------------------------------------------------------------
+
 class GCContact(Contact):
     """This class extends the Contact abstract base class to wrap a Google
-    Contact"""
+    Contact using a People API Person resource (a plain dict)."""
 
-    def __init__ (self, folder, con=None, con_itemid=None, gce=None):
+    def __init__ (self, folder, con=None, con_itemid=None, person=None):
         Contact.__init__(self, folder, con)
 
         conf = self.get_config()
@@ -48,32 +75,24 @@ class GCContact(Contact):
             else:
                 logging.debug('Potential new GCContact: %s', con.get_disp_name())
 
-        self.set_gce(gce)
-        if gce:
-            self.init_props_from_gce(gce)
+        self.set_person(person)
+        if person:
+            self.init_props_from_person(person)
 
         self.in_init(False)
 
     @classmethod
-    def normalize_gcid (self, itemid):
-        """Replace the projection to a normalized 'thin', regardless of
-        whether the original contact had a full or a base. Also make all the
-        contact URIs as https://. Return value is the itemid fixed for these
-        things."""
+    def normalize_gcid (cls, itemid):
+        """Normalize a Google contact ID.  For the People API, resource names
+        are in the form 'people/cXXX'.  For legacy GData IDs, we normalize
+        projection and scheme."""
 
-        # Workaround for a weird Google API behaviour. Certain
-        # operations only succed with the 'full' projection.
+        if itemid.startswith('people/'):
+            return itemid
+
+        # Legacy GData URL normalization (for migration)
         itemid = itemid.replace('/base/', '/full/')
-
-        # The /thin/ projection has a problem with updating etags and for
-        # modifications... Not sure I really understand this projection
-        # stuff.
         itemid = itemid.replace('/thin/', '/full/')
-
-        # Finally, since we use the entire URL as the contact's key,
-        # we need to normalize the URLs. I am not sure why Google
-        # can't be more consistent at its end... but this is what we
-        # got.
         itemid = itemid.replace('http://', 'https://')
 
         return itemid
@@ -83,759 +102,617 @@ class GCContact(Contact):
     ##
 
     def save (self):
-        """Saves the current contact on the server. For now we are only
-        handling a new contact creation scneario. The protocol for updates is
-        different"""
+        """Saves the current contact on the server."""
 
-        ## FIXME: Handle the case of updating an existing contact's details.
+        person = self.init_person_from_props()
+        svc = self.get_db().get_service()
+        result = svc.people().createContact(
+            body=person,
+            personFields='names,metadata').execute()
 
-        gce   = self.init_gce_from_props()
-        entry = self.get_db().get_gdc().CreateContact(gce)
-
-        if entry:
+        if result:
+            rid = result.get('resourceName', '')
             logging.debug('Creation Successful!')
-            logging.debug('ID for the new contact: %s', entry.id.text)
-            self.set_itemid(entry.id.text)
+            logging.debug('ID for the new contact: %s', rid)
+            self.set_itemid(rid)
         else:
             logging.error('Contact creation error.')
             return None
 
-        return entry.id.text
+        return rid
 
     ##
     ## Now onto the non-abstract methods.
     ##
 
-    def get_gce (self, refresh=False):
-        gce = self._get_att('gce')
-        if gce and (not refresh):
-            return gce
+    def get_person (self):
+        person = self._get_att('person')
+        if person:
+            return person
+        return self.init_person_from_props()
 
-        return self.init_gce_from_props()
-
-    def set_gce (self, gce):
-        return self._set_att('gce', gce)
+    def set_person (self, person):
+        return self._set_att('person', person)
 
     def get_etag (self):
         try:
             return self._get_att('etag')
-        except Exception as e:
+        except Exception:
             return None
 
     def set_etag (self, etag):
         return self._set_att('etag', etag)
 
-    def init_props_from_gce (self, gce):
-        self._snarf_itemid_from_gce(gce)
-        self._snarf_names_gender_from_gce(gce)
-        self._snarf_userpic_from_gce(gce)
-        self._snarf_notes_from_gce(gce)
-        self._snarf_group_membership_from_gce(gce)
-        self._snarf_emails_from_gce(gce)
-        self._snarf_postal_from_gce(gce)
-        self._snarf_org_details_from_gce(gce)
-        self._snarf_phones_and_faxes_from_gce(gce)
-        self._snarf_dates_from_gce(gce)
-        self._snarf_websites_from_gce(gce)
-        self._snarf_ims_from_gce(gce)
-        self._snarf_sync_tags_from_gce(gce)
+    ## For compatibility with folder_gc which may call get_gce/set_gce
+    def get_gce (self, refresh=False):
+        return self.get_person()
 
-        self._snarf_custom_props_from_gce(gce)
+    def set_gce (self, val):
+        return self.set_person(val)
 
-        # Google entries do not have a created entry. We should just set it to
-        # the current time, and take it from there.
+    def init_props_from_person (self, person):
+        """Parse a People API Person resource dict and populate the
+        Contact properties."""
+
+        self._snarf_itemid_from_person(person)
+        self._snarf_names_gender_from_person(person)
+        self._snarf_notes_from_person(person)
+        self._snarf_group_membership_from_person(person)
+        self._snarf_emails_from_person(person)
+        self._snarf_postal_from_person(person)
+        self._snarf_org_details_from_person(person)
+        self._snarf_phones_and_faxes_from_person(person)
+        self._snarf_dates_from_person(person)
+        self._snarf_websites_from_person(person)
+        self._snarf_ims_from_person(person)
+        self._snarf_sync_tags_from_person(person)
+        self._snarf_custom_props_from_person(person)
+
+        # Google entries do not have a created entry. Set to now if missing.
         if not self.get_created():
-            self.set_created(__import__("datetime").datetime.utcfromtimestamp(time.time().isoformat() + "Z"))
-            self.set_updated(__import__("datetime").datetime.utcfromtimestamp(time.time().isoformat() + "Z"))
-        
-    def init_gce_from_props (self):
-        gce = gdata.contacts.data.ContactEntry()
+            now = datetime.utcnow().isoformat() + 'Z'
+            self.set_created(now)
+            self.set_updated(now)
 
-        self._add_itemid_to_gce(gce)
-        self._add_names_gender_to_gce(gce)
-        self._add_userpic_to_gce(gce)
-        self._add_notes_to_gce(gce)
-        self._add_group_membership_to_gce(gce)
-        self._add_emails_to_gce(gce)
-        self._add_postal_to_gce(gce)
-        self._add_org_details_to_gce(gce)
-        self._add_phones_and_faxes_to_gce(gce)
-        self._add_dates_to_gce(gce)
-        self._add_websites_to_gce(gce)
-        self._add_ims_to_gce(gce)
-        self._add_sync_tags_to_gce(gce)
+    def init_person_from_props (self):
+        """Build a People API Person resource dict from the current
+        Contact properties."""
 
-        self._add_custom_props_to_gce(gce)
+        person = {}
 
-        return self.set_gce(gce)
+        self._add_names_gender_to_person(person)
+        self._add_notes_to_person(person)
+        self._add_group_membership_to_person(person)
+        self._add_emails_to_person(person)
+        self._add_postal_to_person(person)
+        self._add_org_details_to_person(person)
+        self._add_phones_and_faxes_to_person(person)
+        self._add_dates_to_person(person)
+        self._add_websites_to_person(person)
+        self._add_ims_to_person(person)
+        self._add_sync_tags_to_person(person)
+        self._add_custom_props_to_person(person)
+
+        self.set_person(person)
+        return person
 
     def __str__ (self):
         ret = ''
-
         props = self.get_prop_names()
         for prop in props:
             ret += '%18s: %s\n' % (prop, self._get_prop(prop))
-
         return ret
 
-    def get_curr_gmail_userid (self):
-        gid = self.get_folder().get_itemid()
-        return self.get_gid_gmail_userid(gid)
-
-    def get_gid_gmail_userid (self, group_uri):
-        m = re.search('/groups/([^/]*)/', group_uri)
-        return m.group(1) if m else None
-
     ##
-    ## Internal functions that are not inteded to be called from outside.
+    ## Internal functions — snarf (Person → Contact props)
     ##
 
-    def _snarf_itemid_from_gce (self, ce):
-        if ce.id:
-            self.set_itemid(self.normalize_gcid(ce.id.text))
+    def _snarf_itemid_from_person (self, person):
+        rid = person.get('resourceName')
+        if rid:
+            self.set_itemid(self.normalize_gcid(rid))
 
-        if ce.etag:
-            self.set_etag(ce.etag)
+        etag = person.get('etag')
+        if etag:
+            self.set_etag(etag)
 
-    def _snarf_names_gender_from_gce (self, ce):
-        if ce.name:
-            if ce.name.additional_name:
-                self.set_middlename(ce.name.additional_name.text)
+    def _snarf_names_gender_from_person (self, person):
+        names = person.get('names', [])
+        if names:
+            n = names[0]
+            if n.get('middleName'):
+                self.set_middlename(n['middleName'])
+            if n.get('familyName'):
+                self.set_lastname(n['familyName'])
+            if n.get('givenName'):
+                self.set_firstname(n['givenName'])
+            if n.get('displayName'):
+                self.set_fileas(n['displayName'])
+            if n.get('honorificPrefix'):
+                self.set_prefix(n['honorificPrefix'])
+            if n.get('honorificSuffix'):
+                self.set_suffix(n['honorificSuffix'])
 
-            if ce.name.family_name:
-                self.set_lastname(ce.name.family_name.text)
+        nicknames = person.get('nicknames', [])
+        if nicknames:
+            self.set_nickname(nicknames[0].get('value', ''))
 
-            if ce.name.given_name:
-                self.set_firstname(ce.name.given_name.text)
+        genders = person.get('genders', [])
+        if genders:
+            self.set_gender(genders[0].get('value', ''))
 
-            if ce.name.full_name:
-                # The FileAs property is required for Outlook. So we need to
-                # keep this around. FIXME: it should really be stored as a
-                # custom property on the outlook side.
-                self.set_fileas(ce.name.full_name.text)
+    def _snarf_notes_from_person (self, person):
+        bios = person.get('biographies', [])
+        if bios:
+            text = bios[0].get('value', '')
+            if text:
+                self.add_notes(text)
 
-            if ce.name.name_prefix:
-                self.set_prefix(ce.name.name_prefix.text)
-
-            if ce.name.name_suffix:
-                self.set_suffix(ce.name.name_suffix.text)
-
-        if ce.nickname:
-            self.set_nickname(ce.nickname.text)
-
-        if ce.gender:
-            self.set_gender(ce.gender.value)
-
-    def _snarf_notes_from_gce (self, ce):
-        if ce.content and ce.content.text:
-            self.add_notes(ce.content.text)
-
-    def _snarf_group_membership_from_gce (self, ce):
-        # The group id corresponding to the current folder is ignored, the
-        # rest go into custom properties
+    def _snarf_group_membership_from_person (self, person):
+        memberships = person.get('memberships', [])
+        folder_gid = self.get_folder().get_itemid()
         gids = []
-        if ce.group_membership_info:
-            if len(ce.group_membership_info) > 0:
-                for gid in ce.group_membership_info:
-                    if gid.href == self.get_folder().get_itemid():
-                        continue
-                    gids.append(gid.href)
 
-                if len(gids) > 0:
-                    self.add_custom('gids', demjson.encode(gids))
+        for m in memberships:
+            cgm = m.get('contactGroupMembership', {})
+            rn = cgm.get('contactGroupResourceName', '')
+            if rn and rn != folder_gid:
+                gids.append(rn)
 
-    def _snarf_emails_from_gce (self, ce):
-        """Fetch the email entries in the specified ContactEntry object and
-        populate them in the internal email address strutures."""
+        if gids:
+            self.add_custom('gids', demjson.encode(gids))
 
-        ## FIXME: Custom email labels are lost. It should be handled properly.
-        if ce.email:
-            for email in ce.email:
-                if email.address:
-                    if email.rel:
-                        if email.rel == gdata.data.WORK_REL:
-                            self.add_email_work(email.address)
-                        elif email.rel == gdata.data.HOME_REL:
-                            self.add_email_home(email.address)
-                        elif email.rel == gdata.data.OTHER_REL:
-                            self.add_email_other(email.address)
-                    else:
-                        self.add_email_other(email.address)
+    def _snarf_emails_from_person (self, person):
+        for email in person.get('emailAddresses', []):
+            addr = email.get('value', '')
+            if not addr:
+                continue
 
-                    if email.primary:
-                        self.set_email_prim(email.address)
+            etype = (email.get('type') or TYPE_OTHER).lower()
+            if etype == TYPE_WORK:
+                self.add_email_work(addr)
+            elif etype == TYPE_HOME:
+                self.add_email_home(addr)
+            else:
+                self.add_email_other(addr)
 
-    rel_map = {gdata.data.WORK_REL : 'Work',
-               gdata.data.HOME_REL : 'Home',
-               gdata.data.OTHER_REL : 'Other',}
+            metadata = email.get('metadata', {})
+            if metadata.get('primary'):
+                self.set_email_prim(addr)
 
-    def _snarf_postal_from_gce (self, ce):
+    def _snarf_postal_from_person (self, person):
         self.set_postal_prim_label(None)
 
-        if ce.structured_postal_address:
-            if len(ce.structured_postal_address) > 0:
-                for addr in ce.structured_postal_address:
-                    if addr.label:
-                        label = addr.label
-                    else:
-                        label = self.rel_map[addr.rel]
+        for addr in person.get('addresses', []):
+            atype = (addr.get('type') or TYPE_OTHER).capitalize()
 
-                    if addr.primary == 'true':
-                        ## What happens if more than one is marked as primary? Hm.
-                        self.set_postal_prim_label(label)
+            metadata = addr.get('metadata', {})
+            if metadata.get('primary'):
+                self.set_postal_prim_label(atype)
 
-                    ad = {'street'  : None,
-                          'city'    : None,
-                          'state'   : None,
-                          'country' : None,
-                          'zip'     : None,}
-                    
-                    fa = addr.formatted_address
-                    if fa:
-                        ad.update({'formatted_address' : fa.text})
+            ad = {
+                'street'  : addr.get('streetAddress'),
+                'city'    : addr.get('city'),
+                'state'   : addr.get('region'),
+                'country' : addr.get('country'),
+                'zip'     : addr.get('postalCode'),
+            }
 
-                    st = addr.street
-                    if st:
-                        ad.update({'street' : st.text})
+            fa = addr.get('formattedValue')
+            if fa:
+                ad['formatted_address'] = fa
 
-                    ci = addr.city
-                    if ci:
-                        ad.update({'city' : ci.text})
+            self.add_postal(atype, ad)
 
-                    st = addr.region
-                    if st:
-                        ad.update({'state' : st.text})
+    def _snarf_org_details_from_person (self, person):
+        orgs = person.get('organizations', [])
+        if orgs:
+            org = orgs[0]
+            if org.get('name'):
+                self.set_company(org['name'])
+            if org.get('title'):
+                self.set_title(org['title'])
+            if org.get('department'):
+                self.set_dept(org['department'])
 
-                    co = addr.country
-                    if co:
-                        ad.update({'country' : co.text})
+    def _snarf_phones_and_faxes_from_person (self, person):
+        for ph in person.get('phoneNumbers', []):
+            num = ph.get('value', '')
+            if not num:
+                continue
 
-                    zi = addr.postcode
-                    if zi:
-                        ad.update({'zip' : zi.text})
+            ptype = (ph.get('type') or TYPE_OTHER).lower()
 
-                    self.add_postal(label, ad)
+            if ptype == TYPE_HOME:
+                self.add_phone_home(('Home', num))
+            elif ptype == TYPE_WORK:
+                self.add_phone_work(('Work', num))
+            elif ptype == TYPE_MOBILE:
+                self.add_phone_mob(('Mobile', num))
+            elif ptype == TYPE_HOME_FAX.lower():
+                self.add_fax_home(('Home', num))
+            elif ptype == TYPE_WORK_FAX.lower():
+                self.add_fax_work(('Work', num))
+            else:
+                self.add_phone_other(('Other', num))
 
-    def _snarf_org_details_from_gce (self, ce):
-        if ce.organization:
-            if ce.organization.name and ce.organization.name.text:
-                self.set_company(ce.organization.name.text)
-
-            if ce.organization.title and ce.organization.title.text:
-                self.set_title(ce.organization.title.text)
-
-            if ce.organization.department:
-                self.set_dept(ce.organization.department.text)
-
-    def _snarf_phones_and_faxes_from_gce (self, ce):
-        if ce.phone_number:
-            for ph in ce.phone_number:
-                if not ph.text:
-                    continue
-
-                label = ph.label
-                num   = ph.text
-
-                if label:
-                    if re.search('Home', label):
-                        self.add_phone_home((label, num))
-                    elif re.search('(Work)|(Office)', label):
-                        self.add_phone_work((label, num))
-                    elif re.search('(Other)|(Misc)', label):
-                        self.add_phone_other((label, num))
-                    elif re.search('Mobile', label):
-                        self.add_phone_mob((label, num))
-    
-                    elif re.search('Home Fax', label):
-                        self.add_fax_home(('Home', num))
-                    elif re.search('Work Fax', label):
-                        self.add_fax_work(('Work', num))                    
+            metadata = ph.get('metadata', {})
+            if metadata.get('primary'):
+                if ptype in [TYPE_HOME_FAX.lower(), TYPE_WORK_FAX.lower()]:
+                    self.set_fax_prim(num)
                 else:
-                    if ph.rel == gdata.data.HOME_REL:
-                        self.add_phone_home(('Home', num))
-                    elif ph.rel == gdata.data.WORK_REL:
-                        self.add_phone_work(('Work', num))
-                    elif ph.rel == gdata.data.OTHER_REL:
-                        self.add_phone_other(('Other', num))
-                    elif ph.rel == gdata.data.MOBILE_REL:
-                        self.add_phone_mob(('Mobile', num))
-    
-                    elif ph.rel == gdata.data.HOME_FAX_REL:
-                        self.add_fax_home(('Home', num))
-                    elif ph.rel == gdata.data.WORK_FAX_REL:
-                        self.add_fax_work(('Work', num))
+                    self.set_phone_prim(num)
 
-                if ph.primary == 'true':
-                    if ph.rel in [gdata.data.HOME_REL, gdata.data.WORK_REL,
-                                  gdata.data.OTHER_REL, gdata.data.MOBILE_REL]:
-                        self.set_phone_prim(num)
-                    elif ph.rel in [gdata.data.HOME_FAX_REL,
-                                    gdata.data.WORK_FAX_REL]:
-                        self.set_fax_prim(num)
-
-    def _snarf_dates_from_gce (self, ce):
-        if ce.birthday and ce.birthday.when:
-            self.set_birthday(ce.birthday.when)
-
-        if ce.event and len(ce.event) > 0:
-            ann = utils.get_event_rel(ce.event, 'anniversary')
-            if ann:
-                self.set_anniv(ann.start)
-
-    def _snarf_websites_from_gce (self, ce):
-        if ce.website:
-            for site in ce.website:
-                if site.rel == 'home-page':
-                    self.add_web_home(site.href)
-                elif site.rel == 'work':
-                    self.add_web_work(site.href)
-
-    im_proto_label_map = {
-        'http://schemas.google.com/g/2005#AIM'         : 'AOL',
-        'http://schemas.google.com/g/2005#MSN'         : 'MSN',
-        'http://schemas.google.com/g/2005#YAHOO'       : 'Yahoo',
-        'http://schemas.google.com/g/2005#SKYPE'       : 'Skype',
-        'http://schemas.google.com/g/2005#QQ'          :  'QQ',
-        'http://schemas.google.com/g/2005#GOOGLE_TALK' : 'GTalk',
-        'http://schemas.google.com/g/2005#ICQ'         : 'ICQ',
-        'http://schemas.google.com/g/2005#JABBER'      : 'Jabber',
-    }
-
-    im_label_proto_map = {}
-    for key, val in im_proto_label_map.items():
-        im_label_proto_map.update({val : key})
-
-    def _snarf_ims_from_gce (self, ce):
-        ## FIXME: The Google IMs list implementation is rather complex. There
-        ## can be labels, rels, and protocols. They all appear
-        ## redundant. Perhaps label will not always be set? This needs to be
-        ## investigated. But this is a good start
-        if ce.im:
-            for im in ce.im:
-                label = 'Default'         # this should never go 'on the wire'
-
-                # The way Google uses protocol and label is a bit confusing...
-                if im.label:
-                    if not im.protocol:
-                        im.protocol = im.label
-
-                if im.protocol:
-                    if im.protocol in self.im_proto_label_map:
-                        label = self.im_proto_label_map[im.protocol]
-                    else:
-                        label = im.protocol
+    def _snarf_dates_from_person (self, person):
+        bdays = person.get('birthdays', [])
+        if bdays:
+            d = bdays[0].get('date', {})
+            if d:
+                # People API returns {year, month, day}
+                parts = []
+                if d.get('year'):
+                    parts.append(str(d['year']))
                 else:
-                    ## No protocol, and no label. We need to do some general
-                    ## stuff here...
-                    rel_re = 'http://schemas.google.com/g/2005#(.*)'
-                    res = re.search(rel_re, im.rel)
-                    if res:
-                        label = res.group(1)
-                    else:
-                        label = 'Other'   # Hm, alright. I give up
-                    
-                self.add_im(label, im.address)
-                if im.primary == 'true':
-                    self.set_im_prim(label)
+                    parts.append('0000')
+                parts.append('%02d' % d.get('month', 1))
+                parts.append('%02d' % d.get('day', 1))
+                self.set_birthday('-'.join(parts))
 
-    def _snarf_sync_tags_from_gce (self, ce):
-        if ce.user_defined_field:
+        events = person.get('events', [])
+        for ev in events:
+            if ev.get('type') == 'anniversary':
+                d = ev.get('date', {})
+                if d:
+                    parts = []
+                    if d.get('year'):
+                        parts.append(str(d['year']))
+                    else:
+                        parts.append('0000')
+                    parts.append('%02d' % d.get('month', 1))
+                    parts.append('%02d' % d.get('day', 1))
+                    self.set_anniv('-'.join(parts))
+
+    def _snarf_websites_from_person (self, person):
+        for url in person.get('urls', []):
+            href = url.get('value', '')
+            if not href:
+                continue
+            utype = (url.get('type') or '').lower()
+            if utype == 'homePage' or utype == 'home':
+                self.add_web_home(href)
+            elif utype == 'work':
+                self.add_web_work(href)
+            else:
+                self.add_web_home(href)
+
+    def _snarf_ims_from_person (self, person):
+        for im in person.get('imClients', []):
+            username = im.get('username', '')
+            if not username:
+                continue
+
+            proto = (im.get('protocol') or '').lower()
+            label = IM_PROTO_LABEL.get(proto, proto if proto else 'Other')
+
+            self.add_im(label, username)
+
+            metadata = im.get('metadata', {})
+            if metadata.get('primary'):
+                self.set_im_prim(label)
+
+    def _snarf_sync_tags_from_person (self, person):
+        udps = person.get('userDefined', [])
+        if udps:
             keyprefix = (self.get_config().get_label_prefix() +
                          self.get_config().get_label_separator())
-            stgs = folder_gc.get_udps_by_key_prefix(
-                ce.user_defined_field, keyprefix)
-
+            stgs = folder_gc.get_udps_by_key_prefix(udps, keyprefix)
             self.set_sync_tags(stgs)
 
-    def _snarf_custom_props_from_gce (self, ce):
-        ## Iterate through the user_defined_propertie and do something with
-        ## them...
+    def _snarf_custom_props_from_person (self, person):
         stag_re = (self.get_config().get_label_prefix() +
                    self.get_config().get_label_separator())
-        if ce.user_defined_field:
-            for ep in ce.user_defined_field:
-                if ep.key == 'created':
-                    self.set_created(ep.value)
-                elif not re.search(stag_re, ep.key):
-                    self.add_custom(ep.key, ep.value)
+        for ep in person.get('userDefined', []):
+            key = ep.get('key', '')
+            val = ep.get('value', '')
+            if key == 'created':
+                self.set_created(val)
+            elif not re.search(stag_re, key):
+                self.add_custom(key, val)
 
-    def _is_valid_ph (self, phone, type):
+    ##
+    ## Internal functions — add (Contact props → Person dict)
+    ##
+
+    def _is_valid_ph (self, phone, ptype):
         phone = phone.strip()
         valid = True
-        if (phone == '' or phone == '-' or phone == '_'):
+        if phone in ('', '-', '_'):
             valid = False
-
         if not valid:
             logging.info('Invalid %s number for contact %s. Skipping field',
-                         type, self.get_name())
-
+                         ptype, self.get_name())
         return valid
 
-    def _is_invalid_ph (self, phone, type):
-        return (not self._is_valid_ph(phone, type))
+    def _is_invalid_ph (self, phone, ptype):
+        return not self._is_valid_ph(phone, ptype)
 
-    def _add_itemid_to_gce (self, gce):
-        itemid = self.get_itemid()
-        if itemid:
-            gce.id = atom.data.Id(text=itemid)
-        else:
-            pass
-            # logging.debug('Potential new contact to GC: %s',
-            #               self.get_name())
-
-        etag = self.get_etag()
-        if etag:
-            gce.etag = etag
-
-    def _add_names_gender_to_gce (self, gce):
-        """Populate the Name fields in gce, which is a Google ContactEntry
-        object. Values for the name fields are obtained from the current
-        objects property fields that should have been set earlier"""
-
-        n = gdata.data.Name()
+    def _add_names_gender_to_person (self, person):
+        name = {}
 
         text = self.get_firstname()
         if text:
-            n.given_name = gdata.data.GivenName(text=text)
+            name['givenName'] = text
 
         text = self.get_lastname()
         if text:
-            n.family_name = gdata.data.FamilyName(text=text)
+            name['familyName'] = text
 
         text = self.get_middlename()
         if text:
-            n.additional_name = gdata.data.AdditionalName(text=text)
+            name['middleName'] = text
 
         text = self.get_name()
         if text:
-            n.full_name = gdata.data.FullName(text=text)
+            name['displayName'] = text
 
         text = self.get_suffix()
         if text:
-            n.name_suffix = gdata.data.NameSuffix(text=text)
+            name['honorificSuffix'] = text
 
         text = self.get_prefix()
         if text:
-            n.name_prefix = gdata.data.NamePrefix(text=text)
+            name['honorificPrefix'] = text
 
-        gce.name = n
+        if name:
+            person['names'] = [name]
 
         text = self.get_nickname()
         if text:
-            gce.nickname = gdata.contacts.data.NickName(text=text)
+            person['nicknames'] = [{'value': text}]
 
         text = self.get_gender()
         if text:
-            gce.gender = gdata.contacts.data.Gender(value=text)
+            person['genders'] = [{'value': text}]
 
-
-    def _add_notes_to_gce (self, gce):
-        """Append the Notes field to the specified ContactEntry object. As of
-        now only the first Notes entry is copied. In future the remaining
-        ones will be mapped into the custom fields section."""
-
-        ## FIXME: Google allows only a single notes field, Others, like BBDB,
-        ## can have multiple. For now just deal with the first entry and
-        ## ignore the rest. Eventually we could put these things in custom
-        ## fields...
-
+    def _add_notes_to_person (self, person):
         notes = self.get_notes()
         if notes:
-            gce.content = atom.data.Content(text=notes[0])
+            person['biographies'] = [{'value': notes[0]}]
 
-    def _add_group_membership_to_gce (self, gce):
-        """Append the group IDs that denote group membership to the specified
-        ContactEntry object."""
-
-        gmail_owner = self.get_curr_gmail_userid()
-
+    def _add_group_membership_to_person (self, person):
         gid = self.get_folder().get_itemid()
-        gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
-        gce.group_membership_info.append(gidm)
-
-        if not self.get_custom('gids'):
-            return
+        memberships = [{
+            'contactGroupMembership': {
+                'contactGroupResourceName': gid
+            }
+        }]
 
         js = self.get_custom('gids')
-        js = js.replace('\\', '')
-        gids = demjson.decode(js)
+        if js:
+            js = js.replace('\\', '')
+            gids = demjson.decode(js)
+            for g in gids:
+                memberships.append({
+                    'contactGroupMembership': {
+                        'contactGroupResourceName': g
+                    }
+                })
 
-        retained_gids = []
-        for gid in gids:
-            gid_owner = self.get_gid_gmail_userid(gid)
-            if gid_owner == gmail_owner:
-                gidm = gdata.contacts.data.GroupMembershipInfo(href=gid)
-                gce.group_membership_info.append(gidm)
-            else:
-                logging.debug(('Skipped mismatched membership in gid: %s; ' +
-                              'Current Owner: %s'), gid, gmail_owner)
-                retained_gids.append(gid)
+        person['memberships'] = memberships
 
-        self.update_custom({'gids' : demjson.encode(retained_gids)})
-
-    def _add_emails_to_gce (self, gce):
-        """Append the email addresses from the current Contact object to the
-        specified ContactEntry object."""
-
+    def _add_emails_to_person (self, person):
         email_prim = self.get_email_prim()
+        emails = []
 
         for email in self.get_email_home():
             if not email:
                 continue
-            prim = 'true' if email == email_prim else 'false'
-            em = gdata.data.Email(address=email, primary=prim,
-                                  rel=gdata.data.HOME_REL)
-            gce.email.append(em)
+            entry = {'value': email, 'type': TYPE_HOME}
+            if email == email_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            emails.append(entry)
 
         for email in self.get_email_work():
             if not email:
                 continue
-            prim = 'true' if email == email_prim else 'false'
-            em = gdata.data.Email(address=email, primary=prim,
-                                  rel=gdata.data.WORK_REL)
-            gce.email.append(em)
+            entry = {'value': email, 'type': TYPE_WORK}
+            if email == email_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            emails.append(entry)
 
         for email in self.get_email_other():
             if not email:
                 continue
-            prim = 'true' if email == email_prim else 'false'
-            em = gdata.data.Email(address=email, primary=prim,
-                                  rel=gdata.data.OTHER_REL)
-            gce.email.append(em)
+            entry = {'value': email, 'type': TYPE_OTHER}
+            if email == email_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            emails.append(entry)
 
+        if emails:
+            person['emailAddresses'] = emails
 
-    def _add_postal_to_gce (self, gce):
-        """Insert the address fields from current contact object into the
-        ContactEntry object."""
-
+    def _add_postal_to_person (self, person):
         postals = self.get_postal(as_array=True)
+        addresses = []
+
         for label, postal in postals:
-            if postal:
-                prim = 'true' if self.is_postal_prim(label) else 'false'
-                add  = gdata.data.StructuredPostalAddress(
-                    label=label, primary=prim)
+            if not postal:
+                continue
 
-                if postal['street']:
-                    strt = gdata.data.Street(text=postal['street'])
-                    add.street = strt
+            addr = {'type': label}
 
-                if postal['city']:
-                    city = gdata.data.City(text=postal['city'])
-                    add.city = city
+            if postal.get('street'):
+                addr['streetAddress'] = postal['street']
+            if postal.get('city'):
+                addr['city'] = postal['city']
+            if postal.get('state'):
+                addr['region'] = postal['state']
+            if postal.get('country'):
+                addr['country'] = postal['country']
+            if postal.get('zip'):
+                addr['postalCode'] = postal['zip']
+            if postal.get('formatted_address'):
+                addr['formattedValue'] = postal['formatted_address']
 
-                if postal['state']:
-                    state = gdata.data.Region(text=postal['state'])
-                    add.region = state
+            if self.is_postal_prim(label):
+                addr.setdefault('metadata', {})['primary'] = True
 
-                if postal['country']:
-                    country = gdata.data.Country(text=postal['country'])
-                    add.country = country
+            addresses.append(addr)
 
-                if postal['zip']:
-                    postcode = gdata.data.Postcode(text=postal['zip'])
-                    add.postcode = postcode
+        if addresses:
+            person['addresses'] = addresses
 
-                k = 'formatted_address'
-                fa = postal[k] if k in postal else None
-                if fa:
-                    fad = gdata.data.FormattedAddress(text=fa)
-                    add.formatted_address = fad
-
-                gce.structured_postal_address.append(add)
-
-    def _add_org_details_to_gce (self, gce):
-        """Insert the contact's company, department and other such
-        organization details into the specified ContactEntry."""
-
+    def _add_org_details_to_person (self, person):
         company = self.get_company()
         title   = self.get_title()
         dept    = self.get_dept()
 
-        on = gdata.data.OrgName(text=company)    if company else None
-        ot = gdata.data.OrgTitle(text=title)     if title   else None
-        od = gdata.data.OrgDepartment(text=dept) if dept    else None
+        if company or title or dept:
+            org = {'type': TYPE_WORK}
+            if company:
+                org['name'] = company
+            if title:
+                org['title'] = title
+            if dept:
+                org['department'] = dept
 
-        org = gdata.data.Organization(primary='true', name=on, title=ot,
-                                      department=od, rel=gdata.data.WORK_REL)
-        gce.organization = org
+            person['organizations'] = [org]
 
-
-    def _add_phones_and_faxes_to_gce (self, gce):
-        """Append the contact's phone details into the specified ContactEntr
-        object."""
-
-        ph_prim = self.get_phone_prim()
+    def _add_phones_and_faxes_to_person (self, person):
+        ph_prim  = self.get_phone_prim()
+        fax_prim = self.get_fax_prim()
+        phones = []
 
         for label, ph in self.get_phone_home():
             if not ph or self._is_invalid_ph(ph, 'Home'):
                 continue
-            prim = 'true' if ph == ph_prim else 'false'
-            phone = gdata.data.PhoneNumber(text=ph, primary=prim,
-                                           label=label)
-            gce.phone_number.append(phone)
+            entry = {'value': ph, 'type': TYPE_HOME}
+            if ph == ph_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            phones.append(entry)
 
         for label, ph in self.get_phone_work():
             if not ph or self._is_invalid_ph(ph, 'Work'):
                 continue
-            prim = 'true' if ph == ph_prim else 'false'
-            phone = gdata.data.PhoneNumber(text=ph, primary=prim,
-                                           label=label)
-            gce.phone_number.append(phone)
+            entry = {'value': ph, 'type': TYPE_WORK}
+            if ph == ph_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            phones.append(entry)
 
         for label, ph in self.get_phone_other():
             if not ph or self._is_invalid_ph(ph, 'Other'):
                 continue
-            prim = 'true' if ph == ph_prim else 'false'
-            phone = gdata.data.PhoneNumber(text=ph, primary=prim,
-                                           label=label)
-            gce.phone_number.append(phone)
+            entry = {'value': ph, 'type': TYPE_OTHER}
+            if ph == ph_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            phones.append(entry)
 
         for label, ph in self.get_phone_mob():
             if not ph or self._is_invalid_ph(ph, 'Mobile'):
                 continue
-            prim = 'true' if ph == ph_prim else 'false'
-            phone = gdata.data.PhoneNumber(text=ph, primary=prim,
-                                           label=label)
-            gce.phone_number.append(phone)
-
-        fax_prim = self.get_fax_prim()
+            entry = {'value': ph, 'type': TYPE_MOBILE}
+            if ph == ph_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            phones.append(entry)
 
         for label, fa in self.get_fax_home():
             if not fa or self._is_invalid_ph(fa, 'Home Fax'):
                 continue
-            prim = 'true' if fa == fax_prim else 'false'
-            fax  = gdata.data.PhoneNumber(text=fa, primary=prim,
-                                           label=label)
-            gce.phone_number.append(fax)
+            entry = {'value': fa, 'type': TYPE_HOME_FAX}
+            if fa == fax_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            phones.append(entry)
 
         for label, fa in self.get_fax_work():
             if not fa or self._is_invalid_ph(fa, 'Work Fax'):
                 continue
-            prim = 'true' if fa == fax_prim else 'false'
-            fax  = gdata.data.PhoneNumber(text=fa, primary=prim,
-                                           label=label)
-            gce.phone_number.append(fax)
+            entry = {'value': fa, 'type': TYPE_WORK_FAX}
+            if fa == fax_prim:
+                entry.setdefault('metadata', {})['primary'] = True
+            phones.append(entry)
 
-    def _add_dates_to_gce (self, gce):
-        """Append the date entries such as birthday and anniversary to the
-        specified ContactEntry"""
+        if phones:
+            person['phoneNumbers'] = phones
 
+    def _add_dates_to_person (self, person):
         dt = self.get_birthday()
         if dt:
-            gce.birthday = gdata.contacts.data.Birthday(when=dt)
+            date = self._parse_date_str(dt)
+            if date:
+                person['birthdays'] = [{'date': date}]
 
         dt = self.get_anniv()
         if dt:
-            date = gdata.data.When(start=dt)
-            ann  = gdata.contacts.data.Event(when=date, rel='anniversary')
-            gce.event.append(ann)
+            date = self._parse_date_str(dt)
+            if date:
+                person['events'] = [{'date': date, 'type': 'anniversary'}]
 
-    def _add_websites_to_gce (self, gce):
-        """Append any Web URLs from the current contact to the specified
-        ContatEntry object."""
+    def _parse_date_str (self, dt_str):
+        """Parse a date string like '2000-01-15' into a People API Date
+        dict like {'year': 2000, 'month': 1, 'day': 15}."""
+        try:
+            parts = dt_str.split('-')
+            d = {}
+            if len(parts) >= 1 and parts[0] != '0000':
+                d['year'] = int(parts[0])
+            if len(parts) >= 2:
+                d['month'] = int(parts[1])
+            if len(parts) >= 3:
+                d['day'] = int(parts[2])
+            return d if d else None
+        except (ValueError, AttributeError):
+            return None
 
-        web_prim = self.get_web_prim()
+    def _add_websites_to_person (self, person):
+        urls = []
 
         for web in self.get_web_home():
-            if not web:
-                continue
-            prim = 'true' if web == web_prim else 'false'
-            home = gdata.contacts.data.Website(href=web, primary=prim,
-                                               rel='home-page')
-            gce.website.append(home)
+            if web:
+                urls.append({'value': web, 'type': 'homePage'})
 
         for web in self.get_web_work():
-            if not web:
-                continue
-            prim = 'true' if web == web_prim else 'false'
-            work = gdata.contacts.data.Website(href=web, primary=prim,
-                                               rel='work')
-            gce.website.append(work)
+            if web:
+                urls.append({'value': web, 'type': 'work'})
 
-    def _add_ims_to_gce (self, gce):
+        if urls:
+            person['urls'] = urls
+
+    def _add_ims_to_person (self, person):
         im_prim = self.get_im_prim()
+        ims = []
+
         for label, addr in self.get_im().items():
-            prim  = 'true' if im_prim == label else 'false'
-            rel   = 'http://schemas.google.com/g/2005#other'
-            proto = None
+            proto = IM_LABEL_PROTO.get(label, label)
 
-            if label in self.im_label_proto_map:
-                proto = self.im_label_proto_map[label]
-            else:
-                proto = label
+            entry = {'username': addr, 'protocol': proto, 'type': TYPE_OTHER}
+            if im_prim == label:
+                entry.setdefault('metadata', {})['primary'] = True
+            ims.append(entry)
 
-            im = gdata.data.Im(protocol=proto, rel=rel,
-                               address=addr, primary=prim)
-            gce.im.append(im)
+        if ims:
+            person['imClients'] = ims
 
-    def _add_sync_tags_to_gce (self, gce):
-        conf     = self.get_config()
-        pname_re = conf.get_profile_name_re()
-        label    = conf.make_sync_label(pname_re, self.get_dbid())
+    def _add_sync_tags_to_person (self, person):
+        udps = person.get('userDefined', [])
 
-        ## These will be stored as extended properties. Note that if this
-        ## routine keeps appending the sync_tags to the user_defined_fields,
-        ## with no regard for whether it already exists or not...
         for key, val in self.get_sync_tags().items():
-            ## FIXME: This was put in here for a reason. I think it had
-            ## something to do with "reproducing" sync labels containing the
-            ## ID on the local end itself. This was the easiest fix,
-            ## IIRC. This clearly conflicts with the present need. We need to
-            ## solve this problem - and apply it for all the DBs.
+            udps.append({'key': key, 'value': val})
 
-            # # Skip any sync tag with GCIDs as values.
-            # if re.search(label, key):
-            #     continue
+        if udps:
+            person['userDefined'] = udps
 
-            ud       = gdata.contacts.data.UserDefinedField()
-            ud.key   = key
-            ud.value = val
-            gce.user_defined_field.append(ud)
+    def _add_custom_props_to_person (self, person):
+        udps = person.get('userDefined', [])
 
-    def _add_custom_props_to_gce (self, gce):
         c = self.get_created()
         if c:
-            ud       = gdata.contacts.data.UserDefinedField()
-            ud.key   = 'created'
-            ud.value = c.isoformat() if isinstance(c, datetime) else c
-            gce.user_defined_field.append(ud)
+            val = c.isoformat() if isinstance(c, datetime) else c
+            udps.append({'key': 'created', 'value': val})
 
         for key, val in self.get_custom().items():
-            # We skip certain keys that have been processed already and
-            # populated into other elements of the contact entry.
-            if val and not key in []:
-                ud       = gdata.contacts.data.UserDefinedField()
-                ud.key   = key
+            if val:
                 val = val.isoformat() if isinstance(val, datetime) else val
-                ud.value = val
-                gce.user_defined_field.append(ud)
-                
-    ##
-    ## Temporarily placing keeping this stuff here while we start by cleaning
-    ## up pimdb_gc.py
-    ##
+                udps.append({'key': key, 'value': val})
 
-    # ## We will delete this guy very soon.
-
-    # def add_olid_to_ce (self, ce, olid, replace=True):
-    #     """Insert the Outlook EntryID for a contact as a  userdefined property
-    #     in the Google ContactEntry and returned the modified ContactEntry.
-
-    #     olid is the values as returned by GetProps - and, as a result a binary
-    #     value. We base64 encode it before inserting into ContactEntry.
-
-    #     If replace is True, then the first existing olid entry (if any) will
-    #     be replaced with teh provided value. If it is False, then it is
-    #     appended to existing list."""
-
-    #     entryid_b64 = base64.b64encode(olid)
-    #     ud       = gdata.contacts.data.UserDefinedField()
-    #     ud.key   = 'olid'
-    #     ud.value = entryid_b64
-
-    #     if replace and len(ce.user_defined_field) > 0:
-    #         ce.user_defined_field.pop()
-
-    #     ce.user_defined_field.append(ud)
-
-    #     return ce
+        if udps:
+            person['userDefined'] = udps
