@@ -201,6 +201,20 @@ def main ():
             shutil.copyfile(cs_file, dest)
         # Point cs_file to the copy inside gc_creds/
         cs_file = dest
+    else:
+        # No --cs provided; look for a cached client secrets .json in gc_creds/
+        import glob
+        jsons = [f for f in glob.glob(os.path.join(gc_creds_dir, '*.json'))
+                 if os.path.basename(f) not in ('state.json', 'config.json')]
+        if jsons:
+            cs_file = jsons[0]
+            logging.info('Using cached client secrets: %s', cs_file)
+        else:
+            print('ERROR: No --cs provided and no cached credentials in %s/'
+                  % gc_creds_dir)
+            print('First run requires: python test_gc.py '
+                  '--cs /path/to/credentials.json')
+            sys.exit(1)
 
     config = Config(asynk_base_dir='../../', user_dir=gc_creds_dir)
 
