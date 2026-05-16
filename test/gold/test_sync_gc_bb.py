@@ -192,8 +192,19 @@ class TestSyncGCBB(unittest.TestCase):
             raise unittest.SkipTest(
                 'Could not connect to Google: %s' % e)
 
-        ## Create a dedicated test group
-        cls.test_gid = cls.gcdb.new_folder(TEST_GROUP)
+        ## Create (or reuse) a dedicated test group
+        try:
+            cls.test_gid = cls.gcdb.new_folder(TEST_GROUP)
+        except Exception:
+            ## Group may already exist from a previous incomplete run
+            cls.test_gid = None
+            for f in cls.gcdb.get_contacts_folders():
+                if f.get_name() == TEST_GROUP:
+                    cls.test_gid = f.get_itemid()
+                    break
+            if cls.test_gid is None:
+                raise
+
         cls.gc_folder = None
         for f in cls.gcdb.get_contacts_folders():
             if f.get_itemid() == cls.test_gid:
@@ -384,6 +395,37 @@ class TestSyncGCBB(unittest.TestCase):
         self.assertTrue(result)
 
         self.assertEqual(count_gc_contacts(self.gc_folder), 2)
+
+    ## -----------------------------------------------------------------
+    ## Test 7: Batch chunking
+    ## -----------------------------------------------------------------
+
+    def test_g_batch_chunking (self):
+        """Sync enough contacts to trigger multiple API batches.
+
+        Instead of creating 200+ contacts (slow and quota-heavy), we
+        temporarily lower BATCH_SIZE to 5 and sync 12 contacts.  This
+        exercises the exact same chunking code paths.
+        """
+        from folder_gc import GCContactsFolder
+        orig_batch = GCContactsFolder.BATCH_SIZE
+        GCContactsFolder.BATCH_SIZE = 5
+        try:
+            N = 12
+            bbdb, bbf = open_bb(BB_FILE)
+            for i in range(N):
+                make_bb_contact(bbf, 'Chunk%02d' % i, 'Test')
+            bbf.save()
+
+            bbdb, bbf = reopen_bb(BB_FILE)
+            result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+            self.assertTrue(result)
+
+            cnt = count_gc_contacts(self.gc_folder)
+            self.assertEqual(cnt, N,
+                             'Expected %d contacts in GC, got %d' % (N, cnt))
+        finally:
+            GCContactsFolder.BATCH_SIZE = orig_batch
 
 
 ## ---------------------------------------------------------------------------
