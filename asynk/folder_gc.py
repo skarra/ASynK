@@ -17,60 +17,68 @@
 ## You should have a copy of the license in the doc/ directory of ASynK.  If
 ## not, see <http://www.gnu.org/licenses/>.
 ##
+## ####
+##
+## Google Contacts Folder implementation using the People API v1.
+## Replaces the old GData/Atom-based implementation.
+##
 
 import copy, logging, re
-from   abc            import ABCMeta, abstractmethod
+
 from folder import Folder
-from contact_gc import GCContact
-import xml.etree.ElementTree as ET
+
+try:
+    from contact_gc import GCContact
+except Exception:
+    GCContact = None
+    logging.warning('contact_gc not yet migrated to People API; '
+                    'contact operations will be unavailable.')
 
 import utils
-import atom, gdata.contacts.client
 
-class AddHeader:
-    def __init__ (self):
-        pass
+## personFields to request when listing connections. Must match the
+## definition in pimdb_gc.py.
+PERSON_FIELDS = ','.join([
+    'names', 'nicknames', 'emailAddresses', 'phoneNumbers', 'addresses',
+    'organizations', 'birthdays', 'events', 'urls', 'imClients',
+    'biographies', 'memberships', 'userDefined', 'photos', 'genders',
+    'metadata',
+])
 
-    def modify_request (self, http_request):
-        http_request.headers["If-Match"] = "*"
-
-eh = None # AddHeader()
+## ---------------------------------------------------------------------------
+## Helpers
+## ---------------------------------------------------------------------------
 
 def get_udp_by_key (udps, key):
-    """Get the first User Defined Property from the given list that has the
-    specified key"""
+    """Get the value of the first userDefined property with the specified key.
+
+    udps is a list of dicts like [{"key": "...", "value": "..."}].
+    """
+    if not udps:
+        return None
 
     for ep in udps:
-        if ep.key == key:
-            if ep.value:
-                return ep.value
-            else:
-                value = 'Hrrmph. '
-                print('Value: ', value)
+        if ep.get('key') == key:
+            return ep.get('value')
 
     return None
 
 def get_udps_by_key_prefix (udps, keyprefix):
-    """Get a dictionary of all the user defind properties whose keys have a
-    prefix match with the specified string"""
+    """Get a dict of all userDefined properties whose keys match the given
+    prefix."""
 
     ret = {}
+    if not udps:
+        return ret
+
     for ep in udps:
-        if re.search(('^' + keyprefix), ep.key):
-            if ep.value:
-                ret.update({ep.key : ep.value})
-            else:
-                value = 'Hrrmph. '
-                print('Value: ', value)
+        k = ep.get('key', '')
+        if k.startswith(keyprefix):
+            v = ep.get('value')
+            if v:
+                ret[k] = v
 
     return ret
-
-def sync_status_str (const):
-    for name, val in globals().items():
-        if name[:5] == 'SYNC_' and val == const:
-            return name
-
-    return None
 
 SYNC_OK                    = 200
 SYNC_CREATED               = 201
@@ -81,14 +89,15 @@ SYNC_FORBIDDEN             = 403
 SYNC_CONFLICT              = 409
 SYNC_INTERNAL_SERVER_ERROR = 500
 
-## Unlike the Outlook case, we will avoid doing another level of abstract
-## class. When we get to implementing the tasks stuff we can evolve the class
-## structure as well. for now, taking the easy way out
+## ---------------------------------------------------------------------------
+## GCContactsFolder
+## ---------------------------------------------------------------------------
 
 class GCContactsFolder(Folder):
-    """A class that wraps a Google Contacts folder of label."""
+    """A class that wraps a Google Contacts folder (contact group) using
+    the People API v1."""
 
-    #    __metaclass__ = ABCMeta
+    BATCH_SIZE = 200   # People API allows up to 200 per batch
 
     def __init__ (self, db, gid, gn, gcentry):
         Folder.__init__(self, db)
@@ -97,7 +106,7 @@ class GCContactsFolder(Folder):
         self.set_name(gn)
         self.set_gcentry(gcentry)
         self.set_type(Folder.CONTACT_t)
-        self.set_gdc(db.get_gdc())
+        self.set_service(db.get_service())
 
         self.reset_contacts()
 
@@ -106,7 +115,7 @@ class GCContactsFolder(Folder):
     ##
 
     def get_batch_size (self):
-        return 100
+        return self.BATCH_SIZE
 
     def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         """See the documentation in folder.Folder"""
@@ -124,80 +133,57 @@ class GCContactsFolder(Folder):
                 if pdb1id == self.get_dbid():
                     sl.add_del(x, y)
                 else:
-                    sl.add_del(y,x)
+                    sl.add_del(y, x)
 
         logging.info('Querying Google for status of Contact Entries...')
         stag = conf.make_sync_label(pname, destid)
 
-        ## FIXME: The following commented out code appears very fishy. I am
-        ## not able to recall why these two have to be used in sorted order. I
-        ## am pretty sure there was some sense behind it, but as of now db1
-        ## and db2 are not really being used; so the code works even without
-        ## this "sorted" behaviour... Hm, this really should go, but I am
-        ## being conservative here and leving the stuff commented out so we
-        ## can come back to it later if required.
-
-        # ## Sort the DBIds so dest1 has the 'lower' ID
-        # db1 = self.get_db().get_dbid()
-        # if db1 > destid:
-        #     db2 = db1
-        #     db1 = destid
-        # else:
-        #     db2 = destid
-
         if not updated_min:
             updated_min = conf.get_last_sync_stop(pname)
 
-        # FIXME: We are fetching the group feed a second time. Ideally we
-        # shoul dbe able to everything we want with the feed already fetched
-        # above. This has a performance implication for groups with a large
-        # number of items. Will fix this once functionality is validated.
-        feed = self._get_group_feed(updated_min=updated_min, showdeleted='false')
+        persons = self._get_group_contacts(updated_min=updated_min)
 
-        logging.info('Response recieved from Google. Processing...')
+        logging.info('Response received from Google. Processing...')
 
-        if not feed.entry:
-            logging.info('No entries in feed.')
-
+        if not persons:
+            logging.info('No entries in response.')
             for x in kss:
                 sl.add_unmod(x)
-
             return
 
         skip     = 0
         etag_cnt = 0
 
-        for i, entry in enumerate(feed.entry):
-            gcid = utils.get_link_rel(entry.link, 'edit')
-            gcid = GCContact.normalize_gcid(gcid)
-            olid = get_udp_by_key(entry.user_defined_field, stag)
-            etag = entry.etag
-            epd  = entry.deleted
-            name = None
-            if entry.name:
-                if entry.name.full_name:
-                    name = entry.name.full_name.text
-                elif entry.name.family_name:
-                    name = entry.name.family_name.text
-                elif entry.name.given_name:
-                    name = entry.name.given_name.text
+        for i, person in enumerate(persons):
+            gcid = person.get('resourceName', '')
+            olid = get_udp_by_key(person.get('userDefined'), stag)
+            etag = person.get('etag')
 
-            if epd:
+            ## Check if the contact was deleted
+            deleted = person.get('metadata', {}).get('deleted', False)
+
+            ## Extract a display name for logging
+            name = None
+            names = person.get('names', [])
+            if names:
+                n = names[0]
+                name = (n.get('displayName') or n.get('familyName')
+                        or n.get('givenName'))
+
+            if deleted:
                 if olid:
                     pass
                     # We will trust our own delete logic...
-                    # sl.add_del(gcid)
                 else:
-                    # Deleted before it got synched. Get on with life
                     skip += 1
                     continue
             else:
                 if olid:
-                    logging.debug('Modified Google Contact: %20s %s', 
+                    logging.debug('Modified Google Contact: %20s %s',
                                   name, gcid)
                     sl.add_mod(gcid, olid)
                 else:
-                    logging.debug('New      Google Contact: %20s %s', 
+                    logging.debug('New      Google Contact: %20s %s',
                                   name, gcid)
                     sl.add_new(gcid)
 
@@ -222,24 +208,37 @@ class GCContactsFolder(Folder):
         for locid, con in self.get_contacts().items():
             if stag in con.get_sync_tags():
                 t, remid = con.get_sync_tags(stag)[0]
-                ret.update({locid : remid})
+                ret[locid] = remid
 
         return ret
 
     def find_item (self, itemid):
-        gce = self.get_gdc().GetContact(itemid)
-        gc  = GCContact(self, gce=gce)
-
+        """Fetch a single contact by resourceName and return a GCContact."""
+        svc = self.get_service()
+        person = svc.people().get(
+            resourceName=itemid,
+            personFields=PERSON_FIELDS).execute()
+        gc = GCContact(self, person=person)
         return gc
 
     def find_items (self, itemids):
-        """See documentation in folder.Folder"""
-        
-        ## Note that it is more efficient to do a single call to fetch all the
-        ## entire and then build GCContact objects, than call find_item
-        ## iteratively...
-        res, ces = self._fetch_gc_entries(itemids)
-        ret = [GCContact(self, gce=ce) for ce in ces]
+        """Fetch multiple contacts by resourceName. Returns a list of
+        GCContact objects."""
+
+        ret = []
+        svc = self.get_service()
+
+        ## People API getBatchGet supports up to 200 resource names
+        for i in range(0, len(itemids), self.BATCH_SIZE):
+            batch = itemids[i:i + self.BATCH_SIZE]
+            resp = svc.people().getBatchGet(
+                resourceNames=batch,
+                personFields=PERSON_FIELDS).execute()
+
+            for pr in resp.get('responses', []):
+                person = pr.get('person')
+                if person:
+                    ret.append(GCContact(self, person=person))
 
         return ret
 
@@ -250,112 +249,52 @@ class GCContactsFolder(Folder):
         c       = self.get_config()
         pname   = src_sl.get_pname()
 
-        src_sync_tag = c.make_sync_label(src_sl.get_pname(), src_dbid)
-        dst_sync_tag = c.make_sync_label(src_sl.get_pname(), my_dbid)
+        src_sync_tag = c.make_sync_label(pname, src_dbid)
+        dst_sync_tag = c.make_sync_label(pname, my_dbid)
 
-        f     = self.get_db().new_feed()
-        stats = BatchState(1, f, 'insert', sync_tag=dst_sync_tag)
-
+        svc     = self.get_service()
         success = True
-        for item in items:
-            con_itemid = item.get_itemid_from_synctags(pname, 'gc')
-            gc  = GCContact(self, con=item, con_itemid=con_itemid)
-            bid = item.get_itemid()
-            gc.update_sync_tags(src_sync_tag, bid)
 
-            gce = gc.get_gce()
+        ## Build contacts in batches of BATCH_SIZE
+        for i in range(0, len(items), self.BATCH_SIZE):
+            batch_items = items[i:i + self.BATCH_SIZE]
+            contacts = []
+            bid_map = {}   # index → (bid, orig_item)
 
-            stats.add_con(bid, new=gc, orig=item)
-            f.add_insert(entry=gce, batch_id_string=bid)
-            stats.incr_cnt()
-            
-            if stats.get_cnt() % self.get_batch_size() == 0:
-                # Feeds have to be less than 1MB. We can push this some
-                # more. FIXME.
-                logging.debug('Uploading new batch # %02d to Google. ' +
-                              'Count: %3d. Size: %6.2fK',
-                              stats.get_bnum(), stats.get_cnt(),
-                              stats.get_size())
-                rf = self.get_db().exec_batch(f)
-                succ, cons = stats.process_batch_response(rf)
-                success = success and succ
+            for j, item in enumerate(batch_items):
+                con_itemid = item.get_itemid_from_synctags(pname, 'gc')
+                gc  = GCContact(self, con=item, con_itemid=con_itemid)
+                bid = item.get_itemid()
+                gc.update_sync_tags(src_sync_tag, bid)
 
-                f = self.get_db().new_feed()
-                stats = BatchState(stats.get_bnum()+1, f, 'insert',
-                                   sync_tag=dst_sync_tag)
-           
-        # Upload any leftovers
-        if stats.get_cnt() > 0:
-            logging.debug('New Batch # %02d. Count: %3d. Size: %5.2fK',
-                          stats.get_bnum(), stats.get_cnt(),
-                          stats.get_size())
-            rf = self.get_db().exec_batch(f)
-            succ, cons = stats.process_batch_response(rf)
-            success = success and succ
+                person_body = gc.init_person_from_props()
+                contacts.append({'contactPerson': person_body})
+                bid_map[j] = (bid, gc, item)
+
+            batch_num = (i // self.BATCH_SIZE) + 1
+            logging.debug('Uploading new batch #%02d to Google. Count: %d',
+                          batch_num, len(contacts))
+
+            try:
+                resp = svc.people().batchCreateContacts(
+                    body={'contacts': contacts,
+                          'readMask': PERSON_FIELDS}).execute()
+
+                for j, cp in enumerate(resp.get('createdPeople', [])):
+                    person = cp.get('person', {})
+                    gcid = person.get('resourceName', '')
+                    bid, gc, orig = bid_map[j]
+                    orig.update_sync_tags(dst_sync_tag, gcid)
+                    logging.info('Successfully created gmail entry for %30s (%s)',
+                                 gc.get_disp_name(), orig.get_itemid())
+            except Exception as e:
+                logging.error('Batch create failed: %s', e)
+                success = False
 
         return success
 
-    def _fetch_gc_entries (self, gcids):
-        """gcids is a list of google contact ids to retrieve contact
-        entries for.
-
-        Returns a list of ContactEntries"""
-
-        f      = self.get_db().new_feed()
-        stats = BatchState(1, f, 'query', sync_tag=None)
-
-        ret = []
-        success = True
-
-        for gcid in gcids:
-            gcid = GCContact.normalize_gcid(gcid)
-            ce = gdata.contacts.data.ContactEntry()
-            ce.id = atom.data.Id(text=gcid)
-            stats.add_con(gcid, ce, orig=None)
-
-            f.add_query(entry=ce, batch_id_string=gcid)
-            stats.incr_cnt()
-
-            if stats.get_cnt() % self.get_batch_size() == 0:
-                # Feeds have to be less than 1MB. We can push this some
-                # more
-                logging.debug('Qry Batch # %02d. Count: %3d. Size: %6.2fK',
-                              stats.get_bnum(), stats.get_cnt(),
-                              stats.get_size())
-
-                rf  = self.get_db().exec_batch(f)
-                suc, ces = stats.process_batch_response(rf)
-                success = success and suc
-                [ret.append(x) for x in ces]
-
-                f = self.get_db().new_feed()
-                s = BatchState(stats.get_bnum()+1, f, 'query', sync_tag=None)
-                stats = s
-
-        # Process any leftovers
-        if stats.get_cnt() > 0:
-            logging.debug('Qry Batch # %02d. Count: %3d. Size: %5.2fK',
-                          stats.get_bnum(), stats.get_cnt(),
-                          stats.get_size())
-            
-            rf  = self.get_db().exec_batch(f)
-            suc, ces = stats.process_batch_response(rf)
-            success = success and suc
-            [ret.append(x) for x in ces]
-
-        return success, ret
-
     def batch_update (self, sync_list, src_dbid, items):
         """See the documentation in folder.Folder"""
-
-        # Updates and deletes on google require not just the entryid but also
-        # its correct etag which is a version identifier. This is to ensure
-        # two apps do not overwrite each other's work without even knowing
-        # about it. So we need to approach this in two steps: (a) Fetch the
-        # ContactEntries for all the items we are interested in. the returned
-        # entry objects have all the required info, including the latest
-        # etag. (b) Modify the same entry with the local updates and send it
-        # back
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
@@ -367,106 +306,108 @@ class GCContactsFolder(Folder):
         tags  = [item.get_sync_tags(dst_sync_tag)[0] for item in items]
         gcids = [val for (tag, val) in tags]
 
+        ## Fetch current persons to get fresh etags
         logging.debug('Refreshing etags for modified entries...')
+        current_persons = self._fetch_persons(gcids)
+        etag_map = {p['resourceName']: p['etag']
+                    for p in current_persons if 'etag' in p}
 
-        success, ces   = self._fetch_gc_entries(gcids)
-        etags = [copy.deepcopy(ce.etag) for ce in ces]
-        f     = self.get_db().new_feed()
-        stats = BatchState(1, f, 'update', sync_tag=dst_sync_tag)
+        svc     = self.get_service()
+        success = True
 
-        for item, etag in zip(items, etags):
-            con_itemid = item.get_itemid_from_synctags(pname, 'gc')
-            gc  = GCContact(self, con=item, con_itemid=con_itemid)
-            bid = item.get_itemid()
-            gc.update_sync_tags(src_sync_tag, bid)
+        for i in range(0, len(items), self.BATCH_SIZE):
+            batch_items = items[i:i + self.BATCH_SIZE]
+            update_body = {}
 
-            gce = gc.get_gce()
-            gce.etag = etag
+            for item, gcid in zip(batch_items[0:len(batch_items)],
+                                  gcids[i:i + self.BATCH_SIZE]):
+                con_itemid = item.get_itemid_from_synctags(pname, 'gc')
+                gc  = GCContact(self, con=item, con_itemid=con_itemid)
+                bid = item.get_itemid()
+                gc.update_sync_tags(src_sync_tag, bid)
 
-            stats.add_con(bid, new=gc, orig=item)
-            f.add_update(entry=gce, batch_id_string=bid)
-            stats.incr_cnt()
-            
-            if stats.get_cnt() % self.get_batch_size() == 0:
-                # Feeds have to be less than 1MB. We can push this some
-                # more. FIXME.
-                logging.debug('Uploading mod batch # %02d to Google. ' +
-                              'Count: %3d. Size: %6.2fK',
-                              stats.get_bnum(), stats.get_cnt(),
-                              stats.get_size())
-                rf = self.get_db().exec_batch(f, extra_headers=eh)
-                succ, cons = stats.process_batch_response(rf)
-                success = success and succ
+                person_body = gc.init_person_from_props()
+                person_body['resourceName'] = gcid
+                person_body['etag'] = etag_map.get(gcid, '')
 
-                f = self.get_db().new_feed()
-                stats = BatchState(stats.get_bnum()+1, f, 'update',
-                                   sync_tag=dst_sync_tag)
-           
-        # Upload any leftovers
-        if stats.get_cnt() > 0:
-            logging.debug('Mod Batch # %02d. Count: %3d. Size: %5.2fK',
-                          stats.get_bnum(), stats.get_cnt(),
-                          stats.get_size())
-            rf = self.get_db().exec_batch(f, extra_headers=eh)
-            succ, cons = stats.process_batch_response(rf)
-            success = success and succ
+                update_body[gcid] = {
+                    'person': person_body,
+                    'updatePersonFields': PERSON_FIELDS,
+                }
+
+            batch_num = (i // self.BATCH_SIZE) + 1
+            logging.debug('Uploading mod batch #%02d to Google. Count: %d',
+                          batch_num, len(update_body))
+
+            try:
+                resp = svc.people().batchUpdateContacts(
+                    body={'contacts': update_body,
+                          'readMask': PERSON_FIELDS,
+                          'updateMask': {'paths': PERSON_FIELDS.split(',')}
+                          }).execute()
+
+                for rn, result in resp.get('updateResult', {}).items():
+                    person = result.get('person', {})
+                    logging.info('Successfully updated gmail entry for %s',
+                                 person.get('resourceName', rn))
+            except Exception as e:
+                logging.error('Batch update failed: %s', e)
+                success = False
 
         return success
 
     def writeback_sync_tags (self, pname, items):
+        """Write back sync tags to Google for the given items."""
+
         conf  = self.get_config()
         remid = conf.get_other_dbid(pname, self.get_dbid())
         stag  = conf.make_sync_label(pname, remid)
 
-        f     = self.get_db().new_feed()
-        stats = BatchState(1, f, 'Writeback olid', sync_tag=stag)
-
+        svc     = self.get_service()
         success = True
-        for item in items:
-            etag = item.get_etag()
-            if not etag:
-                logging.error('GC (%s: %s) is expected to have a etag.',
-                              item.get_name(), item.get_itemid())
-                continue
 
+        ## Collect resource names to refresh etags
+        gcids = []
+        for item in items:
             tags = item.get_sync_tags(stag)
             if not tags:
                 logging.debug('Null tags. Item: \n%s', item)
-                raise Exception()
-
+                raise Exception('Missing sync tags for writeback')
             t, iid = tags[0]
-            gce = item.get_gce(refresh=True)
+            gcids.append(item.get_itemid())
 
-            stats.add_con(iid, new=gce, orig=item)
-            f.add_update(entry=gce, batch_id_string=iid)
-            stats.incr_cnt()
-            
-            if stats.get_cnt() % self.get_batch_size() == 0:
-                # Feeds have to be less than 1MB. We can push this some
-                # more. FIXME.
-                logging.info('Uploading Remote ItemIDs to Google...')
-                logging.debug('Batch #%02d. Count: %3d. Size: %6.2fK',
-                              stats.get_bnum(), stats.get_cnt(),
-                              stats.get_size())
+        current_persons = self._fetch_persons(gcids)
+        etag_map = {p['resourceName']: p['etag']
+                    for p in current_persons if 'etag' in p}
 
-                rf = self.get_db().exec_batch(f, extra_headers=eh)
-                succ, cons = stats.process_batch_response(rf)
-                success = success and succ
+        for i in range(0, len(items), self.BATCH_SIZE):
+            batch_items = items[i:i + self.BATCH_SIZE]
+            update_body = {}
 
-                f = self.get_db().new_feed()
-                stats = BatchState(stats.get_bnum()+1, f, 'Writeback olid',
-                                   sync_tag=stag)
-           
-        # Upload any leftovers
-        if stats.get_cnt() > 0:
-            logging.info('Uploading Remote ItemIDs to Google...')
-            logging.debug('Batch # %02d. Count: %3d. Size: %5.2fK',
-                          stats.get_bnum(), stats.get_cnt(),
-                          stats.get_size())
+            for item in batch_items:
+                gcid = item.get_itemid()
+                person_body = item.init_person_from_props()
+                person_body['resourceName'] = gcid
+                person_body['etag'] = etag_map.get(gcid, '')
 
-            rf = self.get_db().exec_batch(f, extra_headers=eh)
-            succ, cons = stats.process_batch_response(rf)
-            success = success and succ
+                update_body[gcid] = {
+                    'person': person_body,
+                    'updatePersonFields': 'userDefined',
+                }
+
+            batch_num = (i // self.BATCH_SIZE) + 1
+            logging.debug('Writeback batch #%02d. Count: %d',
+                          batch_num, len(update_body))
+
+            try:
+                svc.people().batchUpdateContacts(
+                    body={'contacts': update_body,
+                          'readMask': 'userDefined',
+                          'updateMask': {'paths': ['userDefined']}
+                          }).execute()
+            except Exception as e:
+                logging.error('Writeback batch failed: %s', e)
+                success = False
 
         return success
 
@@ -479,78 +420,76 @@ class GCContactsFolder(Folder):
         logging.info('Fetching contact entries from Google for folder %s...',
                      self.get_name())
 
-        feed = self._get_group_feed()
-        if not feed.entry:
-            return
+        persons = self._get_group_contacts()
+        if not persons:
+            return True
 
         logging.info('Clearing sync state information...')
 
-        ces  = feed.entry
-        mods = []
+        mods = {}
         cnt  = 0
-        for i, ce in enumerate(ces):
-            udp = []
-            mod = False
-            for ep in  ce.user_defined_field:
-                if re.search(label_re, ep.key):
-                    logging.debug('  Iter %2d Tag %s match for item %s', 
-                                  i, ep.key, ce.etag)
+        for person in persons:
+            udps = person.get('userDefined', [])
+            if not udps:
+                continue
+
+            new_udps = []
+            modified = False
+            for ep in udps:
+                if re.search(label_re, ep.get('key', '')):
+                    logging.debug('  Tag %s match for item %s',
+                                  ep.get('key'), person.get('resourceName'))
                     cnt += 1
-                    mod = True
+                    modified = True
                 else:
-                    ## Anything else, just put it back
-                    udp.append(ep)
+                    new_udps.append(ep)
 
-            ce.user_defined_field = udp
-            if mod:
-                mods.append(ce)
+            if modified:
+                rn = person['resourceName']
+                person['userDefined'] = new_udps
+                mods[rn] = {
+                    'person': person,
+                    'updatePersonFields': 'userDefined',
+                }
 
-        logging.info('Found %d contacts with matching sync tags (%s). ',
+        logging.info('Found %d contacts with matching sync tags (%s).',
                      cnt, label_re)
-        if cnt > 0:
-            logging.info('Sending modification request to Google...')
 
-        f     = self.get_db().new_feed()
-        stats = BatchState(1, f, 'clear',)
+        if not mods:
+            return True
 
-        ret = True
+        logging.info('Sending modification request to Google...')
 
-        for cnt, ce in enumerate(mods):
-            stats.add_con(ce.id.text, new=ce)
-            f.add_update(entry=ce, batch_id_string=ce.id.text)
-            stats.incr_cnt()
+        svc = self.get_service()
+        success = True
+        rn_list = list(mods.keys())
 
-            if stats.get_cnt() % self.get_batch_size() == 0:
-                # Feeds have to be less than 1MB. We can push this some
-                # more. FIXME.
-                logging.debug('Uploading clear batch # %02d to Google. ' +
-                              'Count: %3d. Size: %6.2fK', stats.get_bnum(),
-                              stats.get_cnt(), stats.get_size())
-                rf = self.get_db().exec_batch(f)
-                hr, ces = stats.process_batch_response(rf)
-                ret = ret and hr
+        for i in range(0, len(rn_list), self.BATCH_SIZE):
+            batch_rns = rn_list[i:i + self.BATCH_SIZE]
+            batch_body = {rn: mods[rn] for rn in batch_rns}
 
-                f = self.get_db().new_feed()
-                stats = BatchState(stats.get_bnum()+1, f, 'clear')
+            batch_num = (i // self.BATCH_SIZE) + 1
+            logging.debug('Uploading clear batch #%02d. Count: %d',
+                          batch_num, len(batch_body))
 
-        # Upload any leftovers
-        if stats.get_cnt() > 0:
-            logging.debug('Uploading clear batch # %02d to Google. ' +
-                          'Count: %3d. Size: %6.2fK', stats.get_bnum(),
-                          stats.get_cnt(), stats.get_size())
-            rf = self.get_db().exec_batch(f)
-            hr, ces = stats.process_batch_response(rf)
-            ret = ret and hr
+            try:
+                svc.people().batchUpdateContacts(
+                    body={'contacts': batch_body,
+                          'readMask': 'userDefined',
+                          'updateMask': {'paths': ['userDefined']}
+                          }).execute()
+            except Exception as e:
+                logging.error('Clear sync flags batch failed: %s', e)
+                success = False
 
-        if cnt > 0:
-            logging.info('Sending modification request to Google...Done')
+        logging.info('Sending modification request to Google...Done')
+        return success
 
-        return ret
-       
     def _refresh_contacts (self):
-        feed = self._get_group_feed()
-        for gce in feed.entry:
-            gc = GCContact(self, gce=gce)
+        """Reload all contacts in this group from Google."""
+        persons = self._get_group_contacts()
+        for person in persons:
+            gc = GCContact(self, person=person)
             self.add_contact(gc)
 
     def show (self, what='summary'):
@@ -563,7 +502,6 @@ class GCContactsFolder(Folder):
 
     def __str__ (self):
         ret = 'Contacts'
-
         return ('%s.\tName: %s;\tGID: %s;\t' % (ret, self.get_name(),
                                                 self.get_itemid()))
 
@@ -584,33 +522,45 @@ class GCContactsFolder(Folder):
         return self._set_prop('dirty', True)
 
     def add_contact (self, gcc):
-        self.contacts.update({gcc.get_itemid() : gcc})
+        self.contacts[gcc.get_itemid()] = gcc
 
     def del_itemids (self, itemids):
-        """Remove the specified from the contact from this folder, and return
-        True. If it does not exist in the folder, returns False."""
+        """Delete the specified contacts from Google and from the local
+        cache."""
 
-        success, cons = self._fetch_gc_entries(itemids)
-        for con in cons:
-            logging.info('Deleting ID: %s; Name: %s...', con.id.text,
-                         con.name.full_name.text if con.name else '')
-            self.get_gdc().Delete(con)
-            try:
-               del self.contacts[con.id.text]
-            except KeyError as e:
-               pass 
+        svc = self.get_service()
+
+        ## People API batchDeleteContacts
+        for i in range(0, len(itemids), self.BATCH_SIZE):
+            batch = itemids[i:i + self.BATCH_SIZE]
+            logging.info('Deleting %d contacts...', len(batch))
+            svc.people().batchDeleteContacts(
+                body={'resourceNames': batch}).execute()
+
+            for rid in batch:
+                try:
+                    del self.contacts[rid]
+                except KeyError:
+                    pass
 
     def reset_contacts (self):
         self.contacts = {}
 
     def get_contacts (self):
-        return self.contacts    
+        return self.contacts
 
+    def get_service (self):
+        return self._get_prop('service')
+
+    def set_service (self, service):
+        self._set_prop('service', service)
+
+    ## Keep get_gdc/set_gdc as aliases for transition
     def get_gdc (self):
-        return self._get_prop('gdc')
+        return self.get_service()
 
-    def set_gdc (self, gdc):
-        self._set_prop('gdc', gdc)
+    def set_gdc (self, svc):
+        self.set_service(svc)
 
     def get_gcentry (self):
         return self._get_prop('gcentry')
@@ -618,49 +568,93 @@ class GCContactsFolder(Folder):
     def set_gcentry (self, gcentry):
         self._set_prop('gcentry', gcentry)
 
-    def _get_group_feed (self, showdeleted='false', updated_min=None):
-        query             = gdata.contacts.client.ContactsQuery()
-        query.max_results = 100000
-        query.showdeleted = showdeleted
-        query.group       = self.get_itemid()
+    def _get_group_contacts (self, updated_min=None):
+        """Fetch all contacts that belong to this group from the People API.
 
-        if updated_min:
-            query.updated_min = updated_min
-        
-        feed = self.get_gdc().GetContacts(q=query)
-        return feed
+        Returns a list of Person resource dicts.
+        """
+
+        svc = self.get_service()
+        group_resource_name = self.get_itemid()
+
+        all_persons = []
+        page_token = None
+
+        while True:
+            resp = svc.people().connections().list(
+                resourceName='people/me',
+                personFields=PERSON_FIELDS,
+                pageSize=1000,
+                pageToken=page_token,
+                requestSyncToken=False,
+            ).execute()
+
+            connections = resp.get('connections', [])
+
+            ## Filter to only include contacts in this group
+            for person in connections:
+                memberships = person.get('memberships', [])
+                for m in memberships:
+                    cgm = m.get('contactGroupMembership', {})
+                    if cgm.get('contactGroupResourceName') == group_resource_name:
+                        all_persons.append(person)
+                        break
+
+            page_token = resp.get('nextPageToken')
+            if not page_token:
+                break
+
+        return all_persons
+
+    def _fetch_persons (self, resource_names):
+        """Fetch multiple Person resources by resourceName.  Returns a list
+        of Person dicts."""
+
+        svc = self.get_service()
+        ret = []
+
+        for i in range(0, len(resource_names), self.BATCH_SIZE):
+            batch = resource_names[i:i + self.BATCH_SIZE]
+            resp = svc.people().getBatchGet(
+                resourceNames=batch,
+                personFields=PERSON_FIELDS).execute()
+
+            for pr in resp.get('responses', []):
+                person = pr.get('person')
+                if person:
+                    ret.append(person)
+
+        return ret
 
     def del_all_entries (self):
-        """Delete all contacts in specified group. """
+        """Delete all contacts in this group."""
 
-        feed = self._get_group_feed()
+        persons = self._get_group_contacts()
+        if not persons:
+            return
 
-        # A batch operation would be much faster... should implement
-        # someday
-        for con in feed.entry:
-            logging.info('Deleting ID: %s; Name: %s...', con.id.text,
-                         con.name.full_name.text if con.name else '')
-            self.get_gdc().Delete(con)
+        rnames = [p['resourceName'] for p in persons]
+        self.del_itemids(rnames)
+
 
 class BatchState:
-    """This class is used as a temporary store of state related to batch
-    operations in the Google API. Useful when we are operating in bulk data
-    on Google"""
+    """Compatibility shim — retains the BatchState class name so that any
+    code importing it from folder_gc doesn't break.
 
-    def __init__ (self, num, f, op=None, sync_tag=None):
-        self.size = 0
-        self.cnt  = 0
+    In the People API world, batch operations are handled directly by
+    batchCreateContacts / batchUpdateContacts / batchDeleteContacts, so
+    the old XML-feed-based BatchState logic is no longer needed.  This
+    class is kept as a minimal stub.
+    """
+
+    def __init__ (self, num, f=None, op=None, sync_tag=None):
         self.num  = num
+        self.cnt  = 0
         self.f    = f
         self.operation = op
         self.cons = {}
         self.origs = {}
         self.sync_tag = sync_tag
-
-    def get_size (self):
-        """Return size of feed in kilobytess."""
-        self.size = len(str(self.f))/1024.0
-        return self.size
 
     def incr_cnt (self):
         self.cnt += 1
@@ -672,112 +666,21 @@ class BatchState:
     def get_bnum (self):
         return self.num
 
-    def add_con (self, olid_b64, new, orig=None):
-        self.cons[olid_b64] = new
-        self.origs[olid_b64] = orig
+    def get_size (self):
+        return 0
 
-    def get_con (self, olid_b64):
-        return self.cons[olid_b64]
+    def add_con (self, key, new, orig=None):
+        self.cons[key] = new
+        self.origs[key] = orig
 
-    def get_orig (self, olid_b64):
-        return self.origs[olid_b64]
+    def get_con (self, key):
+        return self.cons[key]
+
+    def get_orig (self, key):
+        return self.origs[key]
 
     def get_operation (self):
         return self.operation
 
     def set_operation (self, op):
         self.operation = op
-
-    def handle_interrupted_feed (self, resp_xml):
-        resp = ET.fromstring(resp_xml)
-        ffc = utils.find_first_child
-
-        resp_title = ffc(resp, utils.QName_GNS0('title'), ret='node').text
-        resp_intr  = ffc(resp, utils.QName_GNS3('interrupted'), ret='node')
-
-        parsed = int(resp_intr.attrib['parsed'])
-        reason = resp_intr.attrib['reason']
-
-        entry = self.f.entry[parsed]
-        logging.error('The server encountered a %s while processing ' +
-                      'the feed. The reason given is: %s', resp_title,
-                      resp_intr)
-        logging.error('The problematic entry is likely this one: %s',
-                      utils.pretty_xml(str(entry)))
-
-    def process_batch_response (self, resp):
-        """resp is the response feed obtained from a batch operation to
-        google.
-    
-        This routine will walk through the batch response entries, and
-        make note in the outlook database for succesful sync, or handle
-        errors appropriately.
-
-        Returns a tuple (success, cons) where success is a boolean to know if
-        all the entries had successful operation, and an array of contact
-        items from the batch operation"""
-    
-        op   = self.get_operation()
-        cons = []
-        success = True
-    
-        for entry in resp.entry:
-            bid    = entry.batch_id.text if entry.batch_id else None
-            if not entry.batch_status:
-                # There is something seriously wrong with this request.
-                self.handle_interrupted_feed(str(resp))
-                success = False
-                continue
-    
-            code   = int(entry.batch_status.code)
-            reason = entry.batch_status.reason
-    
-            if code != SYNC_OK and code != SYNC_CREATED:
-                # FIXME this code path needs to be tested properly
-                err = sync_status_str(code)
-                err_str = '' if err is None else ('Code: %s' % err)
-                err_str = 'Reason: %s. %s' % (reason, err_str)
-    
-                success = False
-
-                if op == 'insert' or op == 'update':
-                    try:
-                        name = self.get_con(bid).get_disp_name()
-                    except Exception as e:
-                        name = "WTH!"    
-
-                    logging.error('Upload to Google failed for: %s: %s',
-                                  name, err_str)
-                elif op == 'Writeback olid':
-                    logging.error('Could not complete sync for: %s: %s: %s',
-                                  bid, err_str, entry.id)
-                else:
-                    ## We could just print a more detailed error for all
-                    ## cases. Should do some time FIXME.
-                    logging.error('Sync failed for bid %s: %s: %s',
-                                   bid, err_str, entry.id)
-            else:
-                if op == 'query':
-                    con = entry
-                    # We could build and return array for all cases, but
-                    # why waste memory...
-                    cons.append(con)
-                elif op in ['insert', 'update']:
-                    con  = self.get_con(bid)
-                    orig = self.get_orig(bid)
-                    gcid = utils.get_link_rel(entry.link, 'edit')
-                    gcid = GCContact.normalize_gcid(gcid)
-                    orig.update_sync_tags(self.sync_tag, gcid)
-                    cons.append(orig)
-
-                    t = None
-                    if op == 'insert':
-                        t = 'created'
-                    elif op == 'update':
-                        t = 'updated'
-    
-                    if t:
-                        logging.info('Successfully %s gmail entry for %30s (%s)',
-                                     t, con.get_disp_name(), orig.get_itemid())
-    
-        return success, cons
