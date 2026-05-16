@@ -1,3 +1,26 @@
+2026-05-14 9pm Phase 1
+====================
+
+**Phase 1 complete and committed.**
+
+**Summary**
+Phase 1: Auth + Groups rewrite for pimdb_gc.py — Done:
+
+| What | Old (GData) | New (People API) |
+|---|---|---|
+| Auth | oauth2client + custom webserver on port 1977 | InstalledAppFlow.run_local_server(port=0) |
+| Token storage | oauth2client.file.Storage → .dat file | pickle → .token.pickle file |
+| API client | gdata.contacts.client.ContactsClient | build('people', 'v1', credentials=creds) |
+| List groups | GetGroups() → XML feed | contactGroups().list() → JSON |
+| Create group | create_group(GroupEntry) | contactGroups().create(body={...}) |
+| Delete group | delete_group(entry) | contactGroups().delete(resourceName=...) |
+| Default folder | Match 'System Group: My Contacts' | Match 'contactGroups/myContacts' |
+| Batch feeds | new_feed() + exec_batch() | NotImplementedError (People API uses different batch mechanics — will be in folder_gc.py) |
+
+Removed: MyAuthToken, patched_post(), _oauth_dance(), _init_webserver(), all atom/gdata imports.
+
+Next up: Phase 2 — rewrite folder_gc.py for People API contact operations (list, get, batch create/update/delete).
+
 2026-05-14 5:30pm Phase 0 complete and committed. ✅
 ==========================================================
 

@@ -35,3 +35,19 @@ cmdline:
 bb:
 	$(PYTHON) test_bb_read.py
 	$(PYTHON) test_bb_write.py
+
+## Google Contacts tests — NOT included in 'all' because they need live
+## credentials and network access.  Run with:
+##   make gc GOOGLE_CL_SECRET=~/path/to/credentials.json
+## Optionally override the user label:
+##   make gc GOOGLE_CL_SECRET=~/creds.json GC_USER=myemail
+GOOGLE_CL_SECRET ?=
+GC_USER ?= test
+
+gc:
+ifndef GOOGLE_CL_SECRET
+	@echo "ERROR: GOOGLE_CL_SECRET not set."
+	@echo "Usage: make gc GOOGLE_CL_SECRET=~/path/to/credentials.json"
+	@exit 1
+endif
+	$(PYTHON) test_gc.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
