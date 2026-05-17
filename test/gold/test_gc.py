@@ -34,7 +34,7 @@
 ##   Subsequent runs reuse the cached token.
 ##
 
-import getopt, logging, os, os.path, shutil, sys, unittest
+import getopt, glob, logging, os, os.path, shutil, sys, unittest
 
 ## Fix sys.path so we can import asynk modules
 DIR_PATH    = os.path.abspath(os.path.join(
@@ -75,6 +75,29 @@ def setup_gc_creds_dir ():
         os.makedirs(gc_creds_dir)
 
 ## ---------------------------------------------------------------------------
+## Multi-account support — distribute test classes across available accounts
+## to spread API quota load.  See gc_add_account.py to add accounts.
+## ---------------------------------------------------------------------------
+
+_gc_accounts = []   # populated by main(); list of user labels
+_gc_acct_idx = 0    # next account to assign (per-class rotation)
+
+def discover_gc_accounts (creds_dir):
+    """Return sorted list of user labels from *.token.pickle files."""
+    tokens = sorted(glob.glob(os.path.join(creds_dir, '*.token.pickle')))
+    return [os.path.basename(t).replace('.token.pickle', '') for t in tokens]
+
+def next_gc_account ():
+    """Return the next user label from the account pool (round-robin).
+    Falls back to the --user value if no accounts discovered."""
+    global _gc_acct_idx
+    if not _gc_accounts:
+        return gc_user
+    label = _gc_accounts[_gc_acct_idx % len(_gc_accounts)]
+    _gc_acct_idx += 1
+    return label
+
+## ---------------------------------------------------------------------------
 ## Test cases
 ## ---------------------------------------------------------------------------
 
@@ -88,8 +111,10 @@ class TestGCAuth(unittest.TestCase):
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
 
+        cls._gc_user = next_gc_account()
+        logging.info('%s using account: %s', cls.__name__, cls._gc_user)
         try:
-            cls.pimdb = GCPIMDB(config, gc_user, cs_file)
+            cls.pimdb = GCPIMDB(config, cls._gc_user, cs_file)
         except Exception as e:
             raise unittest.SkipTest(
                 'Could not connect to Google: %s' % e)
@@ -105,7 +130,7 @@ class TestGCAuth(unittest.TestCase):
 
     def test_user (self):
         """The user label should match what was passed to __init__."""
-        self.assertEqual(self.pimdb.get_user(), gc_user)
+        self.assertEqual(self.pimdb.get_user(), self._gc_user)
 
 class TestGCGroups(unittest.TestCase):
     """Test contact group operations via the People API."""
@@ -115,8 +140,10 @@ class TestGCGroups(unittest.TestCase):
         if cs_file is None:
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
+        cls._gc_user = next_gc_account()
+        logging.info('%s using account: %s', cls.__name__, cls._gc_user)
         try:
-            cls.pimdb = GCPIMDB(config, gc_user, cs_file)
+            cls.pimdb = GCPIMDB(config, cls._gc_user, cs_file)
         except Exception as e:
             raise unittest.SkipTest(
                 'Could not connect to Google: %s' % e)
@@ -199,8 +226,10 @@ class TestGCContacts(unittest.TestCase):
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
 
+        cls._gc_user = next_gc_account()
+        logging.info('%s using account: %s', cls.__name__, cls._gc_user)
         try:
-            cls.pimdb = GCPIMDB(config, gc_user, cs_file)
+            cls.pimdb = GCPIMDB(config, cls._gc_user, cs_file)
         except Exception as e:
             raise unittest.SkipTest(
                 'Could not connect to Google: %s' % e)
@@ -464,6 +493,15 @@ def main ():
             sys.exit(1)
 
     config = Config(asynk_base_dir='../../', user_dir=gc_creds_dir)
+
+    ## Discover all available Google test accounts for round-robin
+    global _gc_accounts
+    _gc_accounts = discover_gc_accounts(gc_creds_dir)
+    if len(_gc_accounts) > 1:
+        logging.info('Multi-account mode: %d accounts available (%s)',
+                     len(_gc_accounts), ', '.join(_gc_accounts))
+    elif _gc_accounts:
+        logging.info('Single account mode: %s', _gc_accounts[0])
 
     # Remove our custom args from sys.argv so unittest doesn't choke
     sys.argv = [sys.argv[0]]

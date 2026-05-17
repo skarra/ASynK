@@ -64,6 +64,29 @@ cs_file = None
 gc_user = 'test'
 
 ## ---------------------------------------------------------------------------
+## Multi-account support — distribute test classes across available accounts
+## to spread API quota load.  See gc_add_account.py to add accounts.
+## ---------------------------------------------------------------------------
+
+_gc_accounts = []   # populated by main(); list of user labels
+_gc_acct_idx = 0    # next account to assign (per-class rotation)
+
+def discover_gc_accounts (creds_dir):
+    """Return sorted list of user labels from *.token.pickle files."""
+    tokens = sorted(glob.glob(os.path.join(creds_dir, '*.token.pickle')))
+    return [os.path.basename(t).replace('.token.pickle', '') for t in tokens]
+
+def next_gc_account ():
+    """Return the next user label from the account pool (round-robin).
+    Falls back to the --user value if no accounts discovered."""
+    global _gc_acct_idx
+    if not _gc_accounts:
+        return gc_user
+    label = _gc_accounts[_gc_acct_idx % len(_gc_accounts)]
+    _gc_acct_idx += 1
+    return label
+
+## ---------------------------------------------------------------------------
 ## Helpers
 ## ---------------------------------------------------------------------------
 
@@ -188,8 +211,10 @@ class TestSyncGCBB(unittest.TestCase):
             raise unittest.SkipTest(
                 'No credentials available; skipping GC sync tests.')
 
+        cls._gc_user = next_gc_account()
+        logging.info('%s using account: %s', cls.__name__, cls._gc_user)
         try:
-            cls.gcdb = GCPIMDB(config, gc_user, cs_file)
+            cls.gcdb = GCPIMDB(config, cls._gc_user, cs_file)
         except Exception as e:
             raise unittest.SkipTest(
                 'Could not connect to Google: %s' % e)
@@ -563,6 +588,15 @@ def main ():
             sys.exit(1)
 
     config = Config(asynk_base_dir=ASYNK_BASE_DIR, user_dir=GC_CREDS_DIR)
+
+    ## Discover all available Google test accounts for round-robin
+    global _gc_accounts
+    _gc_accounts = discover_gc_accounts(GC_CREDS_DIR)
+    if len(_gc_accounts) > 1:
+        logging.info('Multi-account mode: %d accounts available (%s)',
+                     len(_gc_accounts), ', '.join(_gc_accounts))
+    elif _gc_accounts:
+        logging.info('Single account mode: %s', _gc_accounts[0])
 
     sys.argv = [sys.argv[0]]
     unittest.main(verbosity=2)
