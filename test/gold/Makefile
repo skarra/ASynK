@@ -31,6 +31,23 @@ clean:
 distclean: clean
 	rm -rf gc_creds
 
+## Add a Google test account credential.  Each invocation runs one OAuth
+## dance and saves the token — no tests are executed.
+##   make gc-add-account GOOGLE_CL_SECRET=~/creds.json GC_USER=acct2
+gc-add-account:
+ifndef GOOGLE_CL_SECRET
+	$(error GOOGLE_CL_SECRET is required.  Usage: make gc-add-account GOOGLE_CL_SECRET=~/creds.json GC_USER=acct2)
+endif
+ifndef GC_USER
+	$(error GC_USER is required (e.g. test, acct2).  Usage: make gc-add-account GOOGLE_CL_SECRET=~/creds.json GC_USER=acct2)
+endif
+	$(PYTHON) gc_add_account.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
+
+## List all cached Google test account tokens.
+gc-list-accounts:
+	@echo "Cached Google test accounts in gc_creds/:"
+	@ls -1 gc_creds/*.token.pickle 2>/dev/null | sed 's|.*/||;s|\.token\.pickle||' || echo "  (none)"
+
 state:
 	$(PYTHON) test_state.py
 
