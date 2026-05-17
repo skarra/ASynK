@@ -161,13 +161,15 @@ def cleanup_gc_contacts (gc_folder, gcdb):
     if not persons:
         return
     svc = gcdb.get_service()
-    for p in persons:
-        rn = p.get('resourceName')
-        if rn:
-            try:
-                svc.people().deleteContact(resourceName=rn).execute()
-            except Exception as e:
-                logging.warning('cleanup: could not delete %s: %s', rn, e)
+    rnames = [p.get('resourceName') for p in persons if p.get('resourceName')]
+    
+    BATCH_SIZE = 200
+    for i in range(0, len(rnames), BATCH_SIZE):
+        batch = rnames[i:i + BATCH_SIZE]
+        try:
+            svc.people().batchDeleteContacts(body={'resourceNames': batch}).execute()
+        except Exception as e:
+            logging.warning('cleanup: batch delete failed: %s', e)
 
 ## ---------------------------------------------------------------------------
 ## Test Cases
@@ -404,14 +406,14 @@ class TestSyncGCBB(unittest.TestCase):
         """Sync enough contacts to trigger multiple API batches.
 
         Instead of creating 200+ contacts (slow and quota-heavy), we
-        temporarily lower BATCH_SIZE to 5 and sync 12 contacts.  This
-        exercises the exact same chunking code paths.
+        temporarily lower BATCH_SIZE to 1 and sync 3 contacts.  This
+        exercises the exact same chunking code paths with minimal quota hit.
         """
         from folder_gc import GCContactsFolder
         orig_batch = GCContactsFolder.BATCH_SIZE
-        GCContactsFolder.BATCH_SIZE = 5
+        GCContactsFolder.BATCH_SIZE = 1
         try:
-            N = 12
+            N = 3
             bbdb, bbf = open_bb(BB_FILE)
             for i in range(N):
                 make_bb_contact(bbf, 'Chunk%02d' % i, 'Test')
@@ -426,6 +428,81 @@ class TestSyncGCBB(unittest.TestCase):
                              'Expected %d contacts in GC, got %d' % (N, cnt))
         finally:
             GCContactsFolder.BATCH_SIZE = orig_batch
+
+    ## -----------------------------------------------------------------
+    ## Test 8: Incremental update
+    ## -----------------------------------------------------------------
+
+    def test_h_incremental_update (self):
+        """After initial sync, modify a BB contact field. Re-sync.
+        Verify the GC contact is updated."""
+        bbdb, bbf = open_bb(BB_FILE)
+        make_bb_contact(bbf, 'UpdateMe', 'TestGCBB', company='OldCorp')
+        bbf.save()
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+        self.assertEqual(count_gc_contacts(self.gc_folder), 1)
+
+        # Modify the contact in BB
+        time.sleep(1.1)  # BBDB timestamp must beat last_sync_stop
+        bbdb, bbf = reopen_bb(BB_FILE)
+        cons = bbf.find_contacts_by_name(name='UpdateMe')
+        self.assertEqual(len(cons), 1)
+        cons[0].set_company('NewCorp')
+        bbf.save()
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # Verify GC contact has the updated company
+        persons = self.gc_folder._get_group_contacts()
+        self.assertEqual(len(persons), 1)
+        orgs = persons[0].get('organizations', [])
+        self.assertTrue(len(orgs) > 0, 'GC contact should have organizations')
+        self.assertEqual(orgs[0].get('name'), 'NewCorp')
+
+    ## -----------------------------------------------------------------
+    ## Test 9: Delete propagation
+    ## -----------------------------------------------------------------
+
+    def test_i_delete_propagation (self):
+        """After initial sync of 2 BB contacts, delete 1 from BB.
+        Re-sync. Verify GC has only 1 remaining."""
+        bbdb, bbf = open_bb(BB_FILE)
+        make_bb_contact(bbf, 'KeepMe', 'DelTest')
+        make_bb_contact(bbf, 'DeleteMe', 'DelTest')
+        bbf.save()
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+        self.assertEqual(count_gc_contacts(self.gc_folder), 2)
+
+        # Delete one contact from BB
+        bbdb, bbf = reopen_bb(BB_FILE)
+        cons = bbf.find_contacts_by_name(name='DeleteMe')
+        self.assertEqual(len(cons), 1)
+        bbf.del_itemids([cons[0].get_itemid()])
+        bbf.save()
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # Verify GC now has only 1 contact
+        time.sleep(1)  # let Google propagate
+        cnt = count_gc_contacts(self.gc_folder)
+        self.assertEqual(cnt, 1, 'Expected 1 contact in GC, got %d' % cnt)
+
+        # Verify the right one survived
+        persons = self.gc_folder._get_group_contacts()
+        names = [p.get('names', [{}])[0].get('givenName')
+                 for p in persons]
+        self.assertIn('KeepMe', names)
+        self.assertNotIn('DeleteMe', names)
 
 
 ## ---------------------------------------------------------------------------
