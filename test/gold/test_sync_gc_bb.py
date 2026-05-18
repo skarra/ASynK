@@ -85,6 +85,17 @@ def _get_account_labels ():
 ## Helpers
 ## ---------------------------------------------------------------------------
 
+def print_suite_banner(suite_name):
+    print('\n' + '='*80)
+    print('>>> INITIALIZING TEST SUITE: %s' % suite_name)
+    print('='*80)
+
+def print_test_banner(test_name, account, pool_idx):
+    print('\n' + '-'*80)
+    print('>> RUNNING TEST: %s' % test_name)
+    print('>> USING ACCOUNT: %s (Pool index: %d)' % (account, pool_idx))
+    print('-'*80)
+
 def setup_user_dir ():
     if os.path.exists(USER_DIR):
         shutil.rmtree(USER_DIR)
@@ -180,7 +191,7 @@ def cleanup_gc_contacts (gc_folder, gcdb):
         return
     svc = gcdb.get_service()
     rnames = [p.get('resourceName') for p in persons if p.get('resourceName')]
-    
+
     BATCH_SIZE = 200
     for i in range(0, len(rnames), BATCH_SIZE):
         batch = rnames[i:i + BATCH_SIZE]
@@ -204,6 +215,7 @@ class TestSyncGCBB(unittest.TestCase):
 
     @classmethod
     def setUpClass (cls):
+        print_suite_banner(cls.__name__)
         if cs_file is None:
             raise unittest.SkipTest(
                 'No credentials available; skipping GC sync tests.')
@@ -293,8 +305,7 @@ class TestSyncGCBB(unittest.TestCase):
         self.gcdb = gcdb
         self.gc_folder = gc_folder
         self.test_gid = test_gid
-        logging.info('  %s -> account %s (pool idx %d)',
-                     self._testMethodName, label, idx)
+        print_test_banner(self._testMethodName, label, idx)
 
         create_empty_bbdb(BB_FILE)
         cleanup_gc_contacts(self.gc_folder, self.gcdb)

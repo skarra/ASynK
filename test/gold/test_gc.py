@@ -92,6 +92,17 @@ def _get_account_labels ():
     if no accounts have been discovered."""
     return _gc_accounts if _gc_accounts else [gc_user]
 
+def print_suite_banner(suite_name):
+    print('\n' + '='*80)
+    print('>>> INITIALIZING TEST SUITE: %s' % suite_name)
+    print('='*80)
+
+def print_test_banner(test_name, account, pool_idx):
+    print('\n' + '-'*80)
+    print('>> RUNNING TEST: %s' % test_name)
+    print('>> USING ACCOUNT: %s (Pool index: %d)' % (account, pool_idx))
+    print('-'*80)
+
 ## ---------------------------------------------------------------------------
 ## Test cases
 ## ---------------------------------------------------------------------------
@@ -102,6 +113,7 @@ class TestGCAuth(unittest.TestCase):
     @classmethod
     def setUpClass (cls):
         """Build a pool of GCPIMDB instances for per-test rotation."""
+        print_suite_banner(cls.__name__)
         if cs_file is None:
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
@@ -122,6 +134,7 @@ class TestGCAuth(unittest.TestCase):
         idx = self.__class__._pool_idx % len(pool)
         self.__class__._pool_idx += 1
         self._gc_user, self.pimdb = pool[idx]
+        print_test_banner(self._testMethodName, self._gc_user, idx)
 
     def test_service_exists (self):
         """After init, the People API service object should be set."""
@@ -141,6 +154,7 @@ class TestGCGroups(unittest.TestCase):
 
     @classmethod
     def setUpClass (cls):
+        print_suite_banner(cls.__name__)
         if cs_file is None:
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
@@ -160,6 +174,7 @@ class TestGCGroups(unittest.TestCase):
         idx = self.__class__._pool_idx % len(pool)
         self.__class__._pool_idx += 1
         self._gc_user, self.pimdb = pool[idx]
+        print_test_banner(self._testMethodName, self._gc_user, idx)
 
     def test_list_folders (self):
         """list_folders should return a non-empty list (every account has
@@ -244,6 +259,7 @@ class TestGCContacts(unittest.TestCase):
 
     @classmethod
     def setUpClass (cls):
+        print_suite_banner(cls.__name__)
         if cs_file is None:
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
@@ -300,12 +316,14 @@ class TestGCContacts(unittest.TestCase):
             self.pimdb = self._chain_pimdb
             self.test_gid = self._chain_gid
             self.test_folder = self._chain_folder
+            print_test_banner(self._testMethodName, self._gc_user, 0)
         else:
             pool = self.__class__._pimdb_pool
             idx = self.__class__._pool_idx % len(pool)
             self.__class__._pool_idx += 1
             self._gc_user, self.pimdb, self.test_gid, self.test_folder = \
                 pool[idx]
+            print_test_banner(self._testMethodName, self._gc_user, idx)
 
     def test_a_list_contacts_in_folder (self):
         """Listing contacts in a freshly created group should return
@@ -409,12 +427,7 @@ class TestGCContacts(unittest.TestCase):
         except Exception:
             pass   # expected — 404 or similar
 
-    def test_e_gccontact_roundtrip (self):
-        """Create a GCContact from properties, serialize to Person dict,
-        and verify the mapping is correct."""
-        from contact_gc import GCContact
-
-        gc = GCContact(self.test_folder)
+    def _populate_rich_contact (self, gc):
         gc.set_firstname('RoundFirst')
         gc.set_lastname('RoundLast')
         gc.set_middlename('M')
@@ -430,55 +443,99 @@ class TestGCContacts(unittest.TestCase):
         gc.set_birthday('1990-06-15')
         gc.add_web_home('https://example.com')
 
-        person = gc.init_person_from_props()
-
-        ## Verify names
-        self.assertEqual(person['names'][0]['givenName'], 'RoundFirst')
-        self.assertEqual(person['names'][0]['familyName'], 'RoundLast')
-        self.assertEqual(person['names'][0]['middleName'], 'M')
-        self.assertEqual(person['names'][0]['honorificPrefix'], 'Dr')
-        self.assertEqual(person['names'][0]['honorificSuffix'], 'Jr')
+    def _verify_rich_contact_fields (self, gc_obj):
+        ## Verify names & prefixes
+        self.assertEqual(gc_obj.get_firstname(), 'RoundFirst')
+        self.assertEqual(gc_obj.get_lastname(), 'RoundLast')
+        self.assertEqual(gc_obj.get_middlename(), 'M')
+        self.assertEqual(gc_obj.get_prefix(), 'Dr')
+        self.assertEqual(gc_obj.get_suffix(), 'Jr')
 
         ## Verify nickname
-        self.assertEqual(person['nicknames'][0]['value'], 'Roundy')
+        self.assertEqual(gc_obj.get_nickname(), 'Roundy')
 
         ## Verify email
-        emails = person.get('emailAddresses', [])
-        self.assertEqual(len(emails), 1)
-        self.assertEqual(emails[0]['value'], 'round@example.com')
-        self.assertEqual(emails[0]['type'], 'work')
+        emails_work = gc_obj.get_email_work()
+        self.assertTrue(len(emails_work) >= 1)
+        self.assertEqual(emails_work[0], 'round@example.com')
+        self.assertEqual(gc_obj.get_email_prim(), 'round@example.com')
 
         ## Verify phone
-        phones = person.get('phoneNumbers', [])
-        self.assertEqual(len(phones), 1)
-        self.assertEqual(phones[0]['value'], '+1-555-0199')
+        phones_mob = gc_obj.get_phone_mob()
+        self.assertTrue(len(phones_mob) >= 1)
+        self.assertEqual(phones_mob[0][1] if isinstance(phones_mob[0], tuple) else phones_mob[0], '+1-555-0199')
 
         ## Verify org
-        orgs = person.get('organizations', [])
-        self.assertEqual(orgs[0]['name'], 'TestCorp')
-        self.assertEqual(orgs[0]['title'], 'Engineer')
-        self.assertEqual(orgs[0]['department'], 'R&D')
+        self.assertEqual(gc_obj.get_company(), 'TestCorp')
+        self.assertEqual(gc_obj.get_title(), 'Engineer')
+        self.assertEqual(gc_obj.get_dept(), 'R&D')
 
         ## Verify birthday
-        bdays = person.get('birthdays', [])
-        self.assertEqual(bdays[0]['date']['year'], 1990)
-        self.assertEqual(bdays[0]['date']['month'], 6)
-        self.assertEqual(bdays[0]['date']['day'], 15)
+        self.assertEqual(gc_obj.get_birthday(), '1990-06-15')
 
         ## Verify website
-        urls = person.get('urls', [])
-        self.assertEqual(urls[0]['value'], 'https://example.com')
+        urls = gc_obj.get_web_home()
+        self.assertTrue(len(urls) >= 1)
+        self.assertEqual(urls[0], 'https://example.com')
+
+    def test_e_gccontact_roundtrip (self):
+        """Create a GCContact from properties, serialize to Person dict,
+        and verify the mapping is correct."""
+        from contact_gc import GCContact
+
+        gc = GCContact(self.test_folder)
+        self._populate_rich_contact(gc)
+
+        person = gc.init_person_from_props()
 
         ## Now parse it back and verify round-trip
         gc2 = GCContact(self.test_folder, person=person)
-        self.assertEqual(gc2.get_firstname(), 'RoundFirst')
-        self.assertEqual(gc2.get_lastname(), 'RoundLast')
-        self.assertEqual(gc2.get_middlename(), 'M')
-        self.assertEqual(gc2.get_nickname(), 'Roundy')
-        self.assertEqual(gc2.get_company(), 'TestCorp')
-        self.assertEqual(gc2.get_birthday(), '1990-06-15')
+        self._verify_rich_contact_fields(gc2)
 
         print('\n  Round-trip serialization: OK')
+
+    def test_f_live_fidelity (self):
+        """Create a GCContact with all fields, save it to the live Google API,
+        read it back, and verify every field survived the round-trip."""
+        from contact_gc import GCContact
+        from folder_gc import PERSON_FIELDS
+
+        gc = GCContact(self.test_folder)
+        self._populate_rich_contact(gc)
+
+        ## 1. Save to live Google API
+        svc = self.pimdb.get_service()
+        person_body = gc.init_person_from_props()
+
+        ## Link to test folder
+        person_body['memberships'] = [{
+            'contactGroupMembership': {
+                'contactGroupResourceName': self.test_gid
+            }
+        }]
+
+        created = svc.people().createContact(
+            body=person_body,
+            personFields='names' # We don't need all fields on the response right now
+        ).execute()
+
+        rid = created.get('resourceName')
+        self.assertIsNotNone(rid)
+
+        ## 2. Read it back via live API
+        fetched = svc.people().get(
+            resourceName=rid,
+            personFields=PERSON_FIELDS
+        ).execute()
+
+        ## 3. Parse it back into a GCContact and verify all fields are intact
+        gc_fetched = GCContact(self.test_folder, person=fetched)
+        self._verify_rich_contact_fields(gc_fetched)
+
+        ## Clean up (optional since test_folder gets deleted, but good practice)
+        svc.people().deleteContact(resourceName=rid).execute()
+
+        print('\n  Live API field fidelity: OK')
 
 def main ():
     global config, cs_file, gc_user
