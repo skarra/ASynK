@@ -318,6 +318,9 @@ class TestSyncGCBB(unittest.TestCase):
 
         global config
         config = Config(asynk_base_dir=ASYNK_BASE_DIR, user_dir=GC_CREDS_DIR)
+
+        self.gcdb.set_config(config)
+        self.gc_folder.set_config(config)
         create_profile(config, PROFILE_NAME, self.test_gid)
 
     def tearDown (self):
@@ -643,7 +646,7 @@ def main ():
     elif _gc_accounts:
         logging.info('Single account mode: %s', _gc_accounts[0])
 
-    sys.argv = [sys.argv[0]]
+    sys.argv = [sys.argv[0]] + args
     unittest.main(verbosity=2)
 
 if __name__ == '__main__':

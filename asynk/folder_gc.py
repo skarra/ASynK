@@ -174,9 +174,34 @@ class GCContactsFolder(Folder):
                     continue
             else:
                 if olid:
-                    logging.debug('Modified Google Contact: %20s %s',
-                                  name, gcid)
-                    sl.add_mod(gcid, olid)
+                    update_time = None
+                    for src in person.get('metadata', {}).get('sources', []):
+                        ut = src.get('updateTime')
+                        if ut:
+                            if not update_time or ut > update_time:
+                                update_time = ut
+
+                    is_modified = True
+                    if update_time and updated_min:
+                        try:
+                            import datetime
+                            from dateutil.parser import isoparse
+                            ut_dt = isoparse(update_time)
+                            um_dt = isoparse(updated_min)
+                            # Allow a 5-second clock skew tolerance
+                            if ut_dt <= um_dt + datetime.timedelta(seconds=5):
+                                is_modified = False
+                        except Exception as e:
+                            logging.warning('Could not parse timestamps: %s', e)
+                            if update_time <= updated_min:
+                                is_modified = False
+
+                    if not is_modified:
+                        pass
+                    else:
+                        logging.debug('Modified Google Contact: %20s %s',
+                                      name, gcid)
+                        sl.add_mod(gcid, olid)
                 else:
                     logging.debug('New      Google Contact: %20s %s',
                                   name, gcid)
@@ -336,10 +361,11 @@ class GCContactsFolder(Folder):
                           batch_num, len(update_body))
 
             try:
+                from pimdb_gc import UPDATE_PERSON_FIELDS
                 resp = svc.people().batchUpdateContacts(
                     body={'contacts': update_body,
                           'readMask': PERSON_FIELDS,
-                          'updateMask': PERSON_FIELDS,
+                          'updateMask': UPDATE_PERSON_FIELDS,
                           }).execute()
 
                 for rn, result in resp.get('updateResult', {}).items():

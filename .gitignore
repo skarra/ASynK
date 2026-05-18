@@ -45,6 +45,7 @@ temp.bbdb
 asynk.xml
 asynk.txt
 temp-log.txt
+test_output.log
 
 asynk.sublime-project
 asynk.sublime-workspace

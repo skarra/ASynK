@@ -47,6 +47,13 @@ PERSON_FIELDS = ','.join([
     'metadata',
 ])
 
+## Fields that can actually be updated in the People API.
+UPDATE_PERSON_FIELDS = ','.join([
+    'names', 'nicknames', 'emailAddresses', 'phoneNumbers', 'addresses',
+    'organizations', 'birthdays', 'events', 'urls', 'imClients',
+    'biographies', 'memberships', 'userDefined', 'genders',
+])
+
 class GCPIMDB(PIMDB):
     """GC object is a wrapper for Google Contacts via the People API v1."""
 
