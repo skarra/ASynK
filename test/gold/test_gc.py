@@ -80,22 +80,17 @@ def setup_gc_creds_dir ():
 ## ---------------------------------------------------------------------------
 
 _gc_accounts = []   # populated by main(); list of user labels
-_gc_acct_idx = 0    # next account to assign (per-class rotation)
+_gc_acct_idx = 0    # next account to assign (per-test rotation)
 
 def discover_gc_accounts (creds_dir):
     """Return sorted list of user labels from *.token.pickle files."""
     tokens = sorted(glob.glob(os.path.join(creds_dir, '*.token.pickle')))
     return [os.path.basename(t).replace('.token.pickle', '') for t in tokens]
 
-def next_gc_account ():
-    """Return the next user label from the account pool (round-robin).
-    Falls back to the --user value if no accounts discovered."""
-    global _gc_acct_idx
-    if not _gc_accounts:
-        return gc_user
-    label = _gc_accounts[_gc_acct_idx % len(_gc_accounts)]
-    _gc_acct_idx += 1
-    return label
+def _get_account_labels ():
+    """Return the list of account labels to use.  Falls back to [gc_user]
+    if no accounts have been discovered."""
+    return _gc_accounts if _gc_accounts else [gc_user]
 
 ## ---------------------------------------------------------------------------
 ## Test cases
@@ -106,18 +101,27 @@ class TestGCAuth(unittest.TestCase):
 
     @classmethod
     def setUpClass (cls):
-        """Create a GCPIMDB connected to a real Google account."""
+        """Build a pool of GCPIMDB instances for per-test rotation."""
         if cs_file is None:
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
 
-        cls._gc_user = next_gc_account()
-        logging.info('%s using account: %s', cls.__name__, cls._gc_user)
-        try:
-            cls.pimdb = GCPIMDB(config, cls._gc_user, cs_file)
-        except Exception as e:
-            raise unittest.SkipTest(
-                'Could not connect to Google: %s' % e)
+        cls._pimdb_pool = []
+        for label in _get_account_labels():
+            try:
+                pimdb = GCPIMDB(config, label, cs_file)
+                cls._pimdb_pool.append((label, pimdb))
+            except Exception as e:
+                logging.warning('Skipping account %s: %s', label, e)
+        if not cls._pimdb_pool:
+            raise unittest.SkipTest('No working Google accounts')
+        cls._pool_idx = 0
+
+    def setUp (self):
+        pool = self.__class__._pimdb_pool
+        idx = self.__class__._pool_idx % len(pool)
+        self.__class__._pool_idx += 1
+        self._gc_user, self.pimdb = pool[idx]
 
     def test_service_exists (self):
         """After init, the People API service object should be set."""
@@ -140,13 +144,22 @@ class TestGCGroups(unittest.TestCase):
         if cs_file is None:
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
-        cls._gc_user = next_gc_account()
-        logging.info('%s using account: %s', cls.__name__, cls._gc_user)
-        try:
-            cls.pimdb = GCPIMDB(config, cls._gc_user, cs_file)
-        except Exception as e:
-            raise unittest.SkipTest(
-                'Could not connect to Google: %s' % e)
+        cls._pimdb_pool = []
+        for label in _get_account_labels():
+            try:
+                pimdb = GCPIMDB(config, label, cs_file)
+                cls._pimdb_pool.append((label, pimdb))
+            except Exception as e:
+                logging.warning('Skipping account %s: %s', label, e)
+        if not cls._pimdb_pool:
+            raise unittest.SkipTest('No working Google accounts')
+        cls._pool_idx = 0
+
+    def setUp (self):
+        pool = self.__class__._pimdb_pool
+        idx = self.__class__._pool_idx % len(pool)
+        self.__class__._pool_idx += 1
+        self._gc_user, self.pimdb = pool[idx]
 
     def test_list_folders (self):
         """list_folders should return a non-empty list (every account has
@@ -216,9 +229,18 @@ class TestGCGroups(unittest.TestCase):
         self.assertIsNone(found)
 
 class TestGCContacts(unittest.TestCase):
-    """Test contact-level operations via the People API."""
+    """Test contact-level operations via the People API.
+
+    Tests b, c, d form a chain (create -> update -> delete) that shares
+    a contact resource, so they are pinned to the same account.  Tests
+    a and e are independent and rotate freely."""
 
     TEST_GROUP_NAME = 'ASynK Test Contacts (safe to delete)'
+
+    ## Tests that must share the same account (they pass _created_rid)
+    _CHAINED_TESTS = {'test_b_create_and_read_contact',
+                      'test_c_update_contact',
+                      'test_d_delete_contact'}
 
     @classmethod
     def setUpClass (cls):
@@ -226,33 +248,64 @@ class TestGCContacts(unittest.TestCase):
             raise unittest.SkipTest(
                 'No credentials available; skipping GC tests.')
 
-        cls._gc_user = next_gc_account()
-        logging.info('%s using account: %s', cls.__name__, cls._gc_user)
-        try:
-            cls.pimdb = GCPIMDB(config, cls._gc_user, cs_file)
-        except Exception as e:
-            raise unittest.SkipTest(
-                'Could not connect to Google: %s' % e)
+        ## Build pool of (label, pimdb, test_gid, test_folder)
+        cls._pimdb_pool = []
+        labels = _get_account_labels()
+        for label in labels:
+            try:
+                pimdb = GCPIMDB(config, label, cs_file)
+            except Exception as e:
+                logging.warning('Skipping account %s: %s', label, e)
+                continue
 
-        ## Create a dedicated test group so we don't pollute real contacts
-        cls.test_gid = cls.pimdb.new_folder(cls.TEST_GROUP_NAME)
-        cls.test_folder = None
-        for f in cls.pimdb.get_contacts_folders():
-            if f.get_itemid() == cls.test_gid:
-                cls.test_folder = f
-                break
+            group_name = cls.TEST_GROUP_NAME if len(labels) == 1 \
+                         else '%s (%s)' % (cls.TEST_GROUP_NAME, label)
+            test_gid = pimdb.new_folder(group_name)
+            test_folder = None
+            for f in pimdb.get_contacts_folders():
+                if f.get_itemid() == test_gid:
+                    test_folder = f
+                    break
+            if test_folder is None:
+                logging.warning('Could not find test group for %s', label)
+                continue
+
+            cls._pimdb_pool.append((label, pimdb, test_gid, test_folder))
+
+        if not cls._pimdb_pool:
+            raise unittest.SkipTest('No working Google accounts')
+        cls._pool_idx = 0
+
+        ## Pin account 0 for the chained tests (b/c/d)
+        cls._chain_label, cls._chain_pimdb, cls._chain_gid, \
+            cls._chain_folder = cls._pimdb_pool[0]
 
     @classmethod
     def tearDownClass (cls):
-        """Clean up: delete the test group."""
+        """Clean up: delete all test groups."""
         import time
-        if hasattr(cls, 'test_gid') and cls.test_gid:
+        for label, pimdb, test_gid, test_folder in \
+                getattr(cls, '_pimdb_pool', []):
             try:
-                cls.pimdb.del_folder(cls.test_gid)
+                pimdb.del_folder(test_gid)
             except Exception as e:
-                logging.warning('Cleanup failed: %s', e)
-            ## Give Google time to propagate
-            time.sleep(2)
+                logging.warning('Cleanup failed for %s: %s', label, e)
+        time.sleep(2)
+
+    def setUp (self):
+        """Pick account: chained tests (b/c/d) use the pinned account;
+        independent tests rotate through the pool."""
+        if self._testMethodName in self._CHAINED_TESTS:
+            self._gc_user = self._chain_label
+            self.pimdb = self._chain_pimdb
+            self.test_gid = self._chain_gid
+            self.test_folder = self._chain_folder
+        else:
+            pool = self.__class__._pimdb_pool
+            idx = self.__class__._pool_idx % len(pool)
+            self.__class__._pool_idx += 1
+            self._gc_user, self.pimdb, self.test_gid, self.test_folder = \
+                pool[idx]
 
     def test_a_list_contacts_in_folder (self):
         """Listing contacts in a freshly created group should return

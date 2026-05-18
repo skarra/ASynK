@@ -44,6 +44,7 @@ temp.bbdb
 *.dvi
 asynk.xml
 asynk.txt
+temp-log.txt
 
 asynk.sublime-project
 asynk.sublime-workspace

@@ -69,22 +69,17 @@ gc_user = 'test'
 ## ---------------------------------------------------------------------------
 
 _gc_accounts = []   # populated by main(); list of user labels
-_gc_acct_idx = 0    # next account to assign (per-class rotation)
+_gc_acct_idx = 0    # next account to assign (per-test rotation)
 
 def discover_gc_accounts (creds_dir):
     """Return sorted list of user labels from *.token.pickle files."""
     tokens = sorted(glob.glob(os.path.join(creds_dir, '*.token.pickle')))
     return [os.path.basename(t).replace('.token.pickle', '') for t in tokens]
 
-def next_gc_account ():
-    """Return the next user label from the account pool (round-robin).
-    Falls back to the --user value if no accounts discovered."""
-    global _gc_acct_idx
-    if not _gc_accounts:
-        return gc_user
-    label = _gc_accounts[_gc_acct_idx % len(_gc_accounts)]
-    _gc_acct_idx += 1
-    return label
+def _get_account_labels ():
+    """Return the list of account labels to use.  Falls back to [gc_user]
+    if no accounts have been discovered."""
+    return _gc_accounts if _gc_accounts else [gc_user]
 
 ## ---------------------------------------------------------------------------
 ## Helpers
@@ -201,8 +196,10 @@ def cleanup_gc_contacts (gc_folder, gcdb):
 class TestSyncGCBB(unittest.TestCase):
     """GC <-> BB sync engine integration tests.
 
-    Uses a dedicated GC group created in setUpClass and destroyed in
-    tearDownClass. The BB side uses a temp .bbdb file reset per test.
+    Uses a pool of Google accounts (one GCPIMDB + dedicated test group per
+    account) created in setUpClass.  setUp rotates through the pool so
+    consecutive tests hit different accounts, spreading API quota load.
+    The BB side uses a temp .bbdb file reset per test.
     """
 
     @classmethod
@@ -211,56 +208,93 @@ class TestSyncGCBB(unittest.TestCase):
             raise unittest.SkipTest(
                 'No credentials available; skipping GC sync tests.')
 
-        cls._gc_user = next_gc_account()
-        logging.info('%s using account: %s', cls.__name__, cls._gc_user)
-        try:
-            cls.gcdb = GCPIMDB(config, cls._gc_user, cs_file)
-        except Exception as e:
-            raise unittest.SkipTest(
-                'Could not connect to Google: %s' % e)
+        ## Build a pool of (label, gcdb, gc_folder, test_gid) tuples —
+        ## one per available account.
+        cls._account_pool = []
+        labels = _get_account_labels()
+        for label in labels:
+            try:
+                gcdb = GCPIMDB(config, label, cs_file)
+            except Exception as e:
+                logging.warning('Skipping account %s: %s', label, e)
+                continue
 
-        ## Create (or reuse) a dedicated test group
-        try:
-            cls.test_gid = cls.gcdb.new_folder(TEST_GROUP)
-        except Exception:
-            ## Group may already exist from a previous incomplete run
-            cls.test_gid = None
-            for f in cls.gcdb.get_contacts_folders():
-                if f.get_name() == TEST_GROUP:
-                    cls.test_gid = f.get_itemid()
+            ## Each account gets its own test group (with label suffix
+            ## to avoid name collisions between accounts).
+            group_name = TEST_GROUP if len(labels) == 1 \
+                         else '%s (%s)' % (TEST_GROUP, label)
+            try:
+                test_gid = gcdb.new_folder(group_name)
+            except Exception:
+                ## Group may already exist from a previous incomplete run
+                test_gid = None
+                for f in gcdb.get_contacts_folders():
+                    if f.get_name() == group_name:
+                        test_gid = f.get_itemid()
+                        break
+                if test_gid is None:
+                    logging.warning('Could not create test group for %s', label)
+                    continue
+
+            gc_folder = None
+            for f in gcdb.get_contacts_folders():
+                if f.get_itemid() == test_gid:
+                    gc_folder = f
                     break
-            if cls.test_gid is None:
-                raise
 
-        cls.gc_folder = None
-        for f in cls.gcdb.get_contacts_folders():
-            if f.get_itemid() == cls.test_gid:
-                cls.gc_folder = f
-                break
+            if gc_folder is None:
+                logging.warning('Could not find test group for %s', label)
+                continue
 
-        if cls.gc_folder is None:
+            cls._account_pool.append((label, gcdb, gc_folder, test_gid))
+            logging.info('Account pool: added %s (group %s)', label, test_gid)
+
+        if not cls._account_pool:
             raise unittest.SkipTest(
-                'Could not find test group after creation')
+                'No working Google accounts available')
 
-        ## Create the sync profile
-        create_profile(config, PROFILE_NAME, cls.test_gid)
+        logging.info('Account pool ready: %d account(s)',
+                     len(cls._account_pool))
+        cls._pool_idx = 0
+
+        ## Set initial values so setUp can reference them on first run
+        label, gcdb, gc_folder, test_gid = cls._account_pool[0]
+        cls.gcdb = gcdb
+        cls.gc_folder = gc_folder
+        cls.test_gid = test_gid
+
+        ## Create the initial sync profile
+        create_profile(config, PROFILE_NAME, test_gid)
 
     @classmethod
     def tearDownClass (cls):
-        """Delete the test group and all its contacts."""
-        if hasattr(cls, 'test_gid') and cls.test_gid:
+        """Delete the test groups and all their contacts for every account."""
+        for label, gcdb, gc_folder, test_gid in getattr(cls, '_account_pool', []):
             try:
-                cleanup_gc_contacts(cls.gc_folder, cls.gcdb)
+                cleanup_gc_contacts(gc_folder, gcdb)
                 time.sleep(1)
-                cls.gcdb.del_folder(cls.test_gid)
+                gcdb.del_folder(test_gid)
             except Exception as e:
-                logging.warning('Cleanup failed: %s', e)
-            time.sleep(2)
+                logging.warning('Cleanup failed for %s: %s', label, e)
+        time.sleep(2)
 
     def setUp (self):
-        """Fresh BBDB file for each test. Reset GC folder contacts and state."""
+        """Fresh BBDB file for each test.  Rotate to the next Google account
+        in the pool, reset its folder, and rebuild the sync profile."""
         import gc as _gc
         _gc.collect()
+
+        ## Rotate to next account
+        pool = self.__class__._account_pool
+        idx = self.__class__._pool_idx % len(pool)
+        self.__class__._pool_idx += 1
+        label, gcdb, gc_folder, test_gid = pool[idx]
+
+        self.gcdb = gcdb
+        self.gc_folder = gc_folder
+        self.test_gid = test_gid
+        logging.info('  %s -> account %s (pool idx %d)',
+                     self._testMethodName, label, idx)
 
         create_empty_bbdb(BB_FILE)
         cleanup_gc_contacts(self.gc_folder, self.gcdb)
