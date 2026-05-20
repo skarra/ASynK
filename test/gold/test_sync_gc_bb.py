@@ -179,6 +179,25 @@ def delete_gc_contact (gcdb, resource_name):
     svc = gcdb.get_service()
     svc.people().deleteContact(resourceName=resource_name).execute()
 
+def update_gc_contact_company (gcdb, resource_name, company):
+    """Update the company/organization of a Google contact."""
+    svc = gcdb.get_service()
+    current = svc.people().get(
+        resourceName=resource_name,
+        personFields='names,organizations,metadata'
+    ).execute()
+    current['organizations'] = [{
+        'name': company,
+        'type': 'work'
+    }]
+    svc.people().updateContact(
+        resourceName=resource_name,
+        body=current,
+        updatePersonFields='organizations',
+        personFields='organizations'
+    ).execute()
+
+
 def count_gc_contacts (gc_folder):
     """Return the number of contacts in the GC folder."""
     persons = gc_folder._get_group_contacts()
@@ -310,7 +329,7 @@ class TestSyncGCBB(unittest.TestCase):
         create_empty_bbdb(BB_FILE)
         cleanup_gc_contacts(self.gc_folder, self.gcdb)
         self.gc_folder.reset_contacts()
-        time.sleep(1)   # let Google propagate deletes
+        time.sleep(2)   # let Google propagate deletes
 
         ## Reset state.json within GC_CREDS_DIR to clear stale item lists
         ## and profile data, but preserve credentials and config.
@@ -576,6 +595,240 @@ class TestSyncGCBB(unittest.TestCase):
                  for p in persons]
         self.assertIn('KeepMe', names)
         self.assertNotIn('DeleteMe', names)
+
+    ## -----------------------------------------------------------------
+    ## Test 10: One-Way Sync Basic
+    ## -----------------------------------------------------------------
+
+    def test_j_sync1way_basic (self):
+        """Create a contact in GC (source), sync 1-way. Verify it appears in BBDB (destination)."""
+        config.set_sync_dir(PROFILE_NAME, 'SYNC1WAY')
+
+        create_gc_contact(self.gcdb, self.test_gid,
+                          'OneWayGC', 'Test', email='oneway@test.com')
+        time.sleep(2)  # API propagation
+
+        bbdb, bbf = open_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        self.assertEqual(len(bbf.get_contacts()), 1)
+        names = [c.get_firstname() for c in bbf.get_contacts().values()]
+        self.assertIn('OneWayGC', names)
+
+    ## -----------------------------------------------------------------
+    ## Test 11: One-Way Sync Ignores Destination Changes
+    ## -----------------------------------------------------------------
+
+    def test_k_sync1way_ignores_dst_changes (self):
+        """After 1-way sync, add a contact in BBDB (destination). Re-sync.
+        Verify Google Contacts (source) is unchanged."""
+        config.set_sync_dir(PROFILE_NAME, 'SYNC1WAY')
+
+        # 1. Sync one contact GC -> BB
+        create_gc_contact(self.gcdb, self.test_gid,
+                          'OneWayGC', 'Test')
+        time.sleep(2)
+
+        bbdb, bbf = open_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # 2. Add a new contact to BBDB (destination)
+        bbdb, bbf = reopen_bb(BB_FILE)
+        make_bb_contact(bbf, 'BBOnly', 'Contact')
+        bbf.save()
+
+        # 3. Re-sync 1-way
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # 4. Verify Google Contacts (source) still has only 1 contact
+        self.assertEqual(count_gc_contacts(self.gc_folder), 1)
+
+    ## -----------------------------------------------------------------
+    ## Test 12: Conflict Resolution - GC Wins
+    ## -----------------------------------------------------------------
+
+    def test_l_conflict_gc_wins (self):
+        """Modify the same contact on both sides. GC (DB1) wins."""
+        # 1. Initial sync of a contact
+        bbdb, bbf = open_bb(BB_FILE)
+        make_bb_contact(bbf, 'ConflictMe', 'TestGCBB', company='OldCorp')
+        bbf.save()
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+        self.assertEqual(count_gc_contacts(self.gc_folder), 1)
+
+        # Retrieve the GC contact resource name
+        persons = self.gc_folder._get_group_contacts()
+        self.assertEqual(len(persons), 1)
+        rname = persons[0].get('resourceName')
+        self.assertIsNotNone(rname)
+
+        time.sleep(5.1)  # Ensure timestamp beats last sync (takes care of GC clock skew tolerance)
+
+        # 2. Modify BBDB contact
+        bbdb, bbf = reopen_bb(BB_FILE)
+        cons = bbf.find_contacts_by_name(name='ConflictMe')
+        self.assertEqual(len(cons), 1)
+        cons[0].set_company('BBDBCorp')
+        bbf.save()
+
+        # 3. Modify GC contact
+        update_gc_contact_company(self.gcdb, rname, 'GCCorp')
+
+        # 4. Set GC to win ('1')
+        config.set_conflict_resolve(PROFILE_NAME, '1')
+
+        # 5. Sync and verify GC version wins on both sides
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # Verify BBDB updated to GC version ('GCCorp')
+        bbdb, bbf = reopen_bb(BB_FILE)
+        cons = bbf.find_contacts_by_name(name='ConflictMe')
+        self.assertEqual(len(cons), 1)
+        self.assertEqual(cons[0].get_company(), 'GCCorp')
+
+        # Verify GC remains 'GCCorp'
+        persons = self.gc_folder._get_group_contacts()
+        self.assertEqual(len(persons), 1)
+        self.assertEqual(persons[0].get('organizations', [{}])[0].get('name'), 'GCCorp')
+
+    ## -----------------------------------------------------------------
+    ## Test 13: Conflict Resolution - BB Wins
+    ## -----------------------------------------------------------------
+
+    def test_m_conflict_bb_wins (self):
+        """Modify the same contact on both sides. BB (DB2) wins."""
+        # 1. Initial sync of a contact
+        bbdb, bbf = open_bb(BB_FILE)
+        make_bb_contact(bbf, 'ConflictMe', 'TestGCBB', company='OldCorp')
+        bbf.save()
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+        self.assertEqual(count_gc_contacts(self.gc_folder), 1)
+
+        # Retrieve the GC contact resource name
+        persons = self.gc_folder._get_group_contacts()
+        self.assertEqual(len(persons), 1)
+        rname = persons[0].get('resourceName')
+        self.assertIsNotNone(rname)
+
+        time.sleep(5.1)  # Ensure timestamp beats last sync (takes care of GC clock skew tolerance)
+
+        # 2. Modify BBDB contact
+        bbdb, bbf = reopen_bb(BB_FILE)
+        cons = bbf.find_contacts_by_name(name='ConflictMe')
+        self.assertEqual(len(cons), 1)
+        cons[0].set_company('BBDBCorp')
+        bbf.save()
+
+        # 3. Modify GC contact
+        update_gc_contact_company(self.gcdb, rname, 'GCCorp')
+
+        # 4. Set BB to win ('2')
+        config.set_conflict_resolve(PROFILE_NAME, '2')
+
+        # 5. Sync and verify BB version wins on both sides
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # Verify BBDB remains 'BBDBCorp'
+        bbdb, bbf = reopen_bb(BB_FILE)
+        cons = bbf.find_contacts_by_name(name='ConflictMe')
+        self.assertEqual(len(cons), 1)
+        self.assertEqual(cons[0].get_company(), 'BBDBCorp')
+
+        # Verify GC updated to BB version ('BBDBCorp')
+        time.sleep(1.5)  # Let Google API propagate update
+        persons = self.gc_folder._get_group_contacts()
+        self.assertEqual(len(persons), 1)
+        self.assertEqual(persons[0].get('organizations', [{}])[0].get('name'), 'BBDBCorp')
+
+    ## -----------------------------------------------------------------
+    ## Test 14: Bidirectional Additions
+    ## -----------------------------------------------------------------
+
+    def test_n_bidirectional_new (self):
+        """Add new contacts on both sides independently, sync, verify."""
+        # 1. Create a contact on BBDB
+        bbdb, bbf = open_bb(BB_FILE)
+        make_bb_contact(bbf, 'BBNew', 'Contact')
+        bbf.save()
+
+        # 2. Create a contact on Google Contacts
+        create_gc_contact(self.gcdb, self.test_gid, 'GCNew', 'Contact')
+        time.sleep(2)
+
+        # 3. Sync
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # 4. Verify both exist in BBDB
+        bbdb, bbf = reopen_bb(BB_FILE)
+        self.assertEqual(len(bbf.get_contacts()), 2)
+        bb_names = sorted([c.get_firstname() for c in bbf.get_contacts().values()])
+        self.assertEqual(bb_names, ['BBNew', 'GCNew'])
+
+        # 5. Verify both exist in Google Contacts
+        self.assertEqual(count_gc_contacts(self.gc_folder), 2)
+        persons = self.gc_folder._get_group_contacts()
+        gc_names = sorted([p.get('names', [{}])[0].get('givenName') for p in persons])
+        self.assertEqual(gc_names, ['BBNew', 'GCNew'])
+
+    ## -----------------------------------------------------------------
+    ## Test 15: Unicode Support
+    ## -----------------------------------------------------------------
+
+    def test_o_unicode (self):
+        """Create BB contacts with Unicode names, sync, verify GC fields."""
+        bbdb, bbf = open_bb(BB_FILE)
+        make_bb_contact(bbf, 'Héctor', 'Muñoz')
+        make_bb_contact(bbf, '太郎', '山田')
+        bbf.save()
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # Verify Google Contacts has both with correct names
+        self.assertEqual(count_gc_contacts(self.gc_folder), 2)
+        persons = self.gc_folder._get_group_contacts()
+        gc_names = sorted([p.get('names', [{}])[0].get('givenName') for p in persons])
+        self.assertEqual(gc_names, ['Héctor', '太郎'])
+
+    ## -----------------------------------------------------------------
+    ## Test 16: Minimal/Empty Fields
+    ## -----------------------------------------------------------------
+
+    def test_p_empty_fields (self):
+        """Sync a contact with only first name from BB to GC."""
+        bbdb, bbf = open_bb(BB_FILE)
+        con = BBContact(bbf)
+        con.set_firstname('Minimalist')
+        bbf.add_contact(con)
+        bbf.save()
+
+        bbdb, bbf = reopen_bb(BB_FILE)
+        result = run_sync(config, PROFILE_NAME, self.gcdb, bbdb)
+        self.assertTrue(result)
+
+        # Verify Google Contacts has 1 contact named 'Minimalist'
+        self.assertEqual(count_gc_contacts(self.gc_folder), 1)
+        persons = self.gc_folder._get_group_contacts()
+        self.assertEqual(persons[0].get('names', [{}])[0].get('givenName'), 'Minimalist')
+
 
 
 ## ---------------------------------------------------------------------------
