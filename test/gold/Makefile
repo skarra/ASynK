@@ -21,10 +21,10 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb sync-bb-bb gc-best-effort sync-gc-bb-best-effort
+all: state cmdline bb sync-bb-bb gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort
 
 clean:
-	rm -rf user_dir *~ *.bak temp.bbdb test_sync_*.bbdb
+	rm -rf user_dir user_dir_gc_gc *~ *.bak temp.bbdb test_sync_*.bbdb
 
 ## distclean also removes gc_creds/ which holds cached OAuth2 tokens
 ## and client secrets.  Use this to force re-authentication.
@@ -97,4 +97,20 @@ ifdef GOOGLE_CL_SECRET
 	$(PYTHON) test_sync_gc_bb.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
 else
 	$(PYTHON) test_sync_gc_bb.py --user $(GC_USER) --best-effort
+endif
+
+## GC<->GC sync engine tests.
+## Same best-effort pattern as gc above.
+sync-gc-gc:
+ifdef GOOGLE_CL_SECRET
+	$(PYTHON) test_sync_gc_gc.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
+else
+	$(PYTHON) test_sync_gc_gc.py --user $(GC_USER)
+endif
+
+sync-gc-gc-best-effort:
+ifdef GOOGLE_CL_SECRET
+	$(PYTHON) test_sync_gc_gc.py --cs $(GOOGLE_CL_SECRET) --user $(GC_USER)
+else
+	$(PYTHON) test_sync_gc_gc.py --user $(GC_USER) --best-effort
 endif

@@ -136,6 +136,8 @@ class Collection:
 
     def set_db (self, db):
         self.db = db
+        if db:
+            db.colln = self.get_colln()
         return db
 
     def get_dbid (self):

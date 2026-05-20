@@ -53,3 +53,5 @@ venv/
 gc_creds/
 *.token.pickle
 test_sync_*.bbdb
+user_dir_gc_gc/
+

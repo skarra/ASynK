@@ -125,7 +125,9 @@ class GCContactsFolder(Folder):
         for x, y in oldi.items():
             if not x in kss and not y in kss:
                 logging.debug('Del      Google Contact: %s:%s', x, y)
-                if pdb1id == self.get_dbid():
+                colln = getattr(self, 'colln', getattr(self.get_db(), 'colln', None))
+                is_db1 = (colln == 1) if colln is not None else (pdb1id == self.get_dbid())
+                if is_db1:
                     sl.add_del(x, y)
                 else:
                     sl.add_del(y, x)
@@ -506,6 +508,7 @@ class GCContactsFolder(Folder):
 
     def _refresh_contacts (self):
         """Reload all contacts in this group from Google."""
+        self.reset_contacts()
         persons = self._get_group_contacts()
         for person in persons:
             gc = GCContact(self, person=person)
@@ -553,8 +556,15 @@ class GCContactsFolder(Folder):
         for i in range(0, len(itemids), self.BATCH_SIZE):
             batch = itemids[i:i + self.BATCH_SIZE]
             logging.info('Deleting %d contacts...', len(batch))
-            svc.people().batchDeleteContacts(
-                body={'resourceNames': batch}).execute()
+            try:
+                svc.people().batchDeleteContacts(
+                    body={'resourceNames': batch}).execute()
+            except Exception as e:
+                # If contact is already deleted on the server, ignore the error.
+                if 'NOT_FOUND' in str(e) or '404' in str(e):
+                    logging.info('Contacts already deleted on Google: %s', batch)
+                else:
+                    raise
 
             for rid in batch:
                 try:

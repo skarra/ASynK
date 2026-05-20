@@ -68,7 +68,9 @@ class CDContactsFolder(Folder):
         for x, y in oldi.items():
             if not x in kss and not y in kss:
                 logging.debug('Del      Carddav Contact: %s:%s', x, y)
-                if pdb1id == self.get_dbid():
+                colln = getattr(self, 'colln', getattr(self.get_db(), 'colln', None))
+                is_db1 = (colln == 1) if colln is not None else (pdb1id == self.get_dbid())
+                if is_db1:
                     sl.add_del(x, y)
                 else:
                     sl.add_del(y,x)

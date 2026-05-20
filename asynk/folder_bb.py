@@ -104,7 +104,9 @@ class BBContactsFolder(Folder):
             
             if not x in kss and not y in kss:
                 logging.debug('Del      BBDB Contact: %s:%s', x, y)
-                if pdb1id == self.get_dbid():
+                colln = getattr(self, 'colln', getattr(self.get_db(), 'colln', None))
+                is_db1 = (colln == 1) if colln is not None else (pdb1id == self.get_dbid())
+                if is_db1:
                     sl.add_del(x, y)
                 else:
                     sl.add_del(y,x)

@@ -54,6 +54,10 @@ class Sync:
 
         db1 = self.get_db(0)
         db2 = self.get_db(1)
+        if db1:
+            db1.colln = 1
+        if db2:
+            db2.colln = 2
 
         logging.debug('db    : %s', db1)
 
@@ -67,6 +71,7 @@ class Sync:
 
         f1 = db1.find_folder(fid1)[0]
         if f1:
+            f1.colln = 1
             self.set_f1(f1)
         else:
             ## We may have to create a folder we are processing a BBDB database.
@@ -74,12 +79,14 @@ class Sync:
             if self.get_db1id() == 'bb':
                 logging.error('Creating BBBD folder %s in store', fid1)
                 f1 = db1.new_folder(fid1)
+                f1.colln = 1
                 self.set_f1(f1)
             else:
                 raise Exception()
 
         f2 = db2.find_folder(fid2)[0]
         if f2:
+            f2.colln = 2
             self.set_f2(f2)
         else:
             ## We may have to create a folder we are processing a BBDB database.
@@ -87,6 +94,7 @@ class Sync:
             if self.get_db2id() == 'bb':
                 logging.error('Creating BBBD folder %s in store', fid2)
                 f2 = db2.new_folder(fid2)
+                f2.colln = 2
                 self.set_f2(f2)
             else:
                 raise Exception()
