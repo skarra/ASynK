@@ -387,6 +387,10 @@ class MessageStore:
         conf = self.get_config()
         bdir = os.path.join(conf.get_user_dir(), conf.get_backup_dir())
 
+        if not os.path.exists(bdir):
+            logging.info('Creating BBDB backup directory at: %s', bdir)
+            os.makedirs(bdir, exist_ok=True)
+
         stamp = str(datetime.datetime.now()).replace(' ', '.')
         stamp = stamp.replace(':', '-')
         backup_name = os.path.join(bdir, 'bbdb_backup.' + pname + '.' + stamp)
