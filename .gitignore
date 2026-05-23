@@ -55,3 +55,5 @@ gc_creds/
 test_sync_*.bbdb
 user_dir_gc_gc/
 
+# Radicale test server data
+test/radicale/data/

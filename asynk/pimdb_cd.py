@@ -25,10 +25,7 @@ from state import Config
 from pimdb import PIMDB
 from folder import Folder
 from folder_cd import CDContactsFolder
-from   caldavclientlibrary.protocol.webdav.definitions  import davxml
-from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
-from   caldavclientlibrary.protocol.url   import URL
-from   caldavclientlibrary.client.account import CalDAVAccount
+import caldav
 
 import iso8601
 import datetime, logging, os, re, sys, urllib.request, urllib.parse, urllib.error, urllib.parse
@@ -68,6 +65,19 @@ class CDPIMDB(PIMDB):
 
         return 'cd'
 
+    def list_folders (self, silent=False):
+        """List all addressbooks. Returns a list of (fid, name, folder_object) tuples."""
+        ret = []
+        for i, f in enumerate(self.get_contacts_folders()):
+            fid = f.get_itemid()
+            name = f.get_name()
+            if not silent:
+                logging.info(' %2d: Contacts Name: %-25s ID: %s',
+                             i, name, fid)
+            ret.append((fid, name, f))
+        return ret
+
+
     def new_folder (self, fname, ftype=None, storeid=None):
         """See the documentation in class PIMDB.
 
@@ -82,27 +92,83 @@ class CDPIMDB(PIMDB):
             ftype = Folder.CONTACT_t
 
         if ftype != Folder.CONTACT_t:
-            logging.erorr('Only Contact Groups are supported at this time.')
+            logging.error('Only Contact Groups are supported at this time.')
             return None
 
         root = self.get_def_root_folder_path()
-        resource = URL(os.path.join(root, fname))
-        ret = self.get_account().session.makeAddressBook(resource)
+        if not root.endswith('/'):
+            root += '/'
+        folder_url = root + fname + '/'
+
+        fo, t = self.find_folder(folder_url)
+        if fo:
+            logging.info("Addressbook folder already exists: %s", folder_url)
+            return fo
+
+        body = f"""<?xml version="1.0" encoding="utf-8" ?>
+        <D:mkcol xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:carddav">
+          <D:set>
+            <D:prop>
+              <D:resourcetype>
+                <D:collection/>
+                <C:addressbook/>
+              </D:resourcetype>
+              <D:displayname>{fname}</D:displayname>
+            </D:prop>
+          </D:set>
+        </D:mkcol>"""
+
+        headers = {'Content-Type': 'text/xml; charset="utf-8"'}
+        logging.info("Creating new addressbook at %s", folder_url)
+        res = self.client.request(folder_url, 'MKCOL', body=body, headers=headers)
+        if res.status not in (201, 200, 207):
+            logging.error("Failed to create addressbook: status %d, body %s", res.status, res.raw)
+            return None
+
+        self.set_folders()
+        fo, t = self.find_folder(folder_url)
+        return fo
 
     def del_folder (self, itemid, store=None):
         """Get rid of the specified folder."""
+        logging.info('Deleting all the contained items from %s. Will not remove folder', itemid)
 
-        sess = self.session()
-        path = URL(url=itemid)
+        body = """<?xml version="1.0" encoding="utf-8" ?>
+        <D:propfind xmlns:D="DAV:">
+          <D:prop>
+            <D:getetag/>
+          </D:prop>
+        </D:propfind>"""
+        headers = {'Depth': '1', 'Content-Type': 'text/xml; charset="utf-8"'}
 
-        logging.info('Deleting all the contained items. Will not remove folder')
+        try:
+            res = self.client.request(itemid, 'PROPFIND', body=body, headers=headers)
+        except Exception as e:
+            logging.error("Failed to list items for del_folder: %s", e)
+            return
 
-        items = sess.getPropertiesOnHierarchy(path, (davxml.getetag,))
-        hrefs = [x for x in list(items.keys()) if x != path.toString().strip()]
+        if res and res.status in (200, 207):
+            res.find_objects_and_props()
+            for href in res.objects.keys():
+                norm_href = href
+                if norm_href.endswith('/'):
+                    norm_href = norm_href[:-1]
+                norm_itemid = itemid
+                if norm_itemid.endswith('/'):
+                    norm_itemid = norm_itemid[:-1]
 
-        for href in hrefs:
-            sess.deleteResource(URL(url=href))
-            logging.info('Deleted file %s...', href)
+                if norm_href == norm_itemid or norm_href == urllib.parse.urlsplit(norm_itemid).path:
+                    continue
+
+                full_href = href
+                if full_href.startswith('/'):
+                    full_href = self.get_server() + full_href
+
+                logging.info('Deleting file %s...', full_href)
+                try:
+                    self.client.request(full_href, 'DELETE')
+                except Exception as e:
+                    logging.error("Failed to delete %s: %s", full_href, e)
 
     def set_folders (self):
         """See the documentation in class PIMDB"""
@@ -115,26 +181,50 @@ class CDPIMDB(PIMDB):
     def set_def_folders (self):
         """See the documentation in class PIMDB"""
 
-        root     = self.get_def_root_folder_path()
-        props    = (carddavxml.default_addressbook_url,)
+        root = self.get_def_root_folder_path()
+        body = """<?xml version="1.0" encoding="utf-8" ?>
+        <D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:carddav">
+          <D:prop>
+            <C:default-addressbook-url/>
+          </D:prop>
+        </D:propfind>"""
+        headers = {'Depth': '0', 'Content-Type': 'text/xml; charset="utf-8"'}
 
-        res, bad = self.session().getProperties(URL(url=root), props)
-        uris = list(res.values())
-        if len(uris) > 0:
-            def_uri  = uris[0].toString().strip()
+        def_uri = None
+        try:
+            res = self.client.request(root, 'PROPFIND', body=body, headers=headers)
+            if res and res.status in (200, 207):
+                res.find_objects_and_props()
+                for href, props in res.objects.items():
+                    tag = '{urn:ietf:params:xml:ns:carddav}default-addressbook-url'
+                    if tag in props:
+                        elem = props[tag]
+                        href_elem = elem.find('.//{DAV:}href')
+                        if href_elem is not None and href_elem.text:
+                            def_uri = href_elem.text.strip()
+                            break
+        except Exception as e:
+            logging.debug("Could not get default-addressbook-url property: %s", e)
+
+        def_f = None
+        if def_uri:
+            if def_uri.startswith('/'):
+                def_uri = self.get_server() + def_uri
+            if not def_uri.endswith('/'):
+                def_uri += '/'
             logging.debug('Looking for default folder: "%s"', def_uri)
             def_f, t = self.find_folder(def_uri)
-        else:
-            ## In some instances the server does not respond properly to the
-            ## def_adbk_url property request. In this case we will just pick
-            ## the first folder. One hopes every addressbook server will have
-            ## at least one server
-            logging.debug('Coud not find default adbk Property.')
+
+        if not def_f:
+            logging.debug('Could not find default adbk Property or folder match.')
             fs = self.get_contacts_folders()
-            assert(len(fs) > 0)
-            def_f = fs[0]
-            logging.debug('Setting first available folder as default: %s',
-                          def_f.get_name())
+            if len(fs) > 0:
+                def_f = fs[0]
+                logging.debug('Setting first available folder as default: %s',
+                              def_f.get_name())
+            else:
+                logging.debug('No folders found on the server to set as default.')
+                def_f = None
 
         self.set_def_folder(Folder.CONTACT_t, def_f)
    
@@ -215,10 +305,10 @@ class CDPIMDB(PIMDB):
         self.server = server
 
     def get_account (self):
-        return self.account
+        return self.client
 
-    def set_account (self, account):
-        self.account = account
+    def set_account (self, client):
+        self.client = client
 
     def get_path (self):
         return self.path
@@ -251,7 +341,7 @@ class CDPIMDB(PIMDB):
         self.settings = s
 
     def session (self):
-        return self.get_account().session
+        return self.client
 
     def set_client_logging (self, val):
         self.client_logging = val
@@ -260,7 +350,7 @@ class CDPIMDB(PIMDB):
         return self.client_logging
 
     ##
-    ## Other internal and non-static methods
+    ## Other internal and new methods
     ##
 
     def parse_uri (self, uri):
@@ -271,81 +361,156 @@ class CDPIMDB(PIMDB):
         self.set_path(splits.path)
 
     def cd_init (self):
-        sf  = self.get_server()
-        ssl = sf.startswith('https://')
-        server = sf[8:] if ssl else sf[7:]
+        url = self.get_server() + self.get_path()
+        logging.info("Initializing caldav.DAVClient with URL: %s", url)
         try:
-            account  = CalDAVAccount(server, ssl=ssl, user=self.get_user(),
-                                     pswd=self.get_pw(), root=self.get_path(),
-                                     principal=None,
-                                     logging=self.get_client_logging())
-        except HTTPError as e:
-            server = "Carddav Server (%s)" % sf
-            logging.fatal('Could not open connection to %s. Error: %s',
-                          server, e)
+            client = caldav.DAVClient(url, username=self.get_user(), password=self.get_pw())
+            self.client = client
+            self.discover_principal_and_home()
+        except Exception as e:
+            logging.fatal('Could not open connection to %s. Error: %s', url, e)
             raise
-            sys.exit(-1)
-            
-        self.set_account(account)
-        if not account.principal:
-            e = 'Principal not found for this account'
-            raise CardDAVPrincipalNotFoundError(e)
 
-        logging.debug('Found principal: %s', account.principal.displayname)
+    def discover_principal_and_home (self):
+        # 1. Find current-user-principal
+        body = """<?xml version="1.0" encoding="utf-8" ?>
+        <D:propfind xmlns:D="DAV:">
+          <D:prop>
+            <D:current-user-principal/>
+          </D:prop>
+        </D:propfind>"""
+        headers = {'Depth': '0', 'Content-Type': 'text/xml; charset="utf-8"'}
+
+        start_url = str(self.client.url)
+        try:
+            res = self.client.request(start_url, 'PROPFIND', body=body, headers=headers)
+        except Exception as e:
+            logging.warning("Initial PROPFIND for principal failed: %s. Using start URL as principal.", e)
+            res = None
+
+        principal_url = None
+        if res and res.status in (200, 207):
+            res.find_objects_and_props()
+            for href, props in res.objects.items():
+                tag = '{DAV:}current-user-principal'
+                if tag in props:
+                    elem = props[tag]
+                    href_elem = elem.find('.//{DAV:}href')
+                    if href_elem is not None and href_elem.text:
+                        principal_url = href_elem.text.strip()
+                        break
+
+        if not principal_url:
+            principal_url = self.get_path()
+            logging.info("Principal URL not discovered. Defaulting to: %s", principal_url)
+        else:
+            logging.info("Discovered Principal URL: %s", principal_url)
+
+        if principal_url.startswith('/'):
+            principal_url = self.get_server() + principal_url
+
+        self.principal_url = principal_url
+
+        # 2. Find addressbook-home-set
+        body_home = """<?xml version="1.0" encoding="utf-8" ?>
+        <D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:carddav">
+          <D:prop>
+            <C:addressbook-home-set/>
+          </D:prop>
+        </D:propfind>"""
+        headers_home = {'Depth': '0', 'Content-Type': 'text/xml; charset="utf-8"'}
+        try:
+            res_home = self.client.request(self.principal_url, 'PROPFIND', body=body_home, headers=headers_home)
+        except Exception as e:
+            logging.fatal("Failed to fetch addressbook-home-set: %s", e)
+            raise
+
+        homeset_url = None
+        if res_home and res_home.status in (200, 207):
+            res_home.find_objects_and_props()
+            for href, props in res_home.objects.items():
+                tag = '{urn:ietf:params:xml:ns:carddav}addressbook-home-set'
+                if tag in props:
+                    elem = props[tag]
+                    href_elem = elem.find('.//{DAV:}href')
+                    if href_elem is not None and href_elem.text:
+                        homeset_url = href_elem.text.strip()
+                        break
+
+        if not homeset_url:
+            homeset_url = self.principal_url
+            logging.info("Addressbook Home Set not discovered. Fallback to: %s", homeset_url)
+        else:
+            logging.info("Discovered Addressbook Home Set URL: %s", homeset_url)
+
+        if homeset_url.startswith('/'):
+            homeset_url = self.get_server() + homeset_url
+
+        self.homeset_url = homeset_url
 
     def get_contacts_folders_roots (self):
-        if self.get_account().getPrincipal():
-            return self.get_account().getPrincipal().adbkhomeset
-        else:
-            return None
+        return [self.homeset_url]
 
     def get_def_root_folder_path (self):
-        homeset = self.get_contacts_folders_roots()
-        if not homeset:
-            e = 'Principal does not have any addressbook home'
-            raise CardDAVPrincipalNotFoundError(e)
-
-        ## FIXME: What does it mean to have multiple paths in adbkhomeset?
-        return homeset[0].path
+        return self.homeset_url
 
     def fetch_folders (self):
         """Fetch and return the list of addressbooks from the server."""
-        
-        ## FIXME: CalDAVPrincipal:listAddressBooks() appears to do something
-        ## very similar. Perhaps we should use that instead of this.
-
         logging.debug('CDPIMDB.fetch_folders(): Begin')
 
-        sess  = self.session()
-        roots = self.get_contacts_folders_roots()
-        logging.debug('Exploring following root paths: %s',
-                      [r.path for r in roots])
-        props = (davxml.resourcetype, davxml.getlastmodified,)
+        body = """<?xml version="1.0" encoding="utf-8" ?>
+        <D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:carddav">
+          <D:prop>
+            <D:resourcetype/>
+            <D:displayname/>
+          </D:prop>
+        </D:propfind>"""
+        headers = {'Depth': '1', 'Content-Type': 'text/xml; charset="utf-8"'}
 
-        ret   = []
-        for root in roots:
-            path = root.path
-            logging.debug('Processing root path %s', path)
-            results = sess.getPropertiesOnHierarchy(URL(url=path), props)
-            items = list(results.keys())
-            items.sort()
-            logging.debug('  Found following properties: %s.', items)
-            for rurl in items:
-                rurl = urllib.parse.unquote(rurl)
-                if rurl == path:
+        home = self.get_def_root_folder_path()
+        try:
+            res = self.client.request(home, 'PROPFIND', body=body, headers=headers)
+        except Exception as e:
+            logging.error("Failed to fetch folders in fetch_folders: %s", e)
+            return []
+
+        ret = []
+        if res and res.status in (200, 207):
+            res.find_objects_and_props()
+            for href, props in res.objects.items():
+                norm_href = href
+                if norm_href.endswith('/'):
+                    norm_href = norm_href[:-1]
+                norm_home = home
+                if norm_home.endswith('/'):
+                    norm_home = norm_home[:-1]
+
+                if norm_href == norm_home or norm_href == urllib.parse.urlsplit(norm_home).path:
                     continue
 
-                props = results[urllib.parse.quote(rurl)]
-                rtype = props.get(davxml.resourcetype)
-                logging.debug('    Resource type of prop: %s.', rtype)
-                if not isinstance(rtype, str):
-                    for child in rtype.getchildren():
-                        if child.tag == carddavxml.addressbook:
-                            name = rurl[len(path):-1]
-                            logging.debug('Found Folder %-15s in URI "%s"',
-                                          name, rurl)
-                            ret.append((rurl.strip(), path, name))
+                is_addressbook = False
+                res_type = props.get('{DAV:}resourcetype')
+                if res_type is not None:
+                    for child in res_type:
+                        if child.tag == '{urn:ietf:params:xml:ns:carddav}addressbook':
+                            is_addressbook = True
+                            break
 
-        logging.debug('CDPIMDB.fetch_folders(): Done.')
+                if is_addressbook:
+                    name = None
+                    disp_name = props.get('{DAV:}displayname')
+                    if disp_name is not None and disp_name.text:
+                        name = disp_name.text.strip()
+                    if not name:
+                        name = os.path.basename(href.rstrip('/'))
 
+                    full_href = href
+                    if full_href.startswith('/'):
+                        full_href = self.get_server() + full_href
+                    if not full_href.endswith('/'):
+                        full_href += '/'
+                    ret.append((full_href, home, name))
+                    logging.debug("Found Addressbook: %s at %s", name, full_href)
+
+        logging.debug('CDPIMDB.fetch_folders(): Done. Found %d folders.', len(ret))
         return ret

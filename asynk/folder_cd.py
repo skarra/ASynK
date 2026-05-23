@@ -21,11 +21,8 @@
 from utils import HTTPError
 from folder import Folder
 from contact_cd import CDContact
-from   caldavclientlibrary.protocol.url                 import URL
-from   caldavclientlibrary.protocol.webdav.definitions  import davxml
-from   caldavclientlibrary.protocol.carddav.definitions import carddavxml
 
-import logging, vobject
+import logging, vobject, urllib.parse, html
 
 class CDContactsFolder(Folder):
     def __init__ (self, db, fid, gn, root_path):
@@ -53,7 +50,7 @@ class CDContactsFolder(Folder):
     def get_batch_size (self):
         """See the documentation in folder.Folder"""
 
-        raise 100
+        return 100
 
     def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
         """See the documentation in folder.Folder"""
@@ -128,15 +125,18 @@ class CDContactsFolder(Folder):
         return ret
 
     def del_itemids (self, itemids):
-        sess = self.get_db().session()
+        client = self.get_db().session()
         for itemid in itemids:
+            path = self.item_path(itemid)
             try:
-                sess.deleteResource(URL(url=self.item_path(itemid)))
-                self.del_contact(itemid)
-                logging.info('Deleted CardDAV server contact %s...', itemid)
-            except HTTPError as e:
+                res = client.request(path, 'DELETE')
+                if res.status in (200, 204):
+                    self.del_contact(itemid)
+                    logging.info('Deleted CardDAV server contact %s...', itemid)
+                else:
+                    logging.error('Could not delete itemid: %s (status: %d)', itemid, res.status)
+            except Exception as e:
                 logging.error('Could not delete itemid: %s (%s)', itemid, e)
-
 
     def item_path (self, itemid):
         if itemid[0] != '/':
@@ -149,17 +149,23 @@ class CDContactsFolder(Folder):
 
     def find_item (self, itemid):
         """See the documentation in folder.Folder"""
-
-        sess = self.get_db().session()
-        result = sess.readData(URL(path=self.item_path(itemid)))
-        if not result:
-            return None
-
-        data, _ignore_etag = result
-
+        client = self.get_db().session()
+        path = self.item_path(itemid)
         try:
+            res = client.request(path, 'GET')
+            if res.status == 404:
+                return None
+            if res.status != 200:
+                logging.error("Failed to GET contact %s (status: %d)", path, res.status)
+                return None
+            data = res.raw if isinstance(res.raw, str) else getattr(res.raw, 'text', str(res.raw))
             itemid = CDContact.normalize_cdid(itemid)
-            return CDContact(self, vco=vobject.readOne(data), itemid=itemid)
+            
+            etag = res.headers.get('etag') or res.headers.get('ETag')
+            contact = CDContact(self, vco=vobject.readOne(data), itemid=itemid)
+            if etag:
+                contact.set_etag(etag.strip('"'))
+            return contact
         except Exception as e:
             logging.error('Error (%s) parsing vCard object for %s',
                           e, itemid)
@@ -167,28 +173,58 @@ class CDContactsFolder(Folder):
 
     def find_items (self, itemids):
         """See the documentation in folder.Folder"""
-
-        sess = self.get_db().session()
+        client = self.get_db().session()
         ids = [self.item_path(x) for x in itemids]
-        results = sess.addressbookMultiGet(URL(path=self.get_itemid()), ids,
-                                (davxml.getetag, carddavxml.address_data))
-
+        
+        import xml.etree.ElementTree as ET
+        
+        multiget = ET.Element('{urn:ietf:params:xml:ns:carddav}addressbook-multiget')
+        prop = ET.SubElement(multiget, '{DAV:}prop')
+        ET.SubElement(prop, '{DAV:}getetag')
+        ET.SubElement(prop, '{urn:ietf:params:xml:ns:carddav}address-data')
+        
+        for href in ids:
+            path_part = urllib.parse.urlsplit(href).path
+            href_el = ET.SubElement(multiget, '{DAV:}href')
+            href_el.text = path_part
+            
+        ET.register_namespace('D', 'DAV:')
+        ET.register_namespace('C', 'urn:ietf:params:xml:ns:carddav')
+        
+        body = ET.tostring(multiget, encoding='utf-8').decode('utf-8')
+        headers = {'Depth': '1', 'Content-Type': 'text/xml; charset="utf-8"'}
+        
+        try:
+            res = client.request(self.get_itemid(), 'REPORT', body=body, headers=headers)
+        except Exception as e:
+            logging.error("Failed REPORT request for addressbook-multiget: %s", e)
+            raise
+            
         ret = []
-        for key, item in results.items():
-            etag = item.getNodeProperties()[davxml.getetag]
-            vcf  = item.getNodeProperties()[carddavxml.address_data]
-
-            try:
-                key = CDContact.normalize_cdid(key)
-                cd = CDContact(self, vco=vobject.readOne(vcf.text), itemid=key)
-            except Exception as e:
-                logging.error('Error (%s) parsing vCard object for %s',
-                              e, key)
-                raise
-
-            cd.set_etag(etag.text)
-            ret.append(cd)
-
+        if res and res.status in (200, 207):
+            res.find_objects_and_props()
+            for href, props in res.objects.items():
+                etag_elem = props.get('{DAV:}getetag')
+                vcf_elem = props.get('{urn:ietf:params:xml:ns:carddav}address-data')
+                
+                if vcf_elem is None or not vcf_elem.text:
+                    logging.debug("No address-data found for %s", href)
+                    continue
+                    
+                etag = etag_elem.text if etag_elem is not None else None
+                if etag:
+                    etag = etag.strip('"')
+                    
+                key = CDContact.normalize_cdid(href)
+                try:
+                    cd = CDContact(self, vco=vobject.readOne(vcf_elem.text), itemid=key)
+                    if etag:
+                        cd.set_etag(etag)
+                    ret.append(cd)
+                except Exception as e:
+                    logging.error('Error (%s) parsing vCard object for %s', e, key)
+                    raise
+                    
         return ret
 
     def batch_create (self, src_sl, src_dbid, items):
@@ -205,9 +241,7 @@ class CDContactsFolder(Folder):
         for item in items:
 
             ## CardDAV does not support a multiput operation. So we will have
-            ## to PUT the damn items one at a time. What kind of a standard is
-            ## this, anyway?
-
+            ## to PUT the damn items one at a time.
             con_itemid = item.get_itemid_from_synctags(pname, 'cd')
             cd = CDContact(self, con=item, con_itemid=con_itemid)
             cd.update_sync_tags(src_sync_tag, item.get_itemid(), save=True)
@@ -216,7 +250,7 @@ class CDContactsFolder(Folder):
             item.update_sync_tags(dst_sync_tag, cd.get_itemid())
 
             logging.info('Successfully created CardDAV entry for %30s (%s)',
-                         cd.get_disp_name(), cd.get_itemid())
+                          cd.get_disp_name(), cd.get_itemid())
 
         return True
 
@@ -232,18 +266,10 @@ class CDContactsFolder(Folder):
 
         cons = self.get_contacts()
 
-        ## FIXME: We will try to overwrite using the etags we had fetched just
-        ## a fe moments back. It could still fail; and the error handling
-        ## needs to be robust ... but it is not
-
         success = True
 
         for item in items:
             tag, href = item.get_sync_tags(dst_sync_tag)[0]
-            ## FIXME: Some times we might find it expedient to force a
-            ## "update" without the contact being present int he remote. If
-            ## that happens the next line will throw an KeyError. You are
-            ## warned. 
             con_old = cons[href]
             con_itemid = item.get_itemid_from_synctags(pname, 'cd')
             con_new = CDContact(self, con=item, con_itemid=con_itemid)
@@ -257,7 +283,7 @@ class CDContactsFolder(Folder):
                              con_new.get_disp_name(), con_new.get_itemid())
             except HTTPError as e:
                 logging.error('Error (%s). Could not update CardDAV entry %s',
-                              e, con_new.get_disp_name())
+                               e, con_new.get_disp_name())
                 success = False
 
         return success
@@ -278,7 +304,6 @@ class CDContactsFolder(Folder):
 
         logging.info('folder_cd:bulk_clear_sync_tags: Not implemented yet.')
         return True
-
 
     ##
     ## Internal and helper functions
@@ -301,22 +326,46 @@ class CDContactsFolder(Folder):
         logging.debug('Refreshing Contacts for folder %s...',
                       self.get_name())
         self.reset_contacts()
-        ## Now fetch from server
+        client = self.get_db().session()
 
-        sess  = self.get_db().session()
-        path  = URL(url=self.get_itemid())
-        props = (davxml.getetag,)
-        items = sess.getPropertiesOnHierarchy(path, props)
+        body = """<?xml version="1.0" encoding="utf-8" ?>
+        <D:propfind xmlns:D="DAV:">
+          <D:prop>
+            <D:getetag/>
+          </D:prop>
+        </D:propfind>"""
+        headers = {'Depth': '1', 'Content-Type': 'text/xml; charset="utf-8"'}
 
-        hrefs = [x for x in list(items.keys()) if x != path.toString().strip()]
-        etags = [items[x].get(davxml.getetag, "-") for x in list(items.keys())]
+        try:
+            res = client.request(self.get_itemid(), 'PROPFIND', body=body, headers=headers)
+        except Exception as e:
+            logging.error("Failed to fetch contact etags: %s", e)
+            return
 
-        cons  = self.find_items(hrefs)
+        hrefs = []
+        if res and res.status in (200, 207):
+            res.find_objects_and_props()
+            for href, props in res.objects.items():
+                norm_href = href
+                if norm_href.endswith('/'):
+                    norm_href = norm_href[:-1]
+                norm_folder = self.get_itemid()
+                if norm_folder.endswith('/'):
+                    norm_folder = norm_folder[:-1]
 
-        for con in cons:
-            self.add_contact(con)
-            logging.debug('Successfully fetched and added contact: %s',
-                          con.get_disp_name())
+                if norm_href == norm_folder or norm_href == urllib.parse.urlsplit(norm_folder).path:
+                    continue
+
+                etag_elem = props.get('{DAV:}getetag')
+                if etag_elem is not None:
+                    hrefs.append(href)
+
+        if hrefs:
+            cons = self.find_items(hrefs)
+            for con in cons:
+                self.add_contact(con)
+                logging.debug('Successfully fetched and added contact: %s',
+                              con.get_disp_name())
 
         logging.debug('Refreshing Contacts for folder %s..done.',
                       self.get_name())
@@ -342,10 +391,18 @@ class CDContactsFolder(Folder):
         self._set_prop('root_path', root_path)
 
     def put_item (self, name, data, content_type, etag=None):
-        path = URL(url=name)
-        res = self.get_db().session().writeData(path, data, content_type,
-                                                etag=etag)
+        client = self.get_db().session()
+        headers = {'Content-Type': content_type}
+        if etag:
+            headers['If-Match'] = f'"{etag}"'
+        else:
+            headers['If-None-Match'] = '*'
+
+        logging.debug("PUT contact %s with etag %s", name, etag)
+        res = client.request(name, 'PUT', body=data, headers=headers)
+        if res.status not in (200, 201, 204):
+            raw_body = res.raw if isinstance(res.raw, str) else getattr(res.raw, 'text', str(res.raw))
+            logging.error("Failed to PUT contact: status %d, body %s", res.status, raw_body)
+            raise HTTPError(res.status, raw_body)
 
         return name
-
-        ## FIXME: How do we handle errors?
