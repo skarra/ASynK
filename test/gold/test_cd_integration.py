@@ -30,6 +30,7 @@ config    = None
 server_url = "http://127.0.0.1:5232/"
 cd_user   = "admin"
 cd_pass   = "admin"
+best_effort = False
 
 def setup_user_dir ():
     if os.path.exists(user_dir):
@@ -53,7 +54,12 @@ class TestCDAuth(unittest.TestCase):
     @classmethod
     def setUpClass (cls):
         print_suite_banner(cls.__name__)
-        cls.pimdb = CDPIMDB(config, server_url, cd_user, cd_pass)
+        try:
+            cls.pimdb = CDPIMDB(config, server_url, cd_user, cd_pass)
+        except Exception as e:
+            if best_effort:
+                raise unittest.SkipTest("CardDAV server not reachable: %s" % e)
+            raise
 
     def setUp (self):
         print_test_banner(self._testMethodName)
@@ -69,7 +75,12 @@ class TestCDFolders(unittest.TestCase):
     @classmethod
     def setUpClass (cls):
         print_suite_banner(cls.__name__)
-        cls.pimdb = CDPIMDB(config, server_url, cd_user, cd_pass)
+        try:
+            cls.pimdb = CDPIMDB(config, server_url, cd_user, cd_pass)
+        except Exception as e:
+            if best_effort:
+                raise unittest.SkipTest("CardDAV server not reachable: %s" % e)
+            raise
 
     def setUp (self):
         print_test_banner(self._testMethodName)
@@ -104,7 +115,12 @@ class TestCDContacts(unittest.TestCase):
     @classmethod
     def setUpClass (cls):
         print_suite_banner(cls.__name__)
-        cls.pimdb = CDPIMDB(config, server_url, cd_user, cd_pass)
+        try:
+            cls.pimdb = CDPIMDB(config, server_url, cd_user, cd_pass)
+        except Exception as e:
+            if best_effort:
+                raise unittest.SkipTest("CardDAV server not reachable: %s" % e)
+            raise
         
         # Create temporary addressbook
         cls.test_folder = cls.pimdb.new_folder('cd_integration_tests')
@@ -112,7 +128,8 @@ class TestCDContacts(unittest.TestCase):
 
     @classmethod
     def tearDownClass (cls):
-        cls.pimdb.del_folder(cls.test_folder.get_itemid())
+        if hasattr(cls, 'test_folder') and cls.test_folder is not None:
+            cls.pimdb.del_folder(cls.test_folder.get_itemid())
 
     def setUp (self):
         print_test_banner(self._testMethodName)
@@ -184,13 +201,13 @@ class TestCDContacts(unittest.TestCase):
 
 
 def main ():
-    global config, server_url, cd_user, cd_pass
+    global config, server_url, cd_user, cd_pass, best_effort
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
-                                   ['url=', 'user=', 'pass='])
+                                   ['url=', 'user=', 'pass=', 'best-effort'])
     except getopt.error as msg:
-        print('Usage: python test_cd_integration.py [--url server_url] [--user user] [--pass pass]')
+        print('Usage: python test_cd_integration.py [--url server_url] [--user user] [--pass pass] [--best-effort]')
         sys.exit(2)
 
     for option, arg in opts:
@@ -200,6 +217,8 @@ def main ():
             cd_user = arg
         elif option == '--pass':
             cd_pass = arg
+        elif option == '--best-effort':
+            best_effort = True
 
     setup_user_dir()
     config = Config(asynk_base_dir='../../', user_dir=user_dir)

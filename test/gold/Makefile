@@ -21,7 +21,7 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb sync-bb-bb gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort
+all: state cmdline bb sync-bb-bb gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort cd-best-effort
 
 clean:
 	rm -rf user_dir user_dir_gc_gc *~ *.bak temp.bbdb test_sync_*.bbdb
@@ -114,3 +114,14 @@ ifdef GOOGLE_CL_SECRET
 else
 	$(PYTHON) test_sync_gc_gc.py --user $(GC_USER) --best-effort
 endif
+
+## CardDAV integration tests.
+CD_URL ?= http://127.0.0.1:5232/
+CD_USER ?= admin
+CD_PASS ?= admin
+
+cd:
+	$(PYTHON) test_cd_integration.py --url $(CD_URL) --user $(CD_USER) --pass $(CD_PASS)
+
+cd-best-effort:
+	$(PYTHON) test_cd_integration.py --url $(CD_URL) --user $(CD_USER) --pass $(CD_PASS) --best-effort
