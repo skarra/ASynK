@@ -126,26 +126,6 @@ cd:
 cd-best-effort:
 	$(PYTHON) test_cd_integration.py --url $(CD_URL) --user $(CD_USER) --pass $(CD_PASS) --best-effort
 
-## Docker-based Radicale server management.
-##   make cd-server-start   — spin up Radicale in Docker
-##   make cd-server-stop    — tear down Radicale container
-##   make cd-full           — start server, run tests, stop server
-DOCKER_COMPOSE ?= docker compose -f ../docker-compose.yml
-
-cd-server-start:
-	$(DOCKER_COMPOSE) up -d radicale
-	@echo "Waiting for Radicale to become healthy..."
-	@for i in 1 2 3 4 5 6 7 8 9 10; do \
-		curl -sf http://127.0.0.1:5232/ > /dev/null 2>&1 && break; \
-		sleep 1; \
-	done
-	@echo "Radicale is ready at $(CD_URL)"
-
-cd-server-stop:
-	$(DOCKER_COMPOSE) down
-
-cd-full: cd-server-start cd cd-server-stop
-
 ## CD↔BB sync engine tests.
 ## Same best-effort pattern as gc above.
 sync-cd-bb:
@@ -153,3 +133,4 @@ sync-cd-bb:
 
 sync-cd-bb-best-effort:
 	$(PYTHON) test_sync_cd_bb.py --url $(CD_URL) --user $(CD_USER) --pass $(CD_PASS) --best-effort
+

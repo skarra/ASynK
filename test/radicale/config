@@ -1,10 +1,10 @@
 [server]
-hosts = 0.0.0.0:5232
+hosts = 127.0.0.1:5232
 
 [auth]
 type = htpasswd
-htpasswd_filename = /config/users
+htpasswd_filename = test/radicale/users
 htpasswd_encryption = plain
 
 [storage]
-filesystem_folder = /data/collections
+filesystem_folder = test/radicale/data
