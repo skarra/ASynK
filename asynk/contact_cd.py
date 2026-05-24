@@ -129,7 +129,14 @@ class CDContact(Contact):
 
         if self.get_itemid():
             fn += self.get_itemid() + '.vcf'
-            fo.put_item(fn, vcf_data, 'text/vcard', etag=etag)
+            ## Use the stored etag if no explicit one was passed.  This
+            ## ensures writeback_sync_tags (which calls save() with no
+            ## args) sends a correct If-Match instead of If-None-Match.
+            if etag is None:
+                etag = self.get_etag()
+            _name, new_etag = fo.put_item(fn, vcf_data, 'text/vcard', etag=etag)
+            if new_etag:
+                self.set_etag(new_etag)
         else:
             assert(not etag)
             cdid = hashlib.md5(vcf_data.encode('utf-8') if isinstance(vcf_data, str) else vcf_data).hexdigest() 
@@ -138,7 +145,9 @@ class CDContact(Contact):
             ## FIXME: Handle errors and all that good stuff.
             self.set_itemid(cdid)
             try:
-                fo.put_item(fn, vcf_data, 'text/vcard')
+                _name, new_etag = fo.put_item(fn, vcf_data, 'text/vcard')
+                if new_etag:
+                    self.set_etag(new_etag)
             except HTTPError as e:
                 success = False
 
@@ -484,7 +493,7 @@ class CDContact(Contact):
         for label, val in vco.contents.items():
             if re.search(pname_re, label):
                 label = label.replace(l(self.SYNC_TAG_PREFIX), '')
-                label = 'asynk-' + label.replace('-', ':')
+                label = 'asynk:' + label.replace('-', ':')
                 self.update_sync_tags(label, val[0].value)
 
     def _snarf_notes_from_vco (self, vco):

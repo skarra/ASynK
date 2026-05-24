@@ -1,0 +1,10 @@
+[server]
+hosts = 127.0.0.1:5232
+
+[auth]
+type = htpasswd
+htpasswd_filename = /Users/sriram/code/python/ASynK/test/radicale/users
+htpasswd_encryption = plain
+
+[storage]
+filesystem_folder = /Users/sriram/code/python/ASynK/test/radicale/data

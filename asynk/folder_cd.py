@@ -405,4 +405,12 @@ class CDContactsFolder(Folder):
             logging.error("Failed to PUT contact: status %d, body %s", res.status, raw_body)
             raise HTTPError(res.status, raw_body)
 
-        return name
+        ## Capture the new ETag from the response so subsequent PUTs
+        ## (e.g. writeback_sync_tags) use the correct If-Match value.
+        new_etag = None
+        if hasattr(res, 'headers'):
+            new_etag = res.headers.get('etag') or res.headers.get('ETag')
+        if new_etag:
+            new_etag = new_etag.strip('"')
+
+        return name, new_etag
