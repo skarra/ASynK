@@ -1,10 +1,9 @@
 ##
 ## Created : Sat May 23 2026
-##
-## Copyright (C) 2026 Sriram Karra <karra.etc@gmail.com>
+## SPDX-FileCopyrightText: 2026 Sriram Karra <karra.etc@gmail.com>
+## SPDX-License-Identifier: AGPL-3.0-only
 ##
 ## This file is part of ASynK
-##
 
 import getopt, logging, os, os.path, shutil, sys, unittest, time
 
