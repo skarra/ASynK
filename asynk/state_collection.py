@@ -301,17 +301,20 @@ class EXCollection(Collection):
 
     def login (self):
         from pimdb_ex import EXPIMDB
-        pimex = EXPIMDB(self.get_config(), self.get_username(), self.get_pwd(),
-                        self.get_stid())
+
+        ## Graph API uses OAuth device code flow — no username/password needed.
+        ## client_id and tenant_id are read from the config by EXPIMDB.
+        pimex = EXPIMDB(self.get_config())
 
         ## FIXME: Need better error handling
         return self.set_db(pimex)
 
     def force_username (self):
-        return True
+        return False
 
     def force_pwd (self):
-        return True
+        return False
+
 
 
 class GCCollection(Collection):

@@ -4,53 +4,39 @@
 ## SPDX-License-Identifier: AGPL-3.0-only
 ##
 ## This file is part of ASynK
-
+##
+## Rewritten for Microsoft Graph API, replacing the legacy pyews EWS client.
+##
 
 import logging, re
-from   abc            import ABCMeta, abstractmethod
-from folder import Folder
-from contact_ex import EXContact
-from   pyews.ews      import mapitags
-from   pyews.utils    import pretty_eid
-from   pyews.ews.data import ews_pt, ews_pid
-from   pyews.ews.data import FolderClass
-from   pyews.ews.data import MapiPropertyTypeType as mptt
-from   pyews.ews.item import ExtendedProperty
-from   pyews.ews.errors import EWSMessageError
-
-folder_class_map = {
-    Folder.CONTACT_t : FolderClass.Contacts,
-    Folder.TASK_t    : FolderClass.Tasks,
-    Folder.APPT_t    : FolderClass.Calendars,
-    Folder.NOTE_t    : FolderClass.Notes
-    }
-
-folder_class_inv_map = {}
-for key, val in folder_class_map.items():
-    folder_class_inv_map.update({val : key})
+from   abc        import ABCMeta, abstractmethod
+from folder       import Folder
+from contact_ex   import EXContact, ASYNK_EXTENSION_NAME
+from msgraph_client import GraphAPIError
 
 class EXFolder(Folder, metaclass=ABCMeta):
-    """A Folder That directly maps to a folder in MS Exchange"""
+    """A Folder That directly maps to a contact folder in MS Exchange Online,
+    accessed via the Microsoft Graph API."""
 
-    def __init__ (self, db, entryid, name, fobj):
+    def __init__ (self, db, folder_id, display_name):
         Folder.__init__(self, db)
 
-        self.set_entryid(entryid)
-        self.set_name(name)
-        self.set_fobj(fobj)
+        self.set_itemid(folder_id)
+        self.set_name(display_name)
         self.reset_items()
 
-        self.custom_eprops_xml = self._init_custom_eprops_xml()
-
     ##
-    ## Implementation of some abstract methods inherted from Folder
+    ## Implementation of some abstract methods inherited from Folder
     ##
 
     def get_batch_size (self):
         return 100
 
     def prep_sync_lists (self, destid, sl, updated_min=None, cnt=0):
-        """See the documentation in folder.Folder"""
+        """See the documentation in folder.Folder.
+
+        Uses Graph API delta queries when available, otherwise falls back
+        to full comparison against known item IDs."""
 
         pname = sl.get_pname()
         conf  = self.get_config()
@@ -65,34 +51,37 @@ class EXFolder(Folder, metaclass=ABCMeta):
 
         if not updated_min:
             updated_min = conf.get_last_sync_stop(pname)
-            ## The updated_min timestamp is of the form
-            ## 2014-05-03T09:58:34.20Z; Exchange does not use such a granual
-            ## timestamp. So we will strip the .20 from this string
-            updated_min = updated_min[0:19] + 'Z'
 
-        ex_items = self.get_ews().FindItems(self.get_fobj(), ids_only=True)
-        ex_itemids = [x.itemid.value for x in ex_items]
+        ## Fetch all contacts from the folder (IDs + last modified)
+        client = self.get_graph_client()
+        graph_contacts = client.list_contacts(
+            folder_id=self.get_itemid(),
+            select='id,lastModifiedDateTime,displayName')
 
-        for ex_item in ex_items:
-            eid = ex_item.itemid.value
+        graph_ids = set()
+        for gc in graph_contacts:
+            eid = gc.get('id')
+            graph_ids.add(eid)
+
             if eid in oldi:
-                if ex_item.last_modified_time.value > updated_min:
-                    logging.debug('Modified Exchange Contact: %20s %s',
-                                  ex_item.display_name.value, pretty_eid(eid))
+                lmt = gc.get('lastModifiedDateTime', '')
+                if updated_min and lmt > updated_min:
+                    logging.debug('Modified Exchange Contact: %s %s',
+                                  gc.get('displayName', ''), eid[:20])
                     sl.add_mod(eid, oldi[eid])
                 else:
-                    logging.debug('Unmod   Exchange Contact: %20s %s',
-                                  ex_item.display_name.value, pretty_eid(eid))
+                    logging.debug('Unmod   Exchange Contact: %s %s',
+                                  gc.get('displayName', ''), eid[:20])
                     sl.add_unmod(eid)
             else:
-                logging.debug('New      Exchange Contact: %20s %s',
-                              ex_item.display_name.value, pretty_eid(eid))
+                logging.debug('New      Exchange Contact: %s %s',
+                              gc.get('displayName', ''), eid[:20])
                 sl.add_new(eid)
 
         for oldid in list(oldi.keys()):
-            if not oldid in ex_itemids:
+            if not oldid in graph_ids:
                 logging.debug('Del      Exchange Contact: %s',
-                              pretty_eid(oldid))
+                              oldid[:20])
                 sl.add_del(oldid, oldi[oldid])
 
         logging.debug('Total New   : %5d', len(sl.news))
@@ -112,47 +101,62 @@ class EXFolder(Folder, metaclass=ABCMeta):
 
     def del_itemids (self, itemids):
         """Delete the specified contacts from this folder if they exist. The
-        return value is a pair of (success, [failed entrie]). success is true
-        if and only all items were deleted successfully."""
+        return value is a pair of (success, [failed entries]). success is true
+        if and only if all items were deleted successfully."""
 
-        resp = self.get_ews().DeleteItems(itemids)
-        if resp.has_errors():
-            return False, [itemids[i] for i in list(resp.errors.keys())]
+        client = self.get_graph_client()
+        failed = []
 
-        return True, []
+        for iid in itemids:
+            try:
+                client.delete_contact(iid)
+            except GraphAPIError as e:
+                logging.error('Failed to delete contact %s: %s', iid, e)
+                failed.append(iid)
+
+        return (len(failed) == 0), failed
 
     def find_item (self, itemid):
-        """
-        Fetch specified item from the server. The Exchange service searches
-        and returns this from anywhere so items need to be
-        """
+        """Fetch specified item from the server."""
 
         cons = self.find_items([itemid])
-        return cons[0] if cons is not None else None
+        return cons[0] if cons is not None and len(cons) > 0 else None
 
     def find_items (self, itemids):
-        logging.info('folder_ex:find_items() - fetching items...')
+        """Fetch multiple items from the server by their IDs."""
+
+        logging.info('folder_ex:find_items() - fetching %d items...',
+                     len(itemids))
+
+        client = self.get_graph_client()
+
         try:
-            ews = self.get_ews()
-            ews_items = ews.GetItems(itemids,
-                                     eprops_xml=self.custom_eprops_xml)
-        except EWSMessageError as e:
-            logging.info('Error from Server looking for items: %s', e)
+            graph_contacts = client.get_contacts(
+                itemids, expand='extensions')
+        except GraphAPIError as e:
+            logging.info('Error from server looking for items: %s', e)
             return None
 
-        fid = self.get_itemid()
-        if ews_items is not None and len(ews_items) > 0:
-            ## FIXME: Need to fix this when we add suppport for additional
-            ## item types. For now we just assume we only get back contact
-            ## types - which is true as of April 2014
-            items = [EXContact(self, x) for x in ews_items]
-            ret =  [x for x in items if x.get_parent_folder_id() == fid]
+        if graph_contacts is not None and len(graph_contacts) > 0:
+            fid = self.get_itemid()
+            items = [EXContact(self, graph_con=gc) for gc in graph_contacts]
+            ret = [x for x in items
+                   if x.get_parent_folder_id() == fid or fid is None]
             return ret
         else:
             return None
 
     def batch_create (self, sync_list, src_dbid, items):
-        """See the documentation in folder.Folder"""
+        """See the documentation in folder.Folder.
+
+        Creates new contacts in Exchange via Graph API. For each source
+        item:
+        1. Wrap it as an EXContact (copies all fields via the con= constructor)
+        2. Convert to Graph API JSON dict
+        3. Create on the server via the Graph API
+        4. Write the Open Extension with sync tags and custom overflow data
+        5. Update the source item's sync tags with the new Exchange ID
+        """
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
@@ -161,59 +165,110 @@ class EXFolder(Folder, metaclass=ABCMeta):
         src_sync_tag = c.make_sync_label(pname, src_dbid)
         dst_sync_tag = c.make_sync_label(pname, my_dbid)
 
-        ex_cons = []
+        client = self.get_graph_client()
+        folder_id = self.get_itemid()
+
         for item in items:
             con_itemid = item.get_itemid_from_synctags(pname, 'ex')
             exc = EXContact(self, con=item, con_itemid=con_itemid)
             rid = item.get_itemid()
             exc.update_sync_tags(src_sync_tag, rid)
 
-            self.add_item(exc)
+            ## Convert to Graph dict and create on server
+            graph_dict = exc.to_graph_dict()
+            try:
+                resp = client.create_contact(folder_id, graph_dict)
+            except GraphAPIError as e:
+                logging.error('Failed to create contact %s: %s',
+                              exc.get_disp_name(), e)
+                continue
 
-            ews_con = exc.init_ews_con_from_props()
-            ex_cons.append(ews_con)
+            new_id = resp.get('id')
+            if new_id:
+                exc.set_itemid(new_id)
+                self.add_item(exc)
 
-        self.get_ews().CreateItems(self.get_fobj().Id, ex_cons)
+                ## Write extension data (sync tags + custom overflow)
+                ext_data = exc.get_extension_data()
+                if ext_data:
+                    try:
+                        client.set_extension(new_id, ASYNK_EXTENSION_NAME,
+                                             ext_data)
+                    except GraphAPIError as e:
+                        logging.warning('Failed to write extension for %s: %s',
+                                        new_id, e)
 
-        for i, item in enumerate(items):
-            exc = ex_cons[i]
-            item.update_sync_tags(dst_sync_tag, exc.itemid.value)
+                ## Update source item sync tag with the new Exchange ID
+                item.update_sync_tags(dst_sync_tag, new_id)
 
         ## FIXME: need to get error and fix it
         return True
 
     def batch_update (self, sync_list, src_dbid, items):
-        """See the documentation in folder.Folder"""
+        """See the documentation in folder.Folder.
 
-        ## FIXME: We will assume that the change keys are up to date... for
-        ## now.
+        Updates existing contacts in Exchange via Graph API."""
 
         my_dbid = self.get_dbid()
         c       = self.get_config()
-        pname   = src_sl.get_pname()
+        pname   = sync_list.get_pname()
 
         src_sync_tag = c.make_sync_label(pname, src_dbid)
         dst_sync_tag = c.make_sync_label(pname, my_dbid)
 
-        ## FIXME: Most of this stuff has to do with sync tags and we should be
-        ## doing away with this shit.
-        ews_cons = []
+        client = self.get_graph_client()
+
         for item in items:
-            con = x.init_ews_con_from_props()
-            con.update_sync_tags(src_sync_tag, item.get_itemid())
+            con_itemid = item.get_itemid_from_synctags(pname, 'ex')
+            if not con_itemid:
+                logging.warning('batch_update: no Exchange ID found for %s',
+                                item.get_disp_name())
+                continue
 
-            ews_cons.append(con)
+            exc = EXContact(self, con=item, con_itemid=con_itemid)
+            exc.update_sync_tags(src_sync_tag, item.get_itemid())
 
-        self.service.UpdateItems(ews_cons)
+            graph_dict = exc.to_graph_dict()
+            try:
+                client.update_contact(con_itemid, graph_dict)
+            except GraphAPIError as e:
+                logging.error('Failed to update contact %s: %s',
+                              con_itemid, e)
+                continue
+
+            ## Update extension data
+            ext_data = exc.get_extension_data()
+            if ext_data:
+                try:
+                    client.set_extension(con_itemid, ASYNK_EXTENSION_NAME,
+                                         ext_data)
+                except GraphAPIError as e:
+                    logging.warning('Failed to write extension for %s: %s',
+                                    con_itemid, e)
 
         ## FIXME: Need proper error handling
         return True
 
     def writeback_sync_tags (self, pname, items):
+        """Write sync tags back to the Exchange server for all items.
+        Uses Open Extensions to store the sync state."""
+
         logging.info('Writing sync state to Exchange server...')
 
-        ews_cons = [x.init_ews_con_from_props() for x in items]
-        self.get_ews().UpdateItems(ews_cons)
+        client = self.get_graph_client()
+        for item in items:
+            contact_id = item.get_itemid()
+            if not contact_id:
+                continue
+
+            ext_data = item.get_extension_data()
+            if ext_data:
+                try:
+                    client.set_extension(contact_id, ASYNK_EXTENSION_NAME,
+                                         ext_data)
+                except GraphAPIError as e:
+                    logging.warning('Failed to write sync tags for %s: %s',
+                                    contact_id, e)
 
         logging.info('Writing sync state to Exchange server...done')
 
@@ -221,68 +276,99 @@ class EXFolder(Folder, metaclass=ABCMeta):
         return True
 
     def bulk_clear_sync_flags (self, label_re=None):
-        """See the documentation in folder.Folder."""
+        """Clear all sync flags from contacts in this folder.
 
-        raise NotImplementedError
+        This removes the ASynK Open Extension from every contact in the
+        folder, effectively resetting the sync state."""
+
+        logging.info('Clearing sync flags from Exchange folder %s...',
+                     self.get_name())
+
+        client = self.get_graph_client()
+        contacts = client.list_contacts(
+            folder_id=self.get_itemid(),
+            select='id',
+            expand='extensions')
+
+        cleared = 0
+        for gc in contacts:
+            contact_id = gc.get('id')
+            extensions = gc.get('extensions', [])
+
+            for ext in extensions:
+                ext_name = ext.get('extensionName', '')
+                ext_id   = ext.get('id', '')
+
+                if (ext_name == ASYNK_EXTENSION_NAME or
+                    ext_id.endswith(ASYNK_EXTENSION_NAME)):
+
+                    if label_re is not None:
+                        ## Only clear matching sync tags, not entire extension
+                        stags = ext.get('syncTags', {})
+                        import re as re_mod
+                        to_remove = [k for k in stags
+                                     if re_mod.search(label_re, k)]
+                        if to_remove:
+                            for k in to_remove:
+                                del stags[k]
+                            ext['syncTags'] = stags
+                            try:
+                                client.set_extension(
+                                    contact_id, ASYNK_EXTENSION_NAME, ext)
+                            except GraphAPIError as e:
+                                logging.warning('Could not update ext for '
+                                                '%s: %s', contact_id, e)
+                            cleared += 1
+                    else:
+                        ## Delete the entire extension
+                        try:
+                            client._request(
+                                'DELETE',
+                                '/me/contacts/%s/extensions/%s' % (
+                                    contact_id, ASYNK_EXTENSION_NAME))
+                        except GraphAPIError as e:
+                            logging.warning('Could not clear ext for '
+                                            '%s: %s', contact_id, e)
+                        cleared += 1
+
+        logging.info('Cleared sync flags from %d contacts.', cleared)
 
     def del_all_entries (self):
-        itemids = self._refresh_itemids()
-        self.get_ews().DeleteItems(itemids)
+        """Delete all contacts in this folder."""
+
+        client = self.get_graph_client()
+        contacts = client.list_contacts(
+            folder_id=self.get_itemid(), select='id')
+        itemids = [c.get('id') for c in contacts]
+
+        if itemids:
+            client.delete_contacts(itemids)
 
     ##
     ## Some internal methods
     ##
 
-    def _init_custom_eprops_xml (self):
-        xmls = []
-
-        guid = self.get_config().get_ex_guid()
-        pid  = self.get_config().get_ex_cus_pid()
-        pname = self.get_config().get_ex_stags_pname()
-
-        ## The property containing the ASynK Custom data
-        eprop = ExtendedProperty(psetid=guid, pid=pid,
-                                 ptype=mptt[mapitags.PT_UNICODE])
-        xmls.append(eprop.write_to_xml_get())
-
-        ## The property containing the ASynK sync tags data
-        eprop = ExtendedProperty(psetid=guid, pname=pname,
-                                 ptype=mptt[mapitags.PT_UNICODE])
-        xmls.append(eprop.write_to_xml_get())
-
-        ## This property is not returned by default with older exchange
-        ## versions ...
-        ptag  = ews_pid(mapitags.PR_PERSONAL_HOME_PAGE)
-        ptype = ews_pt(mapitags.PR_PERSONAL_HOME_PAGE)
-        eprop = ExtendedProperty(ptag=ptag, ptype=ptype)
-        xmls.append(eprop.write_to_xml_get())
-
-        return xmls
-
     def _refresh_items (self):
+        """Fetch all contacts from the server and populate the local cache."""
+
         self.reset_items()
+        client = self.get_graph_client()
+        graph_contacts = client.list_contacts(
+            folder_id=self.get_itemid(),
+            expand='extensions')
 
-        ews = self.get_ews()
-        fobj = self.get_fobj()
-        ews_cons = ews.FindItems(fobj, eprops_xml=self.custom_eprops_xml)
-
-        for econ in ews_cons:
-            ## FIXME: This needs to be fixed if and when we support additional
-            ## Item types.
-            con = EXContact(folder=self, ews_con=econ)
+        for gc in graph_contacts:
+            con = EXContact(folder=self, graph_con=gc)
             self.add_item(con)
 
     def _refresh_itemids (self):
-        """
-        Get a list of all the Itemids in the folder from the server
-        """
+        """Get a list of all the item IDs in the folder from the server."""
 
-        ews = self.get_ews()
-        fobj = self.get_fobj()
-        ews_cons = ews.FindItems(fobj, eprops_xml=self.custom_eprops_xml,
-                                 ids_only=True)
+        client = self.get_graph_client()
+        graph_contacts = client.list_contacts(
+            folder_id=self.get_itemid(), select='id')
 
-        return [ews_con.itemid.value for ews_con in ews_cons]
+        return [gc.get('id') for gc in graph_contacts]
 
     def __str__ (self):
         if self.get_type() == Folder.CONTACT_t:
@@ -309,15 +395,13 @@ class EXFolder(Folder, metaclass=ABCMeta):
     def set_entryid (self, id):
         return self.set_itemid(id)
 
-    ## fobj is the reference to the pyews.Folder object for this folder.
-    def get_fobj (self):
-        return self._get_prop('fobj')
+    def get_graph_client (self):
+        """Get the GraphContactsClient from the parent DB."""
+        return self.get_db().get_graph_client()
 
-    def set_fobj (self, fobj):
-        self._set_prop('fobj', fobj)
-
+    ## Legacy alias
     def get_ews (self):
-        return self.get_db().get_ews()
+        return self.get_graph_client()
 
     def reset_items (self):
         self.items = {}
@@ -328,9 +412,16 @@ class EXFolder(Folder, metaclass=ABCMeta):
     def add_item (self, item):
         self.items.update({item.get_itemid() : item})
 
+
 class EXContactsFolder(EXFolder):
-    def __init__ (self, db, fobj):
-        EXFolder.__init__(self, db, fobj.Id, fobj.DisplayName, fobj)
+    def __init__ (self, db, graph_folder):
+        """Initialize from a Graph API folder dict (with 'id' and
+        'displayName' keys)."""
+
+        folder_id    = graph_folder.get('id', '')
+        display_name = graph_folder.get('displayName', '')
+
+        EXFolder.__init__(self, db, folder_id, display_name)
         self.set_type(Folder.CONTACT_t)
 
     ##
