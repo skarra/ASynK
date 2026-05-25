@@ -12,8 +12,9 @@ that website.
   written in Python. High level features include:
 
   - ASynK allows two-way sync of Contacts across any two supported sources -
-    Google Contacts, Microsoft Outlook, Microsoft Exchange Server, any CardDAV
-    server and Emacs BBDB.
+    Google Contacts, any CardDAV server and Emacs BBDB. (Microsoft Outlook,
+    Microsoft Exchange Server used to be supported but they remain broken for
+    the moment)
   
   - You can use ASynK to copy contacts from one Google account to another
     (say from a Google Apps account at work to a personal address before you
@@ -24,7 +25,7 @@ that website.
     with a mobile device or Outlook, look no further.
   
   - ASynK works on Windows, MacOS X, and Linux. Outlook synchronization
-    only works on Windows.
+    only works on Windows
   
   - Synchronization is granular to the level of 'Folders', i.e. you can
     synchronize one folder of Google Contacts with a Outlook folder (on
@@ -59,32 +60,31 @@ section titled Usage below to invoke ASynK.
 
 : git submodule update --init --recursive
 
-** Dependencies
+** Setting up your Python environment
 
-   ASynK is completely written in Python. For most use cases and set ups you
-   only need to have Python 2.x (x >= 7) installed. Some additional
-   dependencies include:
+   ASynK is written in Python 3. For the best experience you will need Pythyon
+   3.10 or later. There are many python packages dependencies that are
+   captured in requirements.txt file. We recommend creating a separate
+   virtualenv for keeping all the dependencies up to date.
 
-   - If you wish to sync from/to MS Outlook:
+: $ cd ASynK
+
+: $ python3.10 -m venv venv
+
+: $ source venv/bin/activate
+
+: $ pip install -r requirements.txt
+
+: $ python asynk.py --version # sanity test to make sure basic dependencies are in order
+
+***   Other dependencies
+
+   - If you wish to sync from/to MS Outlook (As of May 2026: does not work)
      - MS Windows
-     - Python 2.x (2.7 or later) for Windows
+     - Python 3.x for Windows
      - MS Outlook
      - Pywin32 from Mark Hammond, available from
        http://sourceforge.net/projects/pywin32/
-
-   - On Debian (and likely Ubuntu) you will need the following packages:
-        sudo apt-get install python-argparse
-
-   - The following python packages.
-     - dateutil
-     - httplib2
-     - oauth2client
-     - PyOpenSSL
-     - google-api-python-client
-
-     You could install all of them with just 
-
-: $ pip install -r requirements.txt
 
 * Usage
 
