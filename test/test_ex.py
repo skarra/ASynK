@@ -4,11 +4,16 @@
 ## SPDX-License-Identifier: AGPL-3.0-only
 ##
 ## This file is part of ASynK
-## This file is used for some poking around with the EWS code of ASynK -
-## stuff like print a contact from a bbdb database, test new changes to pimdb
-## or folder code, etc. Essentially some test routines that are not really
-## unit tests. code often moves from here to the unittest directory (gold/)
-## after a while
+## This file is used for some poking around with the Exchange code of ASynK -
+## stuff like print a contact from Exchange, test new changes to pimdb or
+## folder code, etc. Essentially some test routines that are not really
+## unit tests. Code often moves from here to the unittest directory (gold/)
+## after a while.
+##
+## NOTE: This is a manual integration test that requires a real Azure AD
+## app registration and Exchange Online account. For automated unit tests,
+## see test/gold/test_msgraph_client.py and
+## test/gold/test_contact_field_preservation_ex.py.
 ##
 
 import logging, os, os.path, sys, traceback
@@ -28,25 +33,28 @@ def main ():
 
 def init ():
     tests = TestEXContact(ASYNK_BASE_DIR, './')
+    # tests.list_folders()
     # tests.new_contact(first='Sahodara', last="Tripati")
     # tests.list_all_contacts()
     # tests.print_contacts(name='Chellam')
-    tests.find_items(["AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ARgAAAAAA6tvK38NMgEiPrdzycecYvAcACf/6iQHYvUyNzrlQXzUQNgAAAAABDwAACf/6iQHYvUyNzrlQXzUQNgAAHykxIwAA"])
-    # tests.clear_folder("AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHqDwAA")
+    # tests.find_items(["some-graph-contact-id"])
+    # tests.clear_folder("some-graph-folder-id")
 
 class TestEXContact:
     def __init__ (self, asynk_bd, user_d):
-        with open('auth.pwd', 'r') as inf:
-            user = inf.readline().strip()
-            pw   = inf.readline().strip()
-            url  = inf.readline().strip()
+        """Initialize with Graph API authentication.
+
+        The client_id must be configured in config_v9.json or config.py.
+        Authentication uses OAuth 2.0 device code flow — you will be
+        prompted to visit a URL and enter a code on the first run.
+        """
 
         self.conf = Config(asynk_base_dir=asynk_bd, user_dir=user_d)
-        self.ex = EXPIMDB(self.conf, user, pw, url)
+        self.ex = EXPIMDB(self.conf)
         self.cons_f = self.ex.get_def_folder()
 
     def list_folders (self):
-        self.ex.list_folders(recursive=False)
+        self.ex.list_folders()
 
     def new_contact (self, first, last):
         con = EXContact(self.cons_f)
@@ -60,7 +68,12 @@ class TestEXContact:
         con.add_web_home('http://karra-asynk.appspot.com')
         con.add_web_work('http://www.cleartrip.com')
         con.add_web_work('http://www.hackerrank.com')
-        con.save()
+
+        ## Create via Graph API
+        client = self.ex.get_graph_client()
+        graph_dict = con.to_graph_dict()
+        resp = client.create_contact(self.cons_f.get_itemid(), graph_dict)
+        print('Created contact with ID:', resp.get('id'))
 
     def list_all_contacts (self):
         self.cons_f._refresh_items()
@@ -87,7 +100,6 @@ class TestEXContact:
 
     def misc (self):
         self.ex.new_folder("ASynK Contacts 1")
-        self.ex.del_folder('AAAcAHNrYXJyYUBhc3luay5vbm1pY3Jvc29mdC5jb20ALgAAAAAA6tvK38NMgEiPrdzycecYvAEACf/6iQHYvUyNzrlQXzUQNgAAEaHsAwAA')
 
 
 if __name__ == '__main__':
