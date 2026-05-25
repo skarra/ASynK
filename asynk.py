@@ -157,7 +157,7 @@ class AsynkBuilderC:
         """uinps is a Namespace object as returned from the parse_args()
         routine of argparse module."""
 
-        level = string.upper(uinps.log)
+        level = uinps.log.upper()
         if level:
             alogger.consoleLogger.setLevel(getattr(logging, level))
 
@@ -243,7 +243,7 @@ class AsynkBuilderC:
         # mutual exclusion and so forth. In addition to this, every command
         # will do some parsing and validation itself.
 
-        op  = 'op_' + string.replace(uinps.op, '-', '_')
+        op  = 'op_' + uinps.op.replace('-', '_')
         self.asynk.set_op(op)
 
         self._snarf_pname(uinps)
