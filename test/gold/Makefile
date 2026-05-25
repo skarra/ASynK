@@ -9,7 +9,7 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb sync-bb-bb gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort cd-best-effort
+all: state cmdline bb sync-bb-bb ex gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort cd-best-effort
 
 clean:
 	rm -rf user_dir user_dir_gc_gc *~ *.bak temp.bbdb test_sync_*.bbdb
@@ -49,6 +49,11 @@ bb:
 ## BB<->BB sync engine tests (offline, always runs)
 sync-bb-bb:
 	$(PYTHON) test_sync_bb_bb.py
+
+## Exchange / Graph API unit tests (offline, mocked HTTP — always runs)
+ex:
+	$(PYTHON) -m unittest test_msgraph_client -v
+	$(PYTHON) -m unittest test_contact_field_preservation_ex -v
 
 ## Google Contacts integration tests.
 ##   First run:  make gc GOOGLE_CL_SECRET=~/path/to/credentials.json

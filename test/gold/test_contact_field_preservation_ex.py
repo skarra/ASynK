@@ -19,7 +19,8 @@ import copy, json, os, sys, unittest
 from unittest.mock import MagicMock, patch
 
 ## Ensure the asynk package is importable
-asynk_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+asynk_base = os.path.dirname(os.path.dirname(os.path.dirname(
+                 os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(asynk_base, 'asynk'))
 
 from contact import Contact
