@@ -66,25 +66,48 @@ section titled Usage below to invoke ASynK.
    virtualenv for keeping all the dependencies up to date.
 
 : $ cd ASynK
-
 : $ python3.10 -m venv venv
-
 : $ source venv/bin/activate
-
 : $ pip install -r requirements.txt
-
 : $ python asynk.py --version # sanity test to make sure basic dependencies are in order
 
 * Setting up credentials
 
-  Each database connector requires its own credential setup. Follow the
-  instructions for the connectors you plan to use.
+  Depending on the databases you use you may need 0, 1, or 2 sets of
+  credentials to access the contacts.
 
-** Google Contacts
+  - BBDB is entirely local so there is no authentication required at all to
+    access contacts stored in BBDB.
+
+  - CardDAV: You need end user credentials for the accoounts you want to
+    access on the CardDAV server. CardDAV uses HTTP Basic authentication with
+    a server URL, username, and password. ASynK supports any standard CardDAV
+    server (Radicale, Baikal, Nextcloud, iCloud, etc.).
+
+
+  - Google Contacts: Google Contacts uses oAuth. This requries two types of
+    credentials:
+
+    - You need to register an application, or "client" that tells Google about
+      your personal installation of ASynK to access users' contacts. This is
+      required just once for your personal installation, and requires some
+      manual set up from you.
+
+    - Once that that is done. Separate from this, you need oauth tokens issued
+      to you per user account. ASynK will automatically trigger teh required
+      web flows to get the user consent and acquire these tokens.
+
+  - MS Exchange Server: This also uses oAuth, and the general principle is the
+    same as for Google Contacts. See above.
+
+** Setting up client credentials for ASynK
+
+*** Google Contacts
 
    Google Contacts requires OAuth 2.0 credentials. You will need to create a
    project in the Google Cloud Console and download a client secrets JSON
-   file.
+   file. This step is required just once for your entire installation,
+   regardelss of how many Google accounts you want to to sync.
 
    1. Go to https://console.developers.google.com
    2. Create a new project (e.g. "My ASynK")
@@ -99,22 +122,7 @@ section titled Usage below to invoke ASynK.
    5. Download the client secrets JSON file and save it somewhere safe (e.g.
       =~/.asynk/gc_client_secret.json=)
 
-   ASynK reads the credentials path via =~/.netrc=. Add an entry like:
-
-   : machine gc_PROFILENAME
-   :   login YOUR_GMAIL_USERNAME
-   :   password ~/.asynk/gc_client_secret.json
-
-   Replace =PROFILENAME= with your sync profile name and =YOUR_GMAIL_USERNAME=
-   with your Google account (without @gmail.com).
-
-   On the first run, ASynK will open a browser window for you to authorize
-   access. The resulting OAuth token is cached locally for subsequent runs.
-
-   See also: [[file:README-google-oauth.md][README-google-oauth.md]] for
-   additional details.
-
-** Microsoft Exchange Online (Graph API)
+*** Microsoft Exchange Online (Graph API)
 
    Exchange Online uses the Microsoft Graph API with OAuth 2.0 device code
    flow. You will need to register an application in Azure Active Directory
@@ -149,51 +157,10 @@ section titled Usage below to invoke ASynK.
    See also: [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]]
    for detailed step-by-step instructions and troubleshooting.
 
-** CardDAV
+** Setting up user credentials
 
-   CardDAV uses HTTP Basic authentication with a server URL, username, and
-   password. ASynK supports any standard CardDAV server (Radicale,
-   Baikal, Nextcloud, iCloud, etc.).
-
-   ASynK reads CardDAV credentials from =~/.netrc=:
-
-   : machine cd_PROFILENAME
-   :   login YOUR_USERNAME
-   :   password YOUR_PASSWORD
-
-   Replace =PROFILENAME= with your sync profile name. The CardDAV server URL
-   is specified as the "store ID" (=stid=) when creating your sync profile.
-
-   Example for a local Radicale server:
-
-   : $ python asynk.py --op=create-profile \
-   :   --db cd bb \
-   :   --store http://localhost:5232/ \
-   :   --folder default \
-   :   --name cdbb1
-
-   For Nextcloud:
-
-   : machine cd_cdbb1
-   :   login admin
-   :   password your-app-password
-   
-   With the store URL as =https://your-nextcloud.example.com/remote.php/dav/=
-
-   *Note*: For servers that use app-specific passwords (like Nextcloud,
-   iCloud), generate an app password from your account settings and use
-   that instead of your main password.
-
-** BBDB (Emacs)
-
-   BBDB does not require any credentials. Simply specify the path to your
-   =~/.bbdb= file as the store ID when creating a sync profile:
-
-   : $ python asynk.py --op=create-profile \
-   :   --db bb gc \
-   :   --store ~/.bbdb \
-   :   --folder default \
-   :   --name bbgc1
+  Refer to the main documenation on how to authorize your presonal
+  installation of ASynK to access individual accounts on any db provider.
 
 * Usage
 
