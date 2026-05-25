@@ -347,14 +347,27 @@ class Config:
     def get_gc_logging (self):
         return self.get_db_config('gc')['log']
 
-    def get_ex_guid (self):
-        return self.get_db_config('ex')['guid']
+    def get_ex_client_id (self):
+        return self.get_db_config('ex')['client_id']
 
-    def get_ex_cus_pid (self):
-        return self.get_db_config('ex')['cus_pid']
+    def get_ex_tenant_id (self):
+        return self.get_db_config('ex').get('tenant_id', 'common')
 
-    def get_ex_stags_pname (self):
-        return self.get_db_config('ex')['stags_pname']
+    def get_ex_scopes (self):
+        return self.get_db_config('ex').get('scopes',
+                   ['Contacts.ReadWrite', 'User.Read'])
+
+    def get_ex_token_cache_path (self):
+        return self.get_db_config('ex').get('token_cache_path', None)
+
+    def get_ex_delta_link (self):
+        return self.get_db_config('ex').get('delta_link', None)
+
+    def set_ex_delta_link (self, link, sync=True):
+        dbc = self.get_db_config('ex')
+        dbc['delta_link'] = link
+        if sync:
+            self.save_config()
 
     ##
     ## get-set pairs for sync state parameters in state.json
@@ -531,15 +544,20 @@ class Config:
         return itemids
 
     def get_ex_sync_state (self, pname):
-        return self._get_profile_prop(pname, 'sync_state')
+        """Get the Graph API delta link for incremental sync.
+        Falls back to the profile-level sync_state for backward compat."""
+        try:
+            return self._get_profile_prop(pname, 'delta_link')
+        except KeyError:
+            ## Try the old sync_state key for backward compat
+            try:
+                return self._get_profile_prop(pname, 'sync_state')
+            except KeyError:
+                return None
 
-    ## Throws an exception if the profile name does not support the sync_state
-    ## flag, IOW - it if it is not an exchange profile.
-    ## On success retuns sync_state input parameter
     def set_ex_sync_state (self, pname, sync_state, sync=True):
-        ## Fetch the old one to force an exception if the prop is not there
-        old = self.get_ex_sync_state(pname)
-        self._set_profile_prop(pname, 'sync_state', sync_state, sync)
+        """Store the Graph API delta link for incremental sync."""
+        self._set_profile_prop(pname, 'delta_link', sync_state, sync)
         return sync_state
 
     ##

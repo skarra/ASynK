@@ -39,3 +39,12 @@ def customize_config (config):
     ## some requests and responses only)
 
     # config['db_config']['gc']['log'] =  True
+
+    ## Uncomment and set the client_id if you are synching with Exchange
+    ## Online (Microsoft 365).  You must first register an app in Azure AD.
+    ## See doc/azure_app_registration.md for instructions.
+
+    # config['db_config']['ex']['client_id'] = 'YOUR-AZURE-AD-CLIENT-ID'
+
+    ## Optionally restrict to a specific Azure AD tenant:
+    # config['db_config']['ex']['tenant_id'] = 'YOUR-TENANT-ID'
