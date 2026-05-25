@@ -9,18 +9,19 @@
 ## This file extends the Contact base class to implement an Exchange Contact
 ## item while implementing the base class methods.
 ##
+## Rewritten for Microsoft Graph API, replacing the legacy pyews EWS client.
+##
 
 import logging
 
 from contact import Contact
-from   pyews.ews          import contact as ews_c
-from   pyews.ews          import mapitags
-from   pyews.ews.data     import ews_pt, ews_pid
-from   pyews.ews.data     import MapiPropertyTypeType as mptt
-from   pyews.ews.contact  import CompleteName as ews_cn
-from   pyews.ews.contact  import Contact as EWSContact
 import utils
 import demjson3 as demjson
+
+## The name of the Open Extension used to store ASynK-specific data on each
+## contact in Exchange Online. This holds sync tags, custom overflow data,
+## and fields that don't have a native Graph API property.
+ASYNK_EXTENSION_NAME = 'com.asynk.syncdata'
 
 class EXContactError(Exception):
     pass
@@ -28,15 +29,15 @@ class EXContactError(Exception):
 class EXContact(Contact):
     prop_update_t = utils.enum('PROP_REPLACE', 'PROP_APPEND')
 
-    def __init__ (self, folder, ews_con=None, con=None, con_itemid=None):
+    def __init__ (self, folder, graph_con=None, con=None, con_itemid=None):
         """Constructor for EXContact. The starting properties of the contact
-        can be initialized either from an existing Contact object, or from an
-        pyews contact object. It is an error to provide both.
+        can be initialized either from an existing Contact object, or from a
+        Microsoft Graph contact dict. It is an error to provide both.
         """
 
-        if (ews_con and con):
+        if (graph_con and con):
             raise EXContactError(
-                'Both ews con and con cannot be specified in EXContact()')
+                'Both graph_con and con cannot be specified in EXContact()')
 
         Contact.__init__(self, folder, con)
 
@@ -47,9 +48,9 @@ class EXContact(Contact):
             else:
                 logging.debug('Potential new EXContact: %s', con.get_disp_name())
 
-        self.set_ews_con(ews_con)
-        if ews_con is not None:
-            self.init_props_from_ews_con(ews_con)
+        self.set_graph_con(graph_con)
+        if graph_con is not None:
+            self.init_props_from_graph_contact(graph_con)
 
     ##
     ## First the inherited abstract methods from the base classes
@@ -57,14 +58,27 @@ class EXContact(Contact):
 
     def save (self):
         """Saves the current contact on the server. For now we are only
-        handling a new contact creation scneario. The protocol for updates is
-        different"""
+        handling a new contact creation scenario. The protocol for updates is
+        different."""
 
         logging.debug('Saving contact (%s) to server...', self.get_disp_name())
-        ews_con = self.init_ews_con_from_props()
-        resp = ews_con.save()
+        graph_dict = self.to_graph_dict()
+        client = self.get_db().get_graph_client()
+        folder_id = self.get_folder().get_itemid()
+
+        itemid = self.get_itemid()
+        if itemid:
+            resp = client.update_contact(itemid, graph_dict)
+        else:
+            resp = client.create_contact(folder_id, graph_dict)
+            if resp and 'id' in resp:
+                self.set_itemid(resp['id'])
+
+        ## Write the extension data (sync tags + custom overflow)
+        if resp and 'id' in resp:
+            self._write_extension(resp['id'])
+
         logging.debug('Saving contact to server...done')
-        # FIXME: Get the contact ID and do something meaningful with it
 
     ##
     ## Now onto the non-abstract methods.
@@ -72,8 +86,8 @@ class EXContact(Contact):
 
     def get_parent_folder_id (self):
         """Fetch and return the itemid of the parent folder of this contact in
-        the Exchange store. This will be none if this is a new contact that
-        has not yet be written to the server"""
+        the Exchange store. This will be None if this is a new contact that
+        has not yet been written to the server"""
 
         try:
             return self._get_att('parentid')
@@ -82,89 +96,141 @@ class EXContact(Contact):
 
     def set_parent_folder_id (self, pfid):
         return self._set_att('parentid', pfid)
-        
+
     ##
     ## And now, the internal methods
     ##
 
-    def init_props_from_ews_con (self, ews_con):
-        self._snarf_custom_props_from_ews_con(ews_con)
+    def init_props_from_graph_contact (self, gc):
+        """Initialize ASynK contact properties from a Microsoft Graph API
+        contact JSON dict. This is the Graph API equivalent of the former
+        init_props_from_ews_con()."""
 
-        self._snarf_itemid_from_ews_con(ews_con)
-        self._snarf_names_gender_from_ews_con(ews_con)
-        self._snarf_notes_from_ews_con(ews_con)
-        self._snarf_emails_from_ews_con(ews_con)
-        self._snarf_postal_from_ews_con(ews_con)
-        self._snarf_org_details_from_ews_con(ews_con)
-        self._snarf_phones_and_faxes_from_ews_con(ews_con)
-        self._snarf_dates_from_ews_con(ews_con)
-        self._snarf_websites_from_ews_con(ews_con)
-        self._snarf_ims_from_ews_con(ews_con)
-        self._snarf_sync_tags_from_ews_con(ews_con)
+        ## Read extension data first, since custom props affect phone/fax/IM
+        ## label restoration later.
+        self._snarf_extension_from_graph_con(gc)
 
-    def init_ews_con_from_props (self):
-        """Return a newly populated object of type pyews.ews.contact.Contact
-        with the data fields of the present contact."""
+        self._snarf_itemid_from_graph_con(gc)
+        self._snarf_names_gender_from_graph_con(gc)
+        self._snarf_notes_from_graph_con(gc)
+        self._snarf_emails_from_graph_con(gc)
+        self._snarf_postal_from_graph_con(gc)
+        self._snarf_org_details_from_graph_con(gc)
+        self._snarf_phones_and_faxes_from_graph_con(gc)
+        self._snarf_dates_from_graph_con(gc)
+        self._snarf_websites_from_graph_con(gc)
+        self._snarf_ims_from_graph_con(gc)
+        self._snarf_sync_tags_from_graph_con(gc)
 
-        ews = self.get_db().get_ews()
-        parent_fid = self.get_folder().get_itemid()
-        ews_con = EWSContact(ews, parent_fid)
+    def to_graph_dict (self):
+        """Return a JSON-serializable dict representing this contact in
+        Microsoft Graph API format. This is the Graph API equivalent of the
+        former init_ews_con_from_props()."""
 
-        self._add_itemid_to_ews_con(ews_con)
-        self._add_names_gender_to_ews_con(ews_con)
-        self._add_notes_to_ews_con(ews_con)
-        self._add_emails_to_ews_con(ews_con)
-        self._add_postal_to_ews_con(ews_con)
-        self._add_org_details_to_ews_con(ews_con)
-        self._add_phones_and_faxes_to_ews_con(ews_con)
-        self._add_dates_to_ews_con(ews_con)
-        self._add_websites_to_ews_con(ews_con)
-        self._add_ims_to_ews_con(ews_con)
-        self._add_sync_tags_to_ews_con(ews_con)
-        self._add_custom_props_to_ews_con(ews_con)
+        gc = {}
 
-        return self.set_ews_con(ews_con)
+        self._add_names_gender_to_graph_dict(gc)
+        self._add_notes_to_graph_dict(gc)
+        self._add_emails_to_graph_dict(gc)
+        self._add_postal_to_graph_dict(gc)
+        self._add_org_details_to_graph_dict(gc)
+        self._add_phones_to_graph_dict(gc)
+        self._add_dates_to_graph_dict(gc)
+        self._add_websites_to_graph_dict(gc)
+        self._add_ims_to_graph_dict(gc)
 
-    ##
-    ## Internal functions that are not inteded to be called from outside.
-    ##
+        return gc
 
-    def _snarf_itemid_from_ews_con (self, ews_con):
-        self.set_parent_folder_id(ews_con.parent_fid.value)
-        self.set_itemid(ews_con.itemid.value)
-        self.set_changekey(ews_con.change_key.value)
+    def get_extension_data (self):
+        """Build and return the Open Extension dict containing all data that
+        doesn't fit into native Graph API contact fields: sync tags, custom
+        overflow, and unsupported fields like gender, anniversary, alias,
+        personal homepage, faxes, etc."""
 
-    def _snarf_names_gender_from_ews_con (self, ews_con):
-        self.set_fileas(ews_con.file_as.value)
-        if ews_con.alias.value is not None:
-            self.add_custom('alias', ews_con.alias.value)
-        self.set_name(ews_con._displayname)
-        # Ignore ews_con.spouse_name
-        cn = ews_con.complete_name
-        fn = ews_con._firstname
-        ln = ews_con._lastname
-        self.set_prefix(cn.title.value)
-        self.set_firstname(fn)
-        self.set_lastname(ln)
-        self.set_middlename(cn.middle_name.value)
-        self.set_suffix(cn.suffix.value)
-        self.set_nickname(cn.nickname.value)
+        ext = {}
 
-        g = str(ews_con.gender)
-        self.set_gender(None if g == 'Unspecified' else g)
+        ## Sync tags
+        stags = self.get_sync_tags()
+        if stags:
+            ext['syncTags'] = stags
 
-    def _snarf_notes_from_ews_con (self, ews_con):
-        self.add_notes(ews_con.notes.value)
+        ## Custom overflow data (phones labels, fax labels, IM labels, extra
+        ## web URLs, and anything else stashed in the custom dict)
+        custom = self.get_custom()
+        if custom:
+            ext['customData'] = custom
 
-    def _snarf_emails_from_ews_con (self, ews_con):
-        """Classify each email address in ews_con as home/work/other and store
-        them away. Classification is done based on the domain of the address
-        as set in the config file."""
+        ## Fields with no native Graph API property
+        gender = self.get_gender()
+        if gender:
+            ext['gender'] = gender
+
+        anniv = self.get_anniv()
+        if anniv:
+            ext['anniversary'] = anniv
+
+        alias = self.get_custom('alias')
+        if alias:
+            ext['alias'] = alias
+
+        personal_hp = self.get_web_home()
+        if personal_hp and len(personal_hp) > 0:
+            ext['personalHomePage'] = personal_hp[0]
+
+        ## Faxes - no native Graph field
+        fax_home = self.get_fax_home()
+        if fax_home:
+            ext['faxHome'] = fax_home
+
+        fax_work = self.get_fax_work()
+        if fax_work:
+            ext['faxWork'] = fax_work
+
+        return ext
+
+    ## ----------------------------------------------------------------
+    ## Internal: Read from Graph contact dict → ASynK props
+    ## ----------------------------------------------------------------
+
+    def _snarf_itemid_from_graph_con (self, gc):
+        self.set_parent_folder_id(gc.get('parentFolderId'))
+        self.set_itemid(gc.get('id'))
+        self.set_changekey(gc.get('changeKey'))
+
+    def _snarf_names_gender_from_graph_con (self, gc):
+        self.set_fileas(gc.get('fileAs'))
+        self.set_name(gc.get('displayName'))
+        self.set_prefix(gc.get('title'))
+        self.set_firstname(gc.get('givenName'))
+        self.set_lastname(gc.get('surname'))
+        self.set_middlename(gc.get('middleName'))
+        self.set_suffix(gc.get('generation'))
+        self.set_nickname(gc.get('nickName'))
+
+        ## Gender is stored in Open Extension, not a native Graph field.
+        ## It's read in _snarf_extension_from_graph_con().
+
+        ## Alias is stored in Open Extension as well.
+        ## Restored in _snarf_extension_from_graph_con().
+
+    def _snarf_notes_from_graph_con (self, gc):
+        notes = gc.get('personalNotes')
+        if notes:
+            self.add_notes(notes)
+
+    def _snarf_emails_from_graph_con (self, gc):
+        """Classify each email address as home/work/other and store them.
+        Graph API provides emailAddresses as an array of {name, address}
+        objects. Classification is done based on domain as per config."""
 
         domains = self.get_email_domains()
+        emails = gc.get('emailAddresses', [])
 
-        for email in ews_con.emails.entries:
-            addr = email.value
+        for entry in emails:
+            addr = entry.get('address')
+            if not addr:
+                continue
+
             home, work, other = utils.classify_email_addr(addr, domains)
 
             if home:
@@ -176,355 +242,458 @@ class EXContact(Contact):
             else:
                 self.add_email_work(addr)
 
-    def _snarf_postal_from_ews_con (self, ews_con):
-        pass
+    def _snarf_postal_from_graph_con (self, gc):
+        """Read postal addresses from the Graph contact. Graph API provides
+        homeAddress, businessAddress, and otherAddress as structured objects."""
 
-    def _snarf_org_details_from_ews_con (self, ews_con):
-        self.set_title(ews_con.job_title.value)
-        self.set_company(ews_con.company_name.value)
-        self.set_dept(ews_con.department.value)
-        # Ignoring manager_name and assistant_name
+        addr_map = {
+            'homeAddress'     : 'home',
+            'businessAddress' : 'work',
+            'otherAddress'    : 'other',
+        }
 
-    def _snarf_phones_and_faxes_from_ews_con (self, ews_con):
+        for graph_field, asynk_type in addr_map.items():
+            addr = gc.get(graph_field)
+            if not addr:
+                continue
+
+            ## Graph address fields: street, city, state, countryOrRegion,
+            ## postalCode
+            postal_dict = {}
+            if addr.get('street'):
+                postal_dict['street'] = addr['street']
+            if addr.get('city'):
+                postal_dict['city'] = addr['city']
+            if addr.get('state'):
+                postal_dict['state'] = addr['state']
+            if addr.get('countryOrRegion'):
+                postal_dict['country'] = addr['countryOrRegion']
+            if addr.get('postalCode'):
+                postal_dict['zip'] = addr['postalCode']
+
+            if postal_dict:
+                label = '%s Address' % asynk_type.capitalize()
+                existing = self.get_postal(asynk_type)
+                if existing:
+                    existing.append((label, postal_dict))
+                else:
+                    self.set_postal([(label, postal_dict)], asynk_type)
+
+    def _snarf_org_details_from_graph_con (self, gc):
+        self.set_title(gc.get('jobTitle'))
+        self.set_company(gc.get('companyName'))
+        self.set_dept(gc.get('department'))
+
+    def _snarf_phones_and_faxes_from_graph_con (self, gc):
+        """Read phones from Graph contact. Graph API provides:
+        - businessPhones: array of strings
+        - homePhones: array of strings
+        - mobilePhone: single string
+
+        Phone labels and fax numbers are restored from the Open Extension
+        custom data (read earlier in _snarf_extension_from_graph_con)."""
+
         ph_labels = self.get_custom('phones')
         fa_labels = self.get_custom('faxes')
 
-        for phone in ews_con.phones.entries:
-            key = phone.attrib['Key']
-
-            if key == 'PrimaryPhone':
-                self.set_phone_prim(phone.value)
-            elif key == 'MobilePhone':
-                if ph_labels and phone.value in ph_labels['mob']:
-                    label = ph_labels['mob'][phone.value]
-                else:
-                    label = 'Mobile'
-                self.add_phone_mob((label, phone.value))
-            elif key == 'HomePhone':
-                if ph_labels and phone.value in ph_labels['home']:
-                    label = ph_labels['home'][phone.value]
-                else:
-                    label = 'Home'
-                self.add_phone_home((label, phone.value))
-            elif key == 'HomePhone2':
-                if ph_labels and phone.value in ph_labels['home']:
-                    label = ph_labels['home'][phone.value]
-                else:
-                    label = 'Home2'
-                self.add_phone_home((label, phone.value))
-            elif key == 'BusinessPhone':
-                if ph_labels and phone.value in ph_labels['work']:
-                    label = ph_labels['work'][phone.value]
-                else:
-                    label = 'Work'
-                self.add_phone_work(('Work', phone.value))
-            elif key == 'BusinessPhone2':
-                if ph_labels and phone.value in ph_labels['work']:
-                    label = ph_labels['work'][phone.value]
-                else:
-                    label = 'Work2'
-                self.add_phone_work((label, phone.value))
-            elif key == 'OtherTelephone':
-                if ph_labels and phone.value in ph_labels['other']:
-                    label = ph_labels['other'][phone.value]
-                else:
-                    label = 'Other'
-                self.add_phone_other(('Other', phone.value))
-            elif key == 'HomeFax':
-                if fa_labels and phone.value in fa_labels['other']:
-                    label = fa_labels['home'][phone.value]
-                else:
-                    label = 'Other'
-                self.add_fax_home((label, phone.value))
-            elif key == 'BusinessFax':
-                if fa_labels and phone.value in fa_labels['other']:
-                    label = fa_labels['work'][phone.value]
-                else:
-                    label = 'Other'
-                self.add_fax_work((label, phone.value))
+        ## Home phones
+        for i, num in enumerate(gc.get('homePhones', [])):
+            if ph_labels and num in ph_labels.get('home', {}):
+                label = ph_labels['home'][num]
             else:
-                self.add_phone_other((key, phone.value))
+                label = 'Home' if i == 0 else 'Home%d' % (i+1)
+            self.add_phone_home((label, num))
+
+        ## Business phones
+        for i, num in enumerate(gc.get('businessPhones', [])):
+            if ph_labels and num in ph_labels.get('work', {}):
+                label = ph_labels['work'][num]
+            else:
+                label = 'Work' if i == 0 else 'Work%d' % (i+1)
+            self.add_phone_work((label, num))
+
+        ## Mobile phone
+        mob = gc.get('mobilePhone')
+        if mob:
+            if ph_labels and mob in ph_labels.get('mob', {}):
+                label = ph_labels['mob'][mob]
+            else:
+                label = 'Mobile'
+            self.add_phone_mob((label, mob))
+
+        ## Other phones (from custom overflow, since Graph has no native
+        ## "other phone" field)
+        if ph_labels:
+            for num, label in ph_labels.get('other', {}).items():
+                self.add_phone_other((label, num))
+
+        ## Primary phone (from custom overflow)
+        if ph_labels and 'prim' in ph_labels:
+            self.set_phone_prim(ph_labels['prim'])
+
+        ## Faxes are entirely in the Open Extension
+        ## They were already restored from extension data, but read them
+        ## here if they came through that path.
 
         self.del_custom('phones')
         self.del_custom('faxes')
 
-    def _snarf_dates_from_ews_con (self, ews_con):
-        self.set_created(ews_con.created_time.value)
-        self.set_updated(ews_con.last_modified_time.value)
-        self.set_birthday(ews_con.birthday.value)
-        self.set_anniv(ews_con.anniversary.value)
+    def _snarf_dates_from_graph_con (self, gc):
+        self.set_created(gc.get('createdDateTime'))
+        self.set_updated(gc.get('lastModifiedDateTime'))
+        self.set_birthday(gc.get('birthday'))
+        ## Anniversary is stored in Open Extension, read earlier.
 
-    def _snarf_custom_props_from_ews_con (self, ews_con):
-        guid = self.get_config().get_ex_guid()
-        pid  = self.get_config().get_ex_cus_pid()
-        cus  = ews_con.get_named_int_property(guid, int(pid))
-        if cus is not None:
-            self.update_custom(demjson.decode(str(cus)))
+    def _snarf_websites_from_graph_con (self, gc):
+        """Graph API only has businessHomePage as a native field.
+        personalHomePage is stored in the Open Extension."""
 
-    def _snarf_websites_from_ews_con (self, ews_con):
-        self.add_web_home(ews_con.personal_home_page.value)
-        self.add_web_work(ews_con.business_home_page.value)
+        biz_hp = gc.get('businessHomePage')
+        if biz_hp:
+            self.add_web_work(biz_hp)
 
-        ## If a contact has additional web addresses they would be stashed
-        ## away in a custom property.
+        ## personalHomePage was already restored from extension data.
+
+        ## Additional web addresses from custom overflow
         webs = self.get_custom('webs')
-        if webs is None:
-            return
+        if webs:
+            for home_url in webs.get('home', []):
+                self.add_web_home(home_url)
+            for work_url in webs.get('work', []):
+                self.add_web_work(work_url)
+            self.del_custom('webs')
 
-        for home in webs['home']:
-            self.add_web_home(home)
+    def _snarf_ims_from_graph_con (self, gc):
+        """Graph API provides imAddresses as an array of strings."""
 
-        for work in webs['work']:
-            self.add_web_work(work)
-
-        self.del_custom('webs')
-
-    def _snarf_ims_from_ews_con (self, ews_con):
         im_labels = self.get_custom('ims')
+        ims = gc.get('imAddresses', [])
 
-        for i, im in enumerate(ews_con.ims.entries):
-            if im_labels and im.value in im_labels():
-                label = im_labels[im.value]
+        for i, addr in enumerate(ims):
+            if im_labels and addr in im_labels:
+                label = im_labels[addr]
             else:
-                label = im.key()
+                label = 'ImAddress%d' % (i+1)
 
             if i == 0:
                 self.set_im_prim(label)
 
-            self.add_im(label, im.value)
+            self.add_im(label, addr)
 
         self.del_custom('ims')
 
-    def _snarf_sync_tags_from_ews_con (self, ews_con):
-        conf  = self.get_config()
-        guid  = conf.get_ex_guid()
-        prop_name = conf.get_ex_stags_pname()
-
-        eprop = ews_con.get_named_str_property(guid, prop_name)
-        if eprop is not None:
-            stags = demjson.decode(eprop.value)
-            for name, val in stags.items():
-                self.update_sync_tags(name, val)
-
-    def _add_itemid_to_ews_con (self, ews_con):
-        itemid = self.get_itemid()
-        if itemid:
-            ews_con.itemid.set(itemid)
-
-        ck = self.get_changekey()
-        if ck:
-            ews_con.change_key.set(ck)
-
-    def _add_names_gender_to_ews_con (self, ews_con):
-        cn = ews_con.complete_name
-        cn.title.set(self.get_prefix())
-        cn.first_name.set(self.get_firstname())
-        cn.given_name.set(self.get_firstname())
-        cn.middle_name.set(self.get_middlename())
-        cn.surname.set(self.get_lastname())
-        cn.last_name.set(self.get_lastname())
-        cn.suffix.set(self.get_suffix())
-        cn.nickname.set(self.get_nickname())
-
-        ews_con.file_as.set(self.get_fileas())
-        ews_con.alias.set(self.get_custom('alias'))
-
-    def _add_notes_to_ews_con (self, ews_con):
-        n = self.get_notes()
-        if n is not None and len(n) > 0:
-            ews_con.notes.value = n[0]
-            ## FIXME: Need to take care of the rest like we usually do.
-
-    def _add_emails_to_ews_con (self, ews_con):
-        """
-        EWS allows only for maximum of 3 email addresses across all typmes. We
-        will keep three addresses
-        """
-
-        i = 0
-        left = 3
-
-        email_prim = self.get_email_prim()
-        if email_prim is not None:
-            ews_con.emails.add('EmailAddress1', email_prim)
-            i += 1
-
-        i = self._add_email_helper(ews_con, self.get_email_home(), left-i, i+1)
-        i = self._add_email_helper(ews_con, self.get_email_work(), left-i, i+1)
-        i = self._add_email_helper(ews_con, self.get_email_other(), left-i, i+1)
-
-    def _add_email_helper (self, ews_con, emails, n, key_start):
-        """From the list of emails, add at most n emails to ews_con. Return
-        actual added count.
-
-        n is the max number of emails from the list that can be added"""
-
-        i = 0
-        for email in emails:
-            if i >= n:
-                ## FIXME: we are effetively losing teh remaining
-                ## addresses. These should be put into a custom field
-                break
-
-            ews_con.emails.add('EmailAddress%d' % (key_start+i), email)
-            i += 1
-
-        return i
-
-    def _add_postal_to_ews_con (self, ews_con):
+    def _snarf_sync_tags_from_graph_con (self, gc):
+        """Sync tags are stored in the Open Extension. They were already
+        read in _snarf_extension_from_graph_con()."""
         pass
 
-    def _add_org_details_to_ews_con (self, ews_con):
-        ews_con.department.value = self.get_dept()
-        ews_con.company_name.value = self.get_company()
-        ews_con.job_title.value = self.get_title()
+    def _snarf_extension_from_graph_con (self, gc):
+        """Read the ASynK Open Extension data from the Graph contact.
+        The extension may be inline (if $expand=extensions was used) or
+        may need a separate fetch."""
 
-    def _add_phones_and_faxes_to_ews_con (self, ews_con):
-        ## Any left over data will be stored to the custom property with the
-        ## key 'phones'. the structure of that property will be:
-        ##
-        ## { 'work' : { num : label, num : label ... }
-        ##   'home' : { num : label }
-        ##   'other' : { num : label } }
-        ##
-        ## There will be another like this for faxes.
+        ext = None
 
-        self._add_phones_to_ews_con(ews_con)
-        self._add_faxes_to_ews_con(ews_con)
+        ## Check inline extensions first
+        extensions = gc.get('extensions', [])
+        for e in extensions:
+            if e.get('id', '').endswith(ASYNK_EXTENSION_NAME) or \
+               e.get('extensionName') == ASYNK_EXTENSION_NAME:
+                ext = e
+                break
 
-    def _add_phones_to_ews_con (self, ews_con):
-        cust = {'mob' : {}, 'home' : {}, 'work' : {}, 'other' : {}}
+        if ext is None:
+            ## Try fetching from server if we have an ID
+            contact_id = gc.get('id')
+            if contact_id:
+                client = self._get_graph_client()
+                if client:
+                    ext = client.get_extension(contact_id,
+                                               ASYNK_EXTENSION_NAME)
 
+        if ext is None:
+            return
+
+        ## Restore sync tags
+        stags = ext.get('syncTags', {})
+        for name, val in stags.items():
+            self.update_sync_tags(name, val)
+
+        ## Restore custom overflow data
+        custom = ext.get('customData', {})
+        if custom:
+            self.update_custom(custom)
+
+        ## Restore fields without native Graph properties
+        gender = ext.get('gender')
+        if gender:
+            self.set_gender(gender)
+
+        anniv = ext.get('anniversary')
+        if anniv:
+            self.set_anniv(anniv)
+
+        alias = ext.get('alias')
+        if alias:
+            self.add_custom('alias', alias)
+
+        personal_hp = ext.get('personalHomePage')
+        if personal_hp:
+            self.add_web_home(personal_hp)
+
+        fax_home = ext.get('faxHome')
+        if fax_home:
+            for fax in fax_home:
+                if isinstance(fax, (list, tuple)) and len(fax) == 2:
+                    self.add_fax_home(tuple(fax))
+
+        fax_work = ext.get('faxWork')
+        if fax_work:
+            for fax in fax_work:
+                if isinstance(fax, (list, tuple)) and len(fax) == 2:
+                    self.add_fax_work(tuple(fax))
+
+    ## ----------------------------------------------------------------
+    ## Internal: Write ASynK props → Graph contact dict
+    ## ----------------------------------------------------------------
+
+    def _add_names_gender_to_graph_dict (self, gc):
+        fn = self.get_firstname()
+        ln = self.get_lastname()
+
+        if fn:
+            gc['givenName'] = fn
+        if ln:
+            gc['surname'] = ln
+
+        mn = self.get_middlename()
+        if mn:
+            gc['middleName'] = mn
+
+        prefix = self.get_prefix()
+        if prefix:
+            gc['title'] = prefix
+
+        suffix = self.get_suffix()
+        if suffix:
+            gc['generation'] = suffix
+
+        nick = self.get_nickname()
+        if nick:
+            gc['nickName'] = nick
+
+        fileas = self.get_fileas()
+        if fileas:
+            gc['fileAs'] = fileas
+
+        name = self.get_name()
+        if name:
+            gc['displayName'] = name
+
+        ## Gender goes into Open Extension, not the Graph dict.
+        ## Alias goes into Open Extension via custom dict.
+
+    def _add_notes_to_graph_dict (self, gc):
+        n = self.get_notes()
+        if n and len(n) > 0:
+            gc['personalNotes'] = n[0]
+            ## If there are multiple notes, the rest are preserved in custom
+            ## overflow (handled by the abstract base)
+
+    def _add_emails_to_graph_dict (self, gc):
+        """Graph API supports unlimited email addresses as an array of
+        {name, address} objects. No more 3-email limit!"""
+
+        emails = []
+
+        ## Primary email first if set
+        prim = self.get_email_prim()
+        if prim:
+            emails.append({'address': prim, 'name': ''})
+
+        for addr in self.get_email_home():
+            if addr != prim:
+                emails.append({'address': addr, 'name': ''})
+
+        for addr in self.get_email_work():
+            if addr != prim:
+                emails.append({'address': addr, 'name': ''})
+
+        for addr in self.get_email_other():
+            if addr != prim:
+                emails.append({'address': addr, 'name': ''})
+
+        if emails:
+            gc['emailAddresses'] = emails
+
+    def _add_postal_to_graph_dict (self, gc):
+        """Write postal addresses to Graph contact dict. Graph API supports
+        three addresses: homeAddress, businessAddress, otherAddress."""
+
+        type_to_field = {
+            'home'  : 'homeAddress',
+            'work'  : 'businessAddress',
+            'other' : 'otherAddress',
+        }
+
+        for asynk_type, graph_field in type_to_field.items():
+            addrs = self.get_postal(asynk_type)
+            if not addrs or len(addrs) == 0:
+                continue
+
+            ## Use the first address of each type for the native field.
+            ## Additional addresses of the same type are preserved in
+            ## custom overflow (the Contact base class handles this).
+            label, addr_dict = addrs[0]
+
+            graph_addr = {}
+            if addr_dict.get('street'):
+                graph_addr['street'] = addr_dict['street']
+            if addr_dict.get('city'):
+                graph_addr['city'] = addr_dict['city']
+            if addr_dict.get('state'):
+                graph_addr['state'] = addr_dict['state']
+            if addr_dict.get('country'):
+                graph_addr['countryOrRegion'] = addr_dict['country']
+            if addr_dict.get('zip'):
+                graph_addr['postalCode'] = addr_dict['zip']
+
+            if graph_addr:
+                gc[graph_field] = graph_addr
+
+    def _add_org_details_to_graph_dict (self, gc):
+        dept = self.get_dept()
+        if dept:
+            gc['department'] = dept
+
+        company = self.get_company()
+        if company:
+            gc['companyName'] = company
+
+        title = self.get_title()
+        if title:
+            gc['jobTitle'] = title
+
+    def _add_phones_to_graph_dict (self, gc):
+        """Write phone numbers to Graph dict. Also stash phone labels and
+        overflow data (other phones, primary phone) in the custom dict for
+        preservation.
+
+        Graph API fields:
+        - homePhones: array of strings
+        - businessPhones: array of strings
+        - mobilePhone: single string
+        """
+
+        ## Build label-preservation custom dict
+        cust = {'mob': {}, 'home': {}, 'work': {}, 'other': {}}
+
+        ## Home phones
+        home_nums = []
+        for label, num in self.get_phone_home():
+            home_nums.append(num)
+            cust['home'][num] = label
+        if home_nums:
+            gc['homePhones'] = home_nums
+
+        ## Work phones
+        work_nums = []
+        for label, num in self.get_phone_work():
+            work_nums.append(num)
+            cust['work'][num] = label
+        if work_nums:
+            gc['businessPhones'] = work_nums
+
+        ## Mobile phone (Graph only supports one)
+        mob = self.get_phone_mob()
+        if mob and len(mob) >= 1:
+            gc['mobilePhone'] = mob[0][1]
+            for label, num in mob:
+                cust['mob'][num] = label
+
+        ## Other phones — no native Graph field, stored in custom overflow
+        for label, num in self.get_phone_other():
+            cust['other'][num] = label
+
+        ## Primary phone — no native Graph field
         prim = self.get_phone_prim()
-        ews_con.phones.add('PrimaryPhone', prim)
+        if prim:
+            cust['prim'] = prim
 
-        ph =  self.get_phone_mob()
-        if len(ph) >= 1:
-            ews_con.phones.add('MobilePhone', ph[0][1])
-
-        for ph in self.get_phone_home():
-            cust['home'].update({ph[1] : ph[0]})
-
-        ph =  self.get_phone_home()
-        if len(ph) >= 1:
-            ews_con.phones.add('HomePhone', ph[0][1])
-        if len(ph) >= 2:
-            ews_con.phones.add('HomePhone2', ph[1][1])
-
-        for ph in self.get_phone_home():
-            cust['home'].update({ph[1] : ph[0]})
-
-        ph =  self.get_phone_work()
-        if len(ph) >= 1:
-            ews_con.phones.add('BusinessPhone', ph[0][1])
-        if len(ph) >= 2:
-            ews_con.phones.add('BusinessPhone2', ph[1][1])
-
-        for ph in self.get_phone_work():
-            cust['work'].update({ph[1] : ph[0]})
-
-        ph =  self.get_phone_other()
-        if len(ph) >= 1:
-            ews_con.phones.add('OtherTelephone', ph[0][1])
-
-        for ph in self.get_phone_other():
-            cust['other'].update({ph[1] : ph[0]})
-
+        ## Stash labels so they survive round-trips
         self.add_custom('phones', cust)
 
-        ## FIXME: We should have a generic place in contact.py to handle these
-        ## left overs for all the db types.
+        ## Faxes — no native Graph field, stored entirely in extension
+        ## (handled in get_extension_data)
 
-    def _add_faxes_to_ews_con (self, ews_con):
-        cust = {'home' : {}, 'work' : {}}
+    def _add_dates_to_graph_dict (self, gc):
+        bd = self.get_birthday()
+        if bd:
+            gc['birthday'] = bd
 
-        ph =  self.get_fax_home()
-        if len(ph) >= 1:
-            ews_con.phones.add('HomeFax', ph[0][1])
+        ## Anniversary goes into Open Extension (no native field).
 
-        for ph in self.get_fax_home():
-            cust['home'].update({ph[1] : ph[0]})
+    def _add_websites_to_graph_dict (self, gc):
+        """Graph API only has businessHomePage as a native field.
+        Personal homepage and extra URLs go into the Open Extension."""
 
-        ph =  self.get_fax_work()
-        if len(ph) >= 1:
-            ews_con.phones.add('BusinessFax', ph[0][1])
-
-        for ph in self.get_phone_work():
-            cust['work'].update({ph[1] : ph[0]})
-
-        self.add_custom('faxes', cust)
-
-        ## FIXME: We should have a generic place in contact.py to handle these
-        ## left overs for all the db types.        
-
-    def _add_dates_to_ews_con (self, ews_con):
-        ## FIXME: Need to test to ensure these values are of the proper types
-        ## for EWS.
-        ews_con.created_time.set(self.get_created())
-        ews_con.birthday.set(self.get_birthday())
-        ews_con.anniversary.set(self.get_anniv())
-
-    def _add_websites_to_ews_con (self, ews_con):
-        cus_web = {'home' : [], 'work' : []}
-
-        web = self.get_web_home()
-        if web is not None:
-            if len(web) > 0:
-                ews_con.add_tagged_property(tag=mapitags.PR_PERSONAL_HOME_PAGE,
-                                            value=web[0])
-            if len(web) > 1:
-                cus_web['home'] += web[1:]
+        cus_web = {'home': [], 'work': []}
 
         web = self.get_web_work()
-        if web is not None:
-            if len(web) > 0:
-                ews_con.business_home_page.value = web[0]
+        if web and len(web) > 0:
+            gc['businessHomePage'] = web[0]
             if len(web) > 1:
-                cus_web['work'] += web[1:]
+                cus_web['work'] = web[1:]
 
-        self.add_custom('webs', cus_web)
+        ## Personal homepage is stored in extension (handled in
+        ## get_extension_data). But any additional home URLs beyond
+        ## the first go into custom overflow.
+        web = self.get_web_home()
+        if web and len(web) > 1:
+            cus_web['home'] = web[1:]
 
-    def _add_ims_to_ews_con (self, ews_con):
+        if cus_web['home'] or cus_web['work']:
+            self.add_custom('webs', cus_web)
+
+    def _add_ims_to_graph_dict (self, gc):
+        """Graph API provides imAddresses as an array of strings."""
+
         cust = {}
-        prim = self.get_im_prim()
+        ims_list = []
 
-        i = 1
-        for label, value in self.get_ims().items():
-            cust.update({value : label})
+        for label, value in self.get_im().items():
+            ims_list.append(value)
+            cust[value] = label
 
-            if i > 3:
-                continue
+        if ims_list:
+            gc['imAddresses'] = ims_list
 
-            ews_label = 'ImAddress%d' % i
-            if prim:
-                continue
+        if cust:
+            self.add_custom('ims', cust)
 
-            ews_con.ims.add(ews_label, value)
-            i += 1
+    ## ----------------------------------------------------------------
+    ## Internal: Extension (sync tags + custom data) write
+    ## ----------------------------------------------------------------
 
-        self.add_custom('ims', cust)
+    def _write_extension (self, contact_id):
+        """Write sync tags and custom overflow to the contact's Open
+        Extension on the server."""
 
-    def _add_sync_tags_to_ews_con (self, ews_con):
-        ## We use Named String identified extended properites to store sync
-        ## tags. Note that this is different from the way we handle this stuff
-        ## in the Outlook store.
-        conf  = self.get_config()
-        guid  = conf.get_ex_guid()
-        prop_name = conf.get_ex_stags_pname()
+        client = self._get_graph_client()
+        if client is None:
+            return
 
-        ## Note also that in Outlook each sync tag is a separate field. Here
-        ## it is all a single json encoded dictionary.
-        val = demjson.encode(self.get_sync_tags())
-        ews_con.add_named_str_property(psetid=guid, pname=prop_name,
-                                       ptype=mptt[mapitags.PT_UNICODE],
-                                       value=val)
+        ext_data = self.get_extension_data()
+        if ext_data:
+            client.set_extension(contact_id, ASYNK_EXTENSION_NAME, ext_data)
 
-    def _add_custom_props_to_ews_con (self, ews_con):
-        guid = self.get_config().get_ex_guid()
-        pid  = self.get_config().get_ex_cus_pid()
-        val = demjson.encode(self.get_custom())
-        ews_con.add_named_int_property(psetid=guid, pid=pid, value=val,
-                                       ptype=mptt[mapitags.PT_UNICODE])
+    def _get_graph_client (self):
+        """Get the GraphContactsClient from the parent DB, or None."""
+
+        try:
+            return self.get_db().get_graph_client()
+        except Exception:
+            return None
 
     ##
     ## some additional get and set methods
@@ -539,8 +708,16 @@ class EXContact(Contact):
     def set_changekey (self, ck):
         return self._set_att('ck', ck)
 
+    def get_graph_con (self):
+        return self._get_att('graph_con')
+
+    def set_graph_con (self, gc):
+        return self._set_att('graph_con', gc)
+
     def get_ews_con (self):
-        return self._get_att('ews_con')
+        """Backward compat alias."""
+        return self.get_graph_con()
 
     def set_ews_con (self, ec):
-        return self._set_att('ews_con', ec)
+        """Backward compat alias."""
+        return self.set_graph_con(ec)
