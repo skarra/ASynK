@@ -12,10 +12,9 @@ that website.
   written in Python. High level features include:
 
   - ASynK allows two-way sync of Contacts across any two supported sources -
-    Google Contacts, any CardDAV server and Emacs BBDB. (Microsoft Outlook,
-    Microsoft Exchange Server used to be supported but they remain broken for
-    the moment)
-  
+    Google Contacts, Microsoft Exchange Online, any CardDAV server and Emacs
+    BBDB.
+
   - You can use ASynK to copy contacts from one Google account to another
     (say from a Google Apps account at work to a personal address before you
     leave your job). You can do this at the level of folders (see below)
@@ -23,15 +22,14 @@ that website.
   - ASynK is the only two-way synchronization option for BBDB known to be in
     existence today. So if you are keen to keep your BBDB content synchronized
     with a mobile device or Outlook, look no further.
-  
+
   - ASynK works on Windows, MacOS X, and Linux. Outlook synchronization
     only works on Windows
-  
+
   - Synchronization is granular to the level of 'Folders', i.e. you can
-    synchronize one folder of Google Contacts with a Outlook folder (on
-    Windows at work, say), and another Google folder in the same account with
-    BBDB (On your Mac, say)
-  
+    synchronize one folder of Google Contacts with an Exchange folder, and
+    another Google folder in the same account with BBDB
+
   - The infrastructure is there to add more database and item types
     (i.e. tasks, notes, etc.), but currently only Contacts synchronization is
     supported.
@@ -62,7 +60,7 @@ section titled Usage below to invoke ASynK.
 
 ** Setting up your Python environment
 
-   ASynK is written in Python 3. For the best experience you will need Pythyon
+   ASynK is written in Python 3. For the best experience you will need Python
    3.10 or later. There are many python packages dependencies that are
    captured in requirements.txt file. We recommend creating a separate
    virtualenv for keeping all the dependencies up to date.
@@ -77,14 +75,125 @@ section titled Usage below to invoke ASynK.
 
 : $ python asynk.py --version # sanity test to make sure basic dependencies are in order
 
-***   Other dependencies
+* Setting up credentials
 
-   - If you wish to sync from/to MS Outlook (As of May 2026: does not work)
-     - MS Windows
-     - Python 3.x for Windows
-     - MS Outlook
-     - Pywin32 from Mark Hammond, available from
-       http://sourceforge.net/projects/pywin32/
+  Each database connector requires its own credential setup. Follow the
+  instructions for the connectors you plan to use.
+
+** Google Contacts
+
+   Google Contacts requires OAuth 2.0 credentials. You will need to create a
+   project in the Google Cloud Console and download a client secrets JSON
+   file.
+
+   1. Go to https://console.developers.google.com
+   2. Create a new project (e.g. "My ASynK")
+   3. Enable the *Contacts API*:
+      - Click APIs & Services → Library
+      - Search for "Contacts API" and click Enable
+   4. Create OAuth credentials:
+      - Click APIs & Services → Credentials
+      - Click "Create Credentials" → "OAuth client ID"
+      - Application type: "Desktop app"
+      - Click "Create"
+   5. Download the client secrets JSON file and save it somewhere safe (e.g.
+      =~/.asynk/gc_client_secret.json=)
+
+   ASynK reads the credentials path via =~/.netrc=. Add an entry like:
+
+   : machine gc_PROFILENAME
+   :   login YOUR_GMAIL_USERNAME
+   :   password ~/.asynk/gc_client_secret.json
+
+   Replace =PROFILENAME= with your sync profile name and =YOUR_GMAIL_USERNAME=
+   with your Google account (without @gmail.com).
+
+   On the first run, ASynK will open a browser window for you to authorize
+   access. The resulting OAuth token is cached locally for subsequent runs.
+
+   See also: [[file:README-google-oauth.md][README-google-oauth.md]] for
+   additional details.
+
+** Microsoft Exchange Online (Graph API)
+
+   Exchange Online uses the Microsoft Graph API with OAuth 2.0 device code
+   flow. You will need to register an application in Azure Active Directory
+   (Microsoft Entra ID).
+
+   1. Go to https://portal.azure.com
+   2. Navigate to Azure Active Directory → App registrations → New registration
+   3. Set the name (e.g. "ASynK"), and choose the appropriate account types
+   4. After registration, note the *Application (client) ID*
+   5. Under API permissions, add:
+      - Microsoft Graph → Delegated → =Contacts.ReadWrite=
+      - Microsoft Graph → Delegated → =User.Read=
+   6. Under Authentication → Advanced settings, set "Allow public client
+      flows" to *Yes*
+
+   Configure ASynK with your client ID. Edit =~/.asynk/config.py=:
+
+   : def customize_config(config):
+   :     config['db_config']['ex']['client_id'] = 'YOUR-CLIENT-ID-HERE'
+
+   Or edit =config/config_v9.json= directly:
+
+   : 'ex' : {
+   :     'client_id'  : 'YOUR-CLIENT-ID-HERE',
+   :     'tenant_id'  : 'common',
+   : },
+
+   On the first run, ASynK will display a URL and a code. Open the URL in
+   any browser, enter the code, and sign in with your Microsoft account. The
+   OAuth token is cached locally for subsequent runs.
+
+   See also: [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]]
+   for detailed step-by-step instructions and troubleshooting.
+
+** CardDAV
+
+   CardDAV uses HTTP Basic authentication with a server URL, username, and
+   password. ASynK supports any standard CardDAV server (Radicale,
+   Baikal, Nextcloud, iCloud, etc.).
+
+   ASynK reads CardDAV credentials from =~/.netrc=:
+
+   : machine cd_PROFILENAME
+   :   login YOUR_USERNAME
+   :   password YOUR_PASSWORD
+
+   Replace =PROFILENAME= with your sync profile name. The CardDAV server URL
+   is specified as the "store ID" (=stid=) when creating your sync profile.
+
+   Example for a local Radicale server:
+
+   : $ python asynk.py --op=create-profile \
+   :   --db cd bb \
+   :   --store http://localhost:5232/ \
+   :   --folder default \
+   :   --name cdbb1
+
+   For Nextcloud:
+
+   : machine cd_cdbb1
+   :   login admin
+   :   password your-app-password
+   
+   With the store URL as =https://your-nextcloud.example.com/remote.php/dav/=
+
+   *Note*: For servers that use app-specific passwords (like Nextcloud,
+   iCloud), generate an app password from your account settings and use
+   that instead of your main password.
+
+** BBDB (Emacs)
+
+   BBDB does not require any credentials. Simply specify the path to your
+   =~/.bbdb= file as the store ID when creating a sync profile:
+
+   : $ python asynk.py --op=create-profile \
+   :   --db bb gc \
+   :   --store ~/.bbdb \
+   :   --folder default \
+   :   --name bbgc1
 
 * Usage
 
@@ -96,12 +205,5 @@ section titled Usage below to invoke ASynK.
    kick in if no other profile is configured.
 
 : $ python asynk.py --op=sync [--dry-run] [--log=debug]
-
-   If you run the above command on Windows, the entire default outlook
-   contacts folder will get synched to "My Contacts" on Google Contacts. (You
-   will be prompted for your google username and password). 
-
-   On any non-windows platform if you have a  ~/.bbdb will simply be "backed
-   up" to /tmp/asynk.bbdb.
 
    For further usage help, try "python asynk.py -h"
