@@ -68,7 +68,7 @@ are part of an eligible Microsoft partner program:
 4. Click **+ New registration**.
 
 5. Fill in the form:
-   - **Name**: `ASynK` (or any name you prefer)
+   - **Name**: `ASynK Self Hosted` (or any name you prefer)
    - **Supported account types**: Choose based on your needs:
      - *Accounts in this organizational directory only* — if only you
        (or users in your tenant) will use ASynK
