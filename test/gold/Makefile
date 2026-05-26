@@ -9,15 +9,15 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb sync-bb-bb ex gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort cd-best-effort
+all: state cmdline bb sync-bb-bb ex ex-live-best-effort gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort cd-best-effort
 
 clean:
 	rm -rf user_dir user_dir_gc_gc *~ *.bak temp.bbdb test_sync_*.bbdb
 
-## distclean also removes gc_creds/ which holds cached OAuth2 tokens
-## and client secrets.  Use this to force re-authentication.
+## distclean also removes gc_creds/ and ex_creds/ which hold cached OAuth2
+## tokens.  Use this to force re-authentication.
 distclean: clean
-	rm -rf gc_creds
+	rm -rf gc_creds ex_creds
 
 ## Add a Google test account credential.  Each invocation runs one OAuth
 ## dance and saves the token — no tests are executed.
@@ -54,6 +54,28 @@ sync-bb-bb:
 ex:
 	$(PYTHON) -m unittest test_msgraph_client -v
 	$(PYTHON) -m unittest test_contact_field_preservation_ex -v
+
+## Exchange Online live integration tests (requires real credentials).
+##   First run:  make ex-live EX_CLIENT_ID=YOUR-AZURE-AD-CLIENT-ID
+##   After that: make ex-live  (reuses cached credentials in ex_creds/)
+## 'make all' uses ex-live-best-effort which gracefully skips if no
+## credentials are available.  'make ex-live' requires credentials and
+## fails if missing.
+EX_TENANT_ID ?= common
+
+ex-live:
+ifdef EX_CLIENT_ID
+	$(PYTHON) test_ex_live.py --client-id $(EX_CLIENT_ID) --tenant-id $(EX_TENANT_ID)
+else
+	$(PYTHON) test_ex_live.py --tenant-id $(EX_TENANT_ID)
+endif
+
+ex-live-best-effort:
+ifdef EX_CLIENT_ID
+	$(PYTHON) test_ex_live.py --client-id $(EX_CLIENT_ID) --tenant-id $(EX_TENANT_ID)
+else
+	$(PYTHON) test_ex_live.py --tenant-id $(EX_TENANT_ID) --best-effort
+endif
 
 ## Google Contacts integration tests.
 ##   First run:  make gc GOOGLE_CL_SECRET=~/path/to/credentials.json
