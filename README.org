@@ -125,18 +125,27 @@ section titled Usage below to invoke ASynK.
 *** Microsoft Exchange Online (Graph API)
 
    Exchange Online uses the Microsoft Graph API with OAuth 2.0 device code
-   flow. You will need to register an application in Azure Active Directory
-   (Microsoft Entra ID).
+   flow. You will need to register an application in Microsoft Entra ID
+   (formerly Azure Active Directory).
 
-   1. Go to https://portal.azure.com
-   2. Navigate to Azure Active Directory → App registrations → New registration
-   3. Set the name (e.g. "ASynK"), and choose the appropriate account types
-   4. After registration, note the *Application (client) ID*
-   5. Under API permissions, add:
+   *Prerequisite*: You need a Microsoft Entra ID tenant (directory). If you
+   only have a personal Microsoft account (@gmail.com, @outlook.com, etc.),
+   you must first create a free Azure account at
+   https://azure.microsoft.com/en-us/free/ — this automatically provisions
+   an Entra ID tenant. See [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]]
+   for detailed instructions.
+
+   1. Sign in to the Entra admin center at https://entra.microsoft.com/
+   2. In the left navigation, expand *Applications* →  *App registrations*
+   3. Click *+ New registration*
+   4. Set the name (e.g. "ASynK"), choose appropriate account types, and
+      leave Redirect URI blank
+   5. Click *Register*, then note the *Application (client) ID*
+   6. Under *API permissions*, add:
       - Microsoft Graph → Delegated → =Contacts.ReadWrite=
       - Microsoft Graph → Delegated → =User.Read=
-   6. Under Authentication → Advanced settings, set "Allow public client
-      flows" to *Yes*
+   7. Under *Authentication* → Advanced settings, set "Allow public client
+      flows" to *Yes*, then click *Save*
 
    Configure ASynK with your client ID. Edit =~/.asynk/config.py=:
 
@@ -154,8 +163,8 @@ section titled Usage below to invoke ASynK.
    any browser, enter the code, and sign in with your Microsoft account. The
    OAuth token is cached locally for subsequent runs.
 
-   See also: [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]]
-   for detailed step-by-step instructions and troubleshooting.
+   See [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]]
+   for the full step-by-step guide including troubleshooting.
 
 ** Setting up user credentials
 
