@@ -40,11 +40,11 @@ def customize_config (config):
 
     # config['db_config']['gc']['log'] =  True
 
-    ## Uncomment and set the client_id if you are synching with Exchange
-    ## Online (Microsoft 365).  You must first register an app in Azure AD.
-    ## See doc/azure_app_registration.md for instructions.
+    ## Exchange Online (Microsoft 365) works out of the box with the
+    ## default client_id shipped in config_v9.json.  Uncomment below
+    ## only if you want to use your own Entra ID app registration.
 
     # config['db_config']['ex']['client_id'] = 'YOUR-AZURE-AD-CLIENT-ID'
 
-    ## Optionally restrict to a specific Azure AD tenant:
+    ## Optionally restrict to a specific Entra ID tenant:
     # config['db_config']['ex']['tenant_id'] = 'YOUR-TENANT-ID'

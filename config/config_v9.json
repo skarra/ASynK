@@ -324,18 +324,19 @@
         'ex' : {
             // Microsoft Graph API settings for Exchange Online.
             //
-            // To use the Exchange connector you must register an app
-            // in Azure Active Directory (Entra ID) and set the
-            // client_id below.  See doc/azure_app_registration.md
-            // for step-by-step instructions.
-            //
             // Authentication uses the OAuth 2.0 device code flow —
             // no username or password is stored in this file.
+            // See doc/azure_app_registration.md for details.
 
-            // REQUIRED: Azure AD Application (client) ID.
-            // Obtain this from the Azure Portal after registering
-            // your app.  Leave as null until you have registered.
-            'client_id'  : null,
+            // Azure AD Application (client) ID.  The default below is
+            // the official ASynK app registration maintained by the
+            // author of ASynK.  It works out of the box for any
+            // Microsoft account (personal or work/school).
+            //
+            // If you prefer to use your own app registration (e.g. for
+            // organizational policies), replace this with your own
+            // client_id from the Entra admin center.
+            'client_id'  : 'o0ac234d5-0622-4ee3-82a8-99c6ba144ca1',
 
             // Azure AD tenant ID.  Use 'common' for multi-tenant
             // (personal + work/school accounts), 'organizations'
