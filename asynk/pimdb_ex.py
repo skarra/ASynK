@@ -23,7 +23,7 @@ from msgraph_client import GraphAuthProvider, GraphContactsClient
 class EXPIMDB(PIMDB):
 
     def __init__ (self, config, client_id=None, tenant_id=None,
-                  token_cache_path=None):
+                  token_cache_path=None, username=None):
         """Initialize the Exchange PIMDB with Graph API authentication.
 
         Authentication uses OAuth 2.0 device code flow (suitable for CLI
@@ -36,6 +36,7 @@ class EXPIMDB(PIMDB):
                        from config (ex.client_id).
             tenant_id: Azure AD tenant ID. Defaults to 'common' (multi-tenant).
             token_cache_path: File path for MSAL token cache persistence.
+            username: Exchange username or account label.
         """
 
         PIMDB.__init__(self, config)
@@ -47,8 +48,16 @@ class EXPIMDB(PIMDB):
             client_id = dbc.get('client_id') if dbc else None
         if tenant_id is None:
             tenant_id = dbc.get('tenant_id', 'common') if dbc else 'common'
+
+        if username is None:
+            username = dbc.get('username') if dbc else None
+
         if token_cache_path is None:
             token_cache_path = dbc.get('token_cache_path') if dbc else None
+            # If still None, but username is provided, derive it:
+            if token_cache_path is None and username:
+                user_dir = config.get_user_dir()
+                token_cache_path = os.path.join(user_dir, f'graph_token_cache_{username}.json')
 
         if not client_id:
             raise ValueError(
@@ -59,6 +68,7 @@ class EXPIMDB(PIMDB):
         self.set_client_id(client_id)
         self.set_tenant_id(tenant_id)
         self.set_token_cache_path(token_cache_path)
+        self.set_username(username)
 
         self._graph_init()
         self.set_folders()
@@ -173,6 +183,12 @@ class EXPIMDB(PIMDB):
     def set_token_cache_path (self, path):
         return self._set_att('token_cache_path', path)
 
+    def get_username (self):
+        return self._get_att('username')
+
+    def set_username (self, username):
+        return self._set_att('username', username)
+
     def get_graph_client (self):
         return self._get_att('graph_client')
 
@@ -194,7 +210,8 @@ class EXPIMDB(PIMDB):
         auth = GraphAuthProvider(
             client_id=self.get_client_id(),
             tenant_id=self.get_tenant_id(),
-            token_cache_path=self.get_token_cache_path())
+            token_cache_path=self.get_token_cache_path(),
+            username=self.get_username())
 
         auth.authenticate()
         client = GraphContactsClient(auth)

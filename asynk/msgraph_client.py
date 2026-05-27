@@ -46,7 +46,7 @@ def _clean_contact_extensions (contact_dict):
     """Clean/deserialize extensions in a contact dictionary."""
     if not contact_dict or 'extensions' not in contact_dict:
         return contact_dict
-    
+
     new_extensions = []
     for ext in contact_dict['extensions']:
         if ext.get('extensionName') == 'com.asynk.syncdata' or \
@@ -92,10 +92,11 @@ class GraphAuthProvider:
     """
 
     def __init__ (self, client_id, tenant_id='common',
-                  token_cache_path=None):
+                  token_cache_path=None, username=None):
         self.client_id  = client_id
         self.tenant_id  = tenant_id
         self.authority   = 'https://login.microsoftonline.com/%s' % tenant_id
+        self.username   = username
 
         if token_cache_path is None:
             asynk_dir = os.path.expanduser('~/.asynk')
@@ -128,14 +129,32 @@ class GraphAuthProvider:
 
         ## 1. Try silent acquisition from cache
         accounts = self.app.get_accounts()
-        if accounts:
-            result = self.app.acquire_token_silent(GRAPH_SCOPES,
-                                                   account=accounts[0])
-            if result and 'access_token' in result:
-                self._access_token = result['access_token']
-                self._save_cache()
-                logging.debug('Graph API: acquired token silently from cache')
-                return self._access_token
+
+        if self.username:
+            matched_accounts = [a for a in accounts if a.get('username', '').lower() == self.username.lower()]
+            if accounts and not matched_accounts:
+                raise GraphAuthError(
+                    "No credentials found in cache for user '%s'. Cache contains: %s"
+                    % (self.username, [a.get('username') for a in accounts])
+                )
+
+            if matched_accounts:
+                result = self.app.acquire_token_silent(GRAPH_SCOPES,
+                                                       account=matched_accounts[0])
+                if result and 'access_token' in result:
+                    self._access_token = result['access_token']
+                    self._save_cache()
+                    logging.debug("Graph API: acquired token silently from cache for user '%s'", self.username)
+                    return self._access_token
+        else:
+            if accounts:
+                result = self.app.acquire_token_silent(GRAPH_SCOPES,
+                                                       account=accounts[0])
+                if result and 'access_token' in result:
+                    self._access_token = result['access_token']
+                    self._save_cache()
+                    logging.debug('Graph API: acquired token silently from cache')
+                    return self._access_token
 
         ## 2. Fall back to device code flow
         flow = self.app.initiate_device_flow(scopes=GRAPH_SCOPES)
@@ -155,6 +174,14 @@ class GraphAuthProvider:
             raise GraphAuthError(
                 'Authentication failed: %s' %
                 result.get('error_description', 'unknown error'))
+
+        # Check if the signed in user matches the requested username
+        id_token_claims = result.get('id_token_claims', {})
+        signed_in_user = id_token_claims.get('preferred_username') or result.get('account', {}).get('username')
+        if self.username and signed_in_user and signed_in_user.lower() != self.username.lower():
+            raise GraphAuthError(
+                "Signed in as '%s', but requested user was '%s'." % (signed_in_user, self.username)
+            )
 
         self._access_token = result['access_token']
         self._save_cache()

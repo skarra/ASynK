@@ -225,6 +225,14 @@ class TestMethods(unittest.TestCase):
                             '--label-regex', '.*'])
         self.assertEqual(ret, 0)
 
+    def test_ex_auth_args (self):
+        ret = self.run_cmd(['--op=list-profiles', '--ex-user', 'user1', '--ex-token-cache', 'path1', '--ex-client-id', 'clientid1'])
+        self.assertEqual(ret, 0)
+
+    def test_ex_auth_args_too_many (self):
+        ret = self.run_cmd(['--op=list-profiles', '--ex-user', 'user1', 'user2', 'user3'])
+        self.assertEqual(ret, 0)
+
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
-    main()  
+    main()

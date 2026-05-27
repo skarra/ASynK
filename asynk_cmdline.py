@@ -27,7 +27,7 @@ def setup_parser ():
     p.add_argument('--dry-run', action='store_true',
                    help='Do not sync, but merely show what will happen '
                    'if a sync is performed.')
-    
+
     p.add_argument('--sync-all', action='store_true',
                    help='when used with --op=sync, this will ignore previous '
                    'synchronization state, and perform a complete resync.')
@@ -60,7 +60,7 @@ def setup_parser ():
                    nargs='+',
                    help=('DB IDs required for most actions. ' +
                          'Some actions need two DB IDs - do it with two --db ' +
-                         'flags. When doing so remember that order might be ' + 
+                         'flags. When doing so remember that order might be ' +
                          'important for certain operations.'))
     p.add_argument('--store', action='store', nargs='+',
                     help=('Specifies store ID(s) to be operated on.'))
@@ -126,13 +126,31 @@ def setup_parser ():
                          'for it from stdin if required.'))
 
     cg.add_argument('--cdpwd', action='store', nargs='+',
-                     help=('CardDAV password. Relevant only if --db=cd is used. '
-                         'You can specify two if you are operating with 2 cd '
-                         'dbs. You could also specify one from netrc and one '
-                         'on the command line.  First one can optionally be '
-                         '"None" (without the quotes). '
-                         'If this option is not specified, user is prompted '
-                         'for it from stdin if required.'))
+                      help=('CardDAV password. Relevant only if --db=cd is used. '
+                          'You can specify two if you are operating with 2 cd '
+                          'dbs. You could also specify one from netrc and one '
+                          'on the command line.  First one can optionally be '
+                          '"None" (without the quotes). '
+                          'If this option is not specified, user is prompted '
+                          'for it from stdin if required.'))
+
+    # Exchange Server authentication
+    eg = p.add_argument_group('Exchange Server Authentication')
+    eg.add_argument('--ex-user', action='store', nargs='+',
+                     help=('Exchange username or account label. Relevant only if --db=ex is used. '
+                           'Used to construct a unique cached token filename '
+                           '(e.g., graph_token_cache_<username>.json). '
+                           'You can specify two if you are operating with 2 ex dbs. '
+                           'First one can optionally be "None" (without the quotes).'))
+    eg.add_argument('--ex-token-cache', action='store', nargs='+',
+                     help=('Exchange token cache file path. Relevant only if --db=ex is used. '
+                           'You can specify two if you are operating with 2 ex dbs. '
+                           'First one can optionally be "None" (without the quotes).'))
+    eg.add_argument('--ex-client-id', action='store', nargs='+',
+                     help=('Exchange client ID. Relevant only if --db=ex is used. '
+                           'Used to specify/override the Azure AD client ID. '
+                           'You can specify two if you are operating with 2 ex dbs. '
+                           'First one can optionally be "None" (without the quotes).'))
 
     # gw = p.add_argument_group('Web Parameters')
     # gw.add_argument('--port', action='store', type=int,
@@ -185,6 +203,15 @@ class AsynkBuilderC:
         if uinps.cdpwd and len(uinps.cdpwd) > 2:
             raise AsynkParserError('--cdpwd takes 1 or 2 arguments only')
 
+        if uinps.ex_user and len(uinps.ex_user) > 2:
+            raise AsynkParserError('--ex-user takes 1 or 2 arguments only')
+
+        if uinps.ex_token_cache and len(uinps.ex_token_cache) > 2:
+            raise AsynkParserError('--ex-token-cache takes 1 or 2 arguments only')
+
+        if uinps.ex_client_id and len(uinps.ex_client_id) > 2:
+            raise AsynkParserError('--ex-client-id takes 1 or 2 arguments only')
+
         if (uinps.cdpwd and len(uinps.cdpwd) > 1 and
             uinps.gcpwd and len(uinps.gcpwd) > 1):
             raise AsynkParserError('--cdpwd and --gcpwd should together have'
@@ -216,6 +243,24 @@ class AsynkBuilderC:
                 coll = self.asynk.get_colls()[i]
                 if cdpwd != 'None':
                     coll.set_pwd(cdpwd)
+
+        if uinps.ex_user:
+            for i, ex_user in enumerate(uinps.ex_user):
+                coll = self.asynk.get_colls()[i]
+                if ex_user != 'None':
+                    coll.set_username(ex_user)
+
+        if uinps.ex_token_cache:
+            for i, ex_token_cache in enumerate(uinps.ex_token_cache):
+                coll = self.asynk.get_colls()[i]
+                if ex_token_cache != 'None' and hasattr(coll, 'set_token_cache'):
+                    coll.set_token_cache(ex_token_cache)
+
+        if uinps.ex_client_id:
+            for i, ex_client_id in enumerate(uinps.ex_client_id):
+                coll = self.asynk.get_colls()[i]
+                if ex_client_id != 'None':
+                    coll.set_pwd(ex_client_id)
 
     def _snarf_pname (self, uinps):
         if uinps.name:

@@ -298,13 +298,24 @@ class EXCollection(Collection):
     def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
         Collection.__init__(self, config=config, dbid='ex', stid=stid, fid=fid,
                             pname=pname, colln=colln)
+        self.token_cache = None
+
+    def get_token_cache (self):
+        return self.token_cache
+
+    def set_token_cache (self, token_cache):
+        self.token_cache = token_cache
 
     def login (self):
         from pimdb_ex import EXPIMDB
 
-        ## Graph API uses OAuth device code flow — no username/password needed.
-        ## client_id and tenant_id are read from the config by EXPIMDB.
-        pimex = EXPIMDB(self.get_config())
+        # client_id can be overridden by the collection's pwd (e.g. from command line or netrc)
+        client_id = self.get_pwd()
+
+        pimex = EXPIMDB(self.get_config(),
+                        client_id=client_id,
+                        username=self.get_username(),
+                        token_cache_path=self.get_token_cache())
 
         ## FIXME: Need better error handling
         return self.set_db(pimex)
