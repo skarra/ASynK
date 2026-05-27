@@ -196,6 +196,7 @@ class BBContact(Contact):
                 ## to serialize it when sending to Google or saving to Outlook
                 ## etc. So let's just encode it in json format - our goto
                 ## solution for such problems.
+                rest = [unesc_str(chompq(x)) for x in rest]
                 self.add_custom('aka', demjson.encode(rest))
 
     def _snarf_company_from_parse_res (self, pr):
@@ -219,6 +220,7 @@ class BBContact(Contact):
             rest = cs[1:]
 
             if rest and len(rest) > 0:
+                rest = [unesc_str(chompq(x)) for x in rest]
                 self.add_custom('company', demjson.encode(rest))
 
     def _snarf_emails_from_parse_res (self, pr):
@@ -532,6 +534,7 @@ class BBContact(Contact):
             ## Note that we have inserted AKAs an json encoded array of
             ## strings.
             aka = demjson.decode(aka)
+            aka = [unchompq(esc_str(x)) for x in aka]
             aka.insert(0, nick)
             return('(' + ' '.join(aka) + ')')
         else:
@@ -558,6 +561,7 @@ class BBContact(Contact):
         else:
             if comp and len(comp) > 0:
                 comp = demjson.decode(comp)
+                comp = [unchompq(esc_str(x)) for x in comp]
                 comp.insert(0, unchompq(comp1))
             else:
                 comp = [unchompq(comp1)]

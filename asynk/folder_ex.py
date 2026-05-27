@@ -62,10 +62,27 @@ class EXFolder(Folder, metaclass=ABCMeta):
         for gc in graph_contacts:
             eid = gc.get('id')
             graph_ids.add(eid)
+            lmt = gc.get('lastModifiedDateTime')
 
             if eid in oldi:
-                lmt = gc.get('lastModifiedDateTime', '')
-                if updated_min and lmt > updated_min:
+                is_modified = True
+                if lmt and updated_min:
+                    try:
+                        import datetime
+                        from dateutil.parser import isoparse
+                        lmt_dt = isoparse(lmt)
+                        um_dt = isoparse(updated_min)
+                        # Allow a 5-second clock skew tolerance
+                        if lmt_dt <= um_dt + datetime.timedelta(seconds=5):
+                            is_modified = False
+                    except Exception as e:
+                        logging.warning('Could not parse timestamps: %s', e)
+                        if lmt <= updated_min:
+                            is_modified = False
+                else:
+                    is_modified = False
+
+                if is_modified:
                     logging.debug('Modified Exchange Contact: %s %s',
                                   gc.get('displayName', ''), eid[:20])
                     sl.add_mod(eid, oldi[eid])

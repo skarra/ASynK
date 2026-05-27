@@ -9,7 +9,7 @@
 
 PYTHON ?= ../../venv/bin/python3
 
-all: state cmdline bb sync-bb-bb ex ex-live-best-effort gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort cd-best-effort
+all: state cmdline bb sync-bb-bb ex ex-live-best-effort gc-best-effort sync-gc-bb-best-effort sync-gc-gc-best-effort cd-best-effort sync-ex-bb-best-effort
 
 clean:
 	rm -rf user_dir user_dir_gc_gc *~ *.bak temp.bbdb test_sync_*.bbdb
@@ -76,6 +76,23 @@ ifdef EX_CLIENT_ID
 else
 	$(PYTHON) test_ex_live.py --tenant-id $(EX_TENANT_ID) --best-effort
 endif
+
+## Exchange Online <-> BBDB sync engine tests.
+## Same best-effort pattern as ex-live above.
+sync-ex-bb:
+ifdef EX_CLIENT_ID
+	$(PYTHON) test_sync_ex_bb.py --client-id $(EX_CLIENT_ID) --tenant-id $(EX_TENANT_ID)
+else
+	$(PYTHON) test_sync_ex_bb.py --tenant-id $(EX_TENANT_ID)
+endif
+
+sync-ex-bb-best-effort:
+ifdef EX_CLIENT_ID
+	$(PYTHON) test_sync_ex_bb.py --client-id $(EX_CLIENT_ID) --tenant-id $(EX_TENANT_ID)
+else
+	$(PYTHON) test_sync_ex_bb.py --tenant-id $(EX_TENANT_ID) --best-effort
+endif
+
 
 ## Google Contacts integration tests.
 ##   First run:  make gc GOOGLE_CL_SECRET=~/path/to/credentials.json

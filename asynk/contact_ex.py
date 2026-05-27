@@ -341,7 +341,10 @@ class EXContact(Contact):
     def _snarf_dates_from_graph_con (self, gc):
         self.set_created(gc.get('createdDateTime'))
         self.set_updated(gc.get('lastModifiedDateTime'))
-        self.set_birthday(gc.get('birthday'))
+        bday = gc.get('birthday')
+        if bday and 'T' in bday:
+            bday = bday.split('T')[0]
+        self.set_birthday(bday)
         ## Anniversary is stored in Open Extension, read earlier.
 
     def _snarf_websites_from_graph_con (self, gc):
