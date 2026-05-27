@@ -334,22 +334,25 @@ class TestGraphContactsClientExtensions(unittest.TestCase):
     def test_set_extension_update_existing (self, mock_request):
         """If extension exists, PATCH should succeed."""
 
-        mock_request.return_value = {
-            'extensionName': 'com.asynk.syncdata',
-            'syncTags': {'profile1': 'updated_id'},
-        }
+        mock_request.side_effect = [
+            {'extensionName': 'com.asynk.syncdata', 'syncTags': '{"profile1": "updated_id"}'},
+            {'extensionName': 'com.asynk.syncdata', 'syncTags': '{"profile1": "updated_id"}'},
+        ]
 
         data = {'syncTags': {'profile1': 'updated_id'}}
         result = self.client.set_extension('c1', 'com.asynk.syncdata', data)
         self.assertIsNotNone(result)
 
-        ## First call should be PATCH
+        ## First call should be GET (check existence), second should be PATCH
+        self.assertEqual(mock_request.call_count, 2)
         first_call = mock_request.call_args_list[0]
-        self.assertEqual(first_call[0][0], 'PATCH')
+        self.assertEqual(first_call[0][0], 'GET')
+        second_call = mock_request.call_args_list[1]
+        self.assertEqual(second_call[0][0], 'PATCH')
 
     @patch.object(GraphContactsClient, '_request')
     def test_set_extension_create_new (self, mock_request):
-        """If PATCH returns 404, should fall back to POST."""
+        """If GET returns 404, should fall back to POST."""
 
         mock_request.side_effect = [
             GraphAPIError(404, 'ErrorItemNotFound', 'Not found'),
@@ -360,8 +363,10 @@ class TestGraphContactsClientExtensions(unittest.TestCase):
         result = self.client.set_extension('c1', 'com.asynk.syncdata', data)
         self.assertIsNotNone(result)
 
-        ## Should have been called twice: PATCH (failed) then POST
+        ## Should have been called twice: GET (failed) then POST
         self.assertEqual(mock_request.call_count, 2)
+        first_call = mock_request.call_args_list[0]
+        self.assertEqual(first_call[0][0], 'GET')
         second_call = mock_request.call_args_list[1]
         self.assertEqual(second_call[0][0], 'POST')
 

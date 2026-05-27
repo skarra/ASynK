@@ -19,6 +19,44 @@ GRAPH_BASE_URL = 'https://graph.microsoft.com/v1.0'
 GRAPH_SCOPES   = ['Contacts.ReadWrite', 'User.Read']
 DEFAULT_PAGE_SIZE = 250
 
+def _serialize_extension_payload (payload):
+    """Serialize nested dicts in open extension payload to JSON strings."""
+    if not payload:
+        return payload
+    new_payload = dict(payload)
+    for key in ('syncTags', 'customData'):
+        if key in new_payload and not isinstance(new_payload[key], str):
+            new_payload[key] = json.dumps(new_payload[key])
+    return new_payload
+
+def _deserialize_extension_payload (payload):
+    """Deserialize JSON strings in open extension payload back to dicts."""
+    if not payload:
+        return payload
+    new_payload = dict(payload)
+    for key in ('syncTags', 'customData'):
+        if key in new_payload and isinstance(new_payload[key], str):
+            try:
+                new_payload[key] = json.loads(new_payload[key])
+            except Exception:
+                pass
+    return new_payload
+
+def _clean_contact_extensions (contact_dict):
+    """Clean/deserialize extensions in a contact dictionary."""
+    if not contact_dict or 'extensions' not in contact_dict:
+        return contact_dict
+    
+    new_extensions = []
+    for ext in contact_dict['extensions']:
+        if ext.get('extensionName') == 'com.asynk.syncdata' or \
+           ext.get('id', '').endswith('com.asynk.syncdata'):
+            new_extensions.append(_deserialize_extension_payload(ext))
+        else:
+            new_extensions.append(ext)
+    contact_dict['extensions'] = new_extensions
+    return contact_dict
+
 class GraphAPIError(Exception):
     """Raised when a Graph API request fails."""
 
@@ -195,7 +233,14 @@ class GraphContactsClient:
     def delete_contact_folder (self, folder_id):
         """Delete a contact folder by ID."""
 
-        self._request('DELETE', '/me/contactFolders/%s' % folder_id)
+        try:
+            self._request('DELETE', '/me/contactFolders/%s' % folder_id)
+        except GraphAPIError as e:
+            if e.status_code == 403 and e.error_code == 'ErrorCannotDeleteObject':
+                logging.info('Standard DELETE contactFolder failed with 403. Trying permanentDelete POST...')
+                self._request('POST', '/me/contactFolders/%s/permanentDelete' % folder_id)
+            else:
+                raise
 
     ## ================================================================
     ## Contact CRUD operations
@@ -213,12 +258,15 @@ class GraphContactsClient:
         params = {'$top': str(DEFAULT_PAGE_SIZE)}
         if select:
             params['$select'] = select
+
         if expand:
+            if expand == 'extensions':
+                expand = "extensions($filter=id eq 'com.asynk.syncdata')"
             params['$expand'] = expand
         else:
-            params['$expand'] = 'extensions'
+            params['$expand'] = "extensions($filter=id eq 'com.asynk.syncdata')"
 
-        return list(self._paginate(path, params=params))
+        return [_clean_contact_extensions(c) for c in self._paginate(path, params=params)]
 
     def get_contact (self, contact_id, select=None, expand=None):
         """Fetch a single contact by ID."""
@@ -226,13 +274,17 @@ class GraphContactsClient:
         params = {}
         if select:
             params['$select'] = select
+
         if expand:
+            if expand == 'extensions':
+                expand = "extensions($filter=id eq 'com.asynk.syncdata')"
             params['$expand'] = expand
         else:
-            params['$expand'] = 'extensions'
+            params['$expand'] = "extensions($filter=id eq 'com.asynk.syncdata')"
 
-        return self._request('GET', '/me/contacts/%s' % contact_id,
+        res = self._request('GET', '/me/contacts/%s' % contact_id,
                              params=params or None)
+        return _clean_contact_extensions(res)
 
     def get_contacts (self, contact_ids, select=None, expand=None):
         """Fetch multiple contacts by IDs using batching."""
@@ -242,9 +294,11 @@ class GraphContactsClient:
 
         params_str = ''
         if expand:
+            if expand == 'extensions':
+                expand = "extensions($filter=id eq 'com.asynk.syncdata')"
             params_str += '?$expand=%s' % expand
         elif expand is None:
-            params_str += '?$expand=extensions'
+            params_str += "?$expand=extensions($filter=id eq 'com.asynk.syncdata')"
         if select:
             sep = '&' if params_str else '?'
             params_str += '%s$select=%s' % (sep, select)
@@ -265,7 +319,7 @@ class GraphContactsClient:
             rid = resp.get('id')
             status = resp.get('status', 0)
             if 200 <= status < 300:
-                result_map[rid] = resp.get('body', {})
+                result_map[rid] = _clean_contact_extensions(resp.get('body', {}))
             else:
                 logging.warning('Batch GET contact failed for request %s: '
                                 'status=%d', rid, status)
@@ -421,7 +475,7 @@ class GraphContactsClient:
                 if '@removed' in item:
                     deleted.append(item['id'])
                 else:
-                    changed.append(item)
+                    changed.append(_clean_contact_extensions(item))
 
             ## Follow @odata.nextLink for pagination, or save deltaLink
             url = data.get('@odata.nextLink')
@@ -442,7 +496,8 @@ class GraphContactsClient:
         path = '/me/contacts/%s/extensions/%s' % (contact_id,
                                                    extension_name)
         try:
-            return self._request('GET', path)
+            res = self._request('GET', path)
+            return _deserialize_extension_payload(res)
         except GraphAPIError as e:
             if e.status_code == 404:
                 return None
@@ -454,22 +509,22 @@ class GraphContactsClient:
         data should be a dict of key-value pairs to store.
         """
 
-        ext_body = dict(data)
+        ext_body = _serialize_extension_payload(data)
         ext_body['@odata.type'] = 'microsoft.graph.openTypeExtension'
         ext_body['extensionName'] = extension_name
 
-        ## Try PATCH first (update existing)
-        path = '/me/contacts/%s/extensions/%s' % (contact_id,
-                                                   extension_name)
-        try:
-            return self._request('PATCH', path, json=ext_body)
-        except GraphAPIError as e:
-            if e.status_code != 404:
-                raise
+        ## Check if it exists first
+        existing = self.get_extension(contact_id, extension_name)
 
-        ## Extension doesn't exist yet; create it
-        path = '/me/contacts/%s/extensions' % contact_id
-        return self._request('POST', path, json=ext_body)
+        if existing is None:
+            ## Extension doesn't exist yet; create it
+            path = '/me/contacts/%s/extensions' % contact_id
+            return _deserialize_extension_payload(self._request('POST', path, json=ext_body))
+        else:
+            ## Extension exists; update it
+            path = '/me/contacts/%s/extensions/%s' % (contact_id,
+                                                       extension_name)
+            return _deserialize_extension_payload(self._request('PATCH', path, json=ext_body))
 
     ## ================================================================
     ## Internal HTTP helpers

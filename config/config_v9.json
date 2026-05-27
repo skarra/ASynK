@@ -336,7 +336,7 @@
             // If you prefer to use your own app registration (e.g. for
             // organizational policies), replace this with your own
             // client_id from the Entra admin center.
-            'client_id'  : 'o0ac234d5-0622-4ee3-82a8-99c6ba144ca1',
+            'client_id'  : '0ac234d5-0622-4ee3-82a8-99c6ba144ca1',
 
             // Azure AD tenant ID.  Use 'common' for multi-tenant
             // (personal + work/school accounts), 'organizations'
