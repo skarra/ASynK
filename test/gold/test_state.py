@@ -81,7 +81,7 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_get_conf_file_version (self):
         val = self.config.get_conf_file_version()
-        self.assertEqual(val, 8)
+        self.assertEqual(val, 9)
 
     def test_read_label_prefix (self):
         val = self.config.get_label_prefix()
@@ -128,17 +128,17 @@ class TestStateFunctions(unittest.TestCase):
         val = self.config.get_ol_cus_pid()
         self.assertTrue(val == 0x6501)
 
-    def test_read_ex_guid (self):
-        val = self.config.get_ex_guid()
-        self.assertTrue(val == 'c950b7d3-ca13-43cd-9e78-be65bbdeaf37')
+    def test_read_ex_client_id (self):
+        val = self.config.get_ex_client_id()
+        self.assertEqual(val, '0ac234d5-0622-4ee3-82a8-99c6ba144ca1')
 
-    def test_read_ex_cus_pid (self):
-        val = self.config.get_ex_cus_pid()
-        self.assertTrue(val == 0x6501)
+    def test_read_ex_tenant_id (self):
+        val = self.config.get_ex_tenant_id()
+        self.assertEqual(val, 'common')
 
-    def test_read_ex_stags_pname (self):
-        val = self.config.get_ex_stags_pname()
-        self.assertTrue(val == 'sync_tags')
+    def test_read_ex_scopes (self):
+        val = self.config.get_ex_scopes()
+        self.assertEqual(val, ['Contacts.ReadWrite', 'User.Read'])
 
     def test_read_backup_hold_period (self):
         val = self.config.get_backup_hold_period()
