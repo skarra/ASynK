@@ -308,6 +308,123 @@ def _register_profile (sub, shared):
                    help='Name of the profile to delete')
     p.set_defaults(func=cmd_profile_delete)
 
+
+##
+## Folders subcommand handlers
+##
+
+def cmd_folders_list (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_list_folders')
+
+    for dbid in args.db:
+        coll = coll_id_class[dbid](config=config, pname=None)
+        if args.store:
+            idx = args.db.index(dbid)
+            if idx < len(args.store):
+                coll.set_stid(args.store[idx])
+        _apply_auth_to_coll(coll, dbid, args,
+                            index=args.db.index(dbid))
+        asynk.add_coll(coll)
+
+    asynk.dispatch()
+
+def cmd_folders_create (args, config, alogger):
+    if not args.name:
+        raise AsynkParserError('folders create needs a --name')
+
+    asynk = _init_asynk(config, alogger, args, 'op_create_folder',
+                        name=args.name)
+
+    dbid = args.db[0]
+    coll = coll_id_class[dbid](config=config, pname=None)
+    if args.store:
+        coll.set_stid(args.store[0])
+    _apply_auth_to_coll(coll, dbid, args)
+    asynk.add_coll(coll)
+
+    asynk.dispatch()
+
+def cmd_folders_show (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_show_folder')
+
+    dbid = args.db[0]
+    coll = coll_id_class[dbid](config=config, pname=None)
+    if args.store:
+        coll.set_stid(args.store[0])
+    if args.folder:
+        coll.set_fid(args.folder[0])
+    _apply_auth_to_coll(coll, dbid, args)
+    asynk.add_coll(coll)
+
+    asynk.dispatch()
+
+def cmd_folders_delete (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_del_folder')
+
+    dbid = args.db[0]
+    coll = coll_id_class[dbid](config=config, pname=None)
+    if args.store:
+        coll.set_stid(args.store[0])
+    if args.folder:
+        coll.set_fid(args.folder[0])
+    _apply_auth_to_coll(coll, dbid, args)
+    asynk.add_coll(coll)
+
+    asynk.dispatch()
+
+def _register_folders (sub, shared):
+    """Register the 'folders' subcommand group with its sub-sub-parsers."""
+
+    fld = sub.add_parser('folders', help='Manage contact folders',
+                         parents=[shared])
+    fld_sub = fld.add_subparsers(dest='folders_cmd', title='folders commands')
+
+    ## folders list
+    p = fld_sub.add_parser('list', help='List folders in a store',
+                           parents=[shared])
+    p.add_argument('db', nargs='+',
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   help='Database ID(s) to list folders from')
+    p.add_argument('--store', nargs='+',
+                   help='Store IDs (optional, e.g. BBDB file path)')
+    p.set_defaults(func=cmd_folders_list)
+
+    ## folders create
+    p = fld_sub.add_parser('create', help='Create a new folder',
+                           parents=[shared])
+    p.add_argument('db', nargs=1,
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   help='Database ID where the folder will be created')
+    p.add_argument('--name', required=True,
+                   help='Name for the new folder')
+    p.add_argument('--store', nargs='+',
+                   help='Store ID (optional)')
+    p.set_defaults(func=cmd_folders_create)
+
+    ## folders show
+    p = fld_sub.add_parser('show', help='Show folder details',
+                           parents=[shared])
+    p.add_argument('db', nargs=1,
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   help='Database ID')
+    p.add_argument('--folder', nargs=1,
+                   help='Folder ID to show')
+    p.add_argument('--store', nargs='+',
+                   help='Store ID (optional)')
+    p.set_defaults(func=cmd_folders_show)
+
+    ## folders delete
+    p = fld_sub.add_parser('delete', help='Delete a folder',
+                           parents=[shared])
+    p.add_argument('db', nargs=1,
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   help='Database ID')
+    p.add_argument('--folder', nargs=1,
+                   help='Folder ID to delete')
+    p.add_argument('--store', nargs='+',
+                   help='Store ID (optional)')
+    p.set_defaults(func=cmd_folders_delete)
+
 ##
 ## Top-level subcommand parser and main entry point
 ##
@@ -325,6 +442,7 @@ def _build_parser (shared):
                            'Run `asynk.py <subcommand> --help` for details.')
 
     _register_profile(sub, shared)
+    _register_folders(sub, shared)
 
     return p
 

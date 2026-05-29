@@ -33,11 +33,7 @@ def setup_parser ():
                    'synchronization state, and perform a complete resync.')
 
     p.add_argument('--op', action='store',
-                   choices=('list-folders',
-                            'create-folder',
-                            'create-store',
-                            'show-folder',
-                            'del-folder',
+                   choices=('create-store',
                             # 'print-item',
                             # 'del-item',
                             'sync',

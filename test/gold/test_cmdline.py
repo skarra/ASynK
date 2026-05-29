@@ -97,8 +97,9 @@ class TestMethods(unittest.TestCase):
         self.assertNotEqual(ret, 0)
 
     def test_missing_db (self):
-        ret = self.run_cmd(['--op=list-folders'])
-        self.assertEqual(ret, 0)
+        """folders list with no db arg should fail."""
+        ret = self.run_cmd(['folders', 'list'])
+        self.assertNotEqual(ret, 0)
 
     def test_list_profile_names (self):
         ret = self.run_cmd(['profile', 'names'])
@@ -195,23 +196,23 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(ret, 1)
 
     def test_list_folders_bb (self):
-        ret = self.run_cmd(['--op=list-folders', '--db', 'bb',
+        ret = self.run_cmd(['folders', 'list', 'bb',
                             '--store', 'test_sync_bb1.bbdb'])
         self.assertEqual(ret, 0)
 
     def test_create_folder_bb (self):
-        ret = self.run_cmd(['--op=create-folder', '--db', 'bb',
+        ret = self.run_cmd(['folders', 'create', 'bb',
                             '--store', 'test_sync_bb1.bbdb',
                             '--name', 'new_folder'])
         self.assertEqual(ret, 0)
 
     def test_show_folder_bb (self):
-        ret = self.run_cmd(['--op=show-folder', '--db', 'bb',
+        ret = self.run_cmd(['folders', 'show', 'bb',
                             '--store', 'test_sync_bb1.bbdb'])
         self.assertEqual(ret, 0)
 
     def test_del_folder_bb (self):
-        ret = self.run_cmd(['--op=del-folder', '--db', 'bb',
+        ret = self.run_cmd(['folders', 'delete', 'bb',
                             '--store', 'test_sync_bb1.bbdb'])
         self.assertEqual(ret, 0)
 
