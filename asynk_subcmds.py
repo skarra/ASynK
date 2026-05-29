@@ -148,6 +148,167 @@ def _setup_config_and_logger (args):
     return config, alogger
 
 ##
+## Asynk engine initialization helper
+##
+
+def _init_asynk (config, alogger, args, op, name=None):
+    """Create and initialize an Asynk engine instance with all attributes
+    set to sensible defaults. This replaces the piecemeal set_* calls
+    that AsynkBuilderC.validate_and_snarf_uinps() used to perform."""
+
+    asynk = Asynk(config, alogger)
+    asynk.set_op(op)
+    asynk.set_name(name)
+    asynk.set_dry_run(args.dry_run)
+    asynk.set_sync_all(getattr(args, 'sync_all', False))
+
+    d = None
+    if hasattr(args, 'direction') and args.direction:
+        d = 'SYNC1WAY' if args.direction == '1way' else 'SYNC2WAY'
+    asynk.set_sync_dir(d)
+
+    asynk.set_conflict_resolve(
+        getattr(args, 'conflict_resolve', None))
+    asynk.set_label_re(
+        getattr(args, 'label_regex', None))
+    asynk.set_item_id(
+        getattr(args, 'item', None))
+
+    return asynk
+
+##
+## Profile subcommand handlers
+##
+
+def cmd_profile_list (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_list_profiles')
+    asynk.dispatch()
+
+def cmd_profile_names (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_list_profile_names')
+    asynk.dispatch()
+
+def cmd_profile_show (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_show_profile',
+                        name=args.name)
+    asynk.dispatch()
+
+def cmd_profile_find (args, config, alogger):
+    if not args.db or len(args.db) != 2:
+        raise AsynkParserError('profile find needs exactly 2 --db values')
+
+    if not args.folder or len(args.folder) != 2:
+        raise AsynkParserError('profile find needs exactly 2 --folder values')
+
+    asynk = _init_asynk(config, alogger, args, 'op_find_profile')
+
+    for i, dbid in enumerate(args.db):
+        coll = coll_id_class[dbid](config=config, pname=asynk.get_name())
+        coll.set_fid(args.folder[i])
+        if args.store and len(args.store) > i:
+            coll.set_stid(args.store[i])
+        _apply_auth_to_coll(coll, dbid, args, index=i)
+        asynk.add_coll(coll)
+
+    asynk.dispatch()
+
+def cmd_profile_create (args, config, alogger):
+    if not args.db or len(args.db) != 2:
+        raise AsynkParserError('profile create needs exactly 2 --db values')
+
+    if not args.folder or len(args.folder) != 2:
+        raise AsynkParserError('profile create needs exactly 2 --folder values')
+
+    if not args.name:
+        raise AsynkParserError('profile create needs a --name')
+
+    asynk = _init_asynk(config, alogger, args, 'op_create_profile',
+                        name=args.name)
+
+    for i, dbid in enumerate(args.db):
+        coll = coll_id_class[dbid](config=config, pname=args.name)
+        coll.set_fid(args.folder[i])
+        if args.store and len(args.store) > i:
+            coll.set_stid(args.store[i])
+        _apply_auth_to_coll(coll, dbid, args, index=i)
+        asynk.add_coll(coll)
+
+    asynk.dispatch()
+
+def cmd_profile_delete (args, config, alogger):
+    if not args.name:
+        raise AsynkParserError('profile delete needs a --name')
+
+    asynk = _init_asynk(config, alogger, args, 'op_del_profile',
+                        name=args.name)
+    asynk.dispatch()
+
+##
+## Sub-parser registration helpers
+##
+
+def _register_profile (sub, shared):
+    """Register the 'profile' subcommand group with its sub-sub-parsers."""
+
+    prof = sub.add_parser('profile', help='Manage sync profiles',
+                          parents=[shared])
+    prof_sub = prof.add_subparsers(dest='profile_cmd', title='profile commands')
+
+    ## profile list
+    p = prof_sub.add_parser('list', help='List all profiles',
+                            parents=[shared])
+    p.set_defaults(func=cmd_profile_list)
+
+    ## profile names
+    p = prof_sub.add_parser('names', help='List profile names only',
+                            parents=[shared])
+    p.set_defaults(func=cmd_profile_names)
+
+    ## profile show
+    p = prof_sub.add_parser('show', help='Show profile details',
+                            parents=[shared])
+    p.add_argument('--name', required=True,
+                   help='Name of the profile to show')
+    p.set_defaults(func=cmd_profile_show)
+
+    ## profile find
+    p = prof_sub.add_parser('find', help='Find a matching profile',
+                            parents=[shared])
+    p.add_argument('--db', nargs=2, required=True,
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   help='Two database IDs to search for')
+    p.add_argument('--folder', nargs=2, required=True,
+                   help='Two folder IDs to match')
+    p.add_argument('--store', nargs='+',
+                   help='Store IDs (optional)')
+    p.set_defaults(func=cmd_profile_find)
+
+    ## profile create
+    p = prof_sub.add_parser('create', help='Create a new sync profile',
+                            parents=[shared])
+    p.add_argument('--db', nargs=2, required=True,
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   help='Two database IDs for the profile')
+    p.add_argument('--folder', nargs=2, required=True,
+                   help='Two folder IDs for the profile')
+    p.add_argument('--name', required=True,
+                   help='Name for the new profile')
+    p.add_argument('--store', nargs='+',
+                   help='Store IDs (optional)')
+    p.add_argument('--direction', choices=('1way', '2way'),
+                   help='Sync direction (default: 2way)')
+    p.add_argument('--conflict-resolve',
+                   help='Conflict resolution: 1, 2, or a db id')
+    p.set_defaults(func=cmd_profile_create)
+
+    ## profile delete
+    p = prof_sub.add_parser('delete', help='Delete a sync profile',
+                            parents=[shared])
+    p.add_argument('--name', required=True,
+                   help='Name of the profile to delete')
+    p.set_defaults(func=cmd_profile_delete)
+
+##
 ## Top-level subcommand parser and main entry point
 ##
 
@@ -163,9 +324,7 @@ def _build_parser (shared):
                            description='Available subcommands. '
                            'Run `asynk.py <subcommand> --help` for details.')
 
-    ## Subcommand sub-parsers will be registered here by subsequent
-    ## sub-phases. For now the parser is functional but has no
-    ## subcommands yet.
+    _register_profile(sub, shared)
 
     return p
 
@@ -190,5 +349,6 @@ def subcmd_main (argv=sys.argv):
             args.func(args, config, alogger)
         except AsynkParserError as e:
             logging.critical('Error in user input: %s', e)
+            sys.exit(1)
     else:
         parser.print_help()

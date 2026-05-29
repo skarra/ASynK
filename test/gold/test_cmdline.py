@@ -52,7 +52,7 @@ class TestMethods(unittest.TestCase):
     ## file into the current directory and start mucking with it.
 
     def setUp (self):
-        self.prog = '../../asynk_cmdline.py'
+        self.prog = '../../asynk.py'
         self.DEVNULL = open(os.devnull, 'wb')
         self.reset_user_dir()
 
@@ -90,94 +90,98 @@ class TestMethods(unittest.TestCase):
         ret = self.run_cmd(['--op=invalid-operation'])
         self.assertEqual(ret, 2)
 
-    def test_db_three_arguments (self):
-        ret = self.run_cmd(['--op=create-profile', '--db', 'bb', 'gc', 'cd'])
-        self.assertEqual(ret, 0)
+    def test_invalid_db_choice (self):
+        """Verify that an invalid db choice is rejected by argparse."""
+        ret = self.run_cmd(['profile', 'create', '--db', 'bb', 'xx',
+                            '--folder', 'f1', 'f2', '--name', 'pname'])
+        self.assertNotEqual(ret, 0)
 
     def test_missing_db (self):
         ret = self.run_cmd(['--op=list-folders'])
         self.assertEqual(ret, 0)
 
     def test_list_profile_names (self):
-        ret = self.run_cmd(['--op=list-profile-names'])
+        ret = self.run_cmd(['profile', 'names'])
         self.assertEqual(ret, 0)
 
     def test_list_profiles (self):
-        ret = self.run_cmd(['--op=list-profiles'])
+        ret = self.run_cmd(['profile', 'list'])
         self.assertEqual(ret, 0)
 
     def test_create_profile_ok (self):
-        ret = self.run_cmd(['--op=create-profile', '--db', 'cd', 'bb',
+        ret = self.run_cmd(['profile', 'create', '--db', 'cd', 'bb',
                             '--folder', 'default', 'default',
                             '--store', 'https://server.org:8443/', 'test/bbdb.olbb',
                             '--name', 'pname'])
         self.assertEqual(ret, 0)
 
     def test_create_profile_missing_folder (self):
-        ret = self.run_cmd(['--op=create-profile', '--db', 'cd', 'bb',
+        ret = self.run_cmd(['profile', 'create', '--db', 'cd', 'bb',
                             '--store', 'https://server.org:8443/', 'test/bbdb.olbb',
                             '--name', 'pname'])
-        self.assertEqual(ret, 1)
+        ## argparse will reject this because --folder is required
+        self.assertNotEqual(ret, 0)
 
     def test_create_profile_missing_name (self):
-        ret = self.run_cmd(['--op=create-profile', '--db', 'cd', 'bb',
+        ret = self.run_cmd(['profile', 'create', '--db', 'cd', 'bb',
                             '--folder', 'default', 'default',
                             '--store', 'https://server.org:8443/', 'test/bbdb.olbb'])
-        self.assertEqual(ret, 1)
+        ## argparse will reject this because --name is required
+        self.assertNotEqual(ret, 0)
 
     def test_create_profile_invalid_name (self):
-        ret = self.run_cmd(['--op=create-profile', '--db', 'bb', 'bb',
+        ret = self.run_cmd(['profile', 'create', '--db', 'bb', 'bb',
                             '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                             '--folder', 'default', 'default',
                             '--name', 'invalid pname'])
         self.assertEqual(ret, 1)
 
     def test_create_profile_duplicate (self):
-        ret1 = self.run_cmd(['--op=create-profile', '--db', 'bb', 'bb',
+        ret1 = self.run_cmd(['profile', 'create', '--db', 'bb', 'bb',
                              '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                              '--folder', 'default', 'default',
                              '--name', 'mybbprofile'])
         self.assertEqual(ret1, 0)
-        ret2 = self.run_cmd(['--op=create-profile', '--db', 'bb', 'bb',
+        ret2 = self.run_cmd(['profile', 'create', '--db', 'bb', 'bb',
                              '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                              '--folder', 'default', 'default',
                              '--name', 'mybbprofile'])
         self.assertEqual(ret2, 1)
 
     def test_find_profile_not_found (self):
-        ret = self.run_cmd(['--op=find-profile', '--db', 'bb', 'bb',
+        ret = self.run_cmd(['profile', 'find', '--db', 'bb', 'bb',
                             '--folder', 'f1', 'f2'])
         self.assertEqual(ret, 0)
 
     def test_find_profile_found (self):
         # Create it first
-        self.run_cmd(['--op=create-profile', '--db', 'bb', 'bb',
+        self.run_cmd(['profile', 'create', '--db', 'bb', 'bb',
                       '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                       '--folder', 'default', 'default',
                       '--name', 'mybbprofile'])
-        ret = self.run_cmd(['--op=find-profile', '--db', 'bb', 'bb',
+        ret = self.run_cmd(['profile', 'find', '--db', 'bb', 'bb',
                             '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                             '--folder', 'default', 'default'])
         self.assertEqual(ret, 0)
 
     def test_show_profile_not_found (self):
-        ret = self.run_cmd(['--op=show-profile', '--name', 'nonexistent'])
+        ret = self.run_cmd(['profile', 'show', '--name', 'nonexistent'])
         self.assertEqual(ret, 0)
 
     def test_show_profile_found (self):
-        self.run_cmd(['--op=create-profile', '--db', 'bb', 'bb',
+        self.run_cmd(['profile', 'create', '--db', 'bb', 'bb',
                       '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                       '--folder', 'default', 'default',
                       '--name', 'mybbprofile'])
-        ret = self.run_cmd(['--op=show-profile', '--name', 'mybbprofile'])
+        ret = self.run_cmd(['profile', 'show', '--name', 'mybbprofile'])
         self.assertEqual(ret, 0)
 
     def test_del_profile (self):
-        self.run_cmd(['--op=create-profile', '--db', 'bb', 'bb',
+        self.run_cmd(['profile', 'create', '--db', 'bb', 'bb',
                       '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                       '--folder', 'default', 'default',
                       '--name', 'mybbprofile'])
-        ret = self.run_cmd(['--op=del-profile', '--name', 'mybbprofile'])
+        ret = self.run_cmd(['profile', 'delete', '--name', 'mybbprofile'])
         self.assertEqual(ret, 0)
 
     def test_create_store (self):
@@ -212,7 +216,7 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(ret, 0)
 
     def test_sync_dry_run (self):
-        self.run_cmd(['--op=create-profile', '--db', 'bb', 'bb',
+        self.run_cmd(['profile', 'create', '--db', 'bb', 'bb',
                       '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                       '--folder', 'default', 'default',
                       '--name', 'mybbprofile'])
@@ -226,11 +230,13 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(ret, 0)
 
     def test_ex_auth_args (self):
-        ret = self.run_cmd(['--op=list-profiles', '--ex-user', 'user1', '--ex-token-cache', 'path1', '--ex-client-id', 'clientid1'])
+        ret = self.run_cmd(['profile', 'list', '--ex-user', 'user1',
+                            '--ex-token-cache', 'path1',
+                            '--ex-client-id', 'clientid1'])
         self.assertEqual(ret, 0)
 
     def test_ex_auth_args_too_many (self):
-        ret = self.run_cmd(['--op=list-profiles', '--ex-user', 'user1', 'user2', 'user3'])
+        ret = self.run_cmd(['profile', 'list', '--ex-user', 'user1', 'user2', 'user3'])
         self.assertEqual(ret, 0)
 
 if __name__ == '__main__':
