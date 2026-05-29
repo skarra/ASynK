@@ -32,15 +32,7 @@ def setup_parser ():
                    help='when used with --op=sync, this will ignore previous '
                    'synchronization state, and perform a complete resync.')
 
-    p.add_argument('--op', action='store',
-                   choices=('create-store',
-                            # 'print-item',
-                            # 'del-item',
-                            'sync',
-                            # 'startweb',
-                            'clear-sync-artifacts',),
-                    default='startweb',
-                    help='Specific management operation to be performed.')
+
 
     p.add_argument('--user-dir', action='store',
                    default=os.path.expanduser('~/.asynk'),
@@ -320,43 +312,9 @@ class AsynkBuilderC:
                                        'op_list_profile_names']:
             self._snarf_auth_creds(uinps)
 
-SUBCOMMANDS = {'folders', 'profile', 'sync', 'store', 'clear-artifacts',
-               'init', 'status'}
-
 def main (argv=sys.argv):
-    ## Check if the user invoked a subcommand. The first positional
-    ## (non-flag) argument determines the mode.
-    for arg in sys.argv[1:]:
-        if arg.startswith('-'):
-            continue
-        if arg in SUBCOMMANDS:
-            from asynk_subcmds import subcmd_main
-            return subcmd_main(argv)
-        break
-
-    ## Legacy --op mode
-    parser  = setup_parser()
-    uinps = parser.parse_args()
-
-    # Make the user directory if it does not exist
-    uinps.user_dir = os.path.abspath(os.path.expanduser(uinps.user_dir))
-    if not os.path.exists(uinps.user_dir):
-        print('Creating ASynK User directory at: ', uinps.user_dir)
-        os.makedirs(uinps.user_dir)
-
-    config  = Config(ASYNK_BASE_DIR, uinps.user_dir)
-    alogger = ASynKLogger(config)
-    alogger.setup()
-
-    logging.debug('Command line: "%s"', ' '.join(sys.argv))
-
-    try:
-        asynk = AsynkBuilderC(uinps, config, alogger).asynk
-    except AsynkParserError as e:
-        logging.critical('Error in User input: %s', e)
-        quit()
-
-    asynk.dispatch()
+    from asynk_subcmds import subcmd_main
+    return subcmd_main(argv)
 
 if __name__ == "__main__":
     main()

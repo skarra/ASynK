@@ -426,6 +426,99 @@ def _register_folders (sub, shared):
     p.set_defaults(func=cmd_folders_delete)
 
 ##
+## Sync subcommand handler
+##
+
+def cmd_sync (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_sync',
+                        name=getattr(args, 'name', None))
+
+    ## op_sync calls _load_profile() internally, which sets up collections
+    ## from the profile config. We just need to apply any auth overrides
+    ## that the user provided on the command line.
+    asynk.dispatch()
+
+def _register_sync (sub, shared):
+    """Register the 'sync' top-level subcommand."""
+
+    p = sub.add_parser('sync', help='Run a sync',
+                       parents=[shared])
+    p.add_argument('--name',
+                   help='Profile name to sync (default: last used profile)')
+    p.add_argument('--sync-all', action='store_true',
+                   help='Ignore previous sync state and do a full resync')
+    p.add_argument('--direction', choices=('1way', '2way'),
+                   help='Override sync direction')
+    p.set_defaults(func=cmd_sync)
+
+##
+## Store subcommand handlers
+##
+
+def cmd_store_create (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_create_store')
+
+    dbid = args.db[0]
+    coll = coll_id_class[dbid](config=config, pname=None)
+    if args.store:
+        coll.set_stid(args.store[0])
+    asynk.add_coll(coll)
+
+    asynk.dispatch()
+
+def _register_store (sub, shared):
+    """Register the 'store' subcommand group."""
+
+    sto = sub.add_parser('store', help='Manage data stores',
+                         parents=[shared])
+    sto_sub = sto.add_subparsers(dest='store_cmd', title='store commands')
+
+    ## store create
+    p = sto_sub.add_parser('create', help='Create a new data store',
+                           parents=[shared])
+    p.add_argument('db', nargs=1,
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   help='Database ID (currently only bb is supported)')
+    p.add_argument('--store', nargs='+', required=True,
+                   help='Path for the new store file')
+    p.set_defaults(func=cmd_store_create)
+
+##
+## Clear-artifacts subcommand handler
+##
+
+def cmd_clear_artifacts (args, config, alogger):
+    asynk = _init_asynk(config, alogger, args, 'op_clear_sync_artifacts')
+
+    dbid = args.db[0]
+    coll = coll_id_class[dbid](config=config, pname=None)
+    if args.store:
+        coll.set_stid(args.store[0])
+    if args.folder:
+        coll.set_fid(args.folder[0])
+    _apply_auth_to_coll(coll, dbid, args)
+    asynk.add_coll(coll)
+
+    asynk.dispatch()
+
+def _register_clear_artifacts (sub, shared):
+    """Register the 'clear-artifacts' top-level subcommand."""
+
+    p = sub.add_parser('clear-artifacts',
+                       help='Clear sync artifacts from a folder',
+                       parents=[shared])
+    p.add_argument('db', nargs=1,
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   help='Database ID')
+    p.add_argument('--folder', nargs=1,
+                   help='Folder ID to clear artifacts from')
+    p.add_argument('--store', nargs='+',
+                   help='Store ID (optional)')
+    p.add_argument('--label-regex',
+                   help='Regex for sync labels to clear')
+    p.set_defaults(func=cmd_clear_artifacts)
+
+##
 ## Top-level subcommand parser and main entry point
 ##
 
@@ -443,6 +536,9 @@ def _build_parser (shared):
 
     _register_profile(sub, shared)
     _register_folders(sub, shared)
+    _register_sync(sub, shared)
+    _register_store(sub, shared)
+    _register_clear_artifacts(sub, shared)
 
     return p
 

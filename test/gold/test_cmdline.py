@@ -86,9 +86,10 @@ class TestMethods(unittest.TestCase):
         ret = self.run_cmd(['--version'])
         self.assertEqual(ret, 0)
 
-    def test_invalid_op (self):
-        ret = self.run_cmd(['--op=invalid-operation'])
-        self.assertEqual(ret, 2)
+    def test_invalid_subcommand (self):
+        """An invalid subcommand should fail."""
+        ret = self.run_cmd(['invalid-command'])
+        self.assertNotEqual(ret, 0)
 
     def test_invalid_db_choice (self):
         """Verify that an invalid db choice is rejected by argparse."""
@@ -186,12 +187,12 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(ret, 0)
 
     def test_create_store (self):
-        ret = self.run_cmd(['--op=create-store', '--db', 'bb',
+        ret = self.run_cmd(['store', 'create', 'bb',
                             '--store', 'temp_create_store.bbdb'])
         self.assertEqual(ret, 0)
 
     def test_create_store_invalid_db (self):
-        ret = self.run_cmd(['--op=create-store', '--db', 'gc',
+        ret = self.run_cmd(['store', 'create', 'gc',
                             '--store', 'dummy'])
         self.assertEqual(ret, 1)
 
@@ -221,11 +222,11 @@ class TestMethods(unittest.TestCase):
                       '--store', 'test_sync_bb1.bbdb', 'test_sync_bb2.bbdb',
                       '--folder', 'default', 'default',
                       '--name', 'mybbprofile'])
-        ret = self.run_cmd(['--op=sync', '--name', 'mybbprofile', '--dry-run'])
+        ret = self.run_cmd(['sync', '--name', 'mybbprofile', '--dry-run'])
         self.assertEqual(ret, 0)
 
     def test_clear_sync_artifacts (self):
-        ret = self.run_cmd(['--op=clear-sync-artifacts', '--db', 'bb',
+        ret = self.run_cmd(['clear-artifacts', 'bb',
                             '--store', 'test_sync_bb1.bbdb',
                             '--label-regex', '.*'])
         self.assertEqual(ret, 0)
