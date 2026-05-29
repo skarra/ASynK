@@ -330,7 +330,21 @@ class AsynkBuilderC:
                                        'op_list_profile_names']:
             self._snarf_auth_creds(uinps)
 
+SUBCOMMANDS = {'folders', 'profile', 'sync', 'store', 'clear-artifacts',
+               'init', 'status'}
+
 def main (argv=sys.argv):
+    ## Check if the user invoked a subcommand. The first positional
+    ## (non-flag) argument determines the mode.
+    for arg in sys.argv[1:]:
+        if arg.startswith('-'):
+            continue
+        if arg in SUBCOMMANDS:
+            from asynk_subcmds import subcmd_main
+            return subcmd_main(argv)
+        break
+
+    ## Legacy --op mode
     parser  = setup_parser()
     uinps = parser.parse_args()
 
