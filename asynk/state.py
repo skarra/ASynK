@@ -347,6 +347,9 @@ class Config:
     def get_gc_logging (self):
         return self.get_db_config('gc')['log']
 
+    def get_gc_client_secret_file (self):
+        return self.get_db_config('gc').get('client_secret_file', None)
+
     def get_ex_client_id (self):
         return self.get_db_config('ex')['client_id']
 

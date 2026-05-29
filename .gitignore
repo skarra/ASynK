@@ -52,6 +52,7 @@ asynk.sublime-workspace
 venv/
 gc_creds/
 ex_creds/
+config/gc_client_secret.json
 *.token.pickle
 test_sync_*.bbdb
 user_dir_gc_gc/

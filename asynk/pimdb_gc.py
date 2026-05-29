@@ -234,7 +234,12 @@ class GCPIMDB(PIMDB):
                 if not os.path.exists(cs_file):
                     logging.error('Client secrets file not found: %s', cs_file)
                     raise FileNotFoundError(
-                        'OAuth2 client secrets file not found: %s' % cs_file)
+                        'OAuth2 client secrets file not found: %s\n'
+                        'To fix this, either:\n'
+                        '  1. Place your client secrets JSON at '
+                        'config/gc_client_secret.json\n'
+                        '  2. Specify the path with --gcpwd '
+                        '/path/to/your/credentials.json' % cs_file)
                 flow = InstalledAppFlow.from_client_secrets_file(
                     cs_file, SCOPES)
                 creds = flow.run_local_server(port=0)

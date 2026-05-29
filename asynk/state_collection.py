@@ -334,9 +334,17 @@ class GCCollection(Collection):
                             pname=pname, colln=colln)
 
     def login (self):
+        cs_path = self.get_pwd()
+        if not cs_path:
+            ## Fall back to the default client secrets shipped with ASynK
+            default_cs = self.get_config().get_gc_client_secret_file()
+            if default_cs:
+                app_root = self.get_config().get_app_root()
+                cs_path = os.path.join(app_root, default_cs)
+
         try:
             pimgc = GCPIMDB(self.get_config(),
-                            self.get_username(), self.get_pwd())
+                            self.get_username(), cs_path)
         except Exception as e:
             raise AsynkCollectionError('Invalid Google credentials (%s)' % e)
 
@@ -346,7 +354,7 @@ class GCCollection(Collection):
         return True
 
     def force_pwd (self):
-        return True
+        return False
 
 
 class OLCollection(Collection):

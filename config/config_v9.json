@@ -308,6 +308,13 @@
                 "other" : 'Other',
             }, // db_config['postal_map']
 
+            // Default OAuth2 client secrets JSON for Google Contacts.
+            // This file ships with ASynK so users can authenticate
+            // without creating their own GCP project.  If you have
+            // your own client secrets, override with --gcpwd or set
+            // this to the path of your file (relative to app root).
+            'client_secret_file' : 'config/gc_client_secret.json',
+
             // Enables request/response logging in the Apple
             // caldavclientlibrary. Useful to see comms between ASynK
             // and the carddav server

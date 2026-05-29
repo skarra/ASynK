@@ -45,18 +45,7 @@ As you are reading this file, the most efficient installation is to
 recursively clone this git repository to your machine. Then see the
 section titled Usage below to invoke ASynK.
 
-: git clone  --recursive https://github.com/skarra/ASynK.git
-
-** Updating an earlier install
-
-   If you are updating your ASynK installation from an earlier version,
-   please note that many new git-submodules are added to the project. So for
-   your update to work properly you need to update all
-   sub-modules. Recommended way to do this would be to fun the following
-   command from the root of your ASynK directory, after you pull in the latest
-   changes
-
-: git submodule update --init --recursive
+: git clone  https://github.com/skarra/ASynK.git
 
 ** Setting up your Python environment
 
