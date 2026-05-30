@@ -24,8 +24,11 @@ from folder_gc import GCContactsFolder
 
 ## The People API scope for full contacts access (read/write), plus
 ## userinfo.email so we can reliably query people/me for the account email.
+## 'openid' is required because Google implicitly grants it alongside
+## userinfo.email, and the auth library errors on scope mismatch.
 SCOPES = ['https://www.googleapis.com/auth/contacts',
-          'https://www.googleapis.com/auth/userinfo.email']
+          'https://www.googleapis.com/auth/userinfo.email',
+          'openid']
 
 ## personFields to request when listing connections. This should cover all
 ## the fields ASynK cares about.
