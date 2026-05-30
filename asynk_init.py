@@ -420,20 +420,12 @@ def _setup_gc (args, config, coll_index):
 
     coll.login()
 
-    ## Try to show the authenticated user's email
+    ## Show the authenticated user's email (already fetched by gc_init)
     db = coll.get_db()
-    try:
-        svc = db.get_service()
-        me = svc.people().get(
-            resourceName='people/me',
-            personFields='emailAddresses').execute()
-        emails = me.get('emailAddresses', [])
-        if emails:
-            email = emails[0].get('value', '(unknown)')
-            print()
-            print('  Signed in as: %s' % email)
-    except Exception:
-        pass
+    email = getattr(db, 'authenticated_email', None)
+    if email:
+        print()
+        print('  Signed in as: %s' % email)
 
     _prompt_input('Press Enter to fetch the folder list', default='')
     print()
