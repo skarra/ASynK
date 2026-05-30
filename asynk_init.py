@@ -468,6 +468,34 @@ _SETUP_FUNCS = {
     'cd': _setup_cd,
 }
 
+def _setup_with_retry (setup_func, args, config, coll_index, db_id,
+                       max_retries=2):
+    """Call a setup function with retry on AsynkCollectionError.
+
+    For non-interactive mode (all flags provided), errors are fatal.
+    For interactive mode, the user gets a chance to retry.
+    """
+
+    for attempt in range(max_retries + 1):
+        try:
+            return setup_func(args, config, coll_index)
+        except AsynkCollectionError as e:
+            logging.error('Login failed for %s: %s', DB_NAMES[db_id], e)
+            if attempt < max_retries:
+                print()
+                print('  Error: %s' % e)
+                retry = _prompt_yesno('  Retry?', default=True)
+                if not retry:
+                    raise
+                print()
+            else:
+                raise
+        except ImportError as e:
+            logging.error('Missing dependency for %s: %s', DB_NAMES[db_id], e)
+            print()
+            print('  Error: Missing dependency: %s' % e)
+            raise SystemExit(1)
+
 ##
 ## Profile creation
 ##
@@ -551,11 +579,13 @@ def cmd_init (args, config, alogger):
         raise AsynkParserError('Unsupported database: %s' % db2_id)
 
     print('  [Store 1: %s]' % DB_NAMES[db1_id])
-    coll1, db1 = setup1(args, config, 0)
+    coll1, db1 = _setup_with_retry(setup1, args, config, 0, db1_id)
+    coll1.set_colln(1)
     print()
 
     print('  [Store 2: %s]' % DB_NAMES[db2_id])
-    coll2, db2 = setup2(args, config, 1)
+    coll2, db2 = _setup_with_retry(setup2, args, config, 1, db2_id)
+    coll2.set_colln(2)
     print()
 
     ## Step 3: Folder selection
@@ -588,3 +618,4 @@ def cmd_init (args, config, alogger):
 
     ## Step 7: Summary
     _print_summary(pname, db1_id, db2_id, fid1, fid2, sync_dir, cr)
+
