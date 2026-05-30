@@ -594,13 +594,17 @@ class Asynk:
                          pname=pname, colln=2)
 
             ## Restore saved username from profile so GC (and others)
-            ## don't prompt interactively during sync
+            ## don't prompt interactively during sync.  For GC profiles
+            ## created before username storage was added, fall back to
+            ## 'default' (the standard token cache label).
             c1_dict = conf.get_coll_1(pname)
             c2_dict = conf.get_coll_2(pname)
-            if c1_dict and c1_dict.get('username'):
-                coll1.set_username(c1_dict['username'])
-            if c2_dict and c2_dict.get('username'):
-                coll2.set_username(c2_dict['username'])
+
+            for coll, c_dict in [(coll1, c1_dict), (coll2, c2_dict)]:
+                if c_dict and c_dict.get('username'):
+                    coll.set_username(c_dict['username'])
+                elif coll.get_dbid() == 'gc' and coll.get_username() is None:
+                    coll.set_username('default')
 
             self.add_coll(coll1)
             self.add_coll(coll2)
