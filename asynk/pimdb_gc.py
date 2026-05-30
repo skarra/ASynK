@@ -240,7 +240,7 @@ class GCPIMDB(PIMDB):
         ## Check if cached token is missing newly-required scopes.
         ## If so, discard it and force a fresh OAuth flow.
         if creds and creds.valid and hasattr(creds, 'scopes') and creds.scopes:
-            missing = set(SCOPES) - creds.scopes
+            missing = set(SCOPES) - set(creds.scopes)
             if missing:
                 logging.info('Cached token is missing scopes: %s. '
                              'Re-authorizing...', ', '.join(missing))
