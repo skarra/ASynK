@@ -100,11 +100,11 @@ class Asynk:
                          'for %s...', stored_email)
 
             if not live_email:
-                logging.error('Could not verify Google account identity. '
-                              'Expected: %s', stored_email)
-                raise AsynkParserError(
-                    'Could not verify Google account identity for %s. '
-                    'Credentials may be invalid or expired.' % stored_email)
+                logging.warning('Could not verify Google account identity '
+                                '(expected: %s). The contacts scope may not '
+                                'grant people/me access. Continuing with '
+                                'cached credentials.', stored_email)
+                return
 
             if live_email.lower() != stored_email.lower():
                 logging.error('Google account mismatch: profile has %s '
@@ -143,11 +143,10 @@ class Asynk:
             logging.info('Attempting to verify Google account identity...')
 
             if not live_email:
-                logging.error('Could not verify Google account identity. '
-                              'Credentials may be invalid or expired.')
-                raise AsynkParserError(
-                    'Could not verify Google account identity. '
-                    'Ensure your OAuth credentials are valid.')
+                logging.warning('Could not determine Google account email. '
+                                'The contacts scope may not grant people/me '
+                                'access. Continuing with cached credentials.')
+                return
 
             logging.info('Successfully verified Google account: %s',
                          live_email)

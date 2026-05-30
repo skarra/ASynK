@@ -420,7 +420,9 @@ def _setup_gc (args, config, coll_index):
 
     coll.login()
 
-    ## Verify we got a valid email from the OAuth flow
+    ## Show the authenticated user's email if we can determine it.
+    ## The contacts scope may not always grant access to people/me,
+    ## so treat this as best-effort — the OAuth token is still valid.
     db = coll.get_db()
     email = getattr(db, 'authenticated_email', None)
     if email:
@@ -428,10 +430,8 @@ def _setup_gc (args, config, coll_index):
         print('  Signed in as: %s' % email)
     else:
         print()
-        print('  ERROR: Could not verify Google account identity.')
-        print('  Your credentials may be invalid or expired.')
-        raise AsynkParserError(
-            'Could not verify Google account identity.')
+        print('  Note: Could not determine the signed-in Google account.')
+        print('  (The OAuth login succeeded; this is a permissions quirk.)')
 
     _prompt_input('Press Enter to fetch the folder list', default='')
     print()
