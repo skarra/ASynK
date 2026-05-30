@@ -216,7 +216,7 @@ def _select_folder (db, label, preselected_fid=None):
     if len(folder_info) == 1:
         fid, name, count = folder_info[0]
         cnt_str = ' (%d contacts)' % count if count is not None else ''
-        print('  Only one folder available: %s%s' % (name, cnt_str))
+        print('  %s: Only one folder available: %s%s' % (label, name, cnt_str))
         return (fid, name)
 
     ## Compute column widths for aligned display
