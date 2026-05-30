@@ -151,6 +151,35 @@ def _select_dbs (args):
 ## Generic folder selection
 ##
 
+def _get_folder_count (f):
+    """Return the number of contacts in a folder, or None if unknown.
+
+    For Google Contacts, the People API contactGroup resource has a
+    memberCount field.  For BBDB, we can count the parsed contacts.
+    For others, return None.
+    """
+
+    ## GC: gcentry has 'memberCount'
+    gcentry = getattr(f, 'get_gcentry', None)
+    if gcentry:
+        entry = gcentry()
+        if entry and isinstance(entry, dict):
+            mc = entry.get('memberCount')
+            if mc is not None:
+                return int(mc)
+
+    ## BB: the folder object has a contacts dict after login
+    contacts = getattr(f, 'get_contacts', None)
+    if contacts:
+        try:
+            c = contacts()
+            if isinstance(c, dict):
+                return len(c)
+        except Exception:
+            pass
+
+    return None
+
 def _select_folder (db, label, preselected_fid=None):
     """Pick a contacts folder from a logged-in PIMDB.
 
@@ -166,12 +195,13 @@ def _select_folder (db, label, preselected_fid=None):
         logging.error('No contact folders found in %s', db.get_dbid())
         raise AsynkParserError('No contact folders found.')
 
-    ## Build (fid, display_label) list
-    options = []
+    ## Build folder info: (fid, name, count)
+    folder_info = []
     for f in folders:
-        fid  = f.get_itemid()
-        name = f.get_name() if hasattr(f, 'get_name') else str(fid)
-        options.append((fid, '%s  (ID: %s)' % (name, fid)))
+        fid   = f.get_itemid()
+        name  = f.get_name() if hasattr(f, 'get_name') else str(fid)
+        count = _get_folder_count(f)
+        folder_info.append((fid, name, count))
 
     ## If a fid was pre-selected (from --folder), use it directly
     if preselected_fid is not None:
@@ -179,19 +209,34 @@ def _select_folder (db, label, preselected_fid=None):
         return preselected_fid
 
     ## If only one folder, auto-select with confirmation
-    if len(options) == 1:
-        fid, display = options[0]
-        print('  Only one folder available: %s' % display)
+    if len(folder_info) == 1:
+        fid, name, count = folder_info[0]
+        cnt_str = ' (%d contacts)' % count if count is not None else ''
+        print('  Only one folder available: %s%s' % (name, cnt_str))
         return fid
+
+    ## Compute column widths for aligned display
+    max_name = max(len(name) for _, name, _ in folder_info)
+    max_fid  = max(len(str(fid)) for fid, _, _ in folder_info)
+    max_name = max(max_name, 4)  # minimum "Name" header width
+    max_fid  = max(max_fid, 2)   # minimum "ID" header width
+
+    ## Build (fid, formatted_label) for _prompt_choice
+    options = []
+    for fid, name, count in folder_info:
+        cnt_str = '%5d' % count if count is not None else '    ?'
+        line = '%-*s   %-*s   %s contacts' % (
+            max_name, name, max_fid, fid, cnt_str)
+        options.append((fid, line))
 
     ## Default to 'default' for BB, first folder otherwise
     default_fid = None
-    for fid, _ in options:
+    for fid, _, _ in folder_info:
         if fid == 'default':
             default_fid = 'default'
             break
     if default_fid is None:
-        default_fid = options[0][0]
+        default_fid = folder_info[0][0]
 
     print('  Available folders for the %s store:' % label)
     print()
@@ -559,6 +604,25 @@ def _print_summary (pname, db1_id, db2_id, fid1, fid2, sync_dir, cr):
 ## Main entry point -- called from asynk_subcmds.py
 ##
 
+def _setup_store (args, config, setup_func, db_id, coll_index, colln):
+    """Login to a store and select a folder.  Returns (coll, db, fid).
+
+    This keeps login + folder selection together so the user picks a
+    folder immediately after authenticating.
+    """
+
+    print('  [Store %d: %s]' % (colln, DB_NAMES[db_id]))
+    coll, db = _setup_with_retry(setup_func, args, config, coll_index, db_id)
+    coll.set_colln(colln)
+    print()
+
+    pre_fid = None
+    if args.folder and len(args.folder) > coll_index:
+        pre_fid = args.folder[coll_index]
+
+    fid = _select_folder(db, DB_NAMES[db_id], preselected_fid=pre_fid)
+    return (coll, db, fid)
+
 def cmd_init (args, config, alogger):
     """Interactive setup wizard handler."""
 
@@ -566,10 +630,6 @@ def cmd_init (args, config, alogger):
 
     ## Step 1: Select databases
     db1_id, db2_id = _select_dbs(args)
-
-    ## Step 2: Credential setup and login for each DB
-    print('--- Step 3: Set up credentials and login ---')
-    print()
 
     setup1 = _SETUP_FUNCS.get(db1_id)
     setup2 = _SETUP_FUNCS.get(db2_id)
@@ -579,30 +639,22 @@ def cmd_init (args, config, alogger):
     if not setup2:
         raise AsynkParserError('Unsupported database: %s' % db2_id)
 
-    print('  [Store 1: %s]' % DB_NAMES[db1_id])
-    coll1, db1 = _setup_with_retry(setup1, args, config, 0, db1_id)
-    coll1.set_colln(1)
+    ## Step 2: Login + folder for store 1
+    print('--- Step 2: Set up store 1 ---')
+    print()
+    coll1, db1, fid1 = _setup_store(
+        args, config, setup1, db1_id, 0, 1)
     print()
 
-    print('  [Store 2: %s]' % DB_NAMES[db2_id])
-    coll2, db2 = _setup_with_retry(setup2, args, config, 1, db2_id)
-    coll2.set_colln(2)
+    ## Step 3: Login + folder for store 2
+    print('--- Step 3: Set up store 2 ---')
     print()
-
-    ## Step 3: Folder selection
-    print('--- Step 4: Select folders ---')
+    coll2, db2, fid2 = _setup_store(
+        args, config, setup2, db2_id, 1, 2)
     print()
-
-    pre_fid1 = args.folder[0] if args.folder and len(args.folder) > 0 else None
-    pre_fid2 = args.folder[1] if args.folder and len(args.folder) > 1 else None
-
-    fid1 = _select_folder(db1, 'first (%s)' % DB_NAMES[db1_id],
-                          preselected_fid=pre_fid1)
-    fid2 = _select_folder(db2, 'second (%s)' % DB_NAMES[db2_id],
-                          preselected_fid=pre_fid2)
 
     ## Step 4: Profile naming
-    print('--- Step 5: Name your profile ---')
+    print('--- Step 4: Name your profile ---')
     print()
     pname = _prompt_profile_name(config, db1_id, db2_id,
                                  preselected=args.name)
@@ -619,4 +671,3 @@ def cmd_init (args, config, alogger):
 
     ## Step 7: Summary
     _print_summary(pname, db1_id, db2_id, fid1, fid2, sync_dir, cr)
-
