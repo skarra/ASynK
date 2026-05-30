@@ -661,6 +661,11 @@ def cmd_init (args, config, alogger):
     ## Step 4: Profile naming
     print('--- Step 4: Name your profile ---')
     print()
+    print('  A profile defines a sync relationship between two folders.')
+    print('  You can create multiple profiles for different sync pairs,')
+    print('  run them on independent schedules, and when you inspect a')
+    print('  contact you will be able to tell which profile synced it.')
+    print()
     pname = _prompt_profile_name(config, db1_id, db2_id,
                                  preselected=args.name)
     print()
