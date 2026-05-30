@@ -120,32 +120,31 @@ def _prompt_yesno (prompt, default=True):
 ## DB selection
 ##
 
-def _select_dbs (args):
-    """Return (db1_id, db2_id).  Uses --db if provided, otherwise prompts."""
+def _select_one_db (args, coll_index, step_num):
+    """Select a single database.  coll_index is 0 or 1.
 
-    if args.db and len(args.db) == 2:
-        db1, db2 = args.db
-        print('  Using databases: %s, %s' % (DB_NAMES[db1], DB_NAMES[db2]))
+    If --db was provided, uses it directly.  Otherwise prompts.
+    Returns a db ID string like 'gc', 'bb', etc.
+    """
+
+    if args.db and len(args.db) > coll_index:
+        db_id = args.db[coll_index]
+        label = 'first' if coll_index == 0 else 'second'
+        print('  Using %s database: %s' % (label, DB_NAMES[db_id]))
         print()
-        return (db1, db2)
+        return db_id
 
     options = [(dbid, DB_NAMES[dbid]) for dbid in DB_ORDER]
 
-    print('--- Step 1: Select the first contact store ---')
+    label = 'first' if coll_index == 0 else 'second'
+    print('--- Step %d: Select the %s contact store ---' % (step_num, label))
     print()
-    db1 = _prompt_choice('Select store', options)
+    db_id = _prompt_choice('Select store', options)
     print()
-    print('  Selected: %s' % DB_NAMES[db1])
-    print()
-
-    print('--- Step 2: Select the second contact store ---')
-    print()
-    db2 = _prompt_choice('Select store', options)
-    print()
-    print('  Selected: %s' % DB_NAMES[db2])
+    print('  Selected: %s' % DB_NAMES[db_id])
     print()
 
-    return (db1, db2)
+    return db_id
 
 ##
 ## Generic folder selection
@@ -324,7 +323,7 @@ def _prompt_sync_settings (args, db1_id, db2_id):
             ('SYNC1WAY', 'One-way sync (first store -> second store)'),
         ]
         print()
-        print('--- Step 5: Sync direction ---')
+        print('--- Step 6: Sync direction ---')
         print()
         sync_dir = _prompt_choice('Direction', options, default='SYNC2WAY')
 
@@ -338,7 +337,7 @@ def _prompt_sync_settings (args, db1_id, db2_id):
             ('2', '%s wins (second store)' % DB_NAMES[db2_id]),
         ]
         print()
-        print('--- Step 6: Conflict resolution ---')
+        print('--- Step 7: Conflict resolution ---')
         print()
         cr = _prompt_choice('On conflict', options, default='1')
 
@@ -637,33 +636,34 @@ def cmd_init (args, config, alogger):
 
     _print_banner()
 
-    ## Step 1: Select databases
-    db1_id, db2_id = _select_dbs(args)
-
+    ## Step 1: Select first store
+    db1_id = _select_one_db(args, 0, step_num=1)
     setup1 = _SETUP_FUNCS.get(db1_id)
-    setup2 = _SETUP_FUNCS.get(db2_id)
-
     if not setup1:
         raise AsynkParserError('Unsupported database: %s' % db1_id)
-    if not setup2:
-        raise AsynkParserError('Unsupported database: %s' % db2_id)
 
     ## Step 2: Login + folder for store 1
-    print('--- Step 2: Set up store 1 ---')
+    print('--- Step 2: Set up %s ---' % DB_NAMES[db1_id])
     print()
     coll1, db1, fid1 = _setup_store(
         args, config, setup1, db1_id, 0, 1)
     print()
 
-    ## Step 3: Login + folder for store 2
-    print('--- Step 3: Set up store 2 ---')
+    ## Step 3: Select second store
+    db2_id = _select_one_db(args, 1, step_num=3)
+    setup2 = _SETUP_FUNCS.get(db2_id)
+    if not setup2:
+        raise AsynkParserError('Unsupported database: %s' % db2_id)
+
+    ## Step 4: Login + folder for store 2
+    print('--- Step 4: Set up %s ---' % DB_NAMES[db2_id])
     print()
     coll2, db2, fid2 = _setup_store(
         args, config, setup2, db2_id, 1, 2)
     print()
 
-    ## Step 4: Profile naming
-    print('--- Step 4: Name your profile ---')
+    ## Step 5: Profile naming
+    print('--- Step 5: Name your profile ---')
     print()
     print('  A profile defines a sync relationship between two folders.')
     print('  You can create multiple profiles for different sync pairs,')
@@ -674,16 +674,16 @@ def cmd_init (args, config, alogger):
                                  preselected=args.name)
     print()
 
-    ## Step 5: Sync settings
+    ## Step 6 & 7: Sync settings
     sync_dir, cr = _prompt_sync_settings(args, db1_id, db2_id)
 
-    ## Step 6: Create the profile
+    ## Create the profile
     print()
     print('  Creating profile...')
     _create_profile(config, alogger, args, pname, db1_id, db2_id,
                     coll1, fid1, coll2, fid2, sync_dir, cr)
 
-    ## Step 7: Summary
+    ## Summary
     user_dir = getattr(args, 'user_dir', None)
     _print_summary(pname, db1_id, db2_id, fid1, fid2, sync_dir, cr,
                    user_dir=user_dir)
