@@ -324,7 +324,7 @@ def _prompt_sync_settings (args, db1_id, db2_id):
             ('SYNC1WAY', 'One-way sync (first store -> second store)'),
         ]
         print()
-        print('--- Sync direction ---')
+        print('--- Step 5: Sync direction ---')
         print()
         sync_dir = _prompt_choice('Direction', options, default='SYNC2WAY')
 
@@ -338,7 +338,7 @@ def _prompt_sync_settings (args, db1_id, db2_id):
             ('2', '%s wins (second store)' % DB_NAMES[db2_id]),
         ]
         print()
-        print('--- Conflict resolution ---')
+        print('--- Step 6: Conflict resolution ---')
         print()
         cr = _prompt_choice('On conflict', options, default='1')
 
