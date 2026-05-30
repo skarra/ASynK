@@ -23,6 +23,7 @@ from   asynk_logger     import ASynKLogger
 from   asynk_core       import Asynk, AsynkParserError
 from   state            import Config
 from   state_collection import collection_id_to_class as coll_id_class
+from   asynk_init       import cmd_init
 
 ##
 ## Shared parent parser
@@ -518,6 +519,27 @@ def _register_clear_artifacts (sub, shared):
                    help='Regex for sync labels to clear')
     p.set_defaults(func=cmd_clear_artifacts)
 
+def _register_init (sub, shared):
+    """Register the 'init' top-level subcommand (interactive wizard)."""
+
+    p = sub.add_parser('init',
+                       help='Interactive setup wizard - create a sync profile',
+                       parents=[shared])
+    p.add_argument('--db', nargs=2,
+                   choices=['bb', 'gc', 'cd', 'ex'],
+                   help='Two database IDs (skip DB selection prompt)')
+    p.add_argument('--folder', nargs=2,
+                   help='Two folder IDs (skip folder selection prompt)')
+    p.add_argument('--store', nargs='+',
+                   help='Store IDs (e.g. BBDB file path, CardDAV URL)')
+    p.add_argument('--name',
+                   help='Profile name (skip name prompt)')
+    p.add_argument('--direction', choices=('1way', '2way'),
+                   help='Sync direction (default: 2way)')
+    p.add_argument('--conflict-resolve',
+                   help='Conflict resolution: 1, 2, or a db id')
+    p.set_defaults(func=cmd_init)
+
 ##
 ## Top-level subcommand parser and main entry point
 ##
@@ -539,6 +561,7 @@ def _build_parser (shared):
     _register_sync(sub, shared)
     _register_store(sub, shared)
     _register_clear_artifacts(sub, shared)
+    _register_init(sub, shared)
 
     return p
 
