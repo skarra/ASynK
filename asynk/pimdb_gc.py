@@ -22,8 +22,10 @@ from folder import Folder
 
 from folder_gc import GCContactsFolder
 
-## The People API scope for full contacts access (read/write).
-SCOPES = ['https://www.googleapis.com/auth/contacts']
+## The People API scope for full contacts access (read/write), plus
+## userinfo.email so we can reliably query people/me for the account email.
+SCOPES = ['https://www.googleapis.com/auth/contacts',
+          'https://www.googleapis.com/auth/userinfo.email']
 
 ## personFields to request when listing connections. This should cover all
 ## the fields ASynK cares about.
@@ -224,27 +226,39 @@ class GCPIMDB(PIMDB):
             with open(token_file, 'rb') as token:
                 creds = pickle.load(token)
 
-        # If there are no valid credentials, do the OAuth dance
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
+        # If there are no valid credentials, try to refresh
+        if creds and not creds.valid:
+            if creds.expired and creds.refresh_token:
                 logging.info('Refreshing expired access token...')
                 creds.refresh(Request())
             else:
-                logging.info('Starting OAuth2 authorization flow...')
-                if not os.path.exists(cs_file):
-                    logging.error('Client secrets file not found: %s', cs_file)
-                    raise FileNotFoundError(
-                        'OAuth2 client secrets file not found: %s\n'
-                        'To fix this, either:\n'
-                        '  1. Place your client secrets JSON at '
-                        'config/gc_client_secret.json\n'
-                        '  2. Specify the path with --gcpwd '
-                        '/path/to/your/credentials.json' % cs_file)
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    cs_file, SCOPES)
-                creds = flow.run_local_server(port=0)
+                creds = None
 
-            # Save the credentials for the next run
+        ## Check if cached token is missing newly-required scopes.
+        ## If so, discard it and force a fresh OAuth flow.
+        if creds and creds.valid and hasattr(creds, 'scopes') and creds.scopes:
+            missing = set(SCOPES) - creds.scopes
+            if missing:
+                logging.info('Cached token is missing scopes: %s. '
+                             'Re-authorizing...', ', '.join(missing))
+                creds = None
+
+        ## No usable credentials — run a fresh OAuth flow
+        if not creds or not creds.valid:
+            logging.info('Starting OAuth2 authorization flow...')
+            if not os.path.exists(cs_file):
+                logging.error('Client secrets file not found: %s', cs_file)
+                raise FileNotFoundError(
+                    'OAuth2 client secrets file not found: %s\n'
+                    'To fix this, either:\n'
+                    '  1. Place your client secrets JSON at '
+                    'config/gc_client_secret.json\n'
+                    '  2. Specify the path with --gcpwd '
+                    '/path/to/your/credentials.json' % cs_file)
+            flow = InstalledAppFlow.from_client_secrets_file(
+                cs_file, SCOPES)
+            creds = flow.run_local_server(port=0)
+
             with open(token_file, 'wb') as token:
                 pickle.dump(creds, token)
             logging.info('Credentials saved to %s', token_file)
