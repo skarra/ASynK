@@ -1,27 +1,54 @@
 #!/usr/bin/python
-#
-# Copyright (C) 2013 Cyril Bouthors <cyril@bouthors.org>
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along with
-# this program. If not, see <http://www.gnu.org/licenses/>.
-#
+##
+## SPDX-FileCopyrightText: 2013 Cyril Bouthors <cyril@bouthors.org>
+## SPDX-FileCopyrightText: 2014-2026 Sriram Karra <karra.etc@gmail.com>
+## SPDX-License-Identifier: AGPL-3.0-only
+##
+## This file is part of ASynK
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
-setup(name='asynk',
-      version='0.4.1',
-      description='Synchronizes Google Contacts, BBDB and Outlook',
-      author='Sriram Karra',
-      author_email='karra.etc@gmail.com',
-      url='https://karra-asynk.appspot.com/',
-      packages=['asynk'],
-     )
+_google_deps = [
+    'google-api-python-client>=2.0',
+    'google-auth-httplib2>=0.1',
+    'google-auth-oauthlib>=1.0',
+]
+
+_carddav_deps = [
+    'caldav>=1.3.0',
+]
+
+_exchange_deps = [
+    'msal>=1.28',
+    'requests>=2.28',
+]
+
+setup(
+    name='asynk',
+    version='0.4.1',
+    description='Synchronizes contacts across Google, CardDAV, Exchange, '
+                'Outlook and BBDB',
+    author='Sriram Karra',
+    author_email='karra.etc@gmail.com',
+    url='https://karra-asynk.appspot.com/',
+    packages=find_packages(),
+
+    python_requires='>=3.8',
+
+    ## Core dependencies — always installed
+    install_requires=[
+        'demjson3>=3.0',
+        'iso8601>=2.1',
+        'simplejson>=3.0',
+        'vobject>=0.9',
+        'httplib2>=0.20',
+    ],
+
+    ## Optional backend-specific dependencies
+    extras_require={
+        'google':   _google_deps,
+        'carddav':  _carddav_deps,
+        'exchange': _exchange_deps,
+        'all':      _google_deps + _carddav_deps + _exchange_deps,
+    },
+)

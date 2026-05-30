@@ -28,12 +28,8 @@ except ImportError as e:
 from sync import Sync
 from state import Config
 from folder import Folder
-from pimdb_bb import BBPIMDB
-from folder_bb import BBContactsFolder
 import utils
 from state_collection import collection_id_to_class as coll_id_class
-
-from pimdb_gc import GCPIMDB
 
 class AsynkParserError(Exception):
     pass
@@ -98,6 +94,7 @@ class Asynk:
                                    'with value with filename of BBDB file '
                                    'to be created.')
 
+        from pimdb_bb import BBPIMDB
         BBPIMDB.new_store(coll.get_stid())
 
     def op_list_folders (self):

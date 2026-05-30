@@ -13,9 +13,7 @@
 
 import logging, netrc, os
 from   abc              import ABCMeta, abstractmethod
-from pimdb_bb import BBPIMDB
 
-from pimdb_gc import GCPIMDB
 try:
     from pimdb_ol import OLPIMDB
 except ImportError as e:
@@ -256,6 +254,14 @@ class BBCollection(Collection):
                             fid=fid, pname=pname, colln=colln)
 
     def login (self):
+        try:
+            from pimdb_bb import BBPIMDB
+        except ImportError as e:
+            raise AsynkCollectionError(
+                '%s: BBDB backend requires the demjson3 package.\n'
+                'Install with: pip install asynk[bbdb]  '
+                '(or: pip install demjson3)' % e)
+
         if self.get_stid() is not None:
             bbfn = self.get_stid()
         else:
@@ -307,7 +313,13 @@ class EXCollection(Collection):
         self.token_cache = token_cache
 
     def login (self):
-        from pimdb_ex import EXPIMDB
+        try:
+            from pimdb_ex import EXPIMDB
+        except ImportError as e:
+            raise AsynkCollectionError(
+                '%s: Exchange backend requires msal and requests packages.\n'
+                'Install with: pip install asynk[exchange]  '
+                '(or: pip install msal requests)' % e)
 
         # client_id can be overridden by the collection's pwd (e.g. from command line or netrc)
         client_id = self.get_pwd()
@@ -334,6 +346,15 @@ class GCCollection(Collection):
                             pname=pname, colln=colln)
 
     def login (self):
+        try:
+            from pimdb_gc import GCPIMDB
+        except ImportError as e:
+            raise AsynkCollectionError(
+                '%s: Google Contacts backend requires additional packages.\n'
+                'Install with: pip install asynk[google]  '
+                '(or: pip install google-api-python-client '
+                'google-auth-httplib2 google-auth-oauthlib)' % e)
+
         cs_path = self.get_pwd()
         if not cs_path:
             ## Fall back to the default client secrets shipped with ASynK
