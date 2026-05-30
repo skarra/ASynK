@@ -254,6 +254,18 @@ class GCPIMDB(PIMDB):
         service = build('people', 'v1', credentials=creds)
         self.set_service(service)
 
+        ## Log which Google account we authenticated as
+        try:
+            me = service.people().get(
+                resourceName='people/me',
+                personFields='emailAddresses').execute()
+            emails = me.get('emailAddresses', [])
+            if emails:
+                acct = emails[0].get('value', '(unknown)')
+                logging.info('Authenticated to Google as: %s', acct)
+        except Exception:
+            pass
+
     def _list_contact_groups (self):
         """Fetch all contact groups from the People API.  Returns a list
         of contactGroup resource dicts."""
