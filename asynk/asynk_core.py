@@ -68,6 +68,100 @@ class Asynk:
             coll.init_username_pwd()
             coll.login()
 
+            if coll.get_dbid() == 'gc':
+                self._verify_gc_account(coll, pname)
+
+    def _verify_gc_account (self, coll, pname):
+        """Verify the authenticated Google account matches the profile.
+
+        Case 1: Profile has a stored gc_email — compare with live email.
+                On mismatch, prompt the user to abort or update.
+        Case 2: No stored gc_email — verify we got a valid email from
+                the credentials; error out if not.
+        """
+
+        conf = self.get_config()
+        db = coll.get_db()
+        live_email = getattr(db, 'authenticated_email', None)
+
+        ## Look up stored email from the profile
+        stored_email = None
+        colln = coll.get_colln()
+        c_dict = None
+        if pname:
+            c_dict = (conf.get_coll_1(pname) if colln == 1
+                      else conf.get_coll_2(pname))
+            if c_dict:
+                stored_email = c_dict.get('gc_email')
+
+        if stored_email:
+            ## Case 1: We have a stored email — verify it matches
+            logging.info('Attempting to verify Google account identity '
+                         'for %s...', stored_email)
+
+            if not live_email:
+                logging.error('Could not verify Google account identity. '
+                              'Expected: %s', stored_email)
+                raise AsynkParserError(
+                    'Could not verify Google account identity for %s. '
+                    'Credentials may be invalid or expired.' % stored_email)
+
+            if live_email.lower() != stored_email.lower():
+                logging.error('Google account mismatch: profile has %s '
+                              'but credentials belong to %s',
+                              stored_email, live_email)
+                print()
+                print('  WARNING: Google account mismatch!')
+                print('    Profile expects:    %s' % stored_email)
+                print('    Credentials are for: %s' % live_email)
+                print()
+                print('  1. Abort')
+                print('  2. Update profile to use %s' % live_email)
+                print()
+                try:
+                    choice = input('Choose [1]: ').strip()
+                except (EOFError, KeyboardInterrupt):
+                    choice = '1'
+
+                if choice == '2':
+                    ## Update the stored email in the profile
+                    c_dict['gc_email'] = live_email
+                    key = 'coll_1' if colln == 1 else 'coll_2'
+                    profiles = conf.get_profiles()
+                    profiles[pname][key] = c_dict
+                    conf.set_profiles(profiles)
+                    logging.info('Updated profile %s to use %s',
+                                 pname, live_email)
+                else:
+                    raise AsynkParserError(
+                        'Aborting: account mismatch for profile %s' % pname)
+            else:
+                logging.info('Successfully verified Google account: %s',
+                             live_email)
+        else:
+            ## Case 2: No stored email — just verify credentials work
+            logging.info('Attempting to verify Google account identity...')
+
+            if not live_email:
+                logging.error('Could not verify Google account identity. '
+                              'Credentials may be invalid or expired.')
+                raise AsynkParserError(
+                    'Could not verify Google account identity. '
+                    'Ensure your OAuth credentials are valid.')
+
+            logging.info('Successfully verified Google account: %s',
+                         live_email)
+
+            ## Backfill the email into the profile for future runs
+            if pname and c_dict is not None:
+                c_dict['gc_email'] = live_email
+                key = 'coll_1' if colln == 1 else 'coll_2'
+                profiles = conf.get_profiles()
+                profiles[pname][key] = c_dict
+                conf.set_profiles(profiles)
+                logging.info('Saved verified email %s to profile %s',
+                             live_email, pname)
+
     def reset_fields (self):
         self.atts = {}
 
@@ -295,6 +389,16 @@ class Asynk:
             coll_1_dict['username'] = un1
         if un2:
             coll_2_dict['username'] = un2
+
+        ## Store the verified Google email for account verification
+        ## during future sync runs
+        for coll, coll_dict in [(colls[0], coll_1_dict),
+                                (colls[1], coll_2_dict)]:
+            if coll.get_dbid() == 'gc':
+                db = coll.get_db()
+                email = getattr(db, 'authenticated_email', None)
+                if email:
+                    coll_dict['gc_email'] = email
 
         profile.update(
             {'coll_1'           : coll_1_dict,

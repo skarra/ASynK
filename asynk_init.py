@@ -420,12 +420,18 @@ def _setup_gc (args, config, coll_index):
 
     coll.login()
 
-    ## Show the authenticated user's email (already fetched by gc_init)
+    ## Verify we got a valid email from the OAuth flow
     db = coll.get_db()
     email = getattr(db, 'authenticated_email', None)
     if email:
         print()
         print('  Signed in as: %s' % email)
+    else:
+        print()
+        print('  ERROR: Could not verify Google account identity.')
+        print('  Your credentials may be invalid or expired.')
+        raise AsynkParserError(
+            'Could not verify Google account identity.')
 
     _prompt_input('Press Enter to fetch the folder list', default='')
     print()

@@ -254,9 +254,9 @@ class GCPIMDB(PIMDB):
         service = build('people', 'v1', credentials=creds)
         self.set_service(service)
 
-        ## Verify which Google account we authenticated as
+        ## Fetch the authenticated user's email for later verification.
+        ## The caller is responsible for checking and logging the result.
         self.authenticated_email = None
-        logging.info('Attempting to verify Google account identity...')
         try:
             me = service.people().get(
                 resourceName='people/me',
@@ -264,14 +264,8 @@ class GCPIMDB(PIMDB):
             emails = me.get('emailAddresses', [])
             if emails:
                 self.authenticated_email = emails[0].get('value')
-                logging.info('Successfully authenticated to Google as: %s',
-                             self.authenticated_email)
-            else:
-                logging.warning('Authenticated to Google but could not '
-                                'determine account email.')
-        except Exception as e:
-            logging.warning('Authenticated to Google but could not verify '
-                            'account identity: %s', e)
+        except Exception:
+            pass
 
     def _list_contact_groups (self):
         """Fetch all contact groups from the People API.  Returns a list
