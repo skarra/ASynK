@@ -268,7 +268,8 @@ class GCPIMDB(PIMDB):
         else:
             logging.info('Using cached access token...')
 
-        service = build('people', 'v1', credentials=creds)
+        service = build('people', 'v1', credentials=creds,
+                        cache_discovery=False)
         self.set_service(service)
 
         ## Fetch the authenticated user's email via the OAuth2 userinfo
@@ -276,7 +277,8 @@ class GCPIMDB(PIMDB):
         ## people/me, but userinfo.email covers this endpoint).
         self.authenticated_email = None
         try:
-            oauth2_svc = build('oauth2', 'v2', credentials=creds)
+            oauth2_svc = build('oauth2', 'v2', credentials=creds,
+                               cache_discovery=False)
             user_info = oauth2_svc.userinfo().get().execute()
             self.authenticated_email = user_info.get('email')
         except Exception:
