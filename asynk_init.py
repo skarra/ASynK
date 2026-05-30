@@ -58,9 +58,10 @@ def _prompt_choice (prompt, options, default=None):
     just presses Enter.
     """
 
+    num_width = len(str(len(options)))
     for i, (val, label) in enumerate(options, 1):
         marker = ' *' if val == default else ''
-        print('  %d. %s%s' % (i, label, marker))
+        print('  %*d. %s%s' % (num_width, i, label, marker))
     print()
 
     default_idx = None
