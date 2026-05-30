@@ -346,14 +346,15 @@ def _setup_gc (args, config, coll_index):
 
     from asynk_subcmds import _apply_auth_to_coll
 
-    ## Determine the username (label for token file)
+    ## The gcuser label is used internally to name the token cache file
+    ## (e.g. default.token.pickle).  The actual Google account is selected
+    ## in the browser during the OAuth flow, so we don't need to ask.
     username = None
     if args.gcuser and len(args.gcuser) > coll_index:
         username = args.gcuser[coll_index]
     else:
-        username = _prompt_input('Google account label (e.g. your email)')
-        if not username:
-            raise AsynkParserError('Google username is required.')
+        ## Auto-generate a sensible default label
+        username = 'default' if coll_index == 0 else 'gc%d' % (coll_index + 1)
 
     coll = coll_id_class['gc'](config=config, pname=None)
     coll.set_username(username)
@@ -364,8 +365,8 @@ def _setup_gc (args, config, coll_index):
         coll.set_pwd(args.gcpwd[coll_index])
 
     print()
-    print('  Authenticating with Google...')
-    print('  (A browser window may open for OAuth authorization.)')
+    print('  A browser window will open so you can sign in to your')
+    print('  Google account and authorize ASynK to access your contacts.')
     print()
     coll.login()
 
