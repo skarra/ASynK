@@ -577,12 +577,15 @@ def _create_profile (config, alogger, args, pname, db1_id, db2_id,
 ## Profile summary
 ##
 
-def _print_summary (pname, db1_id, db2_id, fid1, fid2, sync_dir, cr):
+def _print_summary (pname, db1_id, db2_id, fid1, fid2, sync_dir, cr,
+                    user_dir=None):
     """Print a summary of the created profile."""
 
     dir_label = 'Two-way sync' if sync_dir == 'SYNC2WAY' else 'One-way sync'
     cr_label = '%s wins' % DB_NAMES.get(
         db1_id if cr == '1' else db2_id, 'store %s' % cr)
+
+    ud_flag = ' --user-dir %s' % user_dir if user_dir else ''
 
     print()
     print('=' * 60)
@@ -597,11 +600,12 @@ def _print_summary (pname, db1_id, db2_id, fid1, fid2, sync_dir, cr):
     print('  Conflicts:  %s' % cr_label)
     print()
     print('  Next steps:')
-    print('    Dry run:  venv/bin/python asynk.py sync --name %s --dry-run'
-          % pname)
-    print('    Sync:     venv/bin/python asynk.py sync --name %s' % pname)
-    print('    Details:  venv/bin/python asynk.py profile show --name %s'
-          % pname)
+    print('    Dry run:  venv/bin/python asynk.py sync --name %s --dry-run%s'
+          % (pname, ud_flag))
+    print('    Sync:     venv/bin/python asynk.py sync --name %s%s'
+          % (pname, ud_flag))
+    print('    Details:  venv/bin/python asynk.py profile show --name %s%s'
+          % (pname, ud_flag))
     print()
 
 ##
@@ -680,4 +684,6 @@ def cmd_init (args, config, alogger):
                     coll1, fid1, coll2, fid2, sync_dir, cr)
 
     ## Step 7: Summary
-    _print_summary(pname, db1_id, db2_id, fid1, fid2, sync_dir, cr)
+    user_dir = getattr(args, 'user_dir', None)
+    _print_summary(pname, db1_id, db2_id, fid1, fid2, sync_dir, cr,
+                   user_dir=user_dir)
