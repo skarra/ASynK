@@ -102,6 +102,7 @@ class Collection:
 
         self.set_username(None)
         self.set_pwd(None)
+        self.set_folder_name(None)
 
     @abstractmethod
     def login (self):
@@ -164,6 +165,12 @@ class Collection:
 
     def set_pname (self, pname):
         self.pname = pname
+
+    def get_folder_name (self):
+        return self.folder_name
+
+    def set_folder_name (self, folder_name):
+        self.folder_name = folder_name
 
     def get_config (self):
         return self.config

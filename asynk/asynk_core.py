@@ -266,17 +266,30 @@ class Asynk:
             olgid = None            
 
         profile = conf.get_profile_defaults()
+
+        coll_1_dict = {
+            'dbid' : dbid1,
+            'stid' : stid1,
+            'foid' : fid1,
+        }
+        coll_2_dict = {
+            'dbid' : dbid2,
+            'stid' : stid2,
+            'foid' : fid2,
+        }
+
+        ## Store human-readable folder names when available (e.g. for GC
+        ## where folder IDs are opaque resource names)
+        fn1 = colls[0].get_folder_name()
+        fn2 = colls[1].get_folder_name()
+        if fn1:
+            coll_1_dict['folder_name'] = fn1
+        if fn2:
+            coll_2_dict['folder_name'] = fn2
+
         profile.update(
-            {'coll_1' : {
-                'dbid' : dbid1,
-                'stid' : stid1,
-                'foid' : fid1,
-                },
-             'coll_2' :  {
-                'dbid' : dbid2,
-                'stid' : stid2,
-                'foid' : fid2,
-                },
+            {'coll_1'           : coll_1_dict,
+             'coll_2'           : coll_2_dict,
              'olgid'            : olgid,
              'sync_dir'         : sync_dir,
              'sync_state'       : None,

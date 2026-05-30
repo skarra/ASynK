@@ -187,7 +187,7 @@ def _select_folder (db, label, preselected_fid=None):
     label is a human-readable description like 'first' or 'second'.
     preselected_fid, if not None, skips the prompt and uses that fid.
 
-    Returns the selected folder ID string.
+    Returns (folder_id, folder_name) tuple.
     """
 
     folders = db.get_contacts_folders()
@@ -203,17 +203,21 @@ def _select_folder (db, label, preselected_fid=None):
         count = _get_folder_count(f)
         folder_info.append((fid, name, count))
 
+    ## Build a fid -> name lookup
+    name_map = {fid: name for fid, name, _ in folder_info}
+
     ## If a fid was pre-selected (from --folder), use it directly
     if preselected_fid is not None:
+        fname = name_map.get(preselected_fid, preselected_fid)
         print('  Using pre-selected folder: %s' % preselected_fid)
-        return preselected_fid
+        return (preselected_fid, fname)
 
     ## If only one folder, auto-select with confirmation
     if len(folder_info) == 1:
         fid, name, count = folder_info[0]
         cnt_str = ' (%d contacts)' % count if count is not None else ''
         print('  Only one folder available: %s%s' % (name, cnt_str))
-        return fid
+        return (fid, name)
 
     ## Compute column widths for aligned display
     max_name = max(len(name) for _, name, _ in folder_info)
@@ -242,7 +246,7 @@ def _select_folder (db, label, preselected_fid=None):
     print()
     fid = _prompt_choice('Select folder', options, default=default_fid)
     print()
-    return fid
+    return (fid, name_map.get(fid, fid))
 
 ##
 ## Profile naming
@@ -620,7 +624,8 @@ def _setup_store (args, config, setup_func, db_id, coll_index, colln):
     if args.folder and len(args.folder) > coll_index:
         pre_fid = args.folder[coll_index]
 
-    fid = _select_folder(db, DB_NAMES[db_id], preselected_fid=pre_fid)
+    fid, fname = _select_folder(db, DB_NAMES[db_id], preselected_fid=pre_fid)
+    coll.set_folder_name(fname)
     return (coll, db, fid)
 
 def cmd_init (args, config, alogger):
