@@ -415,10 +415,29 @@ def _setup_gc (args, config, coll_index):
     print()
     print('  A browser window will open so you can sign in to your')
     print('  Google account and authorize ASynK to access your contacts.')
-    print()
+    _prompt_input('Press Enter to continue', default='')
+
     coll.login()
 
-    return (coll, coll.get_db())
+    ## Try to show the authenticated user's email
+    db = coll.get_db()
+    try:
+        svc = db.get_service()
+        me = svc.people().get(
+            resourceName='people/me',
+            personFields='emailAddresses').execute()
+        emails = me.get('emailAddresses', [])
+        if emails:
+            email = emails[0].get('value', '(unknown)')
+            print()
+            print('  Signed in as: %s' % email)
+    except Exception:
+        pass
+
+    _prompt_input('Press Enter to fetch the folder list', default='')
+    print()
+
+    return (coll, db)
 
 def _setup_ex (args, config, coll_index):
     """Set up an Exchange Online collection.
