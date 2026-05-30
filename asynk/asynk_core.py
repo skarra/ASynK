@@ -287,6 +287,15 @@ class Asynk:
         if fn2:
             coll_2_dict['folder_name'] = fn2
 
+        ## Store the username/label so sync can reload without prompting
+        ## (e.g. the GC token cache label 'default')
+        un1 = colls[0].get_username()
+        un2 = colls[1].get_username()
+        if un1:
+            coll_1_dict['username'] = un1
+        if un2:
+            coll_2_dict['username'] = un2
+
         profile.update(
             {'coll_1'           : coll_1_dict,
              'coll_2'           : coll_2_dict,
@@ -579,11 +588,22 @@ class Asynk:
                 self.colls = []
 
             ## FIXME: Why were we not setting fid?
-            self.add_coll(db1c(config=conf, stid=conf.get_stid1(pname),
-                               pname=pname, colln=1))
+            coll1 = db1c(config=conf, stid=conf.get_stid1(pname),
+                         pname=pname, colln=1)
+            coll2 = db2c(config=conf, stid=conf.get_stid2(pname),
+                         pname=pname, colln=2)
 
-            self.add_coll(db2c(config=conf, stid=conf.get_stid2(pname),
-                               pname=pname, colln=2))
+            ## Restore saved username from profile so GC (and others)
+            ## don't prompt interactively during sync
+            c1_dict = conf.get_coll_1(pname)
+            c2_dict = conf.get_coll_2(pname)
+            if c1_dict and c1_dict.get('username'):
+                coll1.set_username(c1_dict['username'])
+            if c2_dict and c2_dict.get('username'):
+                coll2.set_username(c2_dict['username'])
+
+            self.add_coll(coll1)
+            self.add_coll(coll2)
 
             if not self.get_sync_dir():
                 self.set_sync_dir(conf.get_sync_dir(pname))
