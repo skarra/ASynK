@@ -150,12 +150,12 @@ class TestStateFunctions(unittest.TestCase):
 
     def test_read_state_file_version (self):
         val = self.config.get_state_file_version()
-        self.assertTrue(val == 4)
+        self.assertTrue(val == 6)
 
     def test_write_state_file_version (self):
-        self.config.set_state_file_version(5)
+        self.config.set_state_file_version(7)
         val = self.config.get_state_file_version()
-        self.assertTrue(val == 5)
+        self.assertTrue(val == 7)
 
     def test_read_profile_names_cnt (self):
         ps = self.config.get_profile_names()

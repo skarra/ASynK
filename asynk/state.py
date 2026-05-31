@@ -95,6 +95,8 @@ class Config:
         confi.close()
         statei.close()
 
+        self._migrate_state_if_reqd()
+
         if self.get_conf_file_version() < self.confi_curr_ver:
             logging.warn('config.json file version is out of date. You may '
                          'like to upgrade by pulling the latest version of '
@@ -123,6 +125,16 @@ class Config:
     def get_latest_config_filen (root):
         return 'config_v%s.json' % Config.get_latest_config_version(root)
 
+    @staticmethod
+    def get_latest_state_version (root):
+        d = os.path.join(root, 'config')
+        files = glob.glob(os.path.join(d, 'state_v*.json'))
+        if not files:
+            return 0
+        vers = [int(re.search(r'_v(\d+).json$', x).group(1)) for x in files]
+        vers.sort(reverse=True)
+        return vers[0]
+
     def _setup_state_json (self):
         user_dir = self.get_user_dir()
         base_dir = self.get_app_root()
@@ -149,6 +161,78 @@ class Config:
                 ## was not writable
                 os.chmod(dest_state,
                          os.stat(dest_state).st_mode | stat.S_IWUSR)
+
+    def _migrate_state_if_reqd (self):
+        """Run any pending state.json migrations. Each migration function
+        upgrades the in-memory state from version N to N+1. After all
+        migrations run, the upgraded state is persisted to disk."""
+
+        latest = Config.get_latest_state_version(self.get_app_root())
+        if latest == 0:
+            return
+
+        cur_ver = self.get_state_file_version()
+        if cur_ver >= latest:
+            return
+
+        ## Registry of migration functions, keyed by source version.
+        ## Each function mutates self.state['state'] in place and
+        ## returns the new version number.
+        migrations = {
+            4 : self._migrate_state_v4_to_v5,
+            5 : self._migrate_state_v5_to_v6,
+        }
+
+        while cur_ver < latest:
+            fn = migrations.get(cur_ver)
+            if not fn:
+                logging.error('No migration path from state.json v%d '
+                              'to v%d', cur_ver, cur_ver + 1)
+                break
+
+            logging.info('Migrating state.json from v%d to v%d...',
+                         cur_ver, cur_ver + 1)
+            cur_ver = fn()
+            logging.info('Migrating state.json to v%d...done', cur_ver)
+
+        self.set_state_file_version(cur_ver, sync=False)
+        self.save_state()
+
+    def _migrate_state_v5_to_v6 (self):
+        """v5 -> v6: Backfill new collection fields introduced in the
+        onboarding-improvements branch.
+
+        For each profile's coll_1/coll_2:
+          - All collections: add 'folder_name' = None if absent
+          - GC collections: add 'username' = 'default' if absent
+          - GC collections: add 'gc_email' = None if absent
+        """
+
+        profiles = self.state['state'].get('profiles', {})
+        for pname, profile in profiles.items():
+            for key in ('coll_1', 'coll_2'):
+                coll = profile.get(key)
+                if not coll:
+                    continue
+
+                dbid = coll.get('dbid')
+
+                if 'folder_name' not in coll:
+                    coll['folder_name'] = None
+
+                if dbid == 'gc':
+                    if 'username' not in coll:
+                        coll['username'] = 'default'
+                    if 'gc_email' not in coll:
+                        coll['gc_email'] = None
+
+        return 6
+
+    def _migrate_state_v4_to_v5 (self):
+        """v4 -> v5: No schema changes. The version bump tracked changes
+        to the default profiles shipped in state.init.json."""
+
+        return 5
 
     def _migrate_config_if_reqd (self, curr_ver):
         user_dir = self.get_user_dir()

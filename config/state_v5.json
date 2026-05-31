@@ -19,10 +19,10 @@
 // This is the application state json file that a new user will start out with.
 
 {
-    // The version of this state file schema. This is used to detect
-    // when a migration is needed after an ASynK upgrade. Versioned
-    // state templates are stored in config/state_v*.json.
-    'file_version' : 6,
+    // This absolutely has to be the same as the version of the
+    // config.json file. If they are different it will help us
+    // identify if any migration has to be performed - in the future.
+    'file_version' : 5,
 
     // The default profile. It will contain the name of one of the
     // profile keys once the user makes at a sync or at least sets up
@@ -39,14 +39,12 @@
 		"dbid" : "ol",
 		"stid" : null,
 		"foid" : null,
-		"folder_name" : null,
 	    },
 
 	    "coll_2" : {
 		"dbid" : "bb",
 		"stid" : "~/.bbdb",
 		"foid" : null,
-		"folder_name" : null,
 	    },
 
 	    'last_sync_start' : "1980-01-01T00:00:00.00+00:00",
@@ -72,14 +70,12 @@
 		"dbid" : "bb",
 		"stid" : "~/.bbdb",
 		"foid" : "default",
-		"folder_name" : null,
 	    },
 
 	    "coll_2" : {
 		"dbid" : "bb",
 		"stid" : "/tmp/asynk.bbdb",
 		"foid" : "default",
-		"folder_name" : null,
 	    },
 
 	    'last_sync_start' : "1980-01-01T00:00:00.00+00:00",

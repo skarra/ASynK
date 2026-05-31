@@ -1,0 +1,74 @@
+{
+  "file_version" : 5,
+  "default_profile" : null,
+  "profiles" : {
+    "gcbb" : {
+      "coll_1" : {
+        "dbid" : "gc",
+        "stid" : null,
+        "foid" : "contactGroups/myContacts"
+      },
+      "coll_2" : {
+        "dbid" : "bb",
+        "stid" : "~/.bbdb",
+        "foid" : "default"
+      },
+      "last_sync_start" : "1980-01-01T00:00:00.00+00:00",
+      "last_sync_stop"  : "1980-01-01T00:00:00.00+00:00",
+      "sync_dir"        : "SYNC2WAY",
+      "conflict_resolve" : "gc",
+      "olgid" : null
+    },
+    "gcol" : {
+      "coll_1" : {
+        "dbid" : "gc",
+        "stid" : null,
+        "foid" : null
+      },
+      "coll_2" : {
+        "dbid" : "ol",
+        "stid" : null,
+        "foid" : null
+      },
+      "last_sync_start" : "2012-07-03T02:30:13.01Z",
+      "last_sync_stop"  : "2012-07-03T02:30:13.01Z",
+      "sync_dir"        : "SYNC1WAY",
+      "conflict_resolve" : "gc",
+      "olgid" : 36865
+    },
+    "bbbb" : {
+      "coll_1" : {
+        "dbid" : "bb",
+        "stid" : "~/.bbdb",
+        "foid" : "default"
+      },
+      "coll_2" : {
+        "dbid" : "bb",
+        "stid" : "/tmp/asynk.bbdb",
+        "foid" : "default"
+      },
+      "last_sync_start" : "1980-01-01T00:00:00.00+00:00",
+      "last_sync_stop"  : "1980-01-01T00:00:00.00+00:00",
+      "sync_dir"        : "SYNC2WAY",
+      "conflict_resolve" : "bb",
+      "olgid" : null
+    },
+    "gcex" : {
+      "coll_1" : {
+        "dbid" : "gc",
+        "stid" : null,
+        "foid" : "contactGroups/friends"
+      },
+      "coll_2" : {
+        "dbid" : "ex",
+        "stid" : "https://outlook.office365.com/EWS/Exchange.asmx",
+        "foid" : "default"
+      },
+      "last_sync_start" : "1980-01-01T00:00:00.00+00:00",
+      "last_sync_stop"  : "1980-01-01T00:00:00.00+00:00",
+      "sync_dir"        : "SYNC2WAY",
+      "conflict_resolve" : "gc",
+      "olgid" : null
+    }
+  }
+}
