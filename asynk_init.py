@@ -173,12 +173,71 @@ def _get_folder_count (f):
     if contacts:
         try:
             c = contacts()
-            if isinstance(c, dict):
+            if isinstance(c, dict) and len(c) > 0:
                 return len(c)
         except Exception:
             pass
 
+    ## EX: get_contacts() returns the local cache (empty at init time).
+    ## Query the Graph API directly for a lightweight count.
+    graph_client = getattr(f, 'get_graph_client', None)
+    if graph_client:
+        try:
+            items = graph_client().list_contacts(
+                folder_id=f.get_itemid(), select='id')
+            return len(items)
+        except Exception:
+            pass
+
     return None
+
+def _create_missing_folder (db, label):
+    """Offer to create a contacts folder when none exist.
+
+    This is common for fresh Exchange accounts that have never had
+    contacts.  Returns the (possibly updated) folder list from the DB,
+    or an empty list if creation was declined or failed.
+    """
+
+    dbid = db.get_dbid()
+    print()
+    print('  No contact folders found in %s.' % DB_NAMES.get(dbid, dbid))
+    print('  ASynK needs a folder to store contacts in.')
+    print()
+
+    create = _prompt_yesno('  Create a new contacts folder?', default=True)
+    if not create:
+        return []
+
+    fname = _prompt_input('  Folder name', default='asynk')
+    if not fname:
+        fname = 'asynk'
+
+    print()
+    print('  Creating folder "%s"...' % fname)
+    res = db.new_folder(fname, Folder.CONTACT_t)
+
+    if res is None:
+        print('  Error: Could not create the folder.')
+        return []
+
+    ## Register the new folder with the DB so get_contacts_folders()
+    ## returns it.  For Exchange, new_folder() returns a Graph API dict
+    ## that must be wrapped as an EXContactsFolder.
+    if dbid == 'ex':
+        from folder_ex import EXContactsFolder
+        f = EXContactsFolder(db, res)
+        db.add_to_folders(f)
+    else:
+        ## Other backends: re-initialize folders from the store.
+        ## This is a safe fallback — set_folders() re-reads everything.
+        db.folders['contacts'] = []
+        db.set_folders()
+
+    print('  Created: %s' % fname)
+    print()
+
+    return db.get_contacts_folders()
 
 def _select_folder (db, label, preselected_fid=None):
     """Pick a contacts folder from a logged-in PIMDB.
@@ -192,8 +251,9 @@ def _select_folder (db, label, preselected_fid=None):
 
     folders = db.get_contacts_folders()
     if not folders:
-        logging.error('No contact folders found in %s', db.get_dbid())
-        raise AsynkParserError('No contact folders found.')
+        folders = _create_missing_folder(db, label)
+        if not folders:
+            raise AsynkParserError('No contact folders found.')
 
     ## Build folder info: (fid, name, count)
     folder_info = []
@@ -447,18 +507,19 @@ def _setup_ex (args, config, coll_index):
 
     from asynk_subcmds import _apply_auth_to_coll
 
-    ## Account label (optional, used for token cache naming)
+    ## The username label is used internally to name the token cache file
+    ## (e.g. graph_token_cache_default.json).  The actual Microsoft account
+    ## is selected in the browser during the device code flow, so we don't
+    ## need to ask.
     username = None
     if args.ex_user and len(args.ex_user) > coll_index:
         username = args.ex_user[coll_index]
     else:
-        username = _prompt_input(
-            'Exchange account label (optional, for token cache)',
-            default=None)
+        ## Auto-generate a sensible default label
+        username = 'default' if coll_index == 0 else 'ex%d' % (coll_index + 1)
 
     coll = coll_id_class['ex'](config=config, pname=None)
-    if username:
-        coll.set_username(username)
+    coll.set_username(username)
 
     ## Client ID: resolved automatically from config by EXPIMDB
     if args.ex_client_id and len(args.ex_client_id) > coll_index:
@@ -468,13 +529,23 @@ def _setup_ex (args, config, coll_index):
         if len(args.ex_token_cache) > coll_index:
             coll.set_token_cache(args.ex_token_cache[coll_index])
 
-    print()
-    print('  Authenticating with Microsoft...')
-    print('  (You will be given a URL and code to enter in a browser.)')
-    print()
     coll.login()
 
-    return (coll, coll.get_db())
+    ## Show the authenticated user's email if we can determine it.
+    db = coll.get_db()
+    email = getattr(db, 'authenticated_email', None)
+    if email:
+        print()
+        print('  Signed in as: %s' % email)
+    else:
+        print()
+        print('  Note: Could not determine the signed-in Exchange account.')
+        print('  (The device code login succeeded; this is a permissions quirk.)')
+
+    _prompt_input('Press Enter to fetch the folder list', default='')
+    print()
+
+    return (coll, db)
 
 def _setup_cd (args, config, coll_index):
     """Set up a CardDAV collection.

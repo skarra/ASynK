@@ -206,6 +206,8 @@ class Config:
           - All collections: add 'folder_name' = None if absent
           - GC collections: add 'username' = 'default' if absent
           - GC collections: add 'gc_email' = None if absent
+          - EX collections: add 'username' = 'default' if absent
+          - EX collections: add 'ex_email' = None if absent
         """
 
         profiles = self.state['state'].get('profiles', {})
@@ -225,6 +227,12 @@ class Config:
                         coll['username'] = 'default'
                     if 'gc_email' not in coll:
                         coll['gc_email'] = None
+
+                if dbid == 'ex':
+                    if 'username' not in coll:
+                        coll['username'] = 'default'
+                    if 'ex_email' not in coll:
+                        coll['ex_email'] = None
 
         return 6
 

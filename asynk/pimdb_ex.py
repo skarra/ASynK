@@ -217,6 +217,10 @@ class EXPIMDB(PIMDB):
         client = GraphContactsClient(auth)
         self.set_graph_client(client)
 
+        ## Expose the authenticated account email so callers (init
+        ## wizard, sync verification) can display and persist it.
+        self.authenticated_email = getattr(auth, 'authenticated_email', None)
+
         logging.debug('Graph API client initialized successfully.')
 
     ## Legacy aliases for backward compatibility

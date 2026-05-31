@@ -87,17 +87,30 @@ class TestStateMigrationV5toV6(unittest.TestCase):
                                   'folder_name should be None in %s/%s'
                                   % (pname, label))
 
-    def test_non_gc_no_username (self):
-        """Non-GC collections should NOT get a username field added."""
+    def test_ex_username_backfilled (self):
+        """EX collections should get username='default' backfilled."""
+        coll_2 = self.config.get_coll_2('gcex')
+        self.assertEqual(coll_2.get('username'), 'default',
+                         'username not backfilled in gcex/coll_2')
+
+    def test_ex_email_placeholder (self):
+        """EX collections should get ex_email=None as placeholder."""
+        coll_2 = self.config.get_coll_2('gcex')
+        self.assertIn('ex_email', coll_2,
+                      'ex_email missing in gcex/coll_2')
+        self.assertIsNone(coll_2['ex_email'],
+                          'ex_email should be None in gcex/coll_2')
+
+    def test_non_gc_ex_no_username (self):
+        """Non-GC, non-EX collections should NOT get a username field."""
         ## coll_2 of gcbb is BB, coll_2 of gcol is OL, both colls of bbbb
         for pname, getter in [('gcbb', self.config.get_coll_2),
                               ('gcol', self.config.get_coll_2),
                               ('bbbb', self.config.get_coll_1),
-                              ('bbbb', self.config.get_coll_2),
-                              ('gcex', self.config.get_coll_2)]:
+                              ('bbbb', self.config.get_coll_2)]:
             coll = getter(pname)
             self.assertNotIn('username', coll,
-                             'username should not be in non-GC coll: '
+                             'username should not be in non-GC/EX coll: '
                              '%s/%s' % (pname, coll.get('dbid')))
 
     def test_non_gc_no_gc_email (self):
@@ -110,6 +123,20 @@ class TestStateMigrationV5toV6(unittest.TestCase):
             coll = getter(pname)
             self.assertNotIn('gc_email', coll,
                              'gc_email should not be in non-GC coll: '
+                             '%s/%s' % (pname, coll.get('dbid')))
+
+    def test_non_ex_no_ex_email (self):
+        """Non-EX collections should NOT get an ex_email field."""
+        for pname, getter in [('gcbb', self.config.get_coll_1),
+                              ('gcbb', self.config.get_coll_2),
+                              ('gcol', self.config.get_coll_1),
+                              ('gcol', self.config.get_coll_2),
+                              ('bbbb', self.config.get_coll_1),
+                              ('bbbb', self.config.get_coll_2),
+                              ('gcex', self.config.get_coll_1)]:
+            coll = getter(pname)
+            self.assertNotIn('ex_email', coll,
+                             'ex_email should not be in non-EX coll: '
                              '%s/%s' % (pname, coll.get('dbid')))
 
     def test_existing_profile_fields_preserved (self):
@@ -128,6 +155,12 @@ class TestStateMigrationV5toV6(unittest.TestCase):
         self.assertIsNone(disk['profiles']['bbbb']['coll_1']['folder_name'])
         self.assertNotIn('username',
                          disk['profiles']['bbbb']['coll_1'])
+        ## EX assertions
+        self.assertEqual(disk['profiles']['gcex']['coll_2']['username'],
+                         'default')
+        self.assertIsNone(disk['profiles']['gcex']['coll_2']['ex_email'])
+        self.assertNotIn('ex_email',
+                         disk['profiles']['gcex']['coll_1'])
 
 
 class TestStateMigrationIdempotent(unittest.TestCase):

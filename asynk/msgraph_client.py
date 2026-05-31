@@ -10,7 +10,7 @@
 ## Replaces the legacy pyews EWS/SOAP client.
 ##
 
-import json, logging, os, time
+import json, logging, os, time, webbrowser
 
 import msal
 import requests
@@ -112,6 +112,7 @@ class GraphAuthProvider:
             token_cache=self.cache)
 
         self._access_token = None
+        self.authenticated_email = None
 
     ## ----------------------------------------------------------------
     ## Public API
@@ -122,7 +123,7 @@ class GraphAuthProvider:
 
         On first run (or when the cached token has expired and cannot be
         refreshed), the device code flow is initiated: the user is asked
-        to visit a URL and enter a code.
+        to enter a code in a browser window that is opened automatically.
 
         Returns the access token string.
         """
@@ -130,30 +131,47 @@ class GraphAuthProvider:
         ## 1. Try silent acquisition from cache
         accounts = self.app.get_accounts()
 
-        if self.username:
-            matched_accounts = [a for a in accounts if a.get('username', '').lower() == self.username.lower()]
+        ## When self.username looks like an email address (contains '@'),
+        ## it identifies a specific Microsoft account.  Match the cache
+        ## against it.  When it is just a cache label (e.g. 'default',
+        ## 'ex2') we use any cached account we find.
+        username_is_email = self.username and '@' in self.username
+
+        if username_is_email:
+            matched_accounts = [a for a in accounts
+                                if a.get('username', '').lower()
+                                == self.username.lower()]
             if accounts and not matched_accounts:
                 raise GraphAuthError(
-                    "No credentials found in cache for user '%s'. Cache contains: %s"
-                    % (self.username, [a.get('username') for a in accounts])
-                )
+                    "No credentials found in cache for user '%s'. "
+                    "Cache contains: %s"
+                    % (self.username,
+                       [a.get('username') for a in accounts]))
 
             if matched_accounts:
-                result = self.app.acquire_token_silent(GRAPH_SCOPES,
-                                                       account=matched_accounts[0])
+                result = self.app.acquire_token_silent(
+                    GRAPH_SCOPES, account=matched_accounts[0])
                 if result and 'access_token' in result:
                     self._access_token = result['access_token']
+                    self.authenticated_email = (
+                        matched_accounts[0].get('username'))
                     self._save_cache()
-                    logging.debug("Graph API: acquired token silently from cache for user '%s'", self.username)
+                    logging.debug(
+                        "Graph API: acquired token silently from "
+                        "cache for user '%s'", self.username)
                     return self._access_token
         else:
             if accounts:
-                result = self.app.acquire_token_silent(GRAPH_SCOPES,
-                                                       account=accounts[0])
+                result = self.app.acquire_token_silent(
+                    GRAPH_SCOPES, account=accounts[0])
                 if result and 'access_token' in result:
                     self._access_token = result['access_token']
+                    self.authenticated_email = (
+                        accounts[0].get('username'))
                     self._save_cache()
-                    logging.debug('Graph API: acquired token silently from cache')
+                    logging.debug(
+                        'Graph API: acquired token silently '
+                        'from cache')
                     return self._access_token
 
         ## 2. Fall back to device code flow
@@ -164,10 +182,24 @@ class GraphAuthProvider:
                 flow.get('error_description', 'unknown error'))
 
         print()
-        print('=== Microsoft Graph Authentication ===')
-        print('To sign in, visit: %s' % flow['verification_uri'])
-        print('and enter the code: %s' % flow['user_code'])
+        print('  A browser window will open to this URL: %s'
+              % flow['verification_uri'])
+        print('  Enter the code: %s' % flow['user_code'])
         print()
+        print('  After you enter the above code, you will have to')
+        print('  sign in to your Microsoft account and authorize')
+        print('  ASynK to access your contacts.')
+        print()
+
+        try:
+            input('Press Enter to continue: ')
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+        try:
+            webbrowser.open(flow['verification_uri'])
+        except Exception:
+            pass  # Best-effort; URL is printed above
 
         result = self.app.acquire_token_by_device_flow(flow)
         if 'access_token' not in result:
@@ -175,15 +207,22 @@ class GraphAuthProvider:
                 'Authentication failed: %s' %
                 result.get('error_description', 'unknown error'))
 
-        # Check if the signed in user matches the requested username
+        ## Extract the signed-in user's email
         id_token_claims = result.get('id_token_claims', {})
-        signed_in_user = id_token_claims.get('preferred_username') or result.get('account', {}).get('username')
-        if self.username and signed_in_user and signed_in_user.lower() != self.username.lower():
+        signed_in_user = (id_token_claims.get('preferred_username')
+                          or result.get('account', {}).get('username'))
+
+        ## Only enforce identity check when self.username is an actual
+        ## email address.  Cache labels like 'default' or 'ex2' should
+        ## not be compared against the signed-in account.
+        if (username_is_email and signed_in_user
+                and signed_in_user.lower() != self.username.lower()):
             raise GraphAuthError(
-                "Signed in as '%s', but requested user was '%s'." % (signed_in_user, self.username)
-            )
+                "Signed in as '%s', but requested user was '%s'."
+                % (signed_in_user, self.username))
 
         self._access_token = result['access_token']
+        self.authenticated_email = signed_in_user
         self._save_cache()
         logging.info('Graph API: authentication successful')
         return self._access_token
