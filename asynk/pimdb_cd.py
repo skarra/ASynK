@@ -214,7 +214,7 @@ class CDPIMDB(PIMDB):
                 def_f = None
 
         self.set_def_folder(Folder.CONTACT_t, def_f)
-   
+
     def set_sync_folders (self):
         """See the documentation in class PIMDB"""
 
@@ -260,7 +260,7 @@ class CDPIMDB(PIMDB):
        else:
            if t.tzinfo:
                t = t - t.tzinfo.utcoffset(t)
-    
+
        return t.strftime('%Y%m%dT%H%M%SZ')
 
     @classmethod
@@ -278,7 +278,10 @@ class CDPIMDB(PIMDB):
             return datetime.datetime.strptime(t, '%Y%m%dT%H%M%S')
         else:
             t = iso8601.parse_date(t)
-            return datetime.datetime.utcfromtimestamp(t)
+            if t.tzinfo is not None:
+                t = t - t.tzinfo.utcoffset(t)
+                t = t.replace(tzinfo=None)
+            return t
 
     ## Note: I learnt of the setter, and @property and @property.setter
     ## decorations well after I started developing ASynK. So for the sake of
