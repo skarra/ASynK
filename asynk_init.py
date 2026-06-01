@@ -659,13 +659,14 @@ def _setup_ic (args, config, coll_index):
 
     ## Offer to save the password to the OS keychain
     try:
-        from keychain import set_password as _kc_set
-        save = _prompt_input('Save password to OS keychain for future runs? (y/n)')
+        from keychain import set_password as _kc_set, platform_store_name
+        store = platform_store_name()
+        save = _prompt_input('Save password to %s for future runs? (y/n)' % store)
         if save and save.lower().startswith('y'):
             if _kc_set(username, password):
-                print('  Password saved to OS keychain.')
+                print('  Password saved to %s.' % store)
             else:
-                print('  Could not save to keychain (see log for details).')
+                print('  Could not save to %s (see log for details).' % store)
         else:
             print('  Password not saved.')
     except Exception:

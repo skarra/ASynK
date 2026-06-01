@@ -13,9 +13,20 @@
 ## backend is unavailable.
 ##
 
-import logging
+import logging, platform
 
 KEYCHAIN_SERVICE = 'asynk-icloud'
+
+def platform_store_name ():
+    """Return a user-friendly name for the OS credential store."""
+
+    s = platform.system()
+    if s == 'Darwin':
+        return 'macOS Keychain'
+    elif s == 'Windows':
+        return 'Windows Credential Locker'
+    else:
+        return 'OS keyring'
 
 def get_password (username):
     """Retrieve the stored iCloud app-specific password for the given

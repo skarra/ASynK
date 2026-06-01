@@ -360,6 +360,23 @@ class ICCollection(CDCollection):
                     'iCloud app-specific password is required.')
             self.set_pwd(p)
 
+            ## Offer to save to keychain
+            try:
+                from keychain import set_password, platform_store_name
+                store = platform_store_name()
+                ans = input('Save password to %s? (y/n): ' % store)
+                if ans.strip().lower().startswith('y'):
+                    if set_password(self.get_username(), p):
+                        print('  Password saved to %s.' % store)
+                    else:
+                        print('  Could not save (see log for details).')
+                else:
+                    print('  Password not saved.')
+            except (EOFError, KeyboardInterrupt):
+                pass
+            except Exception:
+                pass
+
 
 class EXCollection(Collection):
     def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
