@@ -307,6 +307,19 @@ class CDCollection(Collection):
         return True
 
 
+class ICCollection(CDCollection):
+    """iCloud Contacts — uses CardDAV with the iCloud server URL pre-filled."""
+
+    ICLOUD_SERVER = 'https://contacts.icloud.com'
+
+    def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
+        if not stid:
+            stid = self.ICLOUD_SERVER
+        CDCollection.__init__(self, config=config, stid=stid, fid=fid,
+                              pname=pname, colln=colln)
+        self.set_dbid('ic')
+
+
 class EXCollection(Collection):
     def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
         Collection.__init__(self, config=config, dbid='ex', stid=stid, fid=fid,
@@ -399,5 +412,6 @@ collection_id_to_class = {
     'cd' : CDCollection,
     'ex' : EXCollection,
     'gc' : GCCollection,
+    'ic' : ICCollection,
     'ol' : OLCollection
     }

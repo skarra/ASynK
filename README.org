@@ -12,8 +12,8 @@ that website.
   written in Python. High level features include:
 
   - ASynK allows two-way sync of Contacts across any two supported sources -
-    Google Contacts, Microsoft Exchange Online, any CardDAV server and Emacs
-    BBDB.
+    Google Contacts, Microsoft Exchange Online, iCloud Contacts, any CardDAV
+    server and Emacs BBDB.
 
   - You can use ASynK to copy contacts from one Google account to another
     (say from a Google Apps account at work to a personal address before you
@@ -71,7 +71,12 @@ section titled Usage below to invoke ASynK.
   - CardDAV: You need end user credentials for the accoounts you want to
     access on the CardDAV server. CardDAV uses HTTP Basic authentication with
     a server URL, username, and password. ASynK supports any standard CardDAV
-    server (Radicale, Baikal, Nextcloud, iCloud, etc.).
+    server (Radicale, Baikal, Nextcloud, etc.).
+
+  - iCloud Contacts: iCloud exposes contacts via CardDAV at
+    =contacts.icloud.com=. You need your Apple ID email and an *app-specific
+    password* (not your regular Apple ID password). Generate one at
+    https://appleid.apple.com/account/manage under "App-Specific Passwords".
 
 
   - Google Contacts: Google Contacts uses oAuth. This requries two types of

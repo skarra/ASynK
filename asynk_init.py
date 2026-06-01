@@ -30,11 +30,12 @@ DB_NAMES = {
     'bb': 'BBDB (Emacs Big Brother Database)',
     'gc': 'Google Contacts',
     'ex': 'Exchange Online (Microsoft 365 / Outlook.com)',
+    'ic': 'iCloud Contacts',
     'cd': 'CardDAV Server (Nextcloud, Radicale, etc.)',
 }
 
 ## Ordered list for the menu (most common first)
-DB_ORDER = ['gc', 'ex', 'cd', 'bb']
+DB_ORDER = ['gc', 'ex', 'ic', 'cd', 'bb']
 
 ##
 ## Text / UI helpers
@@ -598,11 +599,72 @@ def _setup_cd (args, config, coll_index):
 
     return (coll, coll.get_db())
 
+def _setup_ic (args, config, coll_index):
+    """Set up an iCloud Contacts collection.
+
+    iCloud contacts are accessed via CardDAV at contacts.icloud.com.
+    Authentication requires an app-specific password generated from
+    the user's Apple ID account settings.
+
+    coll_index is 0 or 1 (which of the two stores this is).
+    Returns (collection, db) tuple where db is a logged-in PIMDB.
+    """
+
+    import getpass as _getpass
+
+    ICLOUD_URL = 'https://contacts.icloud.com'
+
+    print('  iCloud contacts are accessed via CardDAV.')
+    print('  Server: %s' % ICLOUD_URL)
+    print()
+    print('  NOTE: iCloud requires an app-specific password (not your')
+    print('  regular Apple ID password). To generate one:')
+    print('    1. Go to https://appleid.apple.com/account/manage')
+    print('    2. Sign in and select "App-Specific Passwords"')
+    print('    3. Click "+" to generate a new password for ASynK')
+    print()
+
+    ## Username (Apple ID)
+    username = None
+    icuser = getattr(args, 'icuser', None)
+    if icuser and len(icuser) > coll_index:
+        username = icuser[coll_index]
+    else:
+        username = _prompt_input('Apple ID (email)')
+        if not username:
+            raise AsynkParserError('Apple ID is required.')
+
+    ## App-specific password
+    password = None
+    icpwd = getattr(args, 'icpwd', None)
+    if icpwd and len(icpwd) > coll_index:
+        password = icpwd[coll_index]
+    else:
+        try:
+            password = _getpass.getpass('App-specific password: ')
+        except (EOFError, KeyboardInterrupt):
+            print()
+            raise SystemExit('Setup cancelled.')
+        if not password:
+            raise AsynkParserError('App-specific password is required.')
+
+    coll = coll_id_class['ic'](config=config, pname=None)
+    coll.set_username(username)
+    coll.set_pwd(password)
+
+    print()
+    print('  Connecting to iCloud...')
+    print()
+    coll.login()
+
+    return (coll, coll.get_db())
+
 ## Dispatch table: DB ID -> setup function
 _SETUP_FUNCS = {
     'bb': _setup_bb,
     'gc': _setup_gc,
     'ex': _setup_ex,
+    'ic': _setup_ic,
     'cd': _setup_cd,
 }
 

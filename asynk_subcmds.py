@@ -76,6 +76,13 @@ def _make_shared_parser ():
     eg.add_argument('--ex-client-id', action='store', nargs='+',
                     help='Exchange Azure AD client ID override.')
 
+    # iCloud authentication
+    ig = p.add_argument_group('iCloud Authentication')
+    ig.add_argument('--icuser', action='store', nargs='+',
+                    help='iCloud Apple ID (email). Relevant only for ic databases.')
+    ig.add_argument('--icpwd', action='store', nargs='+',
+                    help='iCloud app-specific password.')
+
     return p
 
 ##
@@ -122,6 +129,16 @@ def _apply_auth_to_coll (coll, dbid, args, index=0):
             val = args.ex_token_cache[index]
             if val != 'None' and hasattr(coll, 'set_token_cache'):
                 coll.set_token_cache(val)
+
+    elif dbid == 'ic':
+        if args.icuser and len(args.icuser) > index:
+            val = args.icuser[index]
+            if val != 'None':
+                coll.set_username(val)
+        if args.icpwd and len(args.icpwd) > index:
+            val = args.icpwd[index]
+            if val != 'None':
+                coll.set_pwd(val)
 
 ##
 ## Config and logger bootstrap
@@ -276,7 +293,7 @@ def _register_profile (sub, shared):
     p = prof_sub.add_parser('find', help='Find a matching profile',
                             parents=[shared])
     p.add_argument('--db', nargs=2, required=True,
-                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex', 'ic'],
                    help='Two database IDs to search for')
     p.add_argument('--folder', nargs=2, required=True,
                    help='Two folder IDs to match')
@@ -288,7 +305,7 @@ def _register_profile (sub, shared):
     p = prof_sub.add_parser('create', help='Create a new sync profile',
                             parents=[shared])
     p.add_argument('--db', nargs=2, required=True,
-                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex', 'ic'],
                    help='Two database IDs for the profile')
     p.add_argument('--folder', nargs=2, required=True,
                    help='Two folder IDs for the profile')
@@ -384,7 +401,7 @@ def _register_folders (sub, shared):
     p = fld_sub.add_parser('list', help='List folders in a store',
                            parents=[shared])
     p.add_argument('db', nargs='+',
-                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex', 'ic'],
                    help='Database ID(s) to list folders from')
     p.add_argument('--store', nargs='+',
                    help='Store IDs (optional, e.g. BBDB file path)')
@@ -394,7 +411,7 @@ def _register_folders (sub, shared):
     p = fld_sub.add_parser('create', help='Create a new folder',
                            parents=[shared])
     p.add_argument('db', nargs=1,
-                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex', 'ic'],
                    help='Database ID where the folder will be created')
     p.add_argument('--name', required=True,
                    help='Name for the new folder')
@@ -406,7 +423,7 @@ def _register_folders (sub, shared):
     p = fld_sub.add_parser('show', help='Show folder details',
                            parents=[shared])
     p.add_argument('db', nargs=1,
-                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex', 'ic'],
                    help='Database ID')
     p.add_argument('--folder', nargs=1,
                    help='Folder ID to show')
@@ -418,7 +435,7 @@ def _register_folders (sub, shared):
     p = fld_sub.add_parser('delete', help='Delete a folder',
                            parents=[shared])
     p.add_argument('db', nargs=1,
-                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex', 'ic'],
                    help='Database ID')
     p.add_argument('--folder', nargs=1,
                    help='Folder ID to delete')
@@ -478,7 +495,7 @@ def _register_store (sub, shared):
     p = sto_sub.add_parser('create', help='Create a new data store',
                            parents=[shared])
     p.add_argument('db', nargs=1,
-                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex', 'ic'],
                    help='Database ID (currently only bb is supported)')
     p.add_argument('--store', nargs='+', required=True,
                    help='Path for the new store file')
@@ -509,7 +526,7 @@ def _register_clear_artifacts (sub, shared):
                        help='Clear sync artifacts from a folder',
                        parents=[shared])
     p.add_argument('db', nargs=1,
-                   choices=['bb', 'gc', 'ol', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'ol', 'cd', 'ex', 'ic'],
                    help='Database ID')
     p.add_argument('--folder', nargs=1,
                    help='Folder ID to clear artifacts from')
@@ -526,7 +543,7 @@ def _register_init (sub, shared):
                        help='Interactive setup wizard - create a sync profile',
                        parents=[shared])
     p.add_argument('--db', nargs=2,
-                   choices=['bb', 'gc', 'cd', 'ex'],
+                   choices=['bb', 'gc', 'cd', 'ex', 'ic'],
                    help='Two database IDs (skip DB selection prompt)')
     p.add_argument('--folder', nargs=2,
                    help='Two folder IDs (skip folder selection prompt)')

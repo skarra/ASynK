@@ -328,6 +328,16 @@
             'log' : false
         },
 
+        'ic' : {
+            // iCloud Contacts — uses CardDAV at contacts.icloud.com.
+            // The server URL is pre-filled; users only need their
+            // Apple ID and an app-specific password.
+            'server_url' : 'https://contacts.icloud.com',
+
+            // Enables request/response logging (same as cd)
+            'log' : false
+        },
+
         'ex' : {
             // Microsoft Graph API settings for Exchange Online.
             //
