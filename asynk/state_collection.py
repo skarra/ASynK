@@ -352,10 +352,11 @@ class ICCollection(CDCollection):
 
         ## 2. If we still have no password, try the OS keychain
         if self.get_pwd() is None and self.get_username():
-            from keychain import get_password
+            from keychain import get_password, platform_store_name
             cached = get_password(self.get_username())
             if cached:
-                logging.info('Using iCloud password from OS keychain.')
+                logging.info('Using iCloud credentials for %s from %s.',
+                             self.get_username(), platform_store_name())
                 self.set_pwd(cached)
 
         ## 3. If still no password, prompt interactively
