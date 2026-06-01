@@ -319,6 +319,14 @@ class ICCollection(CDCollection):
                               pname=pname, colln=colln)
         self.set_dbid('ic')
 
+    def login (self):
+        db = CDCollection.login(self)
+        ## The underlying CDPIMDB.get_dbid() returns 'cd', but for iCloud
+        ## profiles the sync machinery needs it to return 'ic' so that
+        ## sync tags match the profile's dbid.
+        db.get_dbid = lambda: 'ic'
+        return db
+
 
 class EXCollection(Collection):
     def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):

@@ -229,7 +229,7 @@ class CDContactsFolder(Folder):
 
             ## CardDAV does not support a multiput operation. So we will have
             ## to PUT the damn items one at a time.
-            con_itemid = item.get_itemid_from_synctags(pname, 'cd')
+            con_itemid = item.get_itemid_from_synctags(pname, self.get_dbid())
             cd = CDContact(self, con=item, con_itemid=con_itemid)
             cd.update_sync_tags(src_sync_tag, item.get_itemid(), save=True)
             self.add_contact(cd)            
@@ -258,7 +258,7 @@ class CDContactsFolder(Folder):
         for item in items:
             tag, href = item.get_sync_tags(dst_sync_tag)[0]
             con_old = cons[href]
-            con_itemid = item.get_itemid_from_synctags(pname, 'cd')
+            con_itemid = item.get_itemid_from_synctags(pname, self.get_dbid())
             con_new = CDContact(self, con=item, con_itemid=con_itemid)
 
             con_new.set_uid(con_old.get_uid())
