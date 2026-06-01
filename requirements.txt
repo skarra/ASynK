@@ -16,6 +16,7 @@ iso8601>=2.1
 simplejson>=3.0
 vobject>=0.9
 httplib2>=0.20
+keyring>=25.0
 
 # --- Optional: Google Contacts (pip install .[google]) ---
 google-api-python-client>=2.0

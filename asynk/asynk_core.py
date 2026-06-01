@@ -72,6 +72,14 @@ class Asynk:
                 self._verify_gc_account(coll, pname)
             elif coll.get_dbid() == 'ex':
                 self._verify_ex_account(coll, pname)
+            elif coll.get_dbid() == 'ic':
+                ## Update the OS keychain so future runs auto-retrieve
+                ## the password without needing --icpwd.
+                try:
+                    from keychain import set_password as _kc_set
+                    _kc_set(coll.get_username(), coll.get_pwd())
+                except Exception:
+                    pass
 
     def _verify_gc_account (self, coll, pname):
         """Verify the authenticated Google account matches the profile.

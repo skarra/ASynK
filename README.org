@@ -78,6 +78,13 @@ section titled Usage below to invoke ASynK.
     password* (not your regular Apple ID password). Generate one at
     https://appleid.apple.com/account/manage under "App-Specific Passwords".
 
+    ASynK can securely cache your iCloud password in the OS-native credential
+    store (macOS Keychain, GNOME Keyring, or Windows Credential Locker) via
+    the =keyring= Python package. During initial setup (=asynk.py init=) you
+    will be offered to save the password. On subsequent sync runs the password
+    is retrieved automatically — no prompting required. You can override the
+    cached value at any time with =--icpwd=.
+
 
   - Google Contacts: Google Contacts uses oAuth. This requries two types of
     credentials:

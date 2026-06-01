@@ -657,6 +657,20 @@ def _setup_ic (args, config, coll_index):
     print()
     coll.login()
 
+    ## Offer to save the password to the OS keychain
+    try:
+        from keychain import set_password as _kc_set
+        save = _prompt_input('Save password to OS keychain for future runs? (y/n)')
+        if save and save.lower().startswith('y'):
+            if _kc_set(username, password):
+                print('  Password saved to OS keychain.')
+            else:
+                print('  Could not save to keychain (see log for details).')
+        else:
+            print('  Password not saved.')
+    except Exception:
+        pass
+
     return (coll, coll.get_db())
 
 ## Dispatch table: DB ID -> setup function

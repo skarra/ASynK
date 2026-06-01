@@ -327,6 +327,39 @@ class ICCollection(CDCollection):
         db.get_dbid = lambda: 'ic'
         return db
 
+    def init_username_pwd (self):
+        """Resolve iCloud credentials with OS keychain support.
+
+        Priority: CLI --icpwd > OS keychain > ~/.netrc > interactive prompt.
+        After the parent resolves CLI and netrc sources, we check the
+        keychain.  If nothing is found, we prompt interactively.
+        """
+
+        import getpass as _getpass
+
+        ## 1. Let the parent resolve CLI args and netrc
+        Collection.init_username_pwd(self)
+
+        ## 2. If we still have no password, try the OS keychain
+        if self.get_pwd() is None and self.get_username():
+            from keychain import get_password
+            cached = get_password(self.get_username())
+            if cached:
+                logging.info('Using iCloud password from OS keychain.')
+                self.set_pwd(cached)
+
+        ## 3. If still no password, prompt interactively
+        if self.get_pwd() is None:
+            try:
+                p = _getpass.getpass('iCloud app-specific password: ')
+            except (EOFError, KeyboardInterrupt):
+                print()
+                raise SystemExit('Cancelled.')
+            if not p:
+                raise AsynkCollectionError(
+                    'iCloud app-specific password is required.')
+            self.set_pwd(p)
+
 
 class EXCollection(Collection):
     def __init__ (self, config=None, stid=None, fid=None, pname=None, colln=1):
