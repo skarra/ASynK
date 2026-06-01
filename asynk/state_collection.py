@@ -327,12 +327,22 @@ class ICCollection(CDCollection):
         db.get_dbid = lambda: 'ic'
         return db
 
+    def force_pwd (self):
+        ## Return False so the parent init_username_pwd() does not prompt
+        ## for the password itself.  Our override handles prompting with
+        ## keychain support.
+        return False
+
     def init_username_pwd (self):
         """Resolve iCloud credentials with OS keychain support.
 
         Priority: CLI --icpwd > OS keychain > ~/.netrc > interactive prompt.
         After the parent resolves CLI and netrc sources, we check the
-        keychain.  If nothing is found, we prompt interactively.
+        keychain.  If nothing is found, we prompt interactively and offer
+        to save to the keychain.
+
+        We override force_pwd() to return False so the parent class does
+        not prompt on its own — all password prompting is handled here.
         """
 
         import getpass as _getpass
