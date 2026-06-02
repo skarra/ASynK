@@ -312,7 +312,7 @@
             // Default OAuth2 client secrets JSON for Google Contacts.
             // This file ships with ASynK so users can authenticate
             // without creating their own GCP project.  If you have
-            // your own client secrets, override with --gcpwd or set
+            // your own client secrets, override with --gc-creds-file or set
             // this to the path of your file (relative to app root).
             'client_secret_file' : 'config/gc_client_secret.json',
 

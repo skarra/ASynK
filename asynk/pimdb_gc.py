@@ -256,7 +256,7 @@ class GCPIMDB(PIMDB):
                     'To fix this, either:\n'
                     '  1. Place your client secrets JSON at '
                     'config/gc_client_secret.json\n'
-                    '  2. Specify the path with --gcpwd '
+                    '  2. Specify the path with --gc-creds-file '
                     '/path/to/your/credentials.json' % cs_file)
             flow = InstalledAppFlow.from_client_secrets_file(
                 cs_file, SCOPES)

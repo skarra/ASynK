@@ -456,12 +456,12 @@ def _setup_gc (args, config, coll_index):
 
     from asynk_subcmds import _apply_auth_to_coll
 
-    ## The gcuser label is used internally to name the token cache file
+    ## The gc_user label is used internally to name the token cache file
     ## (e.g. default.token.pickle).  The actual Google account is selected
     ## in the browser during the OAuth flow, so we don't need to ask.
     username = None
-    if args.gcuser and len(args.gcuser) > coll_index:
-        username = args.gcuser[coll_index]
+    if args.gc_user and len(args.gc_user) > coll_index:
+        username = args.gc_user[coll_index]
     else:
         ## Auto-generate a sensible default label
         username = 'default' if coll_index == 0 else 'gc%d' % (coll_index + 1)
@@ -471,8 +471,8 @@ def _setup_gc (args, config, coll_index):
 
     ## Client secrets: resolved automatically by GCCollection.login()
     ## via the Phase 1 default credentials
-    if args.gcpwd and len(args.gcpwd) > coll_index:
-        coll.set_pwd(args.gcpwd[coll_index])
+    if args.gc_creds_file and len(args.gc_creds_file) > coll_index:
+        coll.set_pwd(args.gc_creds_file[coll_index])
 
     print()
     print('  A browser window will open so you can sign in to your')

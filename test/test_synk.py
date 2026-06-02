@@ -66,8 +66,8 @@ def init ():
     asyn  = Asynk(u, config=config)
     gcfid = asyn.dispatch()
     gcdb  = asyn.get_db('gc')
-    gcu   = asyn.get_gcuser()
-    gcp   = asyn.get_gcpw()
+    gcu   = asyn.get_gc_user()
+    gcp   = asyn.get_gc_creds_file()
 
     u.db          = ['bb']
     u.folder_name = 'test.bbdb'
@@ -93,8 +93,8 @@ def init ():
 
     asyn.set_db('gc', gcdb)
     asyn.set_db('bb', bbdb)
-    asyn.set_gcuser(gcu)
-    asyn.set_gcpw(gcp)
+    asyn.set_gc_user(gcu)
+    asyn.set_gc_creds_file(gcp)
 
     asynk(asyn)
     uinps(u)

@@ -55,9 +55,11 @@ def _make_shared_parser ():
 
     # Google Contacts authentication
     gg = p.add_argument_group('Google Authentication')
-    gg.add_argument('--gcuser', action='store', nargs='+',
-                    help='Google username. Relevant only for gc databases.')
-    gg.add_argument('--gcpwd', action='store', nargs='+',
+    gg.add_argument('--gc-user', action='store', nargs='+',
+                    dest='gc_user',
+                    help='Google username / account label.')
+    gg.add_argument('--gc-creds-file', action='store', nargs='+',
+                    dest='gc_creds_file',
                     help='Path to Google OAuth2 client secrets JSON.')
 
     # CardDAV server authentication
@@ -97,12 +99,12 @@ def _apply_auth_to_coll (coll, dbid, args, index=0):
     type are provided (e.g. two gc dbs in a profile create)."""
 
     if dbid == 'gc':
-        if args.gcuser and len(args.gcuser) > index:
-            val = args.gcuser[index]
+        if args.gc_user and len(args.gc_user) > index:
+            val = args.gc_user[index]
             if val != 'None':
                 coll.set_username(val)
-        if args.gcpwd and len(args.gcpwd) > index:
-            val = args.gcpwd[index]
+        if args.gc_creds_file and len(args.gc_creds_file) > index:
+            val = args.gc_creds_file[index]
             if val != 'None':
                 coll.set_pwd(val)
 

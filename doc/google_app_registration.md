@@ -119,10 +119,10 @@ cp ~/Downloads/client_secret_*.json /path/to/ASynK/config/gc_client_secret.json
 
 ### Option C: Command-line flag
 
-Pass the path on every run with the `--gcpwd` flag:
+Pass the path on every run with the `--gc-creds-file` flag:
 
 ```bash
-python asynk.py --gcpwd /path/to/your/gc_client_secret.json ...
+python asynk.py --gc-creds-file /path/to/your/gc_client_secret.json ...
 ```
 
 ## Step 6: First Authentication
