@@ -62,11 +62,11 @@ section titled Usage below to invoke ASynK.
 
 * Setting up credentials
 
-  Depending on the databases you use you may need 0, 1, or 2 sets of
-  credentials to access the contacts.
+  The setup requriements vary depending on which contact database you want to
+  use.
 
-  - BBDB is entirely local so there is no authentication required at all to
-    access contacts stored in BBDB.
+  - The BBDB and Outlook PST connectors are entirely local so there is no
+    authentication required at all to access these stores.
 
   - CardDAV: You need end user credentials for the accoounts you want to
     access on the CardDAV server. CardDAV uses HTTP Basic authentication with
@@ -86,53 +86,42 @@ section titled Usage below to invoke ASynK.
     cached value at any time with =--icpwd=.
 
 
-  - Google Contacts: Google Contacts uses oAuth. This requries two types of
-    credentials:
+  - Google Contacts:
 
-    - You need to register an application, or "client" that tells Google about
-      your personal installation of ASynK to access users' contacts. This is
-      required just once for your personal installation, and requires some
-      manual set up from you.
+    - Google Contacts uses oAuth, and this requires two types of credentails:
+      a Client credential and a user credential.
 
-    - Once that that is done. Separate from this, you need oauth tokens issued
-      to you per user account. ASynK will automatically trigger teh required
-      web flows to get the user consent and acquire these tokens.
+    - Google Contacts uses the People API v1 with OAuth 2.0. ASynK ships with
+      default shared credentials so you can get started immediately — a
+      browser window will open during setup for you to sign in and authorize
+      access
 
-  - MS Exchange Server: This also uses oAuth, and the general principle is the
-    same as for Google Contacts. See above.
+      *Note*: The default credentials are shared among all ASynK users. If you
+      encounter rate-limit errors, you should register your own Google Cloud
+      project and use your own client secrets. See
+      [[file:doc/google_app_registration.md][ doc/google_app_registration.md]] for detailed step-by-step instructions.
 
-** Setting up client credentials for ASynK
+    - On first run ASynK will open a browser to initiate an oauth
+      authorization flow for a user account. ASynK will automatically trigger
+      the required web flows to get the user consent and acquire oauth tokens.
 
-*** Google Contacts
+  - MS Exchange Server:
 
-   Google Contacts uses the People API v1 with OAuth 2.0. ASynK ships with
-   default shared credentials so you can get started immediately — a browser
-   window will open during setup for you to sign in and authorize access.
+    - This also uses oAuth, and the general principle is the same as for
+      Google Contacts.
 
-   *Note*: The default credentials are shared among all ASynK users. If you
-   encounter rate-limit errors, you should register your own Google Cloud
-   project and use your own client secrets. See
-   [[file:doc/google_app_registration.md][doc/google_app_registration.md]] for
-   detailed step-by-step instructions.
+    - Exchange Online uses the Microsoft Graph API with OAuth 2.0 device code
+      flow. ASynK ships with a default shared app registration so you can get
+      started immediately.
 
-*** Microsoft Exchange Online (Graph API)
+      *Note*: The default app registration is shared among all ASynK users. If
+      you encounter rate-limit errors, you should register your own app in
+      Microsoft Entra ID (formerly Azure Active Directory). See
+      [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]] for detailed step-by-step instructions.
 
-   Exchange Online uses the Microsoft Graph API with OAuth 2.0 device code
-   flow. ASynK ships with a default shared app registration so you can get
-   started immediately — on first run, ASynK displays a URL and a code; open
-   the URL in any browser, enter the code, and sign in with your Microsoft
-   account. The OAuth token is cached locally for subsequent runs.
-
-   *Note*: The default app registration is shared among all ASynK users. If
-   you encounter rate-limit errors, you should register your own app in
-   Microsoft Entra ID (formerly Azure Active Directory). See
-   [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]] for
-   detailed step-by-step instructions.
-
-** Setting up user credentials
-
-  Refer to the main documenation on how to authorize your presonal
-  installation of ASynK to access individual accounts on any db provider.
+    - On first run ASynK will open a browser to initiate an oauth
+      authorization flow for a user account. ASynK will automatically trigger
+      the required web flows to get the user consent and acquire oauth tokens.
 
 * Usage
 
