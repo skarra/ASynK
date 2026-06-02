@@ -48,7 +48,7 @@ def customize_config (config):
     # config['db_config']['gc']['client_secret_file'] = '/path/to/your/gc_client_secret.json'
 
     ## Exchange Online (Microsoft 365) works out of the box with the
-    ## default client_id shipped in config_v9.json.  Uncomment below
+    ## default client_id shipped in config_v10.json.  Uncomment below
     ## only if you want to use your own Entra ID app registration.
 
     # config['db_config']['ex']['client_id'] = 'YOUR-AZURE-AD-CLIENT-ID'

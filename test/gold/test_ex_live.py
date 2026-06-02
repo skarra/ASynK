@@ -13,7 +13,7 @@
 ## Prerequisites:
 ##   1. An Entra ID tenant with an app registration (see
 ##      doc/azure_app_registration.md)
-##   2. The client_id configured in ASynK (config.py or config_v9.json)
+##   2. The client_id configured in ASynK (config.py or config_v10.json)
 ##   3. Run with:
 ##        make ex-live EX_CLIENT_ID=YOUR-CLIENT-ID
 ##      or:
@@ -42,7 +42,7 @@ user_dir     = os.path.abspath('user_dir')
 ex_creds_dir = os.path.abspath('ex_creds')   # persistent — survives 'make clean'
 state_src    = os.path.join('.', 'state.test.json')
 state_dest   = os.path.join(user_dir, 'state.json')
-confn_src    = os.path.join('..', '..', 'config', 'config_v9.json')
+confn_src    = os.path.join('..', '..', 'config', 'config_v10.json')
 confn_dest   = os.path.join(user_dir, 'config.json')
 
 ## These get filled in by main()

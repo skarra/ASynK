@@ -39,7 +39,7 @@ from sync        import Sync
 ASYNK_BASE_DIR = DIR_PATH
 USER_DIR       = os.path.abspath(os.path.join(CUR_DIR, 'user_dir'))
 STATE_SRC      = os.path.join(DIR_PATH, 'state.init.json')
-CONF_SRC       = os.path.join(DIR_PATH, 'config', 'config_v9.json')
+CONF_SRC       = os.path.join(DIR_PATH, 'config', 'config_v10.json')
 
 EX_CREDS_DIR   = os.path.abspath(os.path.join(CUR_DIR, 'ex_creds'))
 BB_FILE        = os.path.abspath(os.path.join(CUR_DIR, 'test_sync_ex_bb.bbdb'))
@@ -809,7 +809,7 @@ def main ():
 
     ## 1. CLI option
     ## 2. Cached client_id file
-    ## 3. config_v9.json
+    ## 3. config_v10.json
     cached_client_id = None
     cid_file = os.path.join(EX_CREDS_DIR, 'client_id')
     if os.path.exists(cid_file):

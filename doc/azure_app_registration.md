@@ -127,7 +127,7 @@ def customize_config(config):
 
 ### Option B: Edit config.json directly
 
-Open `config/config_v9.json` and set your client ID in the `ex` section:
+Open `config/config_v10.json` and set your client ID in the `ex` section:
 
 ```javascript
 'client_id'  : 'YOUR-CLIENT-ID-HERE',

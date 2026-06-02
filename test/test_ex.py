@@ -44,7 +44,7 @@ class TestEXContact:
     def __init__ (self, asynk_bd, user_d):
         """Initialize with Graph API authentication.
 
-        The client_id must be configured in config_v9.json or config.py.
+        The client_id must be configured in config_v10.json or config.py.
         Authentication uses OAuth 2.0 device code flow — you will be
         prompted to visit a URL and enter a code on the first run.
         """

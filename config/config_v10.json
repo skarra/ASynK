@@ -18,8 +18,9 @@
     // Version 7: adding support for MS Exchange datastores.
     // Version 8: adding gc server logging flag
     // Version 9: migrated Exchange from EWS/pyews to Microsoft Graph API
+    // Version 10: default credentials for GC/EX, iCloud CardDAV support
 
-    'file_version'    : 9,
+    'file_version'    : 10,
 
     // This prefix is attached to all the Group names, labels
     // etc. that are created on Google, field names in BBDB etc.
@@ -96,7 +97,7 @@
             // set. This is our custom version of the standard
             // PSETID_Address_GUID used by Outlook
             'guid'     : '{a1271100-ac2e-11e0-bc8b-0025644a821c}',
-            
+
             // GID is used to make up the custom property tag for
             // storing the sync labels.  Every profile gets assigned a
             // different group ID (GID), and the GIDs are partitioned
@@ -127,7 +128,7 @@
             // your BBDB to ridiculous sizes. The following array
             // lists out the Property Tags that we are really
             // interested in. Everything else is ignored.
-            // 
+            //
             // ** IMPORTANT ** For some obscure (possibly historical)
             // ** reasons Outlook has three types of properites -
             // ** Tagged Properties, Named Properties with Numercial
@@ -164,7 +165,7 @@
                 'PR_BUSINESS_HOME_PAGE',     'PR_OTHER_TELEPHONE_NUMBER',
                 'PR_LAST_MODIFICATION_TIME', 'PR_CREATION_TIME',
 
-                'PR_COUNTRY_W',              'PR_STATE_OR_PROVINCE_W', 
+                'PR_COUNTRY_W',              'PR_STATE_OR_PROVINCE_W',
                 'PR_LOCALITY_W',             'PR_STREET_ADDRESS_W',
                 'PR_POSTAL_CODE_W',          'PR_POST_OFFICE_BOX_W',
 
@@ -172,14 +173,14 @@
                 'PR_HOME_ADDRESS_STREET_W',
                 'PR_HOME_ADDRESS_CITY_W',
                 'PR_HOME_ADDRESS_STATE_OR_PROVINCE_W',
-                'PR_HOME_ADDRESS_COUNTRY_W',    
+                'PR_HOME_ADDRESS_COUNTRY_W',
                 'PR_HOME_ADDRESS_POSTAL_CODE_W',
 
                 'PR_OTHER_ADDRESS_POST_OFFICE_BOX_W',
                 'PR_OTHER_ADDRESS_STREET_W',
                 'PR_OTHER_ADDRESS_CITY_W',
                 'PR_OTHER_ADDRESS_STATE_OR_PROVINCE_W',
-                'PR_OTHER_ADDRESS_COUNTRY_W',    
+                'PR_OTHER_ADDRESS_COUNTRY_W',
                 'PR_OTHER_ADDRESS_POSTAL_CODE_W',
             ],
 
@@ -308,6 +309,13 @@
                 "other" : 'Other',
             }, // db_config['postal_map']
 
+            // Default OAuth2 client secrets JSON for Google Contacts.
+            // This file ships with ASynK so users can authenticate
+            // without creating their own GCP project.  If you have
+            // your own client secrets, override with --gcpwd or set
+            // this to the path of your file (relative to app root).
+            'client_secret_file' : 'config/gc_client_secret.json',
+
             // Enables request/response logging in the Apple
             // caldavclientlibrary. Useful to see comms between ASynK
             // and the carddav server
@@ -321,21 +329,32 @@
             'log' : false
         },
 
+        'ic' : {
+            // iCloud Contacts — uses CardDAV at contacts.icloud.com.
+            // The server URL is pre-filled; users only need their
+            // Apple ID and an app-specific password.
+            'server_url' : 'https://contacts.icloud.com',
+
+            // Enables request/response logging (same as cd)
+            'log' : false
+        },
+
         'ex' : {
             // Microsoft Graph API settings for Exchange Online.
             //
-            // To use the Exchange connector you must register an app
-            // in Azure Active Directory (Entra ID) and set the
-            // client_id below.  See doc/azure_app_registration.md
-            // for step-by-step instructions.
-            //
             // Authentication uses the OAuth 2.0 device code flow —
             // no username or password is stored in this file.
+            // See doc/azure_app_registration.md for details.
 
-            // REQUIRED: Azure AD Application (client) ID.
-            // Obtain this from the Azure Portal after registering
-            // your app.  Leave as null until you have registered.
-            'client_id'  : null,
+            // Azure AD Application (client) ID.  The default below is
+            // the official ASynK app registration maintained by the
+            // author of ASynK.  It works out of the box for any
+            // Microsoft account (personal or work/school).
+            //
+            // If you prefer to use your own app registration (e.g. for
+            // organizational policies), replace this with your own
+            // client_id from the Entra admin center.
+            'client_id'  : '0ac234d5-0622-4ee3-82a8-99c6ba144ca1',
 
             // Azure AD tenant ID.  Use 'common' for multi-tenant
             // (personal + work/school accounts), 'organizations'
