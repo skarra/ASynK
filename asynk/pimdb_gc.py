@@ -20,7 +20,7 @@ from state import Config
 from pimdb import PIMDB, GoutInvalidPropValueError
 from folder import Folder
 
-from folder_gc import GCContactsFolder
+from folder_gc import GCContactsFolder, _execute_with_retry
 
 ## The People API scope for full contacts access (read/write), plus
 ## userinfo.email so we can reliably query people/me for the account email.
@@ -97,7 +97,7 @@ class GCPIMDB(PIMDB):
             return None
 
         body = {'contactGroup': {'name': fname}}
-        result = self.get_service().contactGroups().create(body=body).execute()
+        result = _execute_with_retry(self.get_service().contactGroups().create(body=body))
 
         if result:
             resource_name = result['resourceName']
@@ -142,8 +142,8 @@ class GCPIMDB(PIMDB):
         logging.info('Deleting Entries for Group: %s...done', f.get_name())
 
         logging.info('Deleting the Group from Google\'s servers...')
-        self.get_service().contactGroups().delete(
-            resourceName=gid).execute()
+        _execute_with_retry(self.get_service().contactGroups().delete(
+            resourceName=gid))
         logging.info('Deleting the Group from Google\'s servers...done')
 
         self.remove_folder_from_lists(f, ftype)
@@ -279,7 +279,7 @@ class GCPIMDB(PIMDB):
         try:
             oauth2_svc = build('oauth2', 'v2', credentials=creds,
                                cache_discovery=False)
-            user_info = oauth2_svc.userinfo().get().execute()
+            user_info = _execute_with_retry(oauth2_svc.userinfo().get())
             self.authenticated_email = user_info.get('email')
         except Exception:
             pass
@@ -288,8 +288,8 @@ class GCPIMDB(PIMDB):
         """Fetch all contact groups from the People API.  Returns a list
         of contactGroup resource dicts."""
 
-        results = self.get_service().contactGroups().list(
-            pageSize=1000).execute()
+        results = _execute_with_retry(self.get_service().contactGroups().list(
+            pageSize=1000))
         return results.get('contactGroups', [])
 
     def get_groups_feed (self):

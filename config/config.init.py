@@ -40,6 +40,13 @@ def customize_config (config):
 
     # config['db_config']['gc']['log'] =  True
 
+    ## Google Contacts works out of the box with the default client
+    ## secrets shipped with ASynK.  Uncomment below only if you want
+    ## to use your own Google Cloud project credentials.
+    ## See doc/google_app_registration.md for setup instructions.
+
+    # config['db_config']['gc']['client_secret_file'] = '/path/to/your/gc_client_secret.json'
+
     ## Exchange Online (Microsoft 365) works out of the box with the
     ## default client_id shipped in config_v9.json.  Uncomment below
     ## only if you want to use your own Entra ID app registration.

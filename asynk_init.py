@@ -477,6 +477,10 @@ def _setup_gc (args, config, coll_index):
     print()
     print('  A browser window will open so you can sign in to your')
     print('  Google account and authorize ASynK to access your contacts.')
+    print()
+    print('  NOTE: ASynK uses shared default Google credentials. If you')
+    print('  encounter rate limit errors, you can register your own Google')
+    print('  Cloud project. See doc/google_app_registration.md.')
     _prompt_input('Press Enter to continue', default='')
 
     coll.login()
@@ -542,6 +546,11 @@ def _setup_ex (args, config, coll_index):
         print()
         print('  Note: Could not determine the signed-in Exchange account.')
         print('  (The device code login succeeded; this is a permissions quirk.)')
+
+    print()
+    print('  NOTE: ASynK uses a shared default Azure AD app registration.')
+    print('  If you encounter rate limit errors, you can register your own')
+    print('  app. See doc/azure_app_registration.md.')
 
     _prompt_input('Press Enter to fetch the folder list', default='')
     print()

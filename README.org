@@ -33,7 +33,7 @@ that website.
   - The infrastructure is there to add more database and item types
     (i.e. tasks, notes, etc.), but currently only Contacts synchronization is
     supported.
-    
+
   - It is free software, and released under the GNU AGPL (Affero GPL) version
     3
 
@@ -42,7 +42,7 @@ that website.
 ** Fresh Installation
 
 As you are reading this file, the most efficient installation is to
-recursively clone this git repository to your machine. Then see the
+clone this git repository to your machine. Then see the
 section titled Usage below to invoke ASynK.
 
 : git clone  https://github.com/skarra/ASynK.git
@@ -105,67 +105,29 @@ section titled Usage below to invoke ASynK.
 
 *** Google Contacts
 
-   Google Contacts requires OAuth 2.0 credentials. You will need to create a
-   project in the Google Cloud Console and download a client secrets JSON
-   file. This step is required just once for your entire installation,
-   regardelss of how many Google accounts you want to to sync.
+   Google Contacts uses the People API v1 with OAuth 2.0. ASynK ships with
+   default shared credentials so you can get started immediately — a browser
+   window will open during setup for you to sign in and authorize access.
 
-   1. Go to https://console.developers.google.com
-   2. Create a new project (e.g. "My ASynK")
-   3. Enable the *Contacts API*:
-      - Click APIs & Services → Library
-      - Search for "Contacts API" and click Enable
-   4. Create OAuth credentials:
-      - Click APIs & Services → Credentials
-      - Click "Create Credentials" → "OAuth client ID"
-      - Application type: "Desktop app"
-      - Click "Create"
-   5. Download the client secrets JSON file and save it somewhere safe (e.g.
-      =~/.asynk/gc_client_secret.json=)
+   *Note*: The default credentials are shared among all ASynK users. If you
+   encounter rate-limit errors, you should register your own Google Cloud
+   project and use your own client secrets. See
+   [[file:doc/google_app_registration.md][doc/google_app_registration.md]] for
+   detailed step-by-step instructions.
 
 *** Microsoft Exchange Online (Graph API)
 
    Exchange Online uses the Microsoft Graph API with OAuth 2.0 device code
-   flow. You will need to register an application in Microsoft Entra ID
-   (formerly Azure Active Directory).
+   flow. ASynK ships with a default shared app registration so you can get
+   started immediately — on first run, ASynK displays a URL and a code; open
+   the URL in any browser, enter the code, and sign in with your Microsoft
+   account. The OAuth token is cached locally for subsequent runs.
 
-   *Prerequisite*: You need a Microsoft Entra ID tenant (directory). If you
-   only have a personal Microsoft account (@gmail.com, @outlook.com, etc.),
-   you must first create a free Azure account at
-   https://azure.microsoft.com/en-us/free/ — this automatically provisions
-   an Entra ID tenant. See [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]]
-   for detailed instructions.
-
-   1. Sign in to the Entra admin center at https://entra.microsoft.com/
-   2. In the left navigation, expand *Applications* →  *App registrations*
-   3. Click *+ New registration*
-   4. Set the name (e.g. "ASynK"), choose appropriate account types, and
-      leave Redirect URI blank
-   5. Click *Register*, then note the *Application (client) ID*
-   6. Under *API permissions*, add:
-      - Microsoft Graph → Delegated → =Contacts.ReadWrite=
-      - Microsoft Graph → Delegated → =User.Read=
-   7. Under *Authentication* → Advanced settings, set "Allow public client
-      flows" to *Yes*, then click *Save*
-
-   Configure ASynK with your client ID. Edit =~/.asynk/config.py=:
-
-   : def customize_config(config):
-   :     config['db_config']['ex']['client_id'] = 'YOUR-CLIENT-ID-HERE'
-
-   Or edit =config/config_v9.json= directly:
-
-   : 'ex' : {
-   :     'client_id'  : 'YOUR-CLIENT-ID-HERE',
-   :     'tenant_id'  : 'common',
-   : },
-
-   On the first run, ASynK will display a URL and a code. Open the URL in
-   any browser, enter the code, and sign in with your Microsoft account. The
-   OAuth token is cached locally for subsequent runs.
-
-   See [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]]
-   for the full step-by-step guide including troubleshooting.
+   *Note*: The default app registration is shared among all ASynK users. If
+   you encounter rate-limit errors, you should register your own app in
+   Microsoft Entra ID (formerly Azure Active Directory). See
+   [[file:doc/azure_app_registration.md][doc/azure_app_registration.md]] for
+   detailed step-by-step instructions.
 
 ** Setting up user credentials
 
@@ -174,13 +136,12 @@ section titled Usage below to invoke ASynK.
 
 * Usage
 
-   The recommended way to use ASynK is to first create your own 'sync profile'
-   which specifies which folders and PIM DBs you want to keep in sync. Refer
-   to the documentation for more details.
+  ASynK comes with an interactive set up wizard to help get you up and
+  running. This is the recommended way to start as a first time user, or if an
+  dwhen you want to add more sync profiles.
 
-   For the really impatient, ASynK comes with two default sync profiles that
-   kick in if no other profile is configured.
+: $ python asynk.py init
 
-: $ python asynk.py --op=sync [--dry-run] [--log=debug]
-
-   For further usage help, try "python asynk.py -h"
+   For further usage help, try "python asynk.py --help". You can also read the
+   docs for more detailed information about underlying concepts and reference
+   to all the features.

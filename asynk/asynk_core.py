@@ -37,6 +37,69 @@ class AsynkParserError(Exception):
 class AsynkError(Exception):
     pass
 
+def _print_rate_limit_help (exc):
+    """If *exc* looks like a rate-limit / quota error from either the Google
+    People API or Microsoft Graph API, print actionable guidance on how to
+    register custom client credentials."""
+
+    msg = str(exc)
+
+    ## --- Google People API (HttpError 429 or 403 quota) -----------------
+    try:
+        from googleapiclient.errors import HttpError
+        if isinstance(exc, HttpError):
+            status = exc.resp.status if hasattr(exc, 'resp') else 0
+            content = str(exc.content) if hasattr(exc, 'content') else ''
+            is_rate_limit = (
+                status == 429 or
+                (status == 403 and ('rateLimitExceeded' in content or
+                                    'userRateLimitExceeded' in content)))
+            if is_rate_limit:
+                logging.critical(
+                    '\n'
+                    '============================================================\n'
+                    'RATE LIMIT: Google API quota exceeded.\n'
+                    '\n'
+                    'ASynK ships with shared default credentials that are used\n'
+                    'by all ASynK users. You can avoid this by registering your\n'
+                    'own Google Cloud project and using your own client secrets.\n'
+                    '\n'
+                    'Quick fix:\n'
+                    '  1. Follow the guide in doc/google_app_registration.md\n'
+                    '  2. Add to ~/.asynk/config.py:\n'
+                    "       config['db_config']['gc']['client_secret_file'] = "
+                    "'/path/to/your/gc_client_secret.json'\n"
+                    '  3. Re-run your sync command\n'
+                    '============================================================')
+                return
+    except ImportError:
+        pass
+
+    ## --- Microsoft Graph API (GraphAPIError 429) ------------------------
+    try:
+        from msgraph_client import GraphAPIError
+        if isinstance(exc, GraphAPIError):
+            if '429' in msg or 'throttl' in msg.lower():
+                logging.critical(
+                    '\n'
+                    '============================================================\n'
+                    'RATE LIMIT: Microsoft Graph API throttled.\n'
+                    '\n'
+                    'ASynK ships with a shared default Azure AD app registration\n'
+                    'that is used by all ASynK users. You can avoid this by\n'
+                    'registering your own app in the Entra admin center.\n'
+                    '\n'
+                    'Quick fix:\n'
+                    '  1. Follow the guide in doc/azure_app_registration.md\n'
+                    '  2. Add to ~/.asynk/config.py:\n'
+                    "       config['db_config']['ex']['client_id'] = "
+                    "'YOUR-AZURE-AD-CLIENT-ID'\n"
+                    '  3. Re-run your sync command\n'
+                    '============================================================')
+                return
+    except ImportError:
+        pass
+
 class Asynk:
     def __init__ (self, config, alogger):
         self.alogger = alogger
@@ -622,9 +685,13 @@ class Asynk:
                     logging.info('timestamps not reset for profile %s due to '
                                  'errors (previously identified).', pname)
             except Exception as e:
-                logging.critical('Exception (%s) while syncing profile %s', 
+                logging.critical('Exception (%s) while syncing profile %s',
                                  str(e), pname)
                 logging.critical(traceback.format_exc())
+
+                ## Detect rate-limit errors and print actionable guidance
+                _print_rate_limit_help(e)
+
                 return False
 
         if not pname in ['defolbb', 'defbbbb']:

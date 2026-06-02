@@ -10,7 +10,9 @@
 ## Replaces the old GData/Atom-based implementation.
 ##
 
-import copy, logging, re
+import copy, logging, re, time
+
+from googleapiclient.errors import HttpError
 
 from folder import Folder
 
@@ -70,6 +72,69 @@ SYNC_UNAUTHORIZED          = 401
 SYNC_FORBIDDEN             = 403
 SYNC_CONFLICT              = 409
 SYNC_INTERNAL_SERVER_ERROR = 500
+
+## ---------------------------------------------------------------------------
+## Retry helper for Google API calls
+## ---------------------------------------------------------------------------
+
+MAX_API_RETRIES   = 3
+RETRY_BACKOFF_SEC = 1.0  # seconds, doubled on each retry
+
+def _execute_with_retry (request, max_retries=MAX_API_RETRIES):
+    """Execute a Google API request with retry on rate-limit and transient errors.
+
+    Handles:
+      - 429 (Too Many Requests): respects Retry-After header, default 5s
+      - 403 with rateLimitExceeded / userRateLimitExceeded: treated as 429
+      - 503 / 504 (transient server errors): exponential backoff
+
+    After exhausting retries the original HttpError is re-raised.
+    """
+
+    backoff = RETRY_BACKOFF_SEC
+
+    for attempt in range(max_retries + 1):
+        try:
+            return request.execute()
+        except HttpError as e:
+            status = e.resp.status if hasattr(e, 'resp') else 0
+
+            ## 429 — rate limited
+            if status == 429:
+                retry_after = int(e.resp.get('retry-after', 5))
+                logging.warning('Google API throttled (429). Retrying '
+                                'after %d seconds...', retry_after)
+                time.sleep(retry_after)
+                continue
+
+            ## 403 — may be a quota/rate-limit error
+            if status == 403:
+                content = str(e.content) if hasattr(e, 'content') else ''
+                if ('rateLimitExceeded' in content or
+                    'userRateLimitExceeded' in content):
+                    retry_after = int(e.resp.get('retry-after', 5))
+                    logging.warning('Google API quota exceeded (403). '
+                                    'Retrying after %d seconds...',
+                                    retry_after)
+                    time.sleep(retry_after)
+                    continue
+                ## Non-quota 403 — do not retry
+                raise
+
+            ## 503 / 504 — transient server errors
+            if status in (503, 504) and attempt < max_retries:
+                logging.warning('Google API transient error (%d). '
+                                'Retrying in %.1f seconds...',
+                                status, backoff)
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+
+            ## All other errors — do not retry
+            raise
+
+    ## Should not reach here, but just in case
+    return request.execute()
 
 ## ---------------------------------------------------------------------------
 ## GCContactsFolder
@@ -224,9 +289,9 @@ class GCContactsFolder(Folder):
     def find_item (self, itemid):
         """Fetch a single contact by resourceName and return a GCContact."""
         svc = self.get_service()
-        person = svc.people().get(
+        person = _execute_with_retry(svc.people().get(
             resourceName=itemid,
-            personFields=PERSON_FIELDS).execute()
+            personFields=PERSON_FIELDS))
         gc = GCContact(self, person=person)
         return gc
 
@@ -244,9 +309,9 @@ class GCContactsFolder(Folder):
         ## People API getBatchGet supports up to 200 resource names
         for i in range(0, len(itemids), self.BATCH_SIZE):
             batch = itemids[i:i + self.BATCH_SIZE]
-            resp = svc.people().getBatchGet(
+            resp = _execute_with_retry(svc.people().getBatchGet(
                 resourceNames=batch,
-                personFields=PERSON_FIELDS).execute()
+                personFields=PERSON_FIELDS))
 
             for pr in resp.get('responses', []):
                 person = pr.get('person')
@@ -289,9 +354,9 @@ class GCContactsFolder(Folder):
                           batch_num, len(contacts))
 
             try:
-                resp = svc.people().batchCreateContacts(
+                resp = _execute_with_retry(svc.people().batchCreateContacts(
                     body={'contacts': contacts,
-                          'readMask': PERSON_FIELDS}).execute()
+                          'readMask': PERSON_FIELDS}))
 
                 for j, cp in enumerate(resp.get('createdPeople', [])):
                     person = cp.get('person', {})
@@ -351,11 +416,11 @@ class GCContactsFolder(Folder):
 
             try:
                 from pimdb_gc import UPDATE_PERSON_FIELDS
-                resp = svc.people().batchUpdateContacts(
+                resp = _execute_with_retry(svc.people().batchUpdateContacts(
                     body={'contacts': update_body,
                           'readMask': PERSON_FIELDS,
                           'updateMask': UPDATE_PERSON_FIELDS,
-                          }).execute()
+                          }))
 
                 for rn, result in resp.get('updateResult', {}).items():
                     person = result.get('person', {})
@@ -408,11 +473,11 @@ class GCContactsFolder(Folder):
                           batch_num, len(update_body))
 
             try:
-                svc.people().batchUpdateContacts(
+                _execute_with_retry(svc.people().batchUpdateContacts(
                     body={'contacts': update_body,
                           'readMask': 'userDefined',
                           'updateMask': 'userDefined',
-                          }).execute()
+                          }))
             except Exception as e:
                 logging.error('Writeback batch failed: %s', e)
                 success = False
@@ -481,11 +546,11 @@ class GCContactsFolder(Folder):
                           batch_num, len(batch_body))
 
             try:
-                svc.people().batchUpdateContacts(
+                _execute_with_retry(svc.people().batchUpdateContacts(
                     body={'contacts': batch_body,
                           'readMask': 'userDefined',
                           'updateMask': {'paths': ['userDefined']}
-                          }).execute()
+                          }))
             except Exception as e:
                 logging.error('Clear sync flags batch failed: %s', e)
                 success = False
@@ -544,8 +609,8 @@ class GCContactsFolder(Folder):
             batch = itemids[i:i + self.BATCH_SIZE]
             logging.info('Deleting %d contacts...', len(batch))
             try:
-                svc.people().batchDeleteContacts(
-                    body={'resourceNames': batch}).execute()
+                _execute_with_retry(svc.people().batchDeleteContacts(
+                    body={'resourceNames': batch}))
             except Exception as e:
                 # If contact is already deleted on the server, ignore the error.
                 if 'NOT_FOUND' in str(e) or '404' in str(e):
@@ -597,13 +662,13 @@ class GCContactsFolder(Folder):
         page_token = None
 
         while True:
-            resp = svc.people().connections().list(
+            resp = _execute_with_retry(svc.people().connections().list(
                 resourceName='people/me',
                 personFields=PERSON_FIELDS,
                 pageSize=1000,
                 pageToken=page_token,
                 requestSyncToken=False,
-            ).execute()
+            ))
 
             connections = resp.get('connections', [])
 
@@ -631,9 +696,9 @@ class GCContactsFolder(Folder):
 
         for i in range(0, len(resource_names), self.BATCH_SIZE):
             batch = resource_names[i:i + self.BATCH_SIZE]
-            resp = svc.people().getBatchGet(
+            resp = _execute_with_retry(svc.people().getBatchGet(
                 resourceNames=batch,
-                personFields=PERSON_FIELDS).execute()
+                personFields=PERSON_FIELDS))
 
             for pr in resp.get('responses', []):
                 person = pr.get('person')
